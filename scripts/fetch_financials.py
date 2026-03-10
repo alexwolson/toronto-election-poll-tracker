@@ -15,8 +15,12 @@ from pathlib import Path
 import requests
 
 CKAN_BASE = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action"
+# TODO: As of 2026-03-10, 'elections-campaign-contributions' only serves ZIP resources,
+# not CSV. This script will exit with "No CSV resources found" until the city publishes
+# 2026 campaign contributions as direct CSV downloads. The 2018 data is at
+# 'elections-campaign-contributions'. Update PACKAGE_IDS when 2026 data is available.
 PACKAGE_IDS = [
-    "toronto-municipal-election-campaign-contributions",
+    "elections-campaign-contributions",
 ]
 OUTPUT_DIR = Path("data/raw/financial")
 

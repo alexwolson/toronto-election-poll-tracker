@@ -15,7 +15,11 @@ from pathlib import Path
 import requests
 
 CKAN_BASE = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action"
-PACKAGE_ID = "toronto-municipal-election-results"
+# TODO: As of 2026-03-10, the 'election-results-official' package only serves ZIP resources
+# (XLSX files inside), not CSV. This script will exit with "No CSV resources found" until
+# either (a) the city publishes 2026 results as CSV, or (b) this script is updated to
+# unzip and extract CSVs from the ZIP. Historical election data is at 'election-results-official'.
+PACKAGE_ID = "election-results-official"
 OUTPUT_DIR = Path("data/raw/elections")
 
 EXPECTED_COLUMNS = {

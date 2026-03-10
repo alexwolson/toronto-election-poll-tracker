@@ -50,23 +50,28 @@ def process_council_alignment(input_path: Path) -> pd.DataFrame:
         sys.exit(1)
 
     df = pd.read_csv(input_path)
-    df["ward"] = df["ward"].astype(int)
 
     try:
+        df["ward"] = df["ward"].astype(int)
         validate_council_alignment(df)
-    except ValidationError as e:
+    except (ValidationError, ValueError) as e:
         print(f"ERROR in {input_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
     return df
 
 
-def write_processed(df: pd.DataFrame, output_path: Path) -> None:
-    """Write a processed DataFrame to CSV with a generation timestamp comment."""
+def write_processed(
+    df: pd.DataFrame, output_path: Path, timestamp: str = TIMESTAMP
+) -> None:
+    """Write a processed DataFrame to CSV.
+
+    Writes a sidecar .meta file with the generation timestamp.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as f:
-        f.write(f"# Generated at {TIMESTAMP}\n")
-        df.to_csv(f, index=False)
+    df.to_csv(output_path, index=False)
+    meta_path = output_path.with_suffix(".meta")
+    meta_path.write_text(f"generated_at={timestamp}\n", encoding="utf-8")
     print(f"  Written: {output_path}")
 
 

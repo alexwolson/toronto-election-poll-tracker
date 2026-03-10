@@ -5,6 +5,8 @@ Saves CSVs to data/raw/financial/ with sidecar metadata JSON files.
 Run: uv run scripts/fetch_financials.py
 """
 
+import csv
+import io
 import json
 import sys
 from datetime import datetime, timezone
@@ -46,7 +48,7 @@ def download_resource(resource: dict, output_dir: Path) -> Path:
     content = response.text
 
     first_line = content.splitlines()[0]
-    header_fields = {field.strip().strip('"') for field in first_line.split(",")}
+    header_fields = set(next(csv.reader(io.StringIO(first_line))))
     for col in EXPECTED_COLUMNS:
         if col not in header_fields:
             raise ValueError(

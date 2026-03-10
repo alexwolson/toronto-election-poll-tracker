@@ -7,7 +7,7 @@ One row per published poll.
 | `poll_id` | string | yes | Unique identifier, e.g. `liaison-2025-11-01` |
 | `firm` | string | yes | Polling firm name |
 | `date_conducted` | YYYY-MM-DD | yes | Date range end if a range was reported |
-| `date_published` | YYYY-MM-DD | yes | |
+| `date_published` | YYYY-MM-DD | yes | Date the poll was publicly released |
 | `sample_size` | integer | no | Blank if not reported |
 | `methodology` | string | no | e.g. `online-panel`, `IVR`, `phone` |
 | `field_tested` | string | yes | Comma-separated list of candidates tested |

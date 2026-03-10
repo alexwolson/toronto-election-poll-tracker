@@ -2,14 +2,14 @@
 name = "data-ingestion"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
-    "pandas>=3.0.1",
-    "pydantic>=2.12.5",
-    "requests>=2.32.5",
+    "pandas",
+    "pydantic",
+    "requests",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest",
 ]

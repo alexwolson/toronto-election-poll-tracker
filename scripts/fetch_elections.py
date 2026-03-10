@@ -45,9 +45,10 @@ def download_resource(resource: dict, output_dir: Path) -> Path:
     content = response.text
 
     # Basic column check: look for expected column names in the header line
-    first_line = content.split("\n")[0]
+    first_line = content.splitlines()[0]
+    header_fields = {field.strip().strip('"') for field in first_line.split(",")}
     for col in EXPECTED_COLUMNS:
-        if col not in first_line:
+        if col not in header_fields:
             raise ValueError(
                 f"Expected column '{col}' not found in {name}. "
                 f"Header: {first_line[:200]}"

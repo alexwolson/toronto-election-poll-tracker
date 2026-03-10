@@ -45,9 +45,10 @@ def download_resource(resource: dict, output_dir: Path) -> Path:
     response.raise_for_status()
     content = response.text
 
-    first_line = content.split("\n")[0]
+    first_line = content.splitlines()[0]
+    header_fields = {field.strip().strip('"') for field in first_line.split(",")}
     for col in EXPECTED_COLUMNS:
-        if col not in first_line:
+        if col not in header_fields:
             raise ValueError(
                 f"Expected column '{col}' not found in {name}. "
                 f"Header: {first_line[:200]}"
@@ -73,7 +74,7 @@ def main() -> None:
         csv_resources = [r for r in resources if r.get("format", "").upper() == "CSV"]
         if not csv_resources:
             print(f"No CSV resources found for {package_id}.", file=sys.stderr)
-            continue
+            sys.exit(1)
         print(f"Found {len(csv_resources)} CSV resource(s).")
         for resource in csv_resources:
             download_resource(resource, OUTPUT_DIR)

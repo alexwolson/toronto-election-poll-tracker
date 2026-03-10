@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-CANDIDATE_COLUMNS = ["chow", "bradford", "bailao", "matlow", "furey", "mendicino"]
+from src.names import KNOWN_CANDIDATES
+
 SHARE_TOLERANCE = 0.01  # allow up to 1% rounding error
 
 
@@ -21,7 +22,7 @@ def validate_polls(df: pd.DataFrame) -> None:
     _check_required_columns(df, required, "polls")
 
     # Vote shares must sum to <= 1.0 (+ tolerance) per row
-    share_cols = [c for c in CANDIDATE_COLUMNS if c in df.columns]
+    share_cols = [c for c in KNOWN_CANDIDATES if c in df.columns]
     if "undecided" in df.columns:
         share_cols = share_cols + ["undecided"]
 
@@ -37,6 +38,13 @@ def validate_polls(df: pd.DataFrame) -> None:
     # date_conducted must be <= date_published
     conducted = pd.to_datetime(df["date_conducted"], errors="coerce")
     published = pd.to_datetime(df["date_published"], errors="coerce")
+
+    unparseable = df[conducted.isna() | published.isna()]
+    if not unparseable.empty:
+        raise ValidationError(
+            f"Unparseable date values in rows: {unparseable['poll_id'].tolist()}"
+        )
+
     bad_dates = df[conducted > published]
     if not bad_dates.empty:
         raise ValidationError(
@@ -45,6 +53,10 @@ def validate_polls(df: pd.DataFrame) -> None:
         )
 
     # poll_id must be unique
+    null_ids = df[df["poll_id"].isna()]
+    if not null_ids.empty:
+        raise ValidationError(f"Missing poll_id in {len(null_ids)} row(s)")
+
     dupes = df[df["poll_id"].duplicated()]
     if not dupes.empty:
         raise ValidationError(f"Duplicate poll_id values: {dupes['poll_id'].tolist()}")

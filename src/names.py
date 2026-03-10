@@ -13,6 +13,7 @@ _REGISTRY: dict[str, str] = {
     "brad bradford": "bradford",
     "bradford": "bradford",
     # Ana Bailao
+    "ana bailão": "bailao",
     "ana bailao": "bailao",
     "ana bailo": "bailao",
     "bailao": "bailao",
@@ -27,6 +28,7 @@ _REGISTRY: dict[str, str] = {
     "mendicino": "mendicino",
 }
 
+# Used by the ingestion pipeline to validate candidate columns in poll data.
 KNOWN_CANDIDATES = sorted(set(_REGISTRY.values()))
 
 

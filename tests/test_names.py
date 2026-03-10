@@ -1,3 +1,5 @@
+import pytest
+
 from src.names import canonical_name, CanonicalNameError
 
 
@@ -8,6 +10,7 @@ def test_known_names_resolve():
     assert canonical_name("Ana Bailao") == "bailao"
     assert canonical_name("Josh Matlow") == "matlow"
     assert canonical_name("Anthony Furey") == "furey"
+    assert canonical_name("Marco Mendicino") == "mendicino"
 
 
 def test_case_insensitive():
@@ -16,8 +19,5 @@ def test_case_insensitive():
 
 
 def test_unknown_name_raises():
-    try:
+    with pytest.raises(CanonicalNameError):
         canonical_name("Unknown Person")
-        assert False, "should have raised"
-    except CanonicalNameError:
-        pass

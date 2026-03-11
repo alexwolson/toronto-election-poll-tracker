@@ -39,10 +39,10 @@ def test_process_defeatability_produces_clean_output():
     assert "ward" in result.columns
     assert "vote_share" in result.columns
     assert "electorate_share" in result.columns
-    assert "pop_growth_pct" in result.columns
     assert "is_byelection_incumbent" in result.columns
     assert result["ward"].dtype == int
     assert len(result) == 2
+    assert result["pop_growth_pct"].iloc[0] == 0.0
 
 
 def test_process_defeatability_rejects_bad_ward():

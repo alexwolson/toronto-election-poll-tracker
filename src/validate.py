@@ -175,7 +175,6 @@ def validate_defeatability(df: pd.DataFrame) -> None:
         "is_running",
         "vote_share",
         "electorate_share",
-        "pop_growth_pct",
         "defeatability_score",
         "last_updated",
     ]
@@ -211,6 +210,21 @@ def validate_defeatability(df: pd.DataFrame) -> None:
         raise ValidationError(
             f"electorate_share values outside (0, 1] in wards: {bad_es['ward'].tolist()}"
         )
+
+    # defeatability_score must be in 0-100
+    bad_score = df[~df["defeatability_score"].between(0, 100)]
+    if not bad_score.empty:
+        raise ValidationError(
+            f"defeatability_score values outside 0–100 in wards: {bad_score['ward'].tolist()}"
+        )
+
+    # is_running must be boolean
+    if df["is_running"].dtype != bool:
+        bad_running = df[~df["is_running"].isin([True, False])]
+        if not bad_running.empty:
+            raise ValidationError(
+                f"is_running must be boolean in wards: {bad_running['ward'].tolist()}"
+            )
 
     # last_updated must be parseable as a date
     last_updated = pd.to_datetime(df["last_updated"], errors="coerce")

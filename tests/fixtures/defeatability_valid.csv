@@ -1,0 +1,3 @@
+ward,councillor_name,election_year,is_byelection_incumbent,is_running,vote_share,electorate_share,defeatability_score,notes,last_updated
+1,Paula Fletcher,2022,false,true,0.61,0.19,40,,2025-11-01
+2,Michael Thompson,2022,false,true,0.53,0.15,55,,2025-11-01

@@ -67,6 +67,23 @@ def test_process_ward_population_exits_on_missing_file():
         process_ward_population(Path("nonexistent_file.csv"))
 
 
+def test_process_defeatability_merges_pop_growth(tmp_path):
+    defeatability_csv = tmp_path / "defeatability.csv"
+    defeatability_csv.write_text(
+        "ward,councillor_name,election_year,is_byelection_incumbent,is_running,"
+        "vote_share,electorate_share,pop_growth_pct,defeatability_score,last_updated\n"
+        "1,Alice,2022,false,true,0.55,0.15,0.0,40,2026-01-01\n"
+        "2,Bob,2022,false,true,0.60,0.18,0.0,30,2026-01-01\n"
+    )
+    pop_growth = pd.Series({1: 0.08, 2: -0.03}, name="ward")
+    pop_growth.index.name = "ward"
+
+    result = process_defeatability(defeatability_csv, pop_growth=pop_growth)
+    assert "pop_growth_pct" in result.columns
+    assert result.loc[result["ward"] == 1, "pop_growth_pct"].iloc[0] == pytest.approx(0.08)
+    assert result.loc[result["ward"] == 2, "pop_growth_pct"].iloc[0] == pytest.approx(-0.03)
+
+
 def test_write_processed_creates_readable_file(tmp_path):
     df = pd.DataFrame({"a": [1], "b": [2]})
     out = tmp_path / "out.csv"

@@ -74,8 +74,15 @@ def process_council_alignment(input_path: Path) -> pd.DataFrame:
     return df
 
 
-def process_defeatability(input_path: Path) -> pd.DataFrame:
-    """Load, validate, and normalise ward defeatability CSV."""
+def process_defeatability(
+    input_path: Path, pop_growth: pd.Series | None = None
+) -> pd.DataFrame:
+    """Load, validate, and normalise ward defeatability CSV.
+
+    If pop_growth is provided (a Series indexed by ward), its values are used
+    to populate pop_growth_pct, overriding any value in the raw CSV.
+    If not provided, pop_growth_pct defaults to 0.0.
+    """
     if not input_path.exists():
         print(f"ERROR: defeatability file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
@@ -92,6 +99,11 @@ def process_defeatability(input_path: Path) -> pd.DataFrame:
 
     # Normalise last_updated to ISO date string
     df["last_updated"] = pd.to_datetime(df["last_updated"]).dt.strftime("%Y-%m-%d")
+
+    if pop_growth is not None:
+        df["pop_growth_pct"] = df["ward"].map(pop_growth).fillna(0.0)
+    else:
+        df["pop_growth_pct"] = 0.0
 
     return df
 
@@ -234,10 +246,22 @@ def main() -> None:
         coattails = compute_coattail_adjustment(council_df, leans, chow_avg)
         write_processed(coattails, PROCESSED / "coattail_adjustments.csv")
 
+    print("Processing ward population growth...")
+    population_path = RAW / "census" / "ward_population.csv"
+    pop_growth = None
+    if population_path.exists():
+        pop_growth = process_ward_population(population_path)
+        write_processed(
+            pd.DataFrame({"ward": pop_growth.index, "pop_growth_pct": pop_growth.values}),
+            PROCESSED / "ward_population_growth.csv",
+        )
+    else:
+        print(f"  Skipping: {population_path} (not found, growth will be 0.0)")
+
     print("Processing ward defeatability...")
     defeatability_path = RAW / "defeatability" / "ward_defeatability.csv"
     if defeatability_path.exists():
-        defeatability = process_defeatability(defeatability_path)
+        defeatability = process_defeatability(defeatability_path, pop_growth=pop_growth)
         write_processed(defeatability, PROCESSED / "ward_defeatability.csv")
     else:
         print(f"  Skipping: {defeatability_path} (not found)")

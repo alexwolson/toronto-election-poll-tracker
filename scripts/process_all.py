@@ -15,7 +15,20 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.validate import ValidationError, validate_council_alignment, validate_polls
+from src.aggregator import aggregate_polls, get_latest_scenario_polls
+from src.coattails import compute_coattail_adjustment
+from src.lean import compute_ward_mayoral_lean
+from src.names import KNOWN_CANDIDATES
+from src.validate import (
+    ValidationError,
+    validate_challengers,
+    validate_council_alignment,
+    validate_defeatability,
+    validate_mayoral_results,
+    validate_polls,
+    validate_registered_electors,
+    validate_ward_population,
+)
 
 RAW = Path("data/raw")
 PROCESSED = Path("data/processed")
@@ -61,6 +74,111 @@ def process_council_alignment(input_path: Path) -> pd.DataFrame:
     return df
 
 
+def process_defeatability(input_path: Path) -> pd.DataFrame:
+    """Load, validate, and normalise ward defeatability CSV."""
+    if not input_path.exists():
+        print(f"ERROR: defeatability file not found: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    df = pd.read_csv(input_path)
+
+    try:
+        df["ward"] = df["ward"].astype(int)
+        df["election_year"] = df["election_year"].astype(int)
+        validate_defeatability(df)
+    except (ValidationError, ValueError) as e:
+        print(f"ERROR in {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Normalise last_updated to ISO date string
+    df["last_updated"] = pd.to_datetime(df["last_updated"]).dt.strftime("%Y-%m-%d")
+
+    return df
+
+
+def process_challengers(input_path: Path) -> pd.DataFrame:
+    """Load and validate challengers CSV."""
+    if not input_path.exists():
+        print(f"ERROR: challengers file not found: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    df = pd.read_csv(input_path)
+
+    try:
+        df["ward"] = df["ward"].astype(int)
+        validate_challengers(df)
+    except (ValidationError, ValueError) as e:
+        print(f"ERROR in {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    return df
+
+
+def process_mayoral_results(input_path: Path) -> pd.DataFrame:
+    """Load and validate mayoral results CSV."""
+    if not input_path.exists():
+        print(f"ERROR: mayoral results file not found: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    df = pd.read_csv(input_path)
+
+    try:
+        df["ward"] = df["ward"].astype(int)
+        df["year"] = df["year"].astype(int)
+        validate_mayoral_results(df)
+    except (ValidationError, ValueError) as e:
+        print(f"ERROR in {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    return df
+
+
+def process_registered_electors(input_path: Path) -> pd.DataFrame:
+    """Load and validate registered electors CSV."""
+    if not input_path.exists():
+        print(
+            f"ERROR: registered electors file not found: {input_path}", file=sys.stderr
+        )
+        sys.exit(1)
+
+    df = pd.read_csv(input_path)
+
+    try:
+        df["ward"] = df["ward"].astype(int)
+        df["year"] = df["year"].astype(int)
+        validate_registered_electors(df)
+    except (ValidationError, ValueError) as e:
+        print(f"ERROR in {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    return df
+
+
+def process_ward_population(input_path: Path) -> pd.Series:
+    """Load ward population CSV and return pop_growth_pct per ward as a Series.
+
+    Returns a Series indexed by ward number (1–25).
+    Growth = (pop_2021 - pop_2016) / pop_2016
+    """
+    if not input_path.exists():
+        print(f"ERROR: ward population file not found: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    df = pd.read_csv(input_path)
+
+    try:
+        df["ward"] = df["ward"].astype(int)
+        df["pop_2016"] = df["pop_2016"].astype(int)
+        df["pop_2021"] = df["pop_2021"].astype(int)
+        validate_ward_population(df)
+    except (ValidationError, ValueError) as e:
+        print(f"ERROR in {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    growth = (df["pop_2021"] - df["pop_2016"]) / df["pop_2016"]
+    return growth.set_axis(df["ward"]).rename_axis("ward")
+
+
 def write_processed(
     df: pd.DataFrame, output_path: Path, timestamp: str = TIMESTAMP
 ) -> None:
@@ -80,9 +198,57 @@ def main() -> None:
     polls = process_polls(RAW / "polls" / "polls.csv")
     write_processed(polls, PROCESSED / "polls.csv")
 
+    print("Computing mayoral polling average...")
+    scenario_polls = get_latest_scenario_polls(polls)
+    avg_results = aggregate_polls(scenario_polls, KNOWN_CANDIDATES)
+    avg_df = pd.DataFrame(
+        [{"candidate": c, "share": s} for c, s in avg_results.items()]
+    )
+    avg_df = avg_df.sort_values(by="share", ascending=False)
+    write_processed(avg_df, PROCESSED / "mayoral_polling_average.csv")
+
+    print("Processing mayoral results...")
+    results = process_mayoral_results(RAW / "elections" / "mayoral_results.csv")
+    write_processed(results, PROCESSED / "mayoral_results.csv")
+
+    print("Computing ward mayoral lean...")
+    leans = compute_ward_mayoral_lean(results)
+    write_processed(leans, PROCESSED / "ward_mayoral_lean.csv")
+
+    print("Processing registered electors...")
+    electors = process_registered_electors(RAW / "elections" / "registered_electors.csv")
+    write_processed(electors, PROCESSED / "registered_electors.csv")
+
     print("Processing council alignment...")
-    council = process_council_alignment(RAW / "council_votes" / "council_alignment.csv")
-    write_processed(council, PROCESSED / "council_alignment.csv")
+    council_path = RAW / "council_votes" / "council_alignment.csv"
+    council_df = None
+    if council_path.exists():
+        council_df = process_council_alignment(council_path)
+        write_processed(council_df, PROCESSED / "council_alignment.csv")
+    else:
+        print(f"  Skipping: {council_path} (not found)")
+
+    if council_df is not None:
+        print("Computing coattail adjustments...")
+        chow_avg = avg_results.get("chow", 0.0)
+        coattails = compute_coattail_adjustment(council_df, leans, chow_avg)
+        write_processed(coattails, PROCESSED / "coattail_adjustments.csv")
+
+    print("Processing ward defeatability...")
+    defeatability_path = RAW / "defeatability" / "ward_defeatability.csv"
+    if defeatability_path.exists():
+        defeatability = process_defeatability(defeatability_path)
+        write_processed(defeatability, PROCESSED / "ward_defeatability.csv")
+    else:
+        print(f"  Skipping: {defeatability_path} (not found)")
+
+    print("Processing challengers...")
+    challengers_path = RAW / "candidates" / "challengers.csv"
+    if challengers_path.exists():
+        challengers = process_challengers(challengers_path)
+        write_processed(challengers, PROCESSED / "challengers.csv")
+    else:
+        print(f"  Skipping: {challengers_path} (not found)")
 
     print("Done. All outputs written to data/processed/.")
 

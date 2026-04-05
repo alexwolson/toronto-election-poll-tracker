@@ -7,25 +7,37 @@ consistently across all processed data.
 _REGISTRY: dict[str, str] = {
     # Olivia Chow
     "olivia chow": "chow",
+    "chow olivia": "chow",
     "o. chow": "chow",
     "chow": "chow",
     # Brad Bradford
     "brad bradford": "bradford",
+    "bradford brad": "bradford",
     "bradford": "bradford",
     # Ana Bailao
     "ana bailão": "bailao",
+    "bailão ana": "bailao",
     "ana bailao": "bailao",
+    "bailao ana": "bailao",
     "ana bailo": "bailao",
     "bailao": "bailao",
     # Josh Matlow
     "josh matlow": "matlow",
+    "matlow josh": "matlow",
     "matlow": "matlow",
     # Anthony Furey
     "anthony furey": "furey",
+    "furey anthony": "furey",
     "furey": "furey",
     # Marco Mendicino
     "marco mendicino": "mendicino",
+    "mendicino marco": "mendicino",
     "mendicino": "mendicino",
+    # John Tory
+    "john tory": "tory",
+    "tory john": "tory",
+    "j. tory": "tory",
+    "tory": "tory",
 }
 
 # Used by the ingestion pipeline to validate candidate columns in poll data.

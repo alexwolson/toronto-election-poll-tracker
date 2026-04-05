@@ -45,8 +45,9 @@ The model does not produce precise vote share estimates for individual candidate
 
 All electoral data uses the current 25-ward boundaries, which took effect in 2018. Pre-2018 data on the former 44-ward boundaries is excluded to avoid the complexity and noise of boundary reaggregation.
 
-**Council voting data (City Hall Watcher)**
+**Council voting and analysis data (City Hall Watcher)**
 - Matt Elliott's council voting scorecard, covering both the Chow mayoralty and the Tory mayoralty, providing quantitative alignment scores for each sitting councillor under both mayors
+- Matt Elliott's Council Defeatability Index, providing incumbent vulnerability scores based on vote share, electorate share, and ward growth
 
 **Polling data**
 - Published mayoral polls from all firms, collected manually

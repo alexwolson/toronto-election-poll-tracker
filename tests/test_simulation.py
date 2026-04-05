@@ -185,3 +185,56 @@ def test_competitive_incumbent_not_classified_safe():
     results = sim.run()
     # Has a viable challenger — should NOT be near 1.0
     assert results["win_probabilities"][1] < 0.97
+
+
+def test_endorsed_candidate_gets_boost_in_open_seat():
+    """In an open seat, the endorsed candidate wins more often than unendorsed peer."""
+    ward_data = pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Departed Dan",
+        "is_running": False,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 0,
+        "vote_share": 0.0,
+        "electorate_share": 0.0,
+    }])
+    challengers = pd.DataFrame([
+        {
+            "ward": 1,
+            "candidate_name": "Endorsed Emma",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": True,
+        },
+        {
+            "ward": 1,
+            "candidate_name": "Unendorsed Ulrich",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        },
+    ])
+
+    sim = WardSimulation(
+        ward_data=ward_data,
+        mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.45}]),
+        coattails=pd.DataFrame([{"ward": 1, "councillor_name": "Departed Dan", "coattail_adjustment": 0.0}]),
+        challengers=challengers,
+        leans=pd.DataFrame([{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]),
+        n_draws=2000,
+        seed=42,
+    )
+    results = sim.run()
+
+    emma_wins = sum(
+        1 for row in results["winner_matrix"][:, 0]
+        if row == "Endorsed Emma"
+    ) / 2000
+    ulrich_wins = sum(
+        1 for row in results["winner_matrix"][:, 0]
+        if row == "Unendorsed Ulrich"
+    ) / 2000
+
+    assert emma_wins > ulrich_wins

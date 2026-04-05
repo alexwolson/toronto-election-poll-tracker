@@ -27,6 +27,12 @@ SAFE_DEFEATABILITY_THRESHOLD = 30
 # Win probability assigned directly to safe incumbents (no simulation run)
 SAFE_INCUMBENT_WIN_PROB = 0.97
 
+# Endorsement boost for the candidate backed by the departing councillor (open seats)
+ENDORSEMENT_BOOST = 1.0
+
+# Additional Gaussian noise applied to each candidate's strength in open seat races
+OPEN_SEAT_NOISE_SIGMA = 0.4
+
 
 class WardSimulation:
     def __init__(
@@ -189,7 +195,25 @@ class WardSimulation:
                 f_star = max(c_strengths_list) if c_strengths_list else 0.0
                 
                 if not row["is_running"]:
-                    prob = 0.0
+                    # Open seat sub-model (spec Part 5): endorsement boost + wider noise
+                    open_strengths: dict[str, float] = {}
+                    for _, c_row in ward_challengers.iterrows():
+                        base = self._compute_candidate_strength(c_row, mayoral_mood, ward_num)
+                        endorsed = bool(c_row.get("is_endorsed_by_departing", False))
+                        boost = ENDORSEMENT_BOOST if endorsed else 0.0
+                        noise = self.rng.normal(0.0, OPEN_SEAT_NOISE_SIGMA)
+                        open_strengths[c_row["candidate_name"]] = base + boost + noise
+
+                    open_strengths = self._apply_split_penalties(open_strengths, ward_challengers)
+
+                    if not open_strengths:
+                        winner_names[i, ward_idx] = "Generic Challenger"
+                    else:
+                        names = list(open_strengths.keys())
+                        exp_s = np.exp(list(open_strengths.values()))
+                        probs = exp_s / exp_s.sum()
+                        winner_names[i, ward_idx] = self.rng.choice(names, p=probs)
+                    continue  # skip incumbent win/loss logic below
                 else:
                     d_w = row["defeatability_score"]
                     mood_factor = chow_draw / chow_avg if chow_avg > 0 else 1.0

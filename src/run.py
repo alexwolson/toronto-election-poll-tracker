@@ -1,15 +1,16 @@
-"""Run the election model and return JSON results."""
-from functools import lru_cache
+"""run.py — mirror of backend/model/run.py for test imports."""
 from pathlib import Path
+from functools import lru_cache
 
 import pandas as pd
 
-from .aggregator import aggregate_polls, get_latest_scenario_polls
-from .simulation import WardSimulation
+from src.aggregator import aggregate_polls, get_latest_scenario_polls
+from src.simulation import WardSimulation
 
 
 def _data_dir() -> Path:
-    return Path(__file__).parent.parent.parent / "data" / "processed"
+    # src/ is at repo root; data/processed is a sibling of src/
+    return Path(__file__).parent.parent / "data" / "processed"
 
 
 @lru_cache(maxsize=1)
@@ -26,6 +27,7 @@ def load_processed_data() -> dict:
 
 
 def _get_tracked_candidates(polls_df: pd.DataFrame) -> list[str]:
+    """Derive candidate list from field_tested column."""
     candidates: set[str] = set()
     for field in polls_df["field_tested"].dropna():
         for c in field.split(","):

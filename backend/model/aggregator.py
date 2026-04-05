@@ -73,20 +73,21 @@ def aggregate_polls(
 def get_latest_scenario_polls(df: pd.DataFrame) -> pd.DataFrame:
     """Filter polls to only include the most relevant field scenario.
 
-    As per spec: 'Polls testing different candidate fields are tracked separately.'
-    For now, we prioritise multi-candidate field polls over head-to-heads
-    unless specifically requested.
+    Prefers polls with 3+ candidates (multi-field) over head-to-heads,
+    using the field_tested column when present.
     """
-    # Simple heuristic: exclude poll IDs with 'v-' or 'vs-' (head-to-heads)
-    # unless they are the only ones available.
-    is_h2h = df["poll_id"].str.contains("-v-|-vs-|-v-", case=False)
-    
-    # Also check notes for common head-to-head patterns
-    is_h2h |= df["notes"].str.contains("head-to-head|vs", case=False, na=False)
+    if "field_tested" in df.columns:
+        def candidate_count(field: str) -> int:
+            if pd.isna(field):
+                return 0
+            return len([c for c in field.split(",") if c.strip() != "other"])
 
-    multi_field = df[~is_h2h]
-
-    if multi_field.empty:
+        multi = df[df["field_tested"].apply(candidate_count) >= 3]
+        if not multi.empty:
+            return multi
         return df
 
-    return multi_field
+    # Fallback for polls without field_tested (e.g. from SQLite scraper)
+    is_h2h = df["poll_id"].str.contains(r"-v-|-vs-", case=False, na=False)
+    multi_field = df[~is_h2h]
+    return multi_field if not multi_field.empty else df

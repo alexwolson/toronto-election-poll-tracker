@@ -29,5 +29,28 @@ def scrape_polls():
 
 @router.get("/latest")
 def get_latest_polls():
-    polls = get_all_polls()
-    return {"message": "TODO: implement aggregation"}
+    """Return recency-weighted mayoral polling averages from polls.csv."""
+    from pathlib import Path
+    import pandas as pd
+    from model.aggregator import aggregate_polls, get_latest_scenario_polls
+
+    data_dir = Path(__file__).parent.parent.parent / "data" / "processed"
+    polls_df = pd.read_csv(data_dir / "polls.csv")
+
+    current_polls = get_latest_scenario_polls(polls_df)
+
+    candidates: set[str] = set()
+    for field in current_polls["field_tested"].dropna():
+        for c in field.split(","):
+            c = c.strip()
+            if c and c != "other" and c in polls_df.columns:
+                candidates.add(c)
+
+    aggregated = aggregate_polls(current_polls, sorted(candidates))
+    aggregated = {k: round(v, 4) for k, v in aggregated.items() if v > 0.001}
+
+    return {
+        "aggregated": aggregated,
+        "polls_used": len(current_polls),
+        "candidates": sorted(aggregated.keys()),
+    }

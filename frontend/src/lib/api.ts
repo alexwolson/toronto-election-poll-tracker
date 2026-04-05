@@ -52,15 +52,41 @@ export async function getWard(wardNum: number): Promise<WardResponse> {
   }
 }
 
-export async function getPollingAverages(): Promise<{ aggregated: Record<string, number>; polls_used: number }> {
+type PollTrendPoint = {
+  date: string;
+  [candidate: string]: number | string;
+};
+
+type PollingAveragesResponse = {
+  aggregated: Record<string, number>;
+  polls_used: number;
+  candidates: string[];
+  trend: PollTrendPoint[];
+};
+
+export async function getPollingAverages(): Promise<PollingAveragesResponse> {
+  const fallback: PollingAveragesResponse = {
+    aggregated: {},
+    polls_used: 0,
+    candidates: [],
+    trend: [],
+  };
+
   try {
     const res = await fetch(`${API_URL}/api/polls/latest`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { aggregated: {}, polls_used: 0 };
-    return res.json();
+    if (!res.ok) return fallback;
+
+    const data = (await res.json()) as Partial<PollingAveragesResponse>;
+    return {
+      aggregated: data.aggregated ?? {},
+      polls_used: data.polls_used ?? 0,
+      candidates: data.candidates ?? [],
+      trend: data.trend ?? [],
+    };
   } catch (error) {
     console.error("Failed to fetch polling averages:", error);
-    return { aggregated: {}, polls_used: 0 };
+    return fallback;
   }
 }

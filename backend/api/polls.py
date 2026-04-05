@@ -50,7 +50,10 @@ def get_latest_polls():
     aggregated = aggregate_polls(current_polls, scenario_candidates)
     aggregated = {k: round(v, 4) for k, v in aggregated.items() if v > 0.001}
 
-    trend_df = current_polls.sort_values("date_published")
+    trend_df = current_polls.assign(
+        _parsed_date=pd.to_datetime(current_polls["date_published"], errors="coerce"),
+        _date_fallback=current_polls["date_published"].astype(str),
+    ).sort_values(["_parsed_date", "_date_fallback"], kind="stable")
     trend = []
     for _, row in trend_df.iterrows():
         point = {
@@ -62,6 +65,8 @@ def get_latest_polls():
             else:
                 point[candidate] = 0.0
         trend.append(point)
+
+    trend_df = trend_df.drop(columns=["_parsed_date", "_date_fallback"])
 
     return {
         "aggregated": aggregated,

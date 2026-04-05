@@ -56,3 +56,18 @@ def test_polls_latest_returns_trend_points(client):
         assert "date" in point
         for candidate in candidates:
             assert candidate in point
+
+
+def test_polls_latest_includes_candidates_and_trend_date(client):
+    """GET /api/polls/latest should expose candidates and dated trend points."""
+    response = client.get("/api/polls/latest")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "candidates" in data
+    assert isinstance(data["candidates"], list)
+
+    assert "trend" in data
+    assert isinstance(data["trend"], list)
+    assert len(data["trend"]) > 0
+    assert "date" in data["trend"][0]

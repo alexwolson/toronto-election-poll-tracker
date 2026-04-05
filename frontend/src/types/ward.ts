@@ -59,6 +59,6 @@ export interface WardsResponse {
 }
 
 export interface WardResponse {
-  ward: Ward;
+  ward: Ward | null;
   challengers: Challenger[];
 }

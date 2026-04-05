@@ -40,15 +40,20 @@ export async function getWards(): Promise<WardsResponse> {
 }
 
 export async function getWard(wardNum: number): Promise<WardResponse> {
+  const fallback: WardResponse = {
+    ward: null,
+    challengers: [],
+  };
+
   try {
     const res = await fetch(`${API_URL}/api/wards/${wardNum}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { ward: null as any, challengers: [] };
+    if (!res.ok) return fallback;
     return res.json();
   } catch (error) {
     console.error(`Failed to fetch ward ${wardNum}:`, error);
-    return { ward: null as any, challengers: [] };
+    return fallback;
   }
 }
 

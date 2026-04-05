@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PhaseBanner } from "@/components/phase-banner";
@@ -35,9 +36,9 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <PhaseBanner phase={phase} />
         <nav className="border-b px-6 py-3 flex gap-6 text-sm font-medium">
-          <a href="/" className="hover:underline">Home</a>
-          <a href="/wards" className="hover:underline">Wards</a>
-          <a href="/polls" className="hover:underline">Polls</a>
+          <Link href="/" className="hover:underline">Home</Link>
+          <Link href="/wards" className="hover:underline">Wards</Link>
+          <Link href="/polls" className="hover:underline">Polls</Link>
         </nav>
         {children}
       </body>

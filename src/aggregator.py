@@ -77,6 +77,7 @@ def get_latest_scenario_polls(df: pd.DataFrame) -> pd.DataFrame:
     using the field_tested column when present.
     """
     if "field_tested" in df.columns:
+
         def candidate_count(field: str) -> int:
             if pd.isna(field):
                 return 0
@@ -91,3 +92,26 @@ def get_latest_scenario_polls(df: pd.DataFrame) -> pd.DataFrame:
     is_h2h = df["poll_id"].str.contains(r"-v-|-vs-", case=False, na=False)
     multi_field = df[~is_h2h]
     return multi_field if not multi_field.empty else df
+
+
+def get_scenario_polls(
+    df: pd.DataFrame, scenario_candidates: list[str]
+) -> pd.DataFrame:
+    target = sorted([c.strip() for c in scenario_candidates if c and c != "other"])
+    if not target or "field_tested" not in df.columns:
+        return df
+
+    def norm(field: str) -> list[str]:
+        if pd.isna(field):
+            return []
+        return sorted(
+            [
+                c.strip()
+                for c in str(field).split(",")
+                if c.strip() and c.strip() != "other"
+            ]
+        )
+
+    mask = df["field_tested"].apply(lambda f: norm(f) == target)
+    out = df[mask]
+    return out if not out.empty else df

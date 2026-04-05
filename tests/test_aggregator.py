@@ -51,12 +51,28 @@ def test_compute_poll_weights(sample_polls_df: pd.DataFrame) -> None:
 def test_aggregate_polls(sample_polls_df: pd.DataFrame) -> None:
     ref_date = datetime(2026, 3, 10, tzinfo=timezone.utc)
     candidates = ["chow", "bradford"]
-    
+
     # Aggregation calculation:
     # Chow: (0.4 * 1.0 + 0.3 * 0.5) / (1.0 + 0.5) = (0.4 + 0.15) / 1.5 = 0.55 / 1.5 = 0.3666...
     # Bradford: (0.1 * 1.0 + 0.2 * 0.5) / (1.0 + 0.5) = (0.1 + 0.1) / 1.5 = 0.2 / 1.5 = 0.1333...
-    
+
     results = aggregate_polls(sample_polls_df, candidates, reference_date=ref_date)
-    
+
     assert results["chow"] == pytest.approx(0.366666666)
     assert results["bradford"] == pytest.approx(0.133333333)
+
+
+def test_get_scenario_polls_exact_field_match():
+    from src.aggregator import get_scenario_polls
+    import pandas as pd
+
+    df = pd.DataFrame(
+        [
+            {"poll_id": "a", "field_tested": "chow,bradford,bailao"},
+            {"poll_id": "b", "field_tested": "chow,bradford"},
+            {"poll_id": "c", "field_tested": "bradford,bailao"},
+        ]
+    )
+
+    out = get_scenario_polls(df, ["chow", "bradford", "bailao"])
+    assert out["poll_id"].tolist() == ["a"]

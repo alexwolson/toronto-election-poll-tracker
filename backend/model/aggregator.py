@@ -104,7 +104,7 @@ def get_scenario_polls(
         [
             normalize_candidate(c)
             for c in scenario_candidates
-            if c and normalize_candidate(c) != "other"
+            if normalize_candidate(c) and normalize_candidate(c) != "other"
         ]
     )
     if not target or "field_tested" not in df.columns:

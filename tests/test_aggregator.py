@@ -100,3 +100,16 @@ def test_get_scenario_polls_normalizes_case_whitespace_and_ignores_other() -> No
     out = get_scenario_polls(df, [" chow ", "bradford", "OTHER"])
 
     assert out["poll_id"].tolist() == ["a"]
+
+
+def test_get_scenario_polls_ignores_whitespace_only_scenario_candidates() -> None:
+    df = pd.DataFrame(
+        [
+            {"poll_id": "a", "field_tested": "chow,bradford"},
+            {"poll_id": "b", "field_tested": "chow,bailao"},
+        ]
+    )
+
+    out = get_scenario_polls(df, ["chow", "bradford", "   "])
+
+    assert out["poll_id"].tolist() == ["a"]

@@ -3,7 +3,7 @@ import time
 import threading
 from datetime import datetime
 
-from ..api.polls import scrape_polls
+from api.polls import scrape_polls
 
 
 def run_scraper():

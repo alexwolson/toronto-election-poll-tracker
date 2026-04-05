@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from ..db.storage import init_db, get_all_polls, save_poll
-from ..scrapers.wikipedia import scrape_wikipedia_polls
+from db.storage import init_db, get_all_polls, save_poll
+from scrapers.wikipedia import scrape_wikipedia_polls
 
 router = APIRouter()
 

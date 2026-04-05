@@ -4,7 +4,7 @@ import sys
 import threading
 from pathlib import Path
 from fastapi import APIRouter
-from ..model.run import run_model, load_processed_data
+from model.run import run_model, load_processed_data
 
 router = APIRouter()
 

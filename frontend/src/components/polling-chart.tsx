@@ -29,7 +29,7 @@ export function PollingChart({ data, candidates }: PollingChartProps) {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" />
         <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}%`} />
-        <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+        <Tooltip formatter={(v) => typeof v === 'number' ? `${v.toFixed(1)}%` : String(v)} />
         <Legend />
         {candidates.map((c) => (
           <Line

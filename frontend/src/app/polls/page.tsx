@@ -71,7 +71,7 @@ export default async function PollsPage() {
               <tbody className="divide-y">
                 {polls.map((poll, i) => {
                   const results = Object.entries(poll.candidates || {});
-                  const topCandidate = results.length > 0 
+                  const topCandidate: [string, number] = results.length > 0 
                     ? results.reduce((a, b) => (a[1] > b[1] ? a : b))
                     : ["None", 0];
                   return (

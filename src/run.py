@@ -1,4 +1,5 @@
 """run.py — mirror of backend/model/run.py for test imports."""
+
 from pathlib import Path
 from functools import lru_cache
 
@@ -24,6 +25,7 @@ def load_processed_data() -> dict:
         "leans": pd.read_csv(d / "ward_mayoral_lean.csv"),
         "coattails": pd.read_csv(d / "coattail_adjustments.csv"),
         "polls": pd.read_csv(d / "polls.csv"),
+        "ward_polls": pd.read_csv(d / "ward_polls.csv"),
     }
 
 
@@ -42,7 +44,8 @@ def _classify_race(row: dict, challengers_for_ward: list[dict]) -> str:
     if not row["is_running"]:
         return "open"
     viable = [
-        c for c in challengers_for_ward
+        c
+        for c in challengers_for_ward
         if c["name_recognition_tier"] in ("well-known", "known")
     ]
     if viable:
@@ -71,6 +74,7 @@ def run_model() -> dict:
         coattails=data["coattails"],
         challengers=data["challengers"],
         leans=data["leans"],
+        ward_polls=data["ward_polls"],
     )
     results = sim.run()
 
@@ -82,9 +86,13 @@ def run_model() -> dict:
     for row in data["defeatability"].to_dict("records"):
         ward_num = row["ward"]
         ward_challengers = challengers_by_ward.get(ward_num, [])
-        row["win_probability"] = round(results["win_probabilities"].get(ward_num, 0.0), 4)
+        row["win_probability"] = round(
+            results["win_probabilities"].get(ward_num, 0.0), 4
+        )
         row["race_class"] = _classify_race(row, ward_challengers)
-        row["factors"] = results["factors"].get(ward_num, {"vuln": 0.0, "coat": 0.0, "chal": 0.0})
+        row["factors"] = results["factors"].get(
+            ward_num, {"vuln": 0.0, "coat": 0.0, "chal": 0.0}
+        )
         wards_out.append(row)
 
     return {

@@ -1,6 +1,6 @@
 """Part 7: Simulation Engine.
 
-Runs thousands of Monte Carlo draws to produce win probabilities and 
+Runs thousands of Monte Carlo draws to produce win probabilities and
 council composition distributions.
 """
 
@@ -47,6 +47,7 @@ class WardSimulation:
         leans: pd.DataFrame,
         n_draws: int = 5000,
         seed: int = 42,
+        ward_polls: pd.DataFrame | None = None,
     ):
         """
         ward_data: [ward, councillor_name, is_running, defeatability_score, ...]
@@ -54,6 +55,7 @@ class WardSimulation:
         coattails: [ward, coattail_adjustment]
         challengers: [ward, candidate_name, name_recognition_tier, mayoral_alignment, ...]
         leans: [ward, candidate, lean]
+        ward_polls: Optional ward-level poll data for override (Part 6)
         """
         self.ward_data = ward_data
         self.mayoral_averages = mayoral_averages
@@ -62,19 +64,26 @@ class WardSimulation:
         self.leans = leans
         self.n_draws = n_draws
         self.rng = np.random.default_rng(seed)
+        self.ward_polls = (
+            ward_polls
+            if ward_polls is not None
+            else pd.DataFrame(
+                columns=[
+                    "ward",
+                    "poll_id",
+                    "date_published",
+                    "sample_size",
+                    "inc_win_share",
+                    "notes",
+                ]
+            )
+        )
 
     def _compute_candidate_strength(
-        self, 
-        cand: pd.Series, 
-        mayoral_mood: dict[str, float],
-        ward_num: int
+        self, cand: pd.Series, mayoral_mood: dict[str, float], ward_num: int
     ) -> float:
         """Compute mu_j (Stage 2 strength)."""
-        tier_baselines = {
-            "well-known": 2.0,
-            "known": 1.0,
-            "unknown": 0.0
-        }
+        tier_baselines = {"well-known": 2.0, "known": 1.0, "unknown": 0.0}
         mu_tier = tier_baselines.get(cand["name_recognition_tier"], 0.0)
 
         fundraising_bonuses = {
@@ -83,20 +92,20 @@ class WardSimulation:
             "low": -0.5,
         }
         mu_tier += fundraising_bonuses.get(cand.get("fundraising_tier", "medium"), 0.0)
-        
+
         w_a = 2.0
         alignment = cand["mayoral_alignment"]
         boost = 0.0
         if alignment != "unaligned":
             lean_row = self.leans[
-                (self.leans["ward"] == ward_num) & 
-                (self.leans["candidate"] == alignment)
+                (self.leans["ward"] == ward_num)
+                & (self.leans["candidate"] == alignment)
             ]
             if not lean_row.empty:
                 lean = lean_row.iloc[0]["lean"]
                 mood = mayoral_mood.get(alignment, 0.0)
                 boost = w_a * (lean + (mood - 0.20))
-                
+
         return mu_tier + boost
 
     def _apply_split_penalties(
@@ -127,7 +136,42 @@ class WardSimulation:
 
         return adjusted
 
-    def _is_safe_incumbent(self, row: pd.Series, ward_challengers: pd.DataFrame) -> bool:
+    def _compute_ward_poll_weight(self, ward_num: int) -> tuple[float, float]:
+        """Return (alpha_w, poll_inc_win_share) for the most recent ward poll, if any.
+
+        alpha_w decays with poll age (same lambda as mayoral aggregator).
+        Returns (0.0, 0.0) if no polls exist for this ward.
+        """
+        import math
+        from datetime import datetime, timezone
+
+        POLL_HALF_LIFE_DAYS = 12.0
+        DECAY_LAMBDA = math.log(2) / POLL_HALF_LIFE_DAYS
+        SAMPLE_SCALE = 400.0
+
+        ward_p = self.ward_polls[self.ward_polls["ward"] == ward_num]
+        if ward_p.empty:
+            return 0.0, 0.0
+
+        ward_p = ward_p.copy()
+        ward_p["_date"] = pd.to_datetime(ward_p["date_published"])
+        latest = ward_p.sort_values("_date").iloc[-1]
+
+        ref = datetime.now(timezone.utc)
+        pub = latest["_date"].to_pydatetime()
+        if pub.tzinfo is None:
+            pub = pub.replace(tzinfo=timezone.utc)
+        age_days = max(0.0, (ref - pub).total_seconds() / 86400)
+
+        recency_weight = math.exp(-DECAY_LAMBDA * age_days)
+        sample_weight = min(1.0, float(latest["sample_size"]) / SAMPLE_SCALE)
+        alpha_w = recency_weight * sample_weight
+
+        return alpha_w, float(latest["inc_win_share"])
+
+    def _is_safe_incumbent(
+        self, row: pd.Series, ward_challengers: pd.DataFrame
+    ) -> bool:
         """Return True if this ward qualifies for the safe incumbent shortcut.
 
         Conditions (per spec Part 5):
@@ -147,7 +191,7 @@ class WardSimulation:
 
     def run(self) -> dict[str, Any]:
         """Run the Monte Carlo simulation."""
-        
+
         # 1. Prepare Mayoral Dirichlet
         eff_n = 2000
         candidates = self.mayoral_averages["candidate"].tolist()
@@ -179,7 +223,9 @@ class WardSimulation:
             for ward_idx, ward_num in enumerate(ward_nums):
                 row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
                 coat_row = self.coattails[self.coattails["ward"] == ward_num].iloc[0]
-                ward_challengers = self.challengers[self.challengers["ward"] == ward_num]
+                ward_challengers = self.challengers[
+                    self.challengers["ward"] == ward_num
+                ]
 
                 # Safe incumbent shortcut (spec Part 5): skip simulation for uncontested wards
                 if self._is_safe_incumbent(row, ward_challengers):
@@ -193,21 +239,27 @@ class WardSimulation:
                     )
                     for _, c_row in ward_challengers.iterrows()
                 }
-                adjusted_strengths = self._apply_split_penalties(raw_strengths, ward_challengers)
+                adjusted_strengths = self._apply_split_penalties(
+                    raw_strengths, ward_challengers
+                )
                 c_strengths_list = list(adjusted_strengths.values())
                 f_star = max(c_strengths_list) if c_strengths_list else 0.0
-                
+
                 if not row["is_running"]:
                     # Open seat sub-model (spec Part 5): endorsement boost + wider noise
                     open_strengths: dict[str, float] = {}
                     for _, c_row in ward_challengers.iterrows():
-                        base = self._compute_candidate_strength(c_row, mayoral_mood, ward_num)
+                        base = self._compute_candidate_strength(
+                            c_row, mayoral_mood, ward_num
+                        )
                         endorsed = bool(c_row.get("is_endorsed_by_departing", False))
                         boost = ENDORSEMENT_BOOST if endorsed else 0.0
                         noise = self.rng.normal(0.0, OPEN_SEAT_NOISE_SIGMA)
                         open_strengths[c_row["candidate_name"]] = base + boost + noise
 
-                    open_strengths = self._apply_split_penalties(open_strengths, ward_challengers)
+                    open_strengths = self._apply_split_penalties(
+                        open_strengths, ward_challengers
+                    )
 
                     if not open_strengths:
                         winner_names[i, ward_idx] = "Generic Challenger"
@@ -221,22 +273,32 @@ class WardSimulation:
                     d_w = row["defeatability_score"]
                     mood_factor = chow_draw / chow_avg if chow_avg > 0 else 1.0
                     c_w = coat_row["coattail_adjustment"] * mood_factor
-                    
-                    beta_0 = 4.0   
-                    beta_1 = -0.05 
-                    beta_2 = 3.0   
-                    beta_3 = -0.5  
-                    
+
+                    beta_0 = 4.0
+                    beta_1 = -0.05
+                    beta_2 = 3.0
+                    beta_3 = -0.5
+
                     # Log components for explanatory factors
                     vuln_effects[i, ward_idx] = beta_1 * d_w
                     coat_effects[i, ward_idx] = beta_2 * c_w
                     chal_effects[i, ward_idx] = beta_3 * f_star
-                    
-                    z = beta_0 + vuln_effects[i, ward_idx] + coat_effects[i, ward_idx] + chal_effects[i, ward_idx]
+
+                    z = (
+                        beta_0
+                        + vuln_effects[i, ward_idx]
+                        + coat_effects[i, ward_idx]
+                        + chal_effects[i, ward_idx]
+                    )
                     if row.get("is_byelection_incumbent", False):
                         z += self.rng.normal(0.0, BYELECTION_NOISE_SIGMA)
                     prob = inv_logit(z)
-                
+
+                    # Part 6: Ward-level polling override
+                    alpha_w, poll_p = self._compute_ward_poll_weight(ward_num)
+                    if alpha_w > 0.0:
+                        prob = alpha_w * poll_p + (1.0 - alpha_w) * prob
+
                 if self.rng.random() < prob:
                     winner_names[i, ward_idx] = row["councillor_name"]
                     incumbent_wins_count[i] += 1
@@ -250,24 +312,26 @@ class WardSimulation:
                             list(adjusted_strengths.keys()), p=probs
                         )
                         winner_names[i, ward_idx] = winner
-        
+
         # 4. Aggregate Results
         win_probs = {}
         factors = {}
         for ward_idx, ward_num in enumerate(ward_nums):
             row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
-            
+
             if not row["is_running"]:
                 win_probs[ward_num] = 0.0
                 factors[ward_num] = {"vuln": 0.0, "coat": 0.0, "chal": 0.0}
             else:
-                win_probs[ward_num] = np.mean(winner_names[:, ward_idx] == row["councillor_name"])
+                win_probs[ward_num] = np.mean(
+                    winner_names[:, ward_idx] == row["councillor_name"]
+                )
                 factors[ward_num] = {
                     "vuln": np.mean(vuln_effects[:, ward_idx]),
                     "coat": np.mean(coat_effects[:, ward_idx]),
                     "chal": np.mean(chal_effects[:, ward_idx]),
                 }
-        
+
         return {
             "win_probabilities": win_probs,
             "factors": factors,

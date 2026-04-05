@@ -305,3 +305,27 @@ def test_simulation_returns_candidate_probabilities_matrix():
     out = sim.run()
     assert "candidate_win_probabilities" in out
     assert 1 in out["candidate_win_probabilities"]
+
+
+
+def test_simulation_returns_incumbent_probability_interval():
+    challengers = pd.DataFrame(columns=[
+        "ward",
+        "candidate_name",
+        "name_recognition_tier",
+        "fundraising_tier",
+        "mayoral_alignment",
+        "is_endorsed_by_departing",
+    ])
+
+    sim = WardSimulation(
+        ward_data=_make_ward_data_1(),
+        mayoral_averages=_make_mayoral_averages(),
+        coattails=_make_coattails_ward1(),
+        challengers=challengers,
+        leans=_make_leans_ward1(),
+        n_draws=200,
+        seed=10,
+    )
+    out = sim.run()
+    assert "incumbent_probability_interval" in out

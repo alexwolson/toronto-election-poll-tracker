@@ -317,12 +317,24 @@ class WardSimulation:
         win_probs = {}
         factors = {}
         candidate_win_probs: dict[int, dict[str, float]] = {}
+        incumbent_probability_interval: dict[int, dict[str, float]] = {}
         for ward_idx, ward_num in enumerate(ward_nums):
             row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
             counts = pd.Series(winner_names[:, ward_idx]).value_counts(normalize=True)
             candidate_win_probs[ward_num] = {
                 str(k): float(v) for k, v in counts.items()
             }
+
+            if not row["is_running"]:
+                incumbent_probability_interval[ward_num] = {"low": 0.0, "high": 0.0}
+            else:
+                draw_vals = (
+                    winner_names[:, ward_idx] == row["councillor_name"]
+                ).astype(float)
+                incumbent_probability_interval[ward_num] = {
+                    "low": float(np.quantile(draw_vals, 0.10)),
+                    "high": float(np.quantile(draw_vals, 0.90)),
+                }
 
             if not row["is_running"]:
                 win_probs[ward_num] = 0.0
@@ -339,6 +351,7 @@ class WardSimulation:
 
         return {
             "win_probabilities": win_probs,
+            "incumbent_probability_interval": incumbent_probability_interval,
             "candidate_win_probabilities": candidate_win_probs,
             "factors": factors,
             "composition_mean": incumbent_wins_count.mean(),

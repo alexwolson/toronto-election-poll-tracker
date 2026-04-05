@@ -98,6 +98,9 @@ def run_model() -> dict:
         row["win_probability"] = round(
             results["win_probabilities"].get(ward_num, 0.0), 4
         )
+        row["win_probability_interval"] = results["incumbent_probability_interval"].get(
+            ward_num, {"low": 0.0, "high": 0.0}
+        )
         row["race_class"] = _classify_race(row, ward_challengers)
         row["factors"] = results["factors"].get(
             ward_num, {"vuln": 0.0, "coat": 0.0, "chal": 0.0}

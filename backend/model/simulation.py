@@ -331,9 +331,15 @@ class WardSimulation:
                 draw_vals = (
                     winner_names[:, ward_idx] == row["councillor_name"]
                 ).astype(float)
+                p_hat = float(draw_vals.mean())
+                n = len(draw_vals)
+                z = 1.2815515655446004
+                se = float(np.sqrt(max(p_hat * (1.0 - p_hat), 0.0) / n))
+                low = max(0.0, p_hat - z * se)
+                high = min(1.0, p_hat + z * se)
                 incumbent_probability_interval[ward_num] = {
-                    "low": float(np.quantile(draw_vals, 0.10)),
-                    "high": float(np.quantile(draw_vals, 0.90)),
+                    "low": low,
+                    "high": high,
                 }
 
             if not row["is_running"]:

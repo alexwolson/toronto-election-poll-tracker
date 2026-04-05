@@ -1,10 +1,12 @@
 """Run the election model and return JSON results."""
-import json
 from pathlib import Path
 
 import pandas as pd
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
 def load_processed_data() -> dict:
     """Load all processed data files."""
     data_dir = Path(__file__).parent.parent.parent / "data" / "processed"
@@ -17,6 +19,7 @@ def load_processed_data() -> dict:
     }
 
 
+@lru_cache(maxsize=1)
 def run_model() -> dict:
     """Run the full model pipeline."""
     data = load_processed_data()

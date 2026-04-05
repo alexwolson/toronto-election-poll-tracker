@@ -6,6 +6,8 @@ council composition distributions.
 
 from __future__ import annotations
 
+import math
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -35,6 +37,10 @@ OPEN_SEAT_NOISE_SIGMA = 0.4
 
 # Additional logit noise for by-election incumbents (higher baseline uncertainty per spec Part 2)
 BYELECTION_NOISE_SIGMA = 0.4
+
+POLL_HALF_LIFE_DAYS = 12.0
+DECAY_LAMBDA = math.log(2) / POLL_HALF_LIFE_DAYS
+SAMPLE_SCALE = 400.0
 
 
 class WardSimulation:
@@ -142,13 +148,6 @@ class WardSimulation:
         alpha_w decays with poll age (same lambda as mayoral aggregator).
         Returns (0.0, 0.0) if no polls exist for this ward.
         """
-        import math
-        from datetime import datetime, timezone
-
-        POLL_HALF_LIFE_DAYS = 12.0
-        DECAY_LAMBDA = math.log(2) / POLL_HALF_LIFE_DAYS
-        SAMPLE_SCALE = 400.0
-
         ward_p = self.ward_polls[self.ward_polls["ward"] == ward_num]
         if ward_p.empty:
             return 0.0, 0.0
@@ -170,26 +169,61 @@ class WardSimulation:
         return alpha_w, float(latest["inc_win_share"])
 
     def _get_candidate_poll_support(self, ward_num: int) -> dict[str, float]:
-        if "ward" not in self.ward_polls.columns:
-            return {}
-        if "candidate_name" not in self.ward_polls.columns:
-            return {}
-        if "candidate_support" not in self.ward_polls.columns:
+        required_columns = {
+            "ward",
+            "candidate_name",
+            "candidate_support",
+            "date_published",
+            "sample_size",
+        }
+        if not required_columns.issubset(self.ward_polls.columns):
             return {}
 
         ward_p = self.ward_polls[self.ward_polls["ward"] == ward_num]
         if ward_p.empty:
             return {}
 
-        out: dict[str, float] = {}
+        ref = datetime.now(timezone.utc)
+        weighted_sum: dict[str, float] = {}
+        total_weight: dict[str, float] = {}
+
         for _, r in ward_p.iterrows():
             name = str(r.get("candidate_name", "")).strip()
             if not name:
                 continue
+
             support = r.get("candidate_support")
             if pd.isna(support):
                 continue
-            out[name] = float(support)
+
+            pub = pd.to_datetime(r.get("date_published"), errors="coerce")
+            if pd.isna(pub):
+                continue
+            pub_dt = pub.to_pydatetime()
+            if pub_dt.tzinfo is None:
+                pub_dt = pub_dt.replace(tzinfo=timezone.utc)
+
+            sample_size = r.get("sample_size")
+            if pd.isna(sample_size):
+                continue
+
+            age_days = max(0.0, (ref - pub_dt).total_seconds() / 86400)
+            row_weight = math.exp(-DECAY_LAMBDA * age_days) * min(
+                1.0, float(sample_size) / SAMPLE_SCALE
+            )
+            if row_weight <= 0.0:
+                continue
+
+            weighted_sum[name] = (
+                weighted_sum.get(name, 0.0) + float(support) * row_weight
+            )
+            total_weight[name] = total_weight.get(name, 0.0) + row_weight
+
+        out: dict[str, float] = {}
+        for name, weight in total_weight.items():
+            if weight > 0.0:
+                out[name] = weighted_sum[name] / weight
+
         return out
 
     def _is_safe_incumbent(

@@ -271,6 +271,66 @@ def test_candidate_level_ward_poll_override_reweights_open_seat_distribution():
     assert out["candidate_win_probabilities"][1].get("A", 0.0) > 0.6
 
 
+def test_candidate_level_poll_support_uses_recency_and_sample_weighting():
+    import math
+    from datetime import datetime, timezone
+
+    ward_data = pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Departed",
+        "is_running": False,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 0,
+        "vote_share": 0.0,
+        "electorate_share": 0.0,
+    }])
+    challengers = pd.DataFrame([
+        {"ward": 1, "candidate_name": "A", "name_recognition_tier": "known", "fundraising_tier": "high", "mayoral_alignment": "unaligned", "is_endorsed_by_departing": False},
+        {"ward": 1, "candidate_name": "B", "name_recognition_tier": "known", "fundraising_tier": "high", "mayoral_alignment": "unaligned", "is_endorsed_by_departing": False},
+    ])
+    ward_polls = pd.DataFrame([
+        {"ward": 1, "poll_id": "new-large-a", "date_published": "2026-04-01", "sample_size": 700, "candidate_name": "A", "candidate_support": 0.10, "inc_win_share": 0.0},
+        {"ward": 1, "poll_id": "old-small-a", "date_published": "2025-01-01", "sample_size": 60, "candidate_name": "A", "candidate_support": 0.95, "inc_win_share": 0.0},
+        {"ward": 1, "poll_id": "b", "date_published": "2026-04-01", "sample_size": 700, "candidate_name": "B", "candidate_support": 0.60, "inc_win_share": 0.0},
+    ])
+
+    sim = WardSimulation(
+        ward_data=ward_data,
+        mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.4}]),
+        coattails=pd.DataFrame([{"ward": 1, "coattail_adjustment": 0.0, "councillor_name": "Departed"}]),
+        challengers=challengers,
+        leans=pd.DataFrame([]),
+        ward_polls=ward_polls,
+        n_draws=5000,
+        seed=1,
+    )
+
+    support_map = sim._get_candidate_poll_support(1)
+
+    ref = datetime.now(timezone.utc)
+    half_life_days = 12.0
+    decay_lambda = math.log(2) / half_life_days
+    sample_scale = 400.0
+
+    def row_weight(date_str: str, sample_size: float) -> float:
+        pub = pd.to_datetime(date_str).to_pydatetime().replace(tzinfo=timezone.utc)
+        age_days = max(0.0, (ref - pub).total_seconds() / 86400)
+        return math.exp(-decay_lambda * age_days) * min(1.0, sample_size / sample_scale)
+
+    w_old = row_weight("2025-01-01", 60)
+    w_new = row_weight("2026-04-01", 700)
+    expected_a = (0.95 * w_old + 0.10 * w_new) / (w_old + w_new)
+
+    assert support_map["A"] == pytest.approx(expected_a, abs=1e-6)
+    assert support_map["A"] < 0.20
+
+    out = sim.run()
+    a_prob = out["candidate_win_probabilities"][1].get("A", 0.0)
+    b_prob = out["candidate_win_probabilities"][1].get("B", 0.0)
+
+    assert b_prob > a_prob
+
+
 def test_byelection_incumbent_has_wider_distribution():
     """By-election incumbents should have more variance in win probability across draws."""
     import numpy as np

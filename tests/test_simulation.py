@@ -1,5 +1,4 @@
 """Tests for Part 7: Simulation Engine."""
-
 from __future__ import annotations
 
 import pandas as pd
@@ -10,72 +9,56 @@ from src.simulation import WardSimulation
 
 def _make_ward_data_1() -> pd.DataFrame:
     """Single-ward data, incumbent running."""
-    return pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "councillor_name": "Incumbent Alice",
-                "is_running": True,
-                "is_byelection_incumbent": False,
-                "defeatability_score": 40,
-                "vote_share": 0.50,
-                "electorate_share": 0.15,
-            }
-        ]
-    )
+    return pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Incumbent Alice",
+        "is_running": True,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 40,
+        "vote_share": 0.50,
+        "electorate_share": 0.15,
+    }])
 
 
 def _make_mayoral_averages() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {"candidate": "chow", "share": 0.45},
-            {"candidate": "bradford", "share": 0.25},
-        ]
-    )
+    return pd.DataFrame([
+        {"candidate": "chow", "share": 0.45},
+        {"candidate": "bradford", "share": 0.25},
+    ])
 
 
 def _make_leans_ward1() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {"ward": 1, "candidate": "chow", "lean": 0.05, "reliability": "high"},
-        ]
-    )
+    return pd.DataFrame([
+        {"ward": 1, "candidate": "chow", "lean": 0.05, "reliability": "high"},
+    ])
 
 
 def _make_coattails_ward1() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "councillor_name": "Incumbent Alice",
-                "coattail_adjustment": 0.02,
-            },
-        ]
-    )
+    return pd.DataFrame([
+        {"ward": 1, "councillor_name": "Incumbent Alice", "coattail_adjustment": 0.02},
+    ])
 
 
 def test_vote_splitting_reduces_strongest_aligned_challenger():
     """When 2+ challengers share alignment, the strongest gets penalised."""
-    challengers = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "candidate_name": "Challenger X",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "high",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": False,
-            },
-            {
-                "ward": 1,
-                "candidate_name": "Challenger Y",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "low",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": False,
-            },
-        ]
-    )
+    challengers = pd.DataFrame([
+        {
+            "ward": 1,
+            "candidate_name": "Challenger X",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        },
+        {
+            "ward": 1,
+            "candidate_name": "Challenger Y",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "low",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        },
+    ])
 
     sim = WardSimulation(
         ward_data=_make_ward_data_1(),
@@ -107,18 +90,14 @@ def test_vote_splitting_reduces_strongest_aligned_challenger():
 
 def test_vote_splitting_not_applied_for_single_aligned_challenger():
     """When only one challenger has an alignment, no penalty."""
-    challengers = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "candidate_name": "Solo",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "high",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": False,
-            }
-        ]
-    )
+    challengers = pd.DataFrame([{
+        "ward": 1,
+        "candidate_name": "Solo",
+        "name_recognition_tier": "known",
+        "fundraising_tier": "high",
+        "mayoral_alignment": "chow",
+        "is_endorsed_by_departing": False,
+    }])
 
     sim = WardSimulation(
         ward_data=_make_ward_data_1(),
@@ -143,42 +122,30 @@ def test_vote_splitting_not_applied_for_single_aligned_challenger():
 
 def test_safe_incumbent_gets_high_win_probability():
     """Incumbents with low defeatability and no viable challengers are safe."""
-    ward_data = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "councillor_name": "Safe Sam",
-                "is_running": True,
-                "is_byelection_incumbent": False,
-                "defeatability_score": 15,
-                "vote_share": 0.70,
-                "electorate_share": 0.20,
-            }
-        ]
-    )
-    challengers = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "candidate_name": "Unknown Challenger",
-                "name_recognition_tier": "unknown",
-                "fundraising_tier": "low",
-                "mayoral_alignment": "unaligned",
-                "is_endorsed_by_departing": False,
-            }
-        ]
-    )
+    ward_data = pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Safe Sam",
+        "is_running": True,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 15,
+        "vote_share": 0.70,
+        "electorate_share": 0.20,
+    }])
+    challengers = pd.DataFrame([{
+        "ward": 1,
+        "candidate_name": "Unknown Challenger",
+        "name_recognition_tier": "unknown",
+        "fundraising_tier": "low",
+        "mayoral_alignment": "unaligned",
+        "is_endorsed_by_departing": False,
+    }])
 
     sim = WardSimulation(
         ward_data=ward_data,
         mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.45}]),
-        coattails=pd.DataFrame(
-            [{"ward": 1, "councillor_name": "Safe Sam", "coattail_adjustment": 0.0}]
-        ),
+        coattails=pd.DataFrame([{"ward": 1, "councillor_name": "Safe Sam", "coattail_adjustment": 0.0}]),
         challengers=challengers,
-        leans=pd.DataFrame(
-            [{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]
-        ),
+        leans=pd.DataFrame([{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]),
         n_draws=200,
         seed=1,
     )
@@ -188,48 +155,30 @@ def test_safe_incumbent_gets_high_win_probability():
 
 def test_competitive_incumbent_not_classified_safe():
     """Incumbent with a known challenger is NOT treated as safe, even with low defeatability."""
-    ward_data = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "councillor_name": "Vulnerable Val",
-                "is_running": True,
-                "is_byelection_incumbent": False,
-                "defeatability_score": 25,
-                "vote_share": 0.55,
-                "electorate_share": 0.20,
-            }
-        ]
-    )
-    challengers = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "candidate_name": "Known Challenger",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "high",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": False,
-            }
-        ]
-    )
+    ward_data = pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Vulnerable Val",
+        "is_running": True,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 25,
+        "vote_share": 0.55,
+        "electorate_share": 0.20,
+    }])
+    challengers = pd.DataFrame([{
+        "ward": 1,
+        "candidate_name": "Known Challenger",
+        "name_recognition_tier": "known",
+        "fundraising_tier": "high",
+        "mayoral_alignment": "chow",
+        "is_endorsed_by_departing": False,
+    }])
 
     sim = WardSimulation(
         ward_data=ward_data,
         mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.45}]),
-        coattails=pd.DataFrame(
-            [
-                {
-                    "ward": 1,
-                    "councillor_name": "Vulnerable Val",
-                    "coattail_adjustment": 0.01,
-                }
-            ]
-        ),
+        coattails=pd.DataFrame([{"ward": 1, "councillor_name": "Vulnerable Val", "coattail_adjustment": 0.01}]),
         challengers=challengers,
-        leans=pd.DataFrame(
-            [{"ward": 1, "candidate": "chow", "lean": 0.05, "reliability": "high"}]
-        ),
+        leans=pd.DataFrame([{"ward": 1, "candidate": "chow", "lean": 0.05, "reliability": "high"}]),
         n_draws=500,
         seed=2,
     )
@@ -240,63 +189,53 @@ def test_competitive_incumbent_not_classified_safe():
 
 def test_endorsed_candidate_gets_boost_in_open_seat():
     """In an open seat, the endorsed candidate wins more often than unendorsed peer."""
-    ward_data = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "councillor_name": "Departed Dan",
-                "is_running": False,
-                "is_byelection_incumbent": False,
-                "defeatability_score": 0,
-                "vote_share": 0.0,
-                "electorate_share": 0.0,
-            }
-        ]
-    )
-    challengers = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "candidate_name": "Endorsed Emma",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "high",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": True,
-            },
-            {
-                "ward": 1,
-                "candidate_name": "Unendorsed Ulrich",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "high",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": False,
-            },
-        ]
-    )
+    ward_data = pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Departed Dan",
+        "is_running": False,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 0,
+        "vote_share": 0.0,
+        "electorate_share": 0.0,
+    }])
+    challengers = pd.DataFrame([
+        {
+            "ward": 1,
+            "candidate_name": "Endorsed Emma",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": True,
+        },
+        {
+            "ward": 1,
+            "candidate_name": "Unendorsed Ulrich",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        },
+    ])
 
     sim = WardSimulation(
         ward_data=ward_data,
         mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.45}]),
-        coattails=pd.DataFrame(
-            [{"ward": 1, "councillor_name": "Departed Dan", "coattail_adjustment": 0.0}]
-        ),
+        coattails=pd.DataFrame([{"ward": 1, "councillor_name": "Departed Dan", "coattail_adjustment": 0.0}]),
         challengers=challengers,
-        leans=pd.DataFrame(
-            [{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]
-        ),
+        leans=pd.DataFrame([{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]),
         n_draws=2000,
         seed=42,
     )
     results = sim.run()
 
-    emma_wins = (
-        sum(1 for row in results["winner_matrix"][:, 0] if row == "Endorsed Emma")
-        / 2000
-    )
-    ulrich_wins = (
-        sum(1 for row in results["winner_matrix"][:, 0] if row == "Unendorsed Ulrich")
-        / 2000
-    )
+    emma_wins = sum(
+        1 for row in results["winner_matrix"][:, 0]
+        if row == "Endorsed Emma"
+    ) / 2000
+    ulrich_wins = sum(
+        1 for row in results["winner_matrix"][:, 0]
+        if row == "Unendorsed Ulrich"
+    ) / 2000
 
     assert emma_wins > ulrich_wins
 
@@ -306,47 +245,29 @@ def test_byelection_incumbent_has_wider_distribution():
     import numpy as np
 
     def _make_sim(is_byelection: bool, seed: int) -> WardSimulation:
-        ward_data = pd.DataFrame(
-            [
-                {
-                    "ward": 1,
-                    "councillor_name": "Byelectee Ben",
-                    "is_running": True,
-                    "is_byelection_incumbent": is_byelection,
-                    "defeatability_score": 45,
-                    "vote_share": 0.48,
-                    "electorate_share": 0.15,
-                }
-            ]
-        )
-        challengers = pd.DataFrame(
-            [
-                {
-                    "ward": 1,
-                    "candidate_name": "Challenger C",
-                    "name_recognition_tier": "known",
-                    "fundraising_tier": "high",
-                    "mayoral_alignment": "chow",
-                    "is_endorsed_by_departing": False,
-                }
-            ]
-        )
+        ward_data = pd.DataFrame([{
+            "ward": 1,
+            "councillor_name": "Byelectee Ben",
+            "is_running": True,
+            "is_byelection_incumbent": is_byelection,
+            "defeatability_score": 45,
+            "vote_share": 0.48,
+            "electorate_share": 0.15,
+        }])
+        challengers = pd.DataFrame([{
+            "ward": 1,
+            "candidate_name": "Challenger C",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        }])
         return WardSimulation(
             ward_data=ward_data,
             mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.45}]),
-            coattails=pd.DataFrame(
-                [
-                    {
-                        "ward": 1,
-                        "councillor_name": "Byelectee Ben",
-                        "coattail_adjustment": 0.0,
-                    }
-                ]
-            ),
+            coattails=pd.DataFrame([{"ward": 1, "councillor_name": "Byelectee Ben", "coattail_adjustment": 0.0}]),
             challengers=challengers,
-            leans=pd.DataFrame(
-                [{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]
-            ),
+            leans=pd.DataFrame([{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]),
             n_draws=2000,
             seed=seed,
         )
@@ -361,18 +282,16 @@ def test_byelection_incumbent_has_wider_distribution():
 
 
 def test_simulation_returns_candidate_probabilities_matrix():
-    challengers = pd.DataFrame(
-        [
-            {
-                "ward": 1,
-                "candidate_name": "Challenger X",
-                "name_recognition_tier": "known",
-                "fundraising_tier": "high",
-                "mayoral_alignment": "chow",
-                "is_endorsed_by_departing": False,
-            }
-        ]
-    )
+    challengers = pd.DataFrame([
+        {
+            "ward": 1,
+            "candidate_name": "Challenger X",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        }
+    ])
 
     sim = WardSimulation(
         ward_data=_make_ward_data_1(),

@@ -316,8 +316,13 @@ class WardSimulation:
         # 4. Aggregate Results
         win_probs = {}
         factors = {}
+        candidate_win_probs: dict[int, dict[str, float]] = {}
         for ward_idx, ward_num in enumerate(ward_nums):
             row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
+            counts = pd.Series(winner_names[:, ward_idx]).value_counts(normalize=True)
+            candidate_win_probs[ward_num] = {
+                str(k): float(v) for k, v in counts.items()
+            }
 
             if not row["is_running"]:
                 win_probs[ward_num] = 0.0
@@ -334,6 +339,7 @@ class WardSimulation:
 
         return {
             "win_probabilities": win_probs,
+            "candidate_win_probabilities": candidate_win_probs,
             "factors": factors,
             "composition_mean": incumbent_wins_count.mean(),
             "composition_std": incumbent_wins_count.std(),

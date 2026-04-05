@@ -102,6 +102,9 @@ def run_model() -> dict:
         row["factors"] = results["factors"].get(
             ward_num, {"vuln": 0.0, "coat": 0.0, "chal": 0.0}
         )
+        row["candidate_win_probabilities"] = results["candidate_win_probabilities"].get(
+            ward_num, {}
+        )
         wards_out.append(row)
 
     return {

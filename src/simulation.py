@@ -70,10 +70,8 @@ class WardSimulation:
         self.leans = leans
         self.n_draws = n_draws
         self.rng = np.random.default_rng(seed)
-        self.ward_polls = (
-            ward_polls
-            if ward_polls is not None
-            else pd.DataFrame(
+        if ward_polls is None:
+            self.ward_polls = pd.DataFrame(
                 columns=[
                     "ward",
                     "poll_id",
@@ -83,7 +81,12 @@ class WardSimulation:
                     "notes",
                 ]
             )
-        )
+        else:
+            self.ward_polls = ward_polls.copy()
+            if "date_published" in self.ward_polls.columns:
+                self.ward_polls["_parsed_date_published"] = pd.to_datetime(
+                    self.ward_polls["date_published"], errors="coerce", utc=True
+                )
 
     def _compute_candidate_strength(
         self, cand: pd.Series, mayoral_mood: dict[str, float], ward_num: int
@@ -151,12 +154,22 @@ class WardSimulation:
         if ward_p.empty:
             return 0.0, 0.0
 
-        ward_p = ward_p.copy()
-        ward_p["_date"] = pd.to_datetime(ward_p["date_published"])
-        latest = ward_p.sort_values("_date").iloc[-1]
+        if "_parsed_date_published" in ward_p.columns:
+            ward_p = ward_p[ward_p["_parsed_date_published"].notna()]
+            if ward_p.empty:
+                return 0.0, 0.0
+            latest = ward_p.loc[ward_p["_parsed_date_published"].idxmax()]
+            pub = latest["_parsed_date_published"].to_pydatetime()
+        else:
+            ward_p = ward_p.copy()
+            ward_p["_date"] = pd.to_datetime(ward_p["date_published"], errors="coerce")
+            ward_p = ward_p[ward_p["_date"].notna()]
+            if ward_p.empty:
+                return 0.0, 0.0
+            latest = ward_p.sort_values("_date").iloc[-1]
+            pub = latest["_date"].to_pydatetime()
 
         ref = datetime.now(timezone.utc)
-        pub = latest["_date"].to_pydatetime()
         if pub.tzinfo is None:
             pub = pub.replace(tzinfo=timezone.utc)
         age_days = max(0.0, (ref - pub).total_seconds() / 86400)
@@ -195,7 +208,9 @@ class WardSimulation:
             if pd.isna(support):
                 continue
 
-            pub = pd.to_datetime(r.get("date_published"), errors="coerce")
+            pub = r.get("_parsed_date_published")
+            if pd.isna(pub):
+                pub = pd.to_datetime(r.get("date_published"), errors="coerce", utc=True)
             if pd.isna(pub):
                 continue
             pub_dt = pub.to_pydatetime()
@@ -373,11 +388,21 @@ class WardSimulation:
                     if not c_strengths_list:
                         winner_names[i, ward_idx] = "Generic Challenger"
                     else:
-                        exp_s = np.exp(c_strengths_list)
-                        probs = exp_s / exp_s.sum()
-                        winner = self.rng.choice(
-                            list(adjusted_strengths.keys()), p=probs
+                        names = list(adjusted_strengths.keys())
+                        candidate_support = self._get_candidate_poll_support(ward_num)
+                        poll_weights = np.array(
+                            [
+                                max(0.0, candidate_support.get(name, 0.0))
+                                for name in names
+                            ],
+                            dtype=float,
                         )
+                        if poll_weights.sum() > 0.0:
+                            probs = poll_weights / poll_weights.sum()
+                        else:
+                            exp_s = np.exp(c_strengths_list)
+                            probs = exp_s / exp_s.sum()
+                        winner = self.rng.choice(names, p=probs)
                         winner_names[i, ward_idx] = winner
 
         # 4. Aggregate Results

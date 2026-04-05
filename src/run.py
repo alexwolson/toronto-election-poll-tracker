@@ -5,6 +5,7 @@ from functools import lru_cache
 import pandas as pd
 
 from src.aggregator import aggregate_polls, get_latest_scenario_polls
+from src.phase import detect_phase
 from src.simulation import WardSimulation
 
 
@@ -92,5 +93,5 @@ def run_model() -> dict:
         "composition_mean": round(float(results["composition_mean"]), 2),
         "composition_std": round(float(results["composition_std"]), 2),
         "mayoral_averages": mayoral_shares,
-        "phase": {"phase": 1, "label": "Phase 1 — Structural Factors Only", "description": "Challenger registration has not yet opened. Projections reflect structural factors only."},
+        "phase": detect_phase(data["challengers"]),
     }

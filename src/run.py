@@ -10,6 +10,15 @@ from src.phase import detect_phase
 from src.simulation import WardSimulation
 
 
+SCENARIOS = {
+    "chow_bradford_bailao": ["chow", "bradford", "bailao"],
+    "chow_bradford": ["chow", "bradford"],
+    "open_field_bradford_bailao": ["bradford", "bailao"],
+}
+
+DEFAULT_SCENARIO = "chow_bradford_bailao"
+
+
 def _data_dir() -> Path:
     # src/ is at repo root; data/processed is a sibling of src/
     return Path(__file__).parent.parent / "data" / "processed"
@@ -102,4 +111,6 @@ def run_model() -> dict:
         "composition_std": round(float(results["composition_std"]), 2),
         "mayoral_averages": mayoral_shares,
         "phase": detect_phase(data["challengers"]),
+        "scenarios": SCENARIOS,
+        "default_scenario": DEFAULT_SCENARIO,
     }

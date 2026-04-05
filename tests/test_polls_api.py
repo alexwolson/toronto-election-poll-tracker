@@ -71,3 +71,43 @@ def test_polls_latest_includes_candidates_and_trend_date(client):
     assert isinstance(data["trend"], list)
     assert len(data["trend"]) > 0
     assert "date" in data["trend"][0]
+
+
+def test_polls_latest_trend_excludes_non_scenario_candidates(client, monkeypatch):
+    """GET /api/polls/latest trend should only expose default scenario candidates."""
+    import pandas as pd
+
+    polls_df = pd.DataFrame(
+        [
+            {
+                "poll_id": "default-scenario",
+                "date_published": "2026-03-20",
+                "field_tested": "chow, bradford, bailao",
+                "chow": 0.40,
+                "bradford": 0.30,
+                "bailao": 0.20,
+                "matlow": 0.10,
+            },
+            {
+                "poll_id": "other-scenario",
+                "date_published": "2026-04-01",
+                "field_tested": "chow, bradford, matlow",
+                "chow": 0.10,
+                "bradford": 0.10,
+                "bailao": 0.00,
+                "matlow": 0.70,
+            },
+        ]
+    )
+
+    monkeypatch.setattr(pd, "read_csv", lambda *_args, **_kwargs: polls_df.copy())
+
+    response = client.get("/api/polls/latest")
+    assert response.status_code == 200
+    data = response.json()
+
+    expected = {"date", "chow", "bradford", "bailao"}
+    assert len(data["trend"]) > 0
+    for point in data["trend"]:
+        assert set(point.keys()) == expected
+        assert "matlow" not in point

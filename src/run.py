@@ -42,17 +42,6 @@ def load_processed_data() -> dict:
     }
 
 
-def _get_tracked_candidates(polls_df: pd.DataFrame) -> list[str]:
-    """Derive candidate list from field_tested column."""
-    candidates: set[str] = set()
-    for field in polls_df["field_tested"].dropna():
-        for c in field.split(","):
-            c = c.strip()
-            if c and c != "other" and c in polls_df.columns:
-                candidates.add(c)
-    return sorted(candidates)
-
-
 def _classify_race(row: dict, challengers_for_ward: list[dict]) -> str:
     if not row["is_running"]:
         return "open"

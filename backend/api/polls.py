@@ -32,21 +32,19 @@ def get_latest_polls():
     """Return recency-weighted mayoral polling averages from polls.csv."""
     from pathlib import Path
     import pandas as pd
-    from model.aggregator import aggregate_polls, get_latest_scenario_polls
+    from model.aggregator import (
+        aggregate_polls,
+        get_latest_scenario_polls,
+        get_scenario_polls,
+    )
+    from model.run import DEFAULT_SCENARIO, SCENARIOS
 
     data_dir = Path(__file__).parent.parent.parent / "data" / "processed"
     polls_df = pd.read_csv(data_dir / "polls.csv")
 
-    current_polls = get_latest_scenario_polls(polls_df)
-
-    candidates: set[str] = set()
-    for field in current_polls["field_tested"].dropna():
-        for c in field.split(","):
-            c = c.strip()
-            if c and c != "other" and c in polls_df.columns:
-                candidates.add(c)
-
-    scenario_candidates = sorted(candidates)
+    scenario_candidates = SCENARIOS.get(DEFAULT_SCENARIO, [])
+    scenario_polls = get_scenario_polls(polls_df, scenario_candidates)
+    current_polls = get_latest_scenario_polls(scenario_polls)
     aggregated = aggregate_polls(current_polls, scenario_candidates)
     aggregated = {k: round(v, 4) for k, v in aggregated.items() if v > 0.001}
 
@@ -65,8 +63,6 @@ def get_latest_polls():
             else:
                 point[candidate] = 0.0
         trend.append(point)
-
-    trend_df = trend_df.drop(columns=["_parsed_date", "_date_fallback"])
 
     return {
         "aggregated": aggregated,

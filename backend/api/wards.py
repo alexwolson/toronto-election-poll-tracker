@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from model.run import run_model
+from ..model.run import run_model
 
 router = APIRouter()
 

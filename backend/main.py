@@ -1,14 +1,26 @@
 #!/usr/bin/env python3
 """FastAPI backend for Toronto Election Projection Tool."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api import wards, polls, refresh
+from tasks.scheduler import PollScraperScheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start scheduler on startup
+    scheduler = PollScraperScheduler(interval_minutes=15)
+    scheduler.start()
+    yield
+    # Stop scheduler on shutdown
+    scheduler.stop()
 
 app = FastAPI(
     title="Toronto 2026 Election Projections",
     description="Ward-level council race projections and mayoral polling",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

@@ -97,7 +97,16 @@ def get_latest_scenario_polls(df: pd.DataFrame) -> pd.DataFrame:
 def get_scenario_polls(
     df: pd.DataFrame, scenario_candidates: list[str]
 ) -> pd.DataFrame:
-    target = sorted([c.strip() for c in scenario_candidates if c and c != "other"])
+    def normalize_candidate(value: str) -> str:
+        return str(value).strip().lower()
+
+    target = sorted(
+        [
+            normalize_candidate(c)
+            for c in scenario_candidates
+            if c and normalize_candidate(c) != "other"
+        ]
+    )
     if not target or "field_tested" not in df.columns:
         return df
 
@@ -106,9 +115,9 @@ def get_scenario_polls(
             return []
         return sorted(
             [
-                c.strip()
+                normalize_candidate(c)
                 for c in str(field).split(",")
-                if c.strip() and c.strip() != "other"
+                if normalize_candidate(c) and normalize_candidate(c) != "other"
             ]
         )
 

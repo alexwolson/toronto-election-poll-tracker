@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 import pytest
 
-from src.aggregator import aggregate_polls, compute_poll_weights
+from src.aggregator import aggregate_polls, compute_poll_weights, get_scenario_polls
 
 
 @pytest.fixture
@@ -63,9 +63,6 @@ def test_aggregate_polls(sample_polls_df: pd.DataFrame) -> None:
 
 
 def test_get_scenario_polls_exact_field_match():
-    from src.aggregator import get_scenario_polls
-    import pandas as pd
-
     df = pd.DataFrame(
         [
             {"poll_id": "a", "field_tested": "chow,bradford,bailao"},
@@ -75,4 +72,31 @@ def test_get_scenario_polls_exact_field_match():
     )
 
     out = get_scenario_polls(df, ["chow", "bradford", "bailao"])
+    assert out["poll_id"].tolist() == ["a"]
+
+
+def test_get_scenario_polls_no_exact_match_returns_original_dataframe() -> None:
+    df = pd.DataFrame(
+        [
+            {"poll_id": "a", "field_tested": "chow,bradford,bailao"},
+            {"poll_id": "b", "field_tested": "chow,bradford"},
+        ]
+    )
+
+    out = get_scenario_polls(df, ["chow", "bailao"])
+
+    assert out.equals(df)
+
+
+def test_get_scenario_polls_normalizes_case_whitespace_and_ignores_other() -> None:
+    df = pd.DataFrame(
+        [
+            {"poll_id": "a", "field_tested": "  Chow , BRADFORD , Other "},
+            {"poll_id": "b", "field_tested": "chow,bailao,other"},
+            {"poll_id": "c", "field_tested": "chow,bradford,bailao"},
+        ]
+    )
+
+    out = get_scenario_polls(df, [" chow ", "bradford", "OTHER"])
+
     assert out["poll_id"].tolist() == ["a"]

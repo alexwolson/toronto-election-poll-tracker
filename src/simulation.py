@@ -17,6 +17,11 @@ def inv_logit(x: float) -> float:
     return 1.0 / (1.0 + np.exp(-x))
 
 
+# Vote-splitting penalty: applied to the strongest challenger when 2+ challengers
+# share the same mayoral alignment. Editorial parameter per spec v0.2.
+SPLIT_PENALTY = -0.5
+
+
 class WardSimulation:
     def __init__(
         self,
@@ -56,6 +61,13 @@ class WardSimulation:
             "unknown": 0.0
         }
         mu_tier = tier_baselines.get(cand["name_recognition_tier"], 0.0)
+
+        fundraising_bonuses = {
+            "high": 0.5,
+            "medium": 0.0,
+            "low": -0.5,
+        }
+        mu_tier += fundraising_bonuses.get(cand.get("fundraising_tier", "medium"), 0.0)
         
         w_a = 2.0
         alignment = cand["mayoral_alignment"]
@@ -71,6 +83,34 @@ class WardSimulation:
                 boost = w_a * (lean + (mood - 0.20))
                 
         return mu_tier + boost
+
+    def _apply_split_penalties(
+        self,
+        candidate_strengths: dict[str, float],
+        ward_challengers: pd.DataFrame,
+    ) -> dict[str, float]:
+        """Apply SPLIT_PENALTY to the strongest challenger in each alignment group
+        that has 2 or more challengers."""
+        adjusted = dict(candidate_strengths)
+
+        # Group challengers by alignment (exclude unaligned)
+        alignment_groups: dict[str, list[str]] = {}
+        for _, row in ward_challengers.iterrows():
+            align = str(row.get("mayoral_alignment", "unaligned"))
+            if align == "unaligned":
+                continue
+            name = row["candidate_name"]
+            if name not in candidate_strengths:
+                continue
+            alignment_groups.setdefault(align, []).append(name)
+
+        for align, names in alignment_groups.items():
+            if len(names) < 2:
+                continue
+            strongest = max(names, key=lambda n: candidate_strengths[n])
+            adjusted[strongest] = adjusted[strongest] + SPLIT_PENALTY
+
+        return adjusted
 
     def run(self) -> dict[str, Any]:
         """Run the Monte Carlo simulation."""
@@ -108,11 +148,15 @@ class WardSimulation:
                 coat_row = self.coattails[self.coattails["ward"] == ward_num].iloc[0]
                 ward_challengers = self.challengers[self.challengers["ward"] == ward_num]
                 
-                c_strengths = [
-                    self._compute_candidate_strength(c_row, mayoral_mood, ward_num)
+                raw_strengths = {
+                    c_row["candidate_name"]: self._compute_candidate_strength(
+                        c_row, mayoral_mood, ward_num
+                    )
                     for _, c_row in ward_challengers.iterrows()
-                ]
-                f_star = max(c_strengths) if c_strengths else 0.0
+                }
+                adjusted_strengths = self._apply_split_penalties(raw_strengths, ward_challengers)
+                c_strengths_list = list(adjusted_strengths.values())
+                f_star = max(c_strengths_list) if c_strengths_list else 0.0
                 
                 if not row["is_running"]:
                     prob = 0.0
@@ -138,12 +182,14 @@ class WardSimulation:
                     winner_names[i, ward_idx] = row["councillor_name"]
                     incumbent_wins_count[i] += 1
                 else:
-                    if not c_strengths:
+                    if not c_strengths_list:
                         winner_names[i, ward_idx] = "Generic Challenger"
                     else:
-                        exp_s = np.exp(c_strengths)
+                        exp_s = np.exp(c_strengths_list)
                         probs = exp_s / exp_s.sum()
-                        winner = self.rng.choice(ward_challengers["candidate_name"].values, p=probs)
+                        winner = self.rng.choice(
+                            list(adjusted_strengths.keys()), p=probs
+                        )
                         winner_names[i, ward_idx] = winner
         
         # 4. Aggregate Results

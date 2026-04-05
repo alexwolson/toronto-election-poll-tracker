@@ -361,7 +361,6 @@ def test_byelection_incumbent_has_wider_distribution():
 
 
 def test_simulation_returns_candidate_probabilities_matrix():
-    ward_data = _make_ward_data_1()
     challengers = pd.DataFrame(
         [
             {
@@ -376,7 +375,7 @@ def test_simulation_returns_candidate_probabilities_matrix():
     )
 
     sim = WardSimulation(
-        ward_data=ward_data,
+        ward_data=_make_ward_data_1(),
         mayoral_averages=_make_mayoral_averages(),
         coattails=_make_coattails_ward1(),
         challengers=challengers,

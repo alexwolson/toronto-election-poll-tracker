@@ -1,18 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Ward } from "@/types/ward";
+
+const COMPETITIVE_THRESHOLD = 50;
+const LIKELY_THRESHOLD = 30;
 
 interface WardCardProps {
-  ward: {
-    ward: number;
-    councillor_name: string;
-    is_running: boolean;
-    defeatability_score: number;
-  };
+  ward: Ward;
 }
 
 export function WardCard({ ward }: WardCardProps) {
-  const classification = ward.defeatability_score >= 50 ? "competitive" 
-    : ward.defeatability_score >= 30 ? "likely"
+  const classification = ward.defeatability_score >= COMPETITIVE_THRESHOLD ? "competitive" 
+    : ward.defeatability_score >= LIKELY_THRESHOLD ? "likely"
     : "safe";
   
   return (

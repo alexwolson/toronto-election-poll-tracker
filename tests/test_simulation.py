@@ -240,6 +240,37 @@ def test_endorsed_candidate_gets_boost_in_open_seat():
     assert emma_wins > ulrich_wins
 
 
+def test_candidate_level_ward_poll_override_reweights_open_seat_distribution():
+    ward_data = pd.DataFrame([{
+        "ward": 1,
+        "councillor_name": "Departed",
+        "is_running": False,
+        "is_byelection_incumbent": False,
+        "defeatability_score": 0,
+        "vote_share": 0.0,
+        "electorate_share": 0.0,
+    }])
+    challengers = pd.DataFrame([
+        {"ward": 1, "candidate_name": "A", "name_recognition_tier": "known", "fundraising_tier": "high", "mayoral_alignment": "unaligned", "is_endorsed_by_departing": False},
+        {"ward": 1, "candidate_name": "B", "name_recognition_tier": "known", "fundraising_tier": "high", "mayoral_alignment": "unaligned", "is_endorsed_by_departing": False},
+    ])
+    ward_polls = pd.DataFrame([
+        {"ward": 1, "poll_id": "w1", "date_published": "2026-04-01", "sample_size": 600, "candidate_name": "A", "candidate_support": 0.8, "inc_win_share": 0.0}
+    ])
+    sim = WardSimulation(
+        ward_data=ward_data,
+        mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.4}]),
+        coattails=pd.DataFrame([{"ward": 1, "coattail_adjustment": 0.0, "councillor_name": "Departed"}]),
+        challengers=challengers,
+        leans=pd.DataFrame([]),
+        ward_polls=ward_polls,
+        n_draws=400,
+        seed=1,
+    )
+    out = sim.run()
+    assert out["candidate_win_probabilities"][1].get("A", 0.0) > 0.6
+
+
 def test_byelection_incumbent_has_wider_distribution():
     """By-election incumbents should have more variance in win probability across draws."""
     import numpy as np

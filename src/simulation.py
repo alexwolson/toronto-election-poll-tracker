@@ -168,6 +168,29 @@ class WardSimulation:
 
         return alpha_w, float(latest["inc_win_share"])
 
+    def _get_candidate_poll_support(self, ward_num: int) -> dict[str, float]:
+        if "ward" not in self.ward_polls.columns:
+            return {}
+        if "candidate_name" not in self.ward_polls.columns:
+            return {}
+        if "candidate_support" not in self.ward_polls.columns:
+            return {}
+
+        ward_p = self.ward_polls[self.ward_polls["ward"] == ward_num]
+        if ward_p.empty:
+            return {}
+
+        out: dict[str, float] = {}
+        for _, r in ward_p.iterrows():
+            name = str(r.get("candidate_name", "")).strip()
+            if not name:
+                continue
+            support = r.get("candidate_support")
+            if pd.isna(support):
+                continue
+            out[name] = float(support)
+        return out
+
     def _is_safe_incumbent(
         self, row: pd.Series, ward_challengers: pd.DataFrame
     ) -> bool:
@@ -264,8 +287,19 @@ class WardSimulation:
                         winner_names[i, ward_idx] = "Generic Challenger"
                     else:
                         names = list(open_strengths.keys())
-                        exp_s = np.exp(list(open_strengths.values()))
-                        probs = exp_s / exp_s.sum()
+                        candidate_support = self._get_candidate_poll_support(ward_num)
+                        poll_weights = np.array(
+                            [
+                                max(0.0, candidate_support.get(name, 0.0))
+                                for name in names
+                            ],
+                            dtype=float,
+                        )
+                        if poll_weights.sum() > 0.0:
+                            probs = poll_weights / poll_weights.sum()
+                        else:
+                            exp_s = np.exp(list(open_strengths.values()))
+                            probs = exp_s / exp_s.sum()
                         winner_names[i, ward_idx] = self.rng.choice(names, p=probs)
                     continue  # skip incumbent win/loss logic below
                 else:

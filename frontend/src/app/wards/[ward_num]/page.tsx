@@ -1,5 +1,6 @@
 import { getWard } from "@/lib/api";
 import { Challenger } from "@/types/ward";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 interface Props {
@@ -21,13 +22,20 @@ export default async function WardDetailPage({ params }: Props) {
   const winPct = ward.is_running
     ? `${(ward.win_probability * 100).toFixed(1)}%`
     : "—";
+  const interval = ward.win_probability_interval ?? { low: 0, high: 0 };
+  const intervalLabel = ward.is_running
+    ? `${(interval.low * 100).toFixed(0)}-${(interval.high * 100).toFixed(0)}%`
+    : "—";
+  const sortedCandidates = Object.entries(ward.candidate_win_probabilities || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto py-8 max-w-2xl">
-        <a href="/wards" className="text-sm text-muted-foreground hover:underline">
+        <Link href="/wards" className="text-sm text-muted-foreground hover:underline">
           ← All Wards
-        </a>
+        </Link>
 
         <h1 className="text-3xl font-bold mt-4 mb-1">Ward {ward.ward}</h1>
         <p className="text-xl text-muted-foreground mb-6">
@@ -41,12 +49,27 @@ export default async function WardDetailPage({ params }: Props) {
           <div className="rounded-lg border p-4">
             <p className="text-sm text-muted-foreground">Win Probability</p>
             <p className="text-2xl font-bold">{winPct}</p>
+            <p className="text-sm text-muted-foreground mt-1">{intervalLabel} uncertainty band</p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-sm text-muted-foreground">Defeatability Score</p>
             <p className="text-2xl font-bold">{ward.defeatability_score}</p>
           </div>
         </div>
+
+        {sortedCandidates.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-3">Top Candidate Win Probabilities</h2>
+            <div className="rounded-lg border divide-y text-sm">
+              {sortedCandidates.map(([candidate, probability]) => (
+                <div key={candidate} className="flex justify-between px-4 py-2">
+                  <span>{candidate}</span>
+                  <span className="font-medium">{(probability * 100).toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {ward.is_running && (
           <div className="mb-8">

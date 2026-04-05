@@ -12,6 +12,7 @@ export default async function Home() {
 
   const compositionMean = wardsData.composition_mean;
   const compositionStd = wardsData.composition_std;
+  const compositionByMayorEntries = Object.entries(wardsData.composition_by_mayor);
 
   const pollEntries = Object.entries(pollsData.aggregated);
   const leading = pollEntries.length > 0
@@ -81,6 +82,40 @@ export default async function Home() {
             </CardContent>
           </Card>
         </div>
+
+        {compositionByMayorEntries.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Composition by Mayoral Winner</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="px-4 py-3 text-left font-medium">Candidate</th>
+                      <th className="px-4 py-3 text-right font-medium">Mean</th>
+                      <th className="px-4 py-3 text-right font-medium">Std</th>
+                      <th className="px-4 py-3 text-right font-medium">Draws</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {compositionByMayorEntries
+                      .sort((a, b) => b[1].mean - a[1].mean)
+                      .map(([candidate, stats]) => (
+                        <tr key={candidate}>
+                          <td className="px-4 py-2 capitalize">{candidate}</td>
+                          <td className="px-4 py-2 text-right">{stats.mean.toFixed(2)}</td>
+                          <td className="px-4 py-2 text-right">{stats.std.toFixed(2)}</td>
+                          <td className="px-4 py-2 text-right">{stats.n_draws}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </main>
   );

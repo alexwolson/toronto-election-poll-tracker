@@ -1,4 +1,5 @@
 import { PollingChart } from "@/components/polling-chart";
+import { getPollingAverages } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -25,25 +26,13 @@ async function getPolls(): Promise<{ polls: Poll[] }> {
 }
 
 export default async function PollsPage() {
-  const data = await getPolls();
-  const polls = data.polls || [];
-  
-  const candidatesSet = new Set<string>();
-  polls.forEach((poll) => {
-    Object.keys(poll.candidates || {}).forEach(c => candidatesSet.add(c));
-  });
-  
-  const allCandidates = Array.from(candidatesSet);
-  
-  const chartData = polls.map((poll) => {
-    const entry: Record<string, string | number> = {
-      date: poll.poll_date,
-    };
-    allCandidates.forEach(c => {
-      entry[c] = (poll.candidates?.[c] || 0) * 100;
-    });
-    return entry;
-  }).reverse();
+  const [pollsResponse, pollingAverages] = await Promise.all([
+    getPolls(),
+    getPollingAverages(),
+  ]);
+  const polls = pollsResponse.polls || [];
+  const chartData = pollingAverages.trend;
+  const chartCandidates = pollingAverages.candidates;
   
   return (
     <main className="min-h-screen bg-background">
@@ -51,7 +40,7 @@ export default async function PollsPage() {
         <h1 className="text-3xl font-bold mb-6">Mayoral Polling</h1>
         
         {chartData.length > 0 ? (
-          <PollingChart data={chartData} candidates={allCandidates} />
+          <PollingChart data={chartData} candidates={chartCandidates} />
         ) : (
           <p className="text-muted-foreground">No polling data available yet.</p>
         )}

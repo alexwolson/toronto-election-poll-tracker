@@ -37,14 +37,18 @@ def compute_coattail_adjustment(
     alignment_df: pd.DataFrame,
     lean_df: pd.DataFrame,
     city_wide_avg: float,
-    incumbent_mayor_key: str = "chow",
+    incumbent_mayor_key: str | None = "chow",
     gamma: float = COATTAIL_STRENGTH,
 ) -> pd.DataFrame:
     """Compute coattail adjustment C_w for each ward.
 
     C_w = (A_w - mean(A)) * P_w * gamma
     """
-    if incumbent_mayor_key in ("none", "open"):
+    no_incumbent_mode = incumbent_mayor_key is None or (
+        isinstance(incumbent_mayor_key, str)
+        and incumbent_mayor_key.strip().lower() in ("none", "open")
+    )
+    if no_incumbent_mode:
         df = alignment_df[["ward", "councillor_name"]].copy()
         df["alignment"] = 0.0
         df["alignment_delta"] = 0.0

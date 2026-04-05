@@ -73,9 +73,7 @@ def test_compute_coattail_adjustment(
     assert w3 == pytest.approx(-0.06)
 
 
-def test_no_incumbent_sets_near_zero_coattails(alignment_df, lean_df):
-    from src.coattails import compute_coattail_adjustment
-
+def test_no_incumbent_sets_zero_coattails(alignment_df, lean_df):
     out = compute_coattail_adjustment(
         alignment_df,
         lean_df,
@@ -83,4 +81,26 @@ def test_no_incumbent_sets_near_zero_coattails(alignment_df, lean_df):
         incumbent_mayor_key="none",
         gamma=0.05,
     )
-    assert out["coattail_adjustment"].abs().max() < 0.03
+    assert out["coattail_adjustment"].eq(0.0).all()
+
+
+def test_open_uppercase_sets_zero_coattails(alignment_df, lean_df):
+    out = compute_coattail_adjustment(
+        alignment_df,
+        lean_df,
+        city_wide_avg=0.3,
+        incumbent_mayor_key="OPEN",
+        gamma=0.05,
+    )
+    assert out["coattail_adjustment"].eq(0.0).all()
+
+
+def test_none_key_sets_zero_coattails(alignment_df, lean_df):
+    out = compute_coattail_adjustment(
+        alignment_df,
+        lean_df,
+        city_wide_avg=0.3,
+        incumbent_mayor_key=None,
+        gamma=0.05,
+    )
+    assert out["coattail_adjustment"].eq(0.0).all()

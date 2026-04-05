@@ -1,4 +1,5 @@
 """Tests for /api/polls/latest endpoint."""
+
 from __future__ import annotations
 
 import pytest
@@ -8,8 +9,10 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client():
     import sys
+
     sys.path.insert(0, "backend")
     from main import app
+
     return TestClient(app)
 
 
@@ -33,3 +36,23 @@ def test_polls_latest_includes_poll_count(client):
     assert "polls_used" in data
     assert isinstance(data["polls_used"], int)
     assert data["polls_used"] > 0
+
+
+def test_polls_latest_returns_trend_points(client):
+    """GET /api/polls/latest should include date-sorted trend points."""
+    response = client.get("/api/polls/latest")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "trend" in data
+    assert isinstance(data["trend"], list)
+    assert len(data["trend"]) > 0
+
+    dates = [point["date"] for point in data["trend"]]
+    assert dates == sorted(dates)
+
+    candidates = data.get("candidates", [])
+    for point in data["trend"]:
+        assert "date" in point
+        for candidate in candidates:
+            assert candidate in point

@@ -3,15 +3,39 @@ import { WardsResponse, WardResponse } from '../types/ward';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function getWards(): Promise<WardsResponse> {
+  const fallback: WardsResponse = {
+    wards: [],
+    challengers: [],
+    composition_mean: 0,
+    composition_std: 0,
+    composition_by_mayor: {},
+    mayoral_averages: {},
+    phase: { phase: 1, label: "", description: "" },
+    scenarios: {},
+    default_scenario: "",
+  };
+
   try {
     const res = await fetch(`${API_URL}/api/wards`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { wards: [], challengers: [], composition_mean: 0, composition_std: 0, mayoral_averages: {}, phase: { phase: 1, label: "", description: "" } };
-    return res.json();
+    if (!res.ok) return fallback;
+
+    const data = (await res.json()) as Partial<WardsResponse>;
+    return {
+      wards: data.wards ?? [],
+      challengers: data.challengers ?? [],
+      composition_mean: data.composition_mean ?? 0,
+      composition_std: data.composition_std ?? 0,
+      composition_by_mayor: data.composition_by_mayor ?? {},
+      mayoral_averages: data.mayoral_averages ?? {},
+      phase: data.phase ?? { phase: 1, label: "", description: "" },
+      scenarios: data.scenarios ?? {},
+      default_scenario: data.default_scenario ?? "",
+    };
   } catch (error) {
     console.error("Failed to fetch wards:", error);
-    return { wards: [], challengers: [], composition_mean: 0, composition_std: 0, mayoral_averages: {}, phase: { phase: 1, label: "", description: "" } };
+    return fallback;
   }
 }
 

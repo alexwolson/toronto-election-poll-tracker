@@ -13,8 +13,11 @@ def get_wards():
         "challengers": result["challengers"],
         "composition_mean": result["composition_mean"],
         "composition_std": result["composition_std"],
+        "composition_by_mayor": result.get("composition_by_mayor", {}),
         "mayoral_averages": result["mayoral_averages"],
         "phase": result["phase"],
+        "scenarios": result.get("scenarios", {}),
+        "default_scenario": result.get("default_scenario", ""),
     }
 
 

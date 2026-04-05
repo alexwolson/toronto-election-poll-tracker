@@ -1,12 +1,10 @@
 """Integration test: run_model() returns full simulation results."""
-
 from __future__ import annotations
 
 
 def test_run_model_returns_win_probabilities():
     """run_model() should return win_probability for all 25 wards."""
     from src.run import run_model
-
     run_model.cache_clear()
     result = run_model()
 
@@ -22,7 +20,6 @@ def test_run_model_returns_win_probabilities():
 
 def test_run_model_returns_composition_stats():
     from src.run import run_model
-
     run_model.cache_clear()
     result = run_model()
 
@@ -34,7 +31,6 @@ def test_run_model_returns_composition_stats():
 
 def test_run_model_returns_mayoral_averages():
     from src.run import run_model
-
     run_model.cache_clear()
     result = run_model()
 

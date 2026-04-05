@@ -21,6 +21,12 @@ def inv_logit(x: float) -> float:
 # share the same mayoral alignment. Editorial parameter per spec v0.2.
 SPLIT_PENALTY = -0.5
 
+# Defeatability threshold below which an incumbent with no viable challengers is "safe"
+SAFE_DEFEATABILITY_THRESHOLD = 30
+
+# Win probability assigned directly to safe incumbents (no simulation run)
+SAFE_INCUMBENT_WIN_PROB = 0.97
+
 
 class WardSimulation:
     def __init__(
@@ -112,6 +118,24 @@ class WardSimulation:
 
         return adjusted
 
+    def _is_safe_incumbent(self, row: pd.Series, ward_challengers: pd.DataFrame) -> bool:
+        """Return True if this ward qualifies for the safe incumbent shortcut.
+
+        Conditions (per spec Part 5):
+        - Incumbent is running for re-election
+        - Defeatability score < SAFE_DEFEATABILITY_THRESHOLD
+        - No challengers classified as well-known or known
+        """
+        if not row["is_running"]:
+            return False
+        if row["defeatability_score"] >= SAFE_DEFEATABILITY_THRESHOLD:
+            return False
+        viable_tiers = {"well-known", "known"}
+        return not any(
+            str(c.get("name_recognition_tier", "unknown")) in viable_tiers
+            for _, c in ward_challengers.iterrows()
+        )
+
     def run(self) -> dict[str, Any]:
         """Run the Monte Carlo simulation."""
         
@@ -123,10 +147,11 @@ class WardSimulation:
         alpha = shares * eff_n
 
         # 2. Results storage
-        n_wards = 25
+        ward_nums = sorted(self.ward_data["ward"].unique().tolist())
+        n_wards = len(ward_nums)
         winner_names = np.empty((self.n_draws, n_wards), dtype=object)
         incumbent_wins_count = np.zeros(self.n_draws)
-        
+
         # Decomposed effects for explanatory factors
         # shape: (n_draws, n_wards)
         vuln_effects = np.zeros((self.n_draws, n_wards))
@@ -141,13 +166,18 @@ class WardSimulation:
             chow_avg = self.mayoral_averages.loc[
                 self.mayoral_averages["candidate"] == "chow", "share"
             ].iloc[0]
-            
-            for ward_idx in range(n_wards):
-                ward_num = ward_idx + 1
+
+            for ward_idx, ward_num in enumerate(ward_nums):
                 row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
                 coat_row = self.coattails[self.coattails["ward"] == ward_num].iloc[0]
                 ward_challengers = self.challengers[self.challengers["ward"] == ward_num]
-                
+
+                # Safe incumbent shortcut (spec Part 5): skip simulation for uncontested wards
+                if self._is_safe_incumbent(row, ward_challengers):
+                    winner_names[i, ward_idx] = row["councillor_name"]
+                    incumbent_wins_count[i] += 1
+                    continue
+
                 raw_strengths = {
                     c_row["candidate_name"]: self._compute_candidate_strength(
                         c_row, mayoral_mood, ward_num
@@ -195,8 +225,7 @@ class WardSimulation:
         # 4. Aggregate Results
         win_probs = {}
         factors = {}
-        for ward_num in range(1, 26):
-            ward_idx = ward_num - 1
+        for ward_idx, ward_num in enumerate(ward_nums):
             row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
             
             if not row["is_running"]:

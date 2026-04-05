@@ -5,7 +5,11 @@ from functools import lru_cache
 
 import pandas as pd
 
-from src.aggregator import aggregate_polls, get_latest_scenario_polls
+from src.aggregator import (
+    aggregate_polls,
+    get_latest_scenario_polls,
+    get_scenario_polls,
+)
 from src.phase import detect_phase
 from src.simulation import WardSimulation
 
@@ -68,8 +72,9 @@ def run_model() -> dict:
     data = load_processed_data()
 
     polls_df = data["polls"]
-    current_polls = get_latest_scenario_polls(polls_df)
-    candidates = _get_tracked_candidates(current_polls)
+    candidates = SCENARIOS.get(DEFAULT_SCENARIO, [])
+    scenario_polls = get_scenario_polls(polls_df, candidates)
+    current_polls = get_latest_scenario_polls(scenario_polls)
 
     mayoral_shares = aggregate_polls(current_polls, candidates)
     mayoral_shares = {k: v for k, v in mayoral_shares.items() if v > 0.001}

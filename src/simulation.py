@@ -41,6 +41,7 @@ BYELECTION_NOISE_SIGMA = 0.4
 POLL_HALF_LIFE_DAYS = 12.0
 DECAY_LAMBDA = math.log(2) / POLL_HALF_LIFE_DAYS
 SAMPLE_SCALE = 400.0
+INCUMBENT_CANDIDATE = "chow"
 
 
 class WardSimulation:
@@ -260,6 +261,54 @@ class WardSimulation:
             for _, c in ward_challengers.iterrows()
         )
 
+    def _softmax(self, strengths: list[float]) -> np.ndarray:
+        arr = np.array(strengths, dtype=float)
+        max_v = float(arr.max()) if arr.size else 0.0
+        exp_s = np.exp(arr - max_v)
+        total = float(exp_s.sum())
+        if total <= 0.0:
+            return np.ones(len(strengths), dtype=float) / max(len(strengths), 1)
+        return exp_s / total
+
+    def _blend_candidate_probabilities(
+        self,
+        ward_num: int,
+        names: list[str],
+        strengths: list[float],
+    ) -> np.ndarray:
+        structural_probs = self._softmax(strengths)
+        candidate_support = self._get_candidate_poll_support(ward_num)
+        poll_weights = np.array(
+            [max(0.0, candidate_support.get(name, 0.0)) for name in names],
+            dtype=float,
+        )
+        poll_total = float(poll_weights.sum())
+        if poll_total <= 0.0:
+            return structural_probs
+
+        poll_probs = poll_weights / poll_total
+        alpha_w, _ = self._compute_ward_poll_weight(ward_num)
+        alpha = min(1.0, max(0.0, float(alpha_w)))
+        blended = alpha * poll_probs + (1.0 - alpha) * structural_probs
+        total = float(blended.sum())
+        if total <= 0.0:
+            return structural_probs
+        return blended / total
+
+    def _compute_mood_factor(self, mayoral_mood: dict[str, float]) -> float:
+        incumbent_draw = mayoral_mood.get(INCUMBENT_CANDIDATE)
+        if incumbent_draw is None:
+            return 1.0
+
+        incumbent_avg = self.mayoral_averages.loc[
+            self.mayoral_averages["candidate"] == INCUMBENT_CANDIDATE, "share"
+        ]
+        if incumbent_avg.empty:
+            return 1.0
+
+        avg = float(incumbent_avg.iloc[0])
+        return float(incumbent_draw) / avg if avg > 0 else 1.0
+
     def run(self) -> dict[str, Any]:
         """Run the Monte Carlo simulation."""
 
@@ -288,10 +337,7 @@ class WardSimulation:
             mayoral_draw = self.rng.dirichlet(alpha)
             mayoral_mood = dict(zip(candidates, mayoral_draw))
             mayor_winner_by_draw[i] = candidates[int(np.argmax(mayoral_draw))]
-            chow_draw = mayoral_mood.get("chow", 0.0)
-            chow_avg = self.mayoral_averages.loc[
-                self.mayoral_averages["candidate"] == "chow", "share"
-            ].iloc[0]
+            mood_factor = self._compute_mood_factor(mayoral_mood)
 
             for ward_idx, ward_num in enumerate(ward_nums):
                 row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
@@ -338,24 +384,13 @@ class WardSimulation:
                         winner_names[i, ward_idx] = "Generic Challenger"
                     else:
                         names = list(open_strengths.keys())
-                        candidate_support = self._get_candidate_poll_support(ward_num)
-                        poll_weights = np.array(
-                            [
-                                max(0.0, candidate_support.get(name, 0.0))
-                                for name in names
-                            ],
-                            dtype=float,
+                        probs = self._blend_candidate_probabilities(
+                            ward_num, names, list(open_strengths.values())
                         )
-                        if poll_weights.sum() > 0.0:
-                            probs = poll_weights / poll_weights.sum()
-                        else:
-                            exp_s = np.exp(list(open_strengths.values()))
-                            probs = exp_s / exp_s.sum()
                         winner_names[i, ward_idx] = self.rng.choice(names, p=probs)
                     continue  # skip incumbent win/loss logic below
                 else:
                     d_w = row["defeatability_score"]
-                    mood_factor = chow_draw / chow_avg if chow_avg > 0 else 1.0
                     c_w = coat_row["coattail_adjustment"] * mood_factor
 
                     beta_0 = 4.0
@@ -391,19 +426,9 @@ class WardSimulation:
                         winner_names[i, ward_idx] = "Generic Challenger"
                     else:
                         names = list(adjusted_strengths.keys())
-                        candidate_support = self._get_candidate_poll_support(ward_num)
-                        poll_weights = np.array(
-                            [
-                                max(0.0, candidate_support.get(name, 0.0))
-                                for name in names
-                            ],
-                            dtype=float,
+                        probs = self._blend_candidate_probabilities(
+                            ward_num, names, c_strengths_list
                         )
-                        if poll_weights.sum() > 0.0:
-                            probs = poll_weights / poll_weights.sum()
-                        else:
-                            exp_s = np.exp(c_strengths_list)
-                            probs = exp_s / exp_s.sum()
                         winner = self.rng.choice(names, p=probs)
                         winner_names[i, ward_idx] = winner
 

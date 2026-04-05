@@ -33,6 +33,9 @@ ENDORSEMENT_BOOST = 1.0
 # Additional Gaussian noise applied to each candidate's strength in open seat races
 OPEN_SEAT_NOISE_SIGMA = 0.4
 
+# Additional logit noise for by-election incumbents (higher baseline uncertainty per spec Part 2)
+BYELECTION_NOISE_SIGMA = 0.4
+
 
 class WardSimulation:
     def __init__(
@@ -230,6 +233,8 @@ class WardSimulation:
                     chal_effects[i, ward_idx] = beta_3 * f_star
                     
                     z = beta_0 + vuln_effects[i, ward_idx] + coat_effects[i, ward_idx] + chal_effects[i, ward_idx]
+                    if row.get("is_byelection_incumbent", False):
+                        z += self.rng.normal(0.0, BYELECTION_NOISE_SIGMA)
                     prob = inv_logit(z)
                 
                 if self.rng.random() < prob:

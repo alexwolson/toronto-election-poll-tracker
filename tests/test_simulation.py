@@ -238,3 +238,44 @@ def test_endorsed_candidate_gets_boost_in_open_seat():
     ) / 2000
 
     assert emma_wins > ulrich_wins
+
+
+def test_byelection_incumbent_has_wider_distribution():
+    """By-election incumbents should have more variance in win probability across draws."""
+    import numpy as np
+
+    def _make_sim(is_byelection: bool, seed: int) -> WardSimulation:
+        ward_data = pd.DataFrame([{
+            "ward": 1,
+            "councillor_name": "Byelectee Ben",
+            "is_running": True,
+            "is_byelection_incumbent": is_byelection,
+            "defeatability_score": 45,
+            "vote_share": 0.48,
+            "electorate_share": 0.15,
+        }])
+        challengers = pd.DataFrame([{
+            "ward": 1,
+            "candidate_name": "Challenger C",
+            "name_recognition_tier": "known",
+            "fundraising_tier": "high",
+            "mayoral_alignment": "chow",
+            "is_endorsed_by_departing": False,
+        }])
+        return WardSimulation(
+            ward_data=ward_data,
+            mayoral_averages=pd.DataFrame([{"candidate": "chow", "share": 0.45}]),
+            coattails=pd.DataFrame([{"ward": 1, "councillor_name": "Byelectee Ben", "coattail_adjustment": 0.0}]),
+            challengers=challengers,
+            leans=pd.DataFrame([{"ward": 1, "candidate": "chow", "lean": 0.0, "reliability": "high"}]),
+            n_draws=2000,
+            seed=seed,
+        )
+
+    regular_results = _make_sim(is_byelection=False, seed=7).run()
+    byelection_results = _make_sim(is_byelection=True, seed=7).run()
+
+    # By-election sim should produce more variable results (higher std in incumbent wins)
+    regular_std = float(regular_results["composition_std"])
+    byelection_std = float(byelection_results["composition_std"])
+    assert byelection_std > regular_std

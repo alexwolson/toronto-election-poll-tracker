@@ -275,6 +275,7 @@ class WardSimulation:
         n_wards = len(ward_nums)
         winner_names = np.empty((self.n_draws, n_wards), dtype=object)
         incumbent_wins_count = np.zeros(self.n_draws)
+        mayor_winner_by_draw = np.empty(self.n_draws, dtype=object)
 
         # Decomposed effects for explanatory factors
         # shape: (n_draws, n_wards)
@@ -286,6 +287,7 @@ class WardSimulation:
         for i in range(self.n_draws):
             mayoral_draw = self.rng.dirichlet(alpha)
             mayoral_mood = dict(zip(candidates, mayoral_draw))
+            mayor_winner_by_draw[i] = candidates[int(np.argmax(mayoral_draw))]
             chow_draw = mayoral_mood.get("chow", 0.0)
             chow_avg = self.mayoral_averages.loc[
                 self.mayoral_averages["candidate"] == "chow", "share"
@@ -447,6 +449,24 @@ class WardSimulation:
                     "chal": np.mean(chal_effects[:, ward_idx]),
                 }
 
+        composition_by_mayor: dict[str, dict[str, float | int]] = {}
+        for candidate in candidates:
+            mask = mayor_winner_by_draw == candidate
+            draws = incumbent_wins_count[mask]
+            n_draws = int(draws.size)
+            if n_draws == 0:
+                composition_by_mayor[candidate] = {
+                    "mean": 0.0,
+                    "std": 0.0,
+                    "n_draws": 0,
+                }
+            else:
+                composition_by_mayor[candidate] = {
+                    "mean": float(draws.mean()),
+                    "std": float(draws.std()),
+                    "n_draws": n_draws,
+                }
+
         return {
             "win_probabilities": win_probs,
             "incumbent_probability_interval": incumbent_probability_interval,
@@ -454,6 +474,7 @@ class WardSimulation:
             "factors": factors,
             "composition_mean": incumbent_wins_count.mean(),
             "composition_std": incumbent_wins_count.std(),
+            "composition_by_mayor": composition_by_mayor,
             "composition_dist": incumbent_wins_count,
             "winner_matrix": winner_names,
         }

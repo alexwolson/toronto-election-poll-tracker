@@ -1,10 +1,12 @@
 """Integration test: run_model() returns full simulation results."""
+
 from __future__ import annotations
 
 
 def test_run_model_returns_win_probabilities():
     """run_model() should return win_probability for all 25 wards."""
     from src.run import run_model
+
     run_model.cache_clear()
     result = run_model()
 
@@ -20,6 +22,7 @@ def test_run_model_returns_win_probabilities():
 
 def test_run_model_returns_composition_stats():
     from src.run import run_model
+
     run_model.cache_clear()
     result = run_model()
 
@@ -31,6 +34,7 @@ def test_run_model_returns_composition_stats():
 
 def test_run_model_returns_mayoral_averages():
     from src.run import run_model
+
     run_model.cache_clear()
     result = run_model()
 
@@ -50,3 +54,28 @@ def test_run_model_returns_scenarios_metadata():
     assert "scenarios" in result
     assert "default_scenario" in result
     assert isinstance(result["scenarios"], dict)
+
+
+def test_run_model_returns_composition_by_mayor_winner():
+    from src.run import run_model
+
+    run_model.cache_clear()
+    result = run_model()
+
+    assert "composition_by_mayor" in result
+    composition_by_mayor = result["composition_by_mayor"]
+    assert isinstance(composition_by_mayor, dict)
+    assert composition_by_mayor
+
+    total_draws = 0
+    for candidate, stats in composition_by_mayor.items():
+        assert isinstance(candidate, str)
+        assert isinstance(stats, dict)
+        assert set(stats.keys()) == {"mean", "std", "n_draws"}
+        assert 0.0 <= stats["mean"] <= 25.0
+        assert stats["std"] >= 0.0
+        assert isinstance(stats["n_draws"], int)
+        assert stats["n_draws"] >= 0
+        total_draws += stats["n_draws"]
+
+    assert total_draws == 5000

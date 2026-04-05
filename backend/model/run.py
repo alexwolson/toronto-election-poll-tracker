@@ -113,6 +113,7 @@ def run_model() -> dict:
         "challengers": data["challengers"].to_dict("records"),
         "composition_mean": round(float(results["composition_mean"]), 2),
         "composition_std": round(float(results["composition_std"]), 2),
+        "composition_by_mayor": results["composition_by_mayor"],
         "mayoral_averages": mayoral_shares,
         "phase": detect_phase(data["challengers"]),
         "scenarios": SCENARIOS,

@@ -1,5 +1,6 @@
-"""Scraper for mayoral polling data from Wikipedia."""
+"""Scraper for mayoral polling data from Wikipedia using MediaWiki API."""
 import re
+import json
 from datetime import datetime
 from typing import Optional
 
@@ -7,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-WIKIPEDIA_URL = "https://en.wikipedia.org/wiki/2026_Toronto_mayoral_election"
+WIKIPEDIA_API_URL = "https://en.wikipedia.org/w/api.php?action=parse&page=2026_Toronto_mayoral_election&format=json&prop=text&redirects=1"
 
 
 def parse_poll_row(row) -> Optional[dict]:
@@ -64,12 +65,18 @@ def parse_poll_row(row) -> Optional[dict]:
 
 
 def scrape_wikipedia_polls() -> list[dict]:
-    """Scrape all polls from Wikipedia."""
+    """Scrape all polls from Wikipedia using the MediaWiki API."""
     headers = {"User-Agent": "TorontoPollTracker/1.0 (https://github.com/alex/toronto-election-poll-tracker)"}
-    response = requests.get(WIKIPEDIA_URL, headers=headers, timeout=30)
+    response = requests.get(WIKIPEDIA_API_URL, headers=headers, timeout=30)
     response.raise_for_status()
     
-    soup = BeautifulSoup(response.text, "lxml")
+    data = response.json()
+    html_content = data.get("parse", {}).get("text", {}).get("*", "")
+    
+    if not html_content:
+        return []
+    
+    soup = BeautifulSoup(html_content, "lxml")
     
     # Find the polls table
     tables = soup.find_all("table", class_="wikitable")
@@ -82,8 +89,8 @@ def scrape_wikipedia_polls() -> list[dict]:
     if polls_table is None:
         # Try finding by header text
         for table in tables:
-            headers = table.find_all("th")
-            header_text = " ".join(h.get_text().lower() for h in headers)
+            headers_tags = table.find_all("th")
+            header_text = " ".join(h.get_text().lower() for h in headers_tags)
             if "chow" in header_text or "bradford" in header_text:
                 polls_table = table
                 break

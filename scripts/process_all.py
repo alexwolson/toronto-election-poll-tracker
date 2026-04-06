@@ -108,6 +108,51 @@ def process_defeatability(
     return df
 
 
+def process_defeatability_full(input_path: Path) -> pd.DataFrame:
+    """Load and normalise full defeatability table including mayor row."""
+    if not input_path.exists():
+        print(
+            f"ERROR: full defeatability file not found: {input_path}", file=sys.stderr
+        )
+        sys.exit(1)
+
+    df = pd.read_csv(input_path)
+
+    required = ["Ward", "Elected Councillor", "Defeatability Score"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        print(
+            f"ERROR in {input_path}: full defeatability missing required columns: {missing}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    score = pd.to_numeric(df["Defeatability Score"], errors="coerce")
+    if score.isna().any():
+        print(
+            f"ERROR in {input_path}: Defeatability Score must be numeric for all rows",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    bad_score = score[(score < 0) | (score > 100)]
+    if not bad_score.empty:
+        print(
+            f"ERROR in {input_path}: Defeatability Score values outside 0-100",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if not (df["Ward"].astype(str).str.strip().str.lower() == "mayor").any():
+        print(
+            f"ERROR in {input_path}: expected a 'Mayor' row for structural context",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    return df
+
+
 def process_challengers(input_path: Path) -> pd.DataFrame:
     """Load and validate challengers CSV."""
     if not input_path.exists():
@@ -228,7 +273,9 @@ def main() -> None:
     write_processed(leans, PROCESSED / "ward_mayoral_lean.csv")
 
     print("Processing registered electors...")
-    electors = process_registered_electors(RAW / "elections" / "registered_electors.csv")
+    electors = process_registered_electors(
+        RAW / "elections" / "registered_electors.csv"
+    )
     write_processed(electors, PROCESSED / "registered_electors.csv")
 
     print("Processing council alignment...")
@@ -252,7 +299,9 @@ def main() -> None:
     if population_path.exists():
         pop_growth = process_ward_population(population_path)
         write_processed(
-            pd.DataFrame({"ward": pop_growth.index, "pop_growth_pct": pop_growth.values}),
+            pd.DataFrame(
+                {"ward": pop_growth.index, "pop_growth_pct": pop_growth.values}
+            ),
             PROCESSED / "ward_population_growth.csv",
         )
     else:
@@ -265,6 +314,14 @@ def main() -> None:
         write_processed(defeatability, PROCESSED / "ward_defeatability.csv")
     else:
         print(f"  Skipping: {defeatability_path} (not found)")
+
+    print("Processing full defeatability table...")
+    full_defeatability_path = RAW / "defeatability" / "data-qT4Kx.csv"
+    if full_defeatability_path.exists():
+        defeatability_full = process_defeatability_full(full_defeatability_path)
+        write_processed(defeatability_full, PROCESSED / "defeatability_full.csv")
+    else:
+        print(f"  Skipping: {full_defeatability_path} (not found)")
 
     print("Processing challengers...")
     challengers_path = RAW / "candidates" / "challengers.csv"

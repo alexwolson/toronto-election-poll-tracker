@@ -5,6 +5,7 @@ from scripts.process_all import (
     process_polls,
     process_council_alignment,
     process_defeatability,
+    process_defeatability_full,
     write_processed,
     process_ward_population,
 )
@@ -50,6 +51,16 @@ def test_process_defeatability_rejects_bad_ward():
         process_defeatability(FIXTURES / "defeatability_bad_ward.csv")
 
 
+def test_process_defeatability_full_produces_clean_output():
+    result = process_defeatability_full(FIXTURES / "defeatability_full_valid.csv")
+    assert isinstance(result, pd.DataFrame)
+    assert "Ward" in result.columns
+    assert "Defeatability Score" in result.columns
+    mayor_row = result[result["Ward"].astype(str).str.lower() == "mayor"]
+    assert not mayor_row.empty
+    assert int(mayor_row.iloc[0]["Defeatability Score"]) == 60
+
+
 def test_process_ward_population_computes_growth(tmp_path):
     csv = tmp_path / "ward_population.csv"
     # validate_ward_population requires exactly 25 wards (1–25)
@@ -58,7 +69,7 @@ def test_process_ward_population_computes_growth(tmp_path):
     csv.write_text("\n".join(rows) + "\n")
     result = process_ward_population(csv)
     assert isinstance(result, pd.Series)
-    assert result[1] == pytest.approx(0.10, rel=1e-3)   # +10%
+    assert result[1] == pytest.approx(0.10, rel=1e-3)  # +10%
     assert result[2] == pytest.approx(-0.05, rel=1e-3)  # -5%
 
 
@@ -80,8 +91,12 @@ def test_process_defeatability_merges_pop_growth(tmp_path):
 
     result = process_defeatability(defeatability_csv, pop_growth=pop_growth)
     assert "pop_growth_pct" in result.columns
-    assert result.loc[result["ward"] == 1, "pop_growth_pct"].iloc[0] == pytest.approx(0.08)
-    assert result.loc[result["ward"] == 2, "pop_growth_pct"].iloc[0] == pytest.approx(-0.03)
+    assert result.loc[result["ward"] == 1, "pop_growth_pct"].iloc[0] == pytest.approx(
+        0.08
+    )
+    assert result.loc[result["ward"] == 2, "pop_growth_pct"].iloc[0] == pytest.approx(
+        -0.03
+    )
 
 
 def test_write_processed_creates_readable_file(tmp_path):

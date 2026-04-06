@@ -1,13 +1,17 @@
-"""Run the election model and return JSON results."""
+"""run.py — mirror of backend/model/run.py for test imports."""
 
-from functools import lru_cache
 from pathlib import Path
+from functools import lru_cache
 
 import pandas as pd
 
-from .aggregator import aggregate_polls, get_latest_scenario_polls, get_scenario_polls
-from .phase import detect_phase
-from .simulation import WardSimulation
+from src.aggregator import (
+    aggregate_polls,
+    get_latest_scenario_polls,
+    get_scenario_polls,
+)
+from src.phase import detect_phase
+from src.simulation import WardSimulation
 
 
 SCENARIOS = {
@@ -20,7 +24,8 @@ DEFAULT_SCENARIO = "chow_bradford_bailao"
 
 
 def _data_dir() -> Path:
-    return Path(__file__).parent.parent.parent / "data" / "processed"
+    # src/ is at repo root; data/processed is a sibling of src/
+    return Path(__file__).parent.parent / "data" / "processed"
 
 
 @lru_cache(maxsize=1)

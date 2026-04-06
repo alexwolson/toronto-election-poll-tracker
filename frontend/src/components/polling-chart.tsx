@@ -22,14 +22,31 @@ const COLORS: Record<string, string> = {
 
 const DEFAULT_COLOR = "#94a3b8";
 
+function toPercent(value: string | number | undefined): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return 0;
+  }
+  return value <= 1 ? value * 100 : value;
+}
+
 export function PollingChart({ data, candidates }: PollingChartProps) {
+  const formattedData = data.map((row) => {
+    const nextRow: Record<string, string | number> = {
+      date: row.date,
+    };
+    candidates.forEach((candidate) => {
+      nextRow[candidate] = toPercent(row[candidate]);
+    });
+    return nextRow;
+  });
+
   return (
     <ResponsiveContainer width="100%" height={400}>
-      <LineChart data={data}>
+      <LineChart data={formattedData}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" />
         <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}%`} />
-        <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+        <Tooltip formatter={(v) => typeof v === 'number' ? `${v.toFixed(1)}%` : String(v)} />
         <Legend />
         {candidates.map((c) => (
           <Line

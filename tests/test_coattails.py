@@ -14,7 +14,11 @@ def alignment_df() -> pd.DataFrame:
     return pd.DataFrame(
         [
             {"ward": 1, "councillor_name": "Ally", "alignment_chow": 0.9},  # High
-            {"ward": 2, "councillor_name": "Centrist", "alignment_chow": 0.5},  # Average
+            {
+                "ward": 2,
+                "councillor_name": "Centrist",
+                "alignment_chow": 0.5,
+            },  # Average
             {"ward": 3, "councillor_name": "Opponent", "alignment_chow": 0.1},  # Low
         ]
     )
@@ -32,10 +36,12 @@ def lean_df() -> pd.DataFrame:
     )
 
 
-def test_compute_coattail_adjustment(alignment_df: pd.DataFrame, lean_df: pd.DataFrame) -> None:
+def test_compute_coattail_adjustment(
+    alignment_df: pd.DataFrame, lean_df: pd.DataFrame
+) -> None:
     city_wide_avg = 0.4
     gamma = 0.5
-    
+
     # mean_alignment = (0.9 + 0.5 + 0.1) / 3 = 0.5
     #
     # Ward 1:
@@ -52,16 +58,49 @@ def test_compute_coattail_adjustment(alignment_df: pd.DataFrame, lean_df: pd.Dat
     # alignment_delta = 0.1 - 0.5 = -0.4
     # p_w = -0.1 + 0.4 = 0.3
     # coattail = -0.4 * 0.3 * 0.5 = -0.06
-    
+
     results = compute_coattail_adjustment(
         alignment_df, lean_df, city_wide_avg, gamma=gamma
     )
-    
+
     w1 = results[results["ward"] == 1]["coattail_adjustment"].iloc[0]
     assert w1 == pytest.approx(0.1)
-    
+
     w2 = results[results["ward"] == 2]["coattail_adjustment"].iloc[0]
     assert w2 == pytest.approx(0.0)
-    
+
     w3 = results[results["ward"] == 3]["coattail_adjustment"].iloc[0]
     assert w3 == pytest.approx(-0.06)
+
+
+def test_no_incumbent_sets_zero_coattails(alignment_df, lean_df):
+    out = compute_coattail_adjustment(
+        alignment_df,
+        lean_df,
+        city_wide_avg=0.3,
+        incumbent_mayor_key="none",
+        gamma=0.05,
+    )
+    assert out["coattail_adjustment"].eq(0.0).all()
+
+
+def test_open_uppercase_sets_zero_coattails(alignment_df, lean_df):
+    out = compute_coattail_adjustment(
+        alignment_df,
+        lean_df,
+        city_wide_avg=0.3,
+        incumbent_mayor_key="OPEN",
+        gamma=0.05,
+    )
+    assert out["coattail_adjustment"].eq(0.0).all()
+
+
+def test_none_key_sets_zero_coattails(alignment_df, lean_df):
+    out = compute_coattail_adjustment(
+        alignment_df,
+        lean_df,
+        city_wide_avg=0.3,
+        incumbent_mayor_key=None,
+        gamma=0.05,
+    )
+    assert out["coattail_adjustment"].eq(0.0).all()

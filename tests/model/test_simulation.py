@@ -126,3 +126,63 @@ def test_safe_incumbent_win_probability_is_not_one():
     assert abs(win_prob - SAFE_INCUMBENT_WIN_PROB) < 0.03, (
         f"Expected win probability near {SAFE_INCUMBENT_WIN_PROB}, got {win_prob:.4f}"
     )
+
+
+def test_incumbent_ward_simulation_produces_valid_win_probability():
+    """The full incumbent simulation path (not safe incumbent, not open seat)
+    produces a win probability strictly between 0 and 1.
+
+    This covers the coat_row-dependent path refactored in the coattails fix,
+    ensuring the per-draw p_w computation runs without error.
+    """
+    ward = 5
+    ward_data = pd.DataFrame(
+        [
+            {
+                "ward": ward,
+                "councillor_name": "Incumbent",
+                "is_running": True,
+                "defeatability_score": 50,  # above safe threshold → full simulation runs
+                "is_byelection_incumbent": False,
+            }
+        ]
+    )
+    challengers = pd.DataFrame(
+        [
+            {
+                "ward": ward,
+                "candidate_name": "Known Challenger",
+                "name_recognition_tier": "known",
+                "fundraising_tier": "low",
+                "mayoral_alignment": "unaligned",
+                "is_endorsed_by_departing": False,
+            }
+        ]
+    )
+    coattails = pd.DataFrame(
+        [
+            {
+                "ward": ward,
+                "alignment_delta": 0.1,
+                "lean": 0.05,
+            }
+        ]
+    )
+
+    sim = WardSimulation(
+        ward_data=ward_data,
+        mayoral_averages=_minimal_mayoral_averages(),
+        coattails=coattails,
+        challengers=challengers,
+        leans=_empty_leans(),
+        n_draws=500,
+        seed=7,
+    )
+    result = sim.run()
+
+    win_prob = result["win_probabilities"][ward]
+    assert 0.0 < win_prob < 1.0, (
+        f"Incumbent win probability must be strictly between 0 and 1, got {win_prob}"
+    )
+    assert ward in result["candidate_win_probabilities"]
+    assert "Incumbent" in result["candidate_win_probabilities"][ward]

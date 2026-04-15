@@ -135,6 +135,10 @@ def compute_current_approval(
     if approval_df.empty:
         return {"approve": 0.0, "disapprove": 0.0, "not_sure": 0.0}
 
+    required_cols = {"approve", "disapprove", "not_sure", "date"}
+    if not required_cols.issubset(approval_df.columns):
+        return {"approve": 0.0, "disapprove": 0.0, "not_sure": 0.0}
+
     weights = approval_df["date"].apply(
         lambda d: _decay_weight(str(d), APPROVAL_HALF_LIFE_DAYS, reference_date)
     )
@@ -261,12 +265,15 @@ def compute_pool_model(
 
     trend = compute_consolidation_trend(polls_df, anti_chow_pool, reference_date)
 
-    full_field_count = int(
-        (
-            (polls_df["field_tested"].apply(_count_non_chow_candidates) >= FULL_FIELD_THRESHOLD)
-            & (pd.to_numeric(polls_df.get("sample_size", pd.Series(dtype=float)), errors="coerce").fillna(0) >= MIN_FLOOR_SAMPLE_SIZE)
-        ).sum()
-    )
+    if polls_df.empty or "field_tested" not in polls_df.columns:
+        full_field_count = 0
+    else:
+        full_field_count = int(
+            (
+                (polls_df["field_tested"].apply(_count_non_chow_candidates) >= FULL_FIELD_THRESHOLD)
+                & (pd.to_numeric(polls_df.get("sample_size", pd.Series(dtype=float)), errors="coerce").fillna(0) >= MIN_FLOOR_SAMPLE_SIZE)
+            ).sum()
+        )
 
     return {
         "phase_mode": "pre_nomination",

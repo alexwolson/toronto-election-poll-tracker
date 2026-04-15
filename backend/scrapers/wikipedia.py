@@ -1,6 +1,5 @@
 """Scraper for mayoral polling data from Wikipedia using MediaWiki API."""
 import re
-import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
@@ -86,7 +85,6 @@ def scrape_wikipedia_polls() -> List[Dict[str, Any]]:
         "matlow": "matlow",
         "mendicino": "mendicino",
         "ford": "ford",
-        "furey": "furey",
         "saunders": "saunders",
         "hunter": "hunter"
     }

@@ -57,6 +57,6 @@ def canonical_name(name: str) -> str:
     if key not in _REGISTRY:
         raise CanonicalNameError(
             f"Unrecognised candidate name: {name!r}. "
-            f"Add it to src/names.py if it is a valid variation."
+            f"Add it to backend/model/names.py if it is a valid variation."
         )
     return _REGISTRY[key]

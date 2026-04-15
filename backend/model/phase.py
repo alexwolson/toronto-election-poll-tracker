@@ -45,9 +45,7 @@ def detect_phase(challengers: pd.DataFrame) -> dict:
         phase = 1
     elif "fundraising_tier" not in challengers.columns or challengers["fundraising_tier"].isna().all():
         phase = 2
-    elif challengers["fundraising_tier"].notna().any():
-        phase = 3
     else:
-        phase = 1
+        phase = 3
 
     return {"phase": phase, **PHASE_DESCRIPTIONS[phase]}

@@ -43,6 +43,9 @@ DECAY_LAMBDA = math.log(2) / POLL_HALF_LIFE_DAYS
 SAMPLE_SCALE = 400.0
 INCUMBENT_CANDIDATE = "chow"
 
+# Coattail strength parameter (gamma), must match coattails.py
+from .coattails import COATTAIL_STRENGTH as GAMMA
+
 
 class WardSimulation:
     def __init__(
@@ -296,19 +299,21 @@ class WardSimulation:
             return structural_probs
         return blended / total
 
-    def _compute_mood_factor(self, mayoral_mood: dict[str, float]) -> float:
-        incumbent_draw = mayoral_mood.get(INCUMBENT_CANDIDATE)
-        if incumbent_draw is None:
-            return 1.0
+    def _compute_incumbent_polling(self, mayoral_mood: dict[str, float]) -> tuple[float, float]:
+        """Return (incumbent_draw, incumbent_avg) for the current simulation draw.
 
-        incumbent_avg = self.mayoral_averages.loc[
+        Used to compute P_w per-draw per the spec:
+          P_w = lean * (draw / avg) + avg
+        Returns (avg, avg) — mood_factor=1 — when incumbent is absent.
+        """
+        avg_series = self.mayoral_averages.loc[
             self.mayoral_averages["candidate"] == INCUMBENT_CANDIDATE, "share"
         ]
-        if incumbent_avg.empty:
-            return 1.0
-
-        avg = float(incumbent_avg.iloc[0])
-        return float(incumbent_draw) / avg if avg > 0 else 1.0
+        if avg_series.empty:
+            return 0.0, 0.0
+        avg = float(avg_series.iloc[0])
+        draw = float(mayoral_mood.get(INCUMBENT_CANDIDATE, avg))
+        return draw, avg
 
     def run(self) -> dict[str, Any]:
         """Run the Monte Carlo simulation."""
@@ -338,11 +343,10 @@ class WardSimulation:
             mayoral_draw = self.rng.dirichlet(alpha)
             mayoral_mood = dict(zip(candidates, mayoral_draw))
             mayor_winner_by_draw[i] = candidates[int(np.argmax(mayoral_draw))]
-            mood_factor = self._compute_mood_factor(mayoral_mood)
+            inc_draw, inc_avg = self._compute_incumbent_polling(mayoral_mood)
 
             for ward_idx, ward_num in enumerate(ward_nums):
                 row = self.ward_data[self.ward_data["ward"] == ward_num].iloc[0]
-                coat_row = self.coattails[self.coattails["ward"] == ward_num].iloc[0]
                 ward_challengers = self.challengers[
                     self.challengers["ward"] == ward_num
                 ]
@@ -391,8 +395,17 @@ class WardSimulation:
                         winner_names[i, ward_idx] = self.rng.choice(names, p=probs)
                     continue  # skip incumbent win/loss logic below
                 else:
+                    # Incumbent ward: fetch coat_row only when needed
+                    coat_row = self.coattails[self.coattails["ward"] == ward_num].iloc[0]
                     d_w = row["defeatability_score"]
-                    c_w = coat_row["coattail_adjustment"] * mood_factor
+                    # Per spec Part 3: P_w(draw) = lean * (draw/avg) + avg
+                    # This scales the lean component by the incumbent's polling
+                    # draw relative to their average, while keeping the base
+                    # city-wide term fixed.
+                    lean = coat_row["lean"] if "lean" in coat_row.index else 0.0
+                    mood_factor = (inc_draw / inc_avg) if inc_avg > 0 else 1.0
+                    p_w = lean * mood_factor + inc_avg
+                    c_w = coat_row["alignment_delta"] * p_w * GAMMA
 
                     beta_0 = 4.0
                     beta_1 = -0.05

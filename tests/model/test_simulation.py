@@ -120,7 +120,7 @@ def test_safe_incumbent_win_probability_is_not_one():
     win_prob = result["win_probabilities"][ward]
     assert win_prob < 1.0, (
         f"Safe incumbent should not win 100% of draws (got {win_prob:.4f}). "
-        f"SAFE_INCUMBENT_WIN_PROB={SAFE_INCUMBENT_WIN_PROB} is unused."
+        f"SAFE_INCUMBENT_WIN_PROB={SAFE_INCUMBENT_WIN_PROB} may not be applied in the shortcut."
     )
     # Should be close to SAFE_INCUMBENT_WIN_PROB
     assert abs(win_prob - SAFE_INCUMBENT_WIN_PROB) < 0.03, (

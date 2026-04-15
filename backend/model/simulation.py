@@ -358,7 +358,9 @@ class WardSimulation:
                         winner_names[i, ward_idx] = row["councillor_name"]
                         incumbent_wins_count[i] += 1
                     else:
-                        # Rare upset — challengers are all unknown so use generic fallback
+                        # Rare 3% upset. Safe wards have only unknown-tier challengers;
+                        # we use Generic Challenger rather than computing strength scores
+                        # for a ~1-in-33 event that won't materially affect projections.
                         winner_names[i, ward_idx] = "Generic Challenger"
                     continue
 

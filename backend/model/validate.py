@@ -338,7 +338,7 @@ def validate_challengers(df: pd.DataFrame) -> None:
             f"Invalid name_recognition_tier in wards: {bad_recog['ward'].tolist()}"
         )
 
-    valid_fund = {"high", "low"}
+    valid_fund = {"high", "medium", "low"}
     bad_fund = df[~df["fundraising_tier"].isin(valid_fund)]
     if not bad_fund.empty:
         raise ValidationError(

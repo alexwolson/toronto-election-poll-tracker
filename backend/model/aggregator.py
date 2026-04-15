@@ -29,7 +29,8 @@ def compute_poll_weights(
         reference_date = datetime.now(timezone.utc)
 
     # Use date_published for age calculation
-    published_dates = pd.to_datetime(df["date_published"]).dt.tz_localize("UTC")
+    # utc=True handles both naive strings ("2026-03-08") and tz-aware ISO strings.
+    published_dates = pd.to_datetime(df["date_published"], utc=True)
     ages_days = (reference_date - published_dates).dt.total_seconds() / (24 * 3600)
 
     # Weights: w = exp(-lambda * age)

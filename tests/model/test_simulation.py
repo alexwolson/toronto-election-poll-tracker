@@ -68,3 +68,61 @@ def test_open_seat_does_not_crash_when_ward_absent_from_coattails():
     # Must not raise IndexError
     result = sim.run()
     assert ward in result["win_probabilities"]
+
+
+def test_safe_incumbent_win_probability_is_not_one():
+    """Safe incumbents should win ~97% of draws, not 100%.
+
+    SAFE_INCUMBENT_WIN_PROB = 0.97 is defined but currently unused, so safe
+    incumbents win every draw. With enough draws the mean should be < 1.0.
+    """
+    from backend.model.simulation import SAFE_INCUMBENT_WIN_PROB
+
+    ward = 1
+    ward_data = pd.DataFrame(
+        [
+            {
+                "ward": ward,
+                "councillor_name": "Safe Councillor",
+                "is_running": True,
+                "defeatability_score": 10,  # well below threshold
+                "is_byelection_incumbent": False,
+            }
+        ]
+    )
+    # No viable challengers → qualifies for safe incumbent shortcut
+    challengers = pd.DataFrame(
+        [
+            {
+                "ward": ward,
+                "candidate_name": "Unknown Challenger",
+                "name_recognition_tier": "unknown",
+                "fundraising_tier": "low",
+                "mayoral_alignment": "unaligned",
+                "is_endorsed_by_departing": False,
+            }
+        ]
+    )
+    coattails = pd.DataFrame(
+        [{"ward": ward, "alignment_delta": 0.0, "lean": 0.0, "p_w": 0.35}]
+    )
+
+    sim = WardSimulation(
+        ward_data=ward_data,
+        mayoral_averages=_minimal_mayoral_averages(),
+        coattails=coattails,
+        challengers=challengers,
+        leans=_empty_leans(),
+        n_draws=2000,
+        seed=42,
+    )
+    result = sim.run()
+    win_prob = result["win_probabilities"][ward]
+    assert win_prob < 1.0, (
+        f"Safe incumbent should not win 100% of draws (got {win_prob:.4f}). "
+        f"SAFE_INCUMBENT_WIN_PROB={SAFE_INCUMBENT_WIN_PROB} is unused."
+    )
+    # Should be close to SAFE_INCUMBENT_WIN_PROB
+    assert abs(win_prob - SAFE_INCUMBENT_WIN_PROB) < 0.03, (
+        f"Expected win probability near {SAFE_INCUMBENT_WIN_PROB}, got {win_prob:.4f}"
+    )

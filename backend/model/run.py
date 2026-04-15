@@ -9,7 +9,7 @@ from .aggregator import aggregate_polls, get_latest_scenario_polls, get_scenario
 from .aggregator import exclude_polls_with_declined_candidates
 from .candidates import CANDIDATE_STATUS, DECLINED_CANDIDATE_IDS
 from .phase import detect_phase
-from .simulation import WardSimulation
+from .simulation import WardSimulation, SAFE_DEFEATABILITY_THRESHOLD
 
 
 SCENARIOS = {
@@ -48,6 +48,8 @@ def _classify_race(row: dict, challengers_for_ward: list[dict]) -> str:
         if c["name_recognition_tier"] in ("well-known", "known")
     ]
     if viable:
+        return "competitive"
+    if row.get("defeatability_score", 0) >= SAFE_DEFEATABILITY_THRESHOLD:
         return "competitive"
     return "safe"
 

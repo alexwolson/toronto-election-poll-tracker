@@ -354,8 +354,12 @@ class WardSimulation:
 
                 # Safe incumbent shortcut (spec Part 5): skip simulation for uncontested wards
                 if self._is_safe_incumbent(row, ward_challengers):
-                    winner_names[i, ward_idx] = row["councillor_name"]
-                    incumbent_wins_count[i] += 1
+                    if self.rng.random() < SAFE_INCUMBENT_WIN_PROB:
+                        winner_names[i, ward_idx] = row["councillor_name"]
+                        incumbent_wins_count[i] += 1
+                    else:
+                        # Rare upset — challengers are all unknown so use generic fallback
+                        winner_names[i, ward_idx] = "Generic Challenger"
                     continue
 
                 raw_strengths = {

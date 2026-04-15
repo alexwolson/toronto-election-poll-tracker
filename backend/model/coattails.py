@@ -75,7 +75,8 @@ def compute_coattail_adjustment(
         # If no lean data, assume uniform 0
         df["p_w"] = city_wide_avg
     else:
-        df = df.merge(mayor_lean[["ward", "lean"]], on="ward")
+        df = df.merge(mayor_lean[["ward", "lean"]], on="ward", how="left")
+        df["lean"] = df["lean"].fillna(0.0)
         df["p_w"] = df["lean"] + city_wide_avg
 
     # 4. Compute coattail C_w

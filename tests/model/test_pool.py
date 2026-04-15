@@ -29,3 +29,98 @@ def test_approval_rows_sum_to_one():
     df = _load_approval()
     row_sums = df["approve"] + df["disapprove"] + df["not_sure"]
     assert row_sums.between(0.97, 1.03).all(), f"Rows do not sum to ~1.0:\n{row_sums}"
+
+
+def test_compute_chow_floor_returns_value_in_range():
+    """Floor from full-field polls (3+ non-Chow candidates, n≥500) should be 37-44%."""
+    from backend.model.pool import compute_chow_floor
+    floor = compute_chow_floor(_load_polls())
+    assert 0.37 <= floor <= 0.44, f"floor={floor:.3f} — expected 0.37-0.44"
+
+
+def test_compute_chow_floor_ignores_h2h_polls():
+    """A dataframe containing only H2H polls returns 0.0."""
+    from backend.model.pool import compute_chow_floor
+    h2h_only = pd.DataFrame([{
+        "date_published": "2026-03-08",
+        "field_tested": "bradford,chow",
+        "chow": 0.47,
+        "sample_size": 735,
+    }])
+    assert compute_chow_floor(h2h_only) == 0.0
+
+
+def test_compute_chow_floor_ignores_small_sample_polls():
+    """Polls with sample_size < 500 are excluded from floor estimation."""
+    from backend.model.pool import compute_chow_floor
+    small_sample = pd.DataFrame([{
+        "date_published": "2025-10-06",
+        "field_tested": "bradford,chow,furey,tory,other",
+        "chow": 0.29,
+        "sample_size": 406,
+    }])
+    assert compute_chow_floor(small_sample) == 0.0
+
+
+def test_compute_current_h2h_chow_uses_bradford_matchup_only():
+    """H2H Chow share uses only Bradford vs Chow polls, not Tory vs Chow."""
+    from backend.model.pool import compute_current_h2h_chow
+    result = compute_current_h2h_chow(_load_polls())
+    # Most recent Bradford H2H (Mar 8): Chow 47% — should dominate with 12-day half-life
+    assert result is not None
+    assert 0.43 <= result <= 0.49, f"h2h_chow={result:.3f} — expected 0.43-0.49"
+
+
+def test_compute_current_approval_reflects_recent_data():
+    """Approval weighted average should be close to most recent data (Jan 2026: 55/38/7)."""
+    from backend.model.pool import compute_current_approval
+    result = compute_current_approval(_load_approval())
+    assert 0.50 <= result["approve"] <= 0.60, f"approve={result['approve']:.3f}"
+    assert 0.33 <= result["disapprove"] <= 0.45, f"disapprove={result['disapprove']:.3f}"
+
+
+def test_compute_candidate_capture_rates_has_bradford_and_furey():
+    from backend.model.pool import compute_candidate_capture_rates
+    result = compute_candidate_capture_rates(_load_polls(), anti_chow_pool=0.38)
+    assert "bradford" in result and "furey" in result
+    for cand in ("bradford", "furey"):
+        assert 0.0 <= result[cand]["share"] <= 0.60
+        assert 0.0 <= result[cand]["capture_rate"] <= 2.0
+
+
+def test_compute_pool_model_returns_all_required_keys():
+    from backend.model.pool import compute_pool_model
+    result = compute_pool_model(_load_polls(), _load_approval())
+    assert result["phase_mode"] == "pre_nomination"
+    for key in ("chow_floor", "chow_ceiling", "anti_chow_pool",
+                "protective_progressive_activated", "protective_progressive_reserve"):
+        assert key in result["pool"], f"Missing pool key: {key}"
+    assert "bradford" in result["candidates"]
+    assert "furey" in result["candidates"]
+    assert "consolidation_trend" in result
+    assert result["consolidation_trend"] in (
+        "consolidating", "stalling", "reversing", "insufficient_data"
+    )
+    assert "approval" in result
+    assert "data_notes" in result
+
+
+def test_pool_model_floor_below_ceiling():
+    from backend.model.pool import compute_pool_model
+    result = compute_pool_model(_load_polls(), _load_approval())
+    assert result["pool"]["chow_floor"] < result["pool"]["chow_ceiling"]
+
+
+def test_pool_model_pp_components_non_negative():
+    from backend.model.pool import compute_pool_model
+    result = compute_pool_model(_load_polls(), _load_approval())
+    assert result["pool"]["protective_progressive_activated"] >= 0.0
+    assert result["pool"]["protective_progressive_reserve"] >= 0.0
+    assert result["uncaptured_anti_chow"] >= 0.0
+
+
+def test_pool_model_consolidation_trend_is_consolidating():
+    """Bradford's capture rate has risen from ~33% (pre-Jan 2026) to ~60% (post-Jan 2026)."""
+    from backend.model.pool import compute_pool_model
+    result = compute_pool_model(_load_polls(), _load_approval())
+    assert result["consolidation_trend"] == "consolidating"

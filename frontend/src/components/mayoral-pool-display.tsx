@@ -25,7 +25,7 @@ function PoolBar({ pool, candidates, uncaptured }: {
     { key: "uncaptured",    label: "Uncaptured anti-Chow",                 value: uncaptured,                           color: "var(--muted)" },
   ].filter((s) => s.value > 0.005);
 
-  const total = segments.reduce((sum, s) => sum + s.value, 0);
+  const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
 
   return (
     <div className="mt-4 space-y-2">

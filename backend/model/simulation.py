@@ -304,7 +304,8 @@ class WardSimulation:
 
         Used to compute P_w per-draw per the spec:
           P_w = lean * (draw / avg) + avg
-        Returns (avg, avg) — mood_factor=1 — when incumbent is absent.
+        Returns (0.0, 0.0) when incumbent is absent from the polling averages;
+        the caller's guard `if inc_avg > 0` handles this by defaulting mood_factor to 1.0.
         """
         avg_series = self.mayoral_averages.loc[
             self.mayoral_averages["candidate"] == INCUMBENT_CANDIDATE, "share"

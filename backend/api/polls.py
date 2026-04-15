@@ -24,13 +24,13 @@ def scrape_polls():
             save_poll(poll)
             saved += 1
         except Exception:
-            pass  # Skip duplicates
+            pass
     return {"scraped": len(polls), "saved": saved}
 
 
 @router.get("/latest")
 def get_latest_polls():
-    """Return recency-weighted mayoral polling averages from polls.csv."""
+    """Return pool model and polling data from polls.csv and approval_ratings.csv."""
     from pathlib import Path
     import pandas as pd
     from model.aggregator import (
@@ -40,6 +40,7 @@ def get_latest_polls():
         get_scenario_polls,
     )
     from model.run import DEFAULT_SCENARIO, SCENARIOS
+    from model.pool import compute_pool_model
 
     def normalize_candidate(value: str) -> str:
         return str(value).strip().lower()
@@ -53,14 +54,8 @@ def get_latest_polls():
             if normalize_candidate(c) and normalize_candidate(c) != "other"
         }
 
-    def candidate_ranges(
-        df: pd.DataFrame,
-    ) -> dict[str, dict[str, dict[str, float] | None]]:
-        out: dict[str, dict[str, dict[str, float] | None]] = {
-            "declared": {},
-            "potential": {},
-            "declined": {},
-        }
+    def candidate_ranges(df: pd.DataFrame) -> dict:
+        out: dict = {"declared": {}, "potential": {}, "declined": {}}
         for status, candidates in CANDIDATE_STATUS.items():
             for candidate in candidates:
                 cid = candidate["id"]
@@ -79,16 +74,20 @@ def get_latest_polls():
 
     data_dir = Path(__file__).parent.parent.parent / "data" / "processed"
     polls_df = pd.read_csv(data_dir / "polls.csv")
-    polls_df = polls_df.copy()
     polls_df["_field_candidates"] = polls_df["field_tested"].apply(field_candidates)
     polls_df["_contains_declined"] = polls_df["_field_candidates"].apply(
         lambda names: len(names.intersection(DECLINED_CANDIDATE_IDS)) > 0
     )
 
+    approval_path = data_dir / "approval_ratings.csv"
+    approval_df = pd.read_csv(approval_path) if approval_path.exists() else pd.DataFrame()
+
+    # Phase 1: pool model uses ALL polls, no filtering
+    pool_model = compute_pool_model(polls_df, approval_df)
+
+    # Phase 2 infrastructure (kept dormant): scenario-based aggregation
     scenario_candidates = SCENARIOS.get(DEFAULT_SCENARIO, [])
-    eligible_polls = exclude_polls_with_declined_candidates(
-        polls_df, DECLINED_CANDIDATE_IDS
-    )
+    eligible_polls = exclude_polls_with_declined_candidates(polls_df, DECLINED_CANDIDATE_IDS)
     scenario_polls = get_scenario_polls(eligible_polls, scenario_candidates)
     current_polls = get_latest_scenario_polls(scenario_polls)
     aggregated = aggregate_polls(current_polls, scenario_candidates)
@@ -100,40 +99,31 @@ def get_latest_polls():
     ).sort_values(["_parsed_date", "_date_fallback"], kind="stable")
     trend = []
     for _, row in trend_df.iterrows():
-        point = {
-            "date": str(row["date_published"]),
-        }
+        point = {"date": str(row["date_published"])}
         for candidate in scenario_candidates:
-            if candidate in row and pd.notna(row[candidate]):
-                point[candidate] = round(float(row[candidate]), 4)
-            else:
-                point[candidate] = 0.0
+            point[candidate] = round(float(row[candidate]), 4) if candidate in row and pd.notna(row[candidate]) else 0.0
         trend.append(point)
 
     history = []
     for _, row in polls_df.sort_values("date_published", ascending=False).iterrows():
         row_field = field_candidates(row.get("field_tested"))
-        is_head_to_head = len(row_field) == 2
         excluded_reason = None
         if bool(row.get("_contains_declined", False)):
             excluded_reason = "declined_candidate"
-        elif is_head_to_head:
+        elif len(row_field) == 2:
             excluded_reason = "head_to_head"
-        history.append(
-            {
-                "poll_id": str(row.get("poll_id", "")),
-                "date_published": str(row.get("date_published", "")),
-                "firm": str(row.get("firm", "")),
-                "sample_size": int(row.get("sample_size", 0))
-                if pd.notna(row.get("sample_size"))
-                else 0,
-                "field_tested": str(row.get("field_tested", "")),
-                "excluded_from_model": excluded_reason is not None,
-                "excluded_reason": excluded_reason,
-            }
-        )
+        history.append({
+            "poll_id": str(row.get("poll_id", "")),
+            "date_published": str(row.get("date_published", "")),
+            "firm": str(row.get("firm", "")),
+            "sample_size": int(row.get("sample_size", 0)) if pd.notna(row.get("sample_size")) else 0,
+            "field_tested": str(row.get("field_tested", "")),
+            "excluded_from_model": excluded_reason is not None,
+            "excluded_reason": excluded_reason,
+        })
 
     return {
+        "pool_model": pool_model,
         "aggregated": aggregated,
         "polls_used": len(current_polls),
         "candidates": sorted(aggregated.keys()),
@@ -143,4 +133,5 @@ def get_latest_polls():
         "candidate_status": CANDIDATE_STATUS,
         "candidate_ranges": candidate_ranges(polls_df),
         "poll_history": history,
+        "chow_pressure": None,
     }

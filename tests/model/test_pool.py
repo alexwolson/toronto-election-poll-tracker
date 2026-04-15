@@ -124,3 +124,21 @@ def test_pool_model_consolidation_trend_is_consolidating():
     from backend.model.pool import compute_pool_model
     result = compute_pool_model(_load_polls(), _load_approval())
     assert result["consolidation_trend"] == "consolidating"
+
+
+def test_polls_latest_includes_pool_model():
+    """GET /api/polls/latest returns a pool_model key with required structure."""
+    import sys
+    sys.path.insert(0, str(_REPO_ROOT / "backend"))
+    from fastapi.testclient import TestClient
+    from main import app
+    client = TestClient(app)
+    response = client.get("/api/polls/latest")
+    assert response.status_code == 200
+    data = response.json()
+    assert "pool_model" in data, "pool_model missing from response"
+    pm = data["pool_model"]
+    assert pm["phase_mode"] == "pre_nomination"
+    assert "pool" in pm
+    assert "candidates" in pm
+    assert "bradford" in pm["candidates"]

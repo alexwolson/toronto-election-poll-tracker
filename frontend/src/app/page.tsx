@@ -1,23 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getWards, getPollingAverages } from "@/lib/api";
+import { MayoralPoolDisplay } from "@/components/mayoral-pool-display";
 
 export default async function Home() {
   const [wardsData, pollsData] = await Promise.all([getWards(), getPollingAverages()]);
 
-  const competitiveCount = wardsData.wards.filter(
-    (w) => w.race_class === "competitive"
-  ).length;
-
+  const competitiveCount = wardsData.wards.filter((w) => w.race_class === "competitive").length;
   const openCount = wardsData.wards.filter((w) => w.race_class === "open").length;
-
-  const compositionMean = wardsData.composition_mean;
-  const compositionStd = wardsData.composition_std;
-  const compositionByMayorEntries = Object.entries(wardsData.composition_by_mayor);
-
-  const pollEntries = Object.entries(pollsData.aggregated);
-  const leading = pollEntries.length > 0
-    ? pollEntries.reduce((a, b) => (a[1] > b[1] ? a : b))
-    : null;
 
   return (
     <main>
@@ -30,8 +19,8 @@ export default async function Home() {
               <span className="block text-[color:var(--primary)]">Tracker</span>
             </h1>
             <p className="mt-4 max-w-xl text-base text-muted-foreground md:text-lg">
-              Ward-by-ward council race projections with mayoral polling signals,
-              presented in a clear daytime briefing format.
+              Tracking the Toronto 2026 mayoral race and ward-level council dynamics.
+              Candidate nominations open May 1 — the field is not yet set.
             </p>
             <div className="mt-7 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
               <div className="stat-chip p-3">
@@ -47,57 +36,16 @@ export default async function Home() {
                 <p className="mt-1 text-xl font-semibold">{openCount}</p>
               </div>
               <div className="stat-chip p-3">
-                <p className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">Polls used</p>
-                <p className="mt-1 text-xl font-semibold">{pollsData.polls_used}</p>
+                <p className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">Polls tracked</p>
+                <p className="mt-1 text-xl font-semibold">{pollsData.total_polls_available}</p>
               </div>
             </div>
           </div>
 
-          <div className="surface-panel p-6 md:p-8">
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-muted-foreground">
-              Snapshot
-            </p>
-            <div className="mt-6 space-y-5">
-              <div>
-                <p className="text-sm text-muted-foreground">Expected incumbent wins</p>
-                <p className="text-4xl leading-none font-heading">
-                  {compositionMean.toFixed(1)}
-                  <span className="ml-2 text-base text-muted-foreground">±{compositionStd.toFixed(1)}</span>
-                </p>
-              </div>
-              <div className="h-px bg-[var(--line-soft)]" />
-              <div>
-                <p className="text-sm text-muted-foreground">Current mayoral front-runner</p>
-                {leading ? (
-                  <p className="mt-1 text-3xl capitalize font-heading text-[color:var(--primary)]">
-                    {leading[0]} <span className="text-xl text-foreground">{(leading[1] * 100).toFixed(0)}%</span>
-                  </p>
-                ) : (
-                  <p className="mt-1 text-lg text-muted-foreground">No polling data yet</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <MayoralPoolDisplay model={pollsData.pool_model} />
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <Card className="surface-panel">
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Council Composition</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold">
-                {compositionMean.toFixed(1)}{" "}
-                <span className="text-base font-normal text-muted-foreground">
-                  ±{compositionStd.toFixed(1)}
-                </span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Projected incumbent wins out of 25 seats.
-              </p>
-            </CardContent>
-          </Card>
-
+        <section className="grid gap-4 md:grid-cols-2">
           <Card className="surface-panel">
             <CardHeader>
               <CardTitle className="font-heading text-2xl">Competitive Wards</CardTitle>
@@ -105,65 +53,25 @@ export default async function Home() {
             <CardContent>
               <p className="text-2xl font-semibold">{competitiveCount}</p>
               <p className="text-sm text-muted-foreground">
-                Competitive incumbents with {openCount} open seat
-                {openCount !== 1 ? "s" : ""} in play.
+                Incumbent wards with a credible challenger or high defeatability score.{" "}
+                {openCount} open seat{openCount !== 1 ? "s" : ""} where no incumbent is running.
               </p>
             </CardContent>
           </Card>
 
           <Card className="surface-panel">
             <CardHeader>
-              <CardTitle className="font-heading text-2xl">Mayoral Race</CardTitle>
+              <CardTitle className="font-heading text-2xl">Model Phase</CardTitle>
             </CardHeader>
             <CardContent>
-              {leading ? (
-                <>
-                  <p className="text-2xl font-semibold capitalize">{leading[0]}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Leading at {(leading[1] * 100).toFixed(0)}% from {pollsData.polls_used} poll
-                    {pollsData.polls_used !== 1 ? "s" : ""}.
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">No polling data available.</p>
-              )}
+              <p className="text-2xl font-semibold">Pre-nomination</p>
+              <p className="text-sm text-muted-foreground">
+                Nominations open May 1, close August 21. Projections reflect structural
+                factors only until the field is locked in.
+              </p>
             </CardContent>
           </Card>
         </section>
-
-        {compositionByMayorEntries.length > 0 && (
-          <Card className="surface-panel">
-            <CardHeader>
-              <CardTitle className="font-heading text-3xl">Composition by Mayoral Winner</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-[color:var(--panel)]">
-                <table className="w-full text-sm">
-                  <thead className="bg-[color:var(--secondary)] text-muted-foreground">
-                    <tr className="border-b border-[var(--line-soft)]">
-                      <th className="px-4 py-3 text-left font-medium">Candidate</th>
-                      <th className="px-4 py-3 text-right font-medium">Mean</th>
-                      <th className="px-4 py-3 text-right font-medium">Std</th>
-                      <th className="px-4 py-3 text-right font-medium">Draws</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--line-soft)]">
-                    {compositionByMayorEntries
-                      .sort((a, b) => b[1].mean - a[1].mean)
-                      .map(([candidate, stats]) => (
-                        <tr key={candidate} className="hover:bg-[color:var(--secondary)]/60 transition-colors">
-                          <td className="px-4 py-2 capitalize font-medium">{candidate}</td>
-                          <td className="px-4 py-2 text-right">{stats.mean.toFixed(2)}</td>
-                          <td className="px-4 py-2 text-right">{stats.std.toFixed(2)}</td>
-                          <td className="px-4 py-2 text-right font-mono">{stats.n_draws}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </main>
   );

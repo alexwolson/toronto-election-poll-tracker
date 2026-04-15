@@ -110,7 +110,8 @@ export default async function PollsPage() {
               </thead>
               <tbody className="divide-y divide-[var(--line-soft)]">
                 {(pollHistory.length > 0 ? pollHistory : polls).map((poll, i) => {
-                  const results = Object.entries(poll.candidates || {});
+                  const candidatesMap = ("candidates" in poll ? poll.candidates : {}) as Record<string, number>;
+                  const results = Object.entries(candidatesMap);
                   const topCandidate: [string, number] = results.length > 0
                     ? results.reduce((a, b) => (a[1] > b[1] ? a : b))
                     : ["None", 0];

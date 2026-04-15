@@ -14,13 +14,9 @@ export async function getWards(): Promise<WardsResponse> {
     scenarios: {},
     default_scenario: "",
   };
-
   try {
-    const res = await fetch(`${API_URL}/api/wards`, {
-      next: { revalidate: 60 },
-    });
+    const res = await fetch(`${API_URL}/api/wards`, { next: { revalidate: 60 } });
     if (!res.ok) return fallback;
-
     const data = (await res.json()) as Partial<WardsResponse>;
     return {
       wards: data.wards ?? [],
@@ -40,40 +36,68 @@ export async function getWards(): Promise<WardsResponse> {
 }
 
 export async function getWard(wardNum: number): Promise<WardResponse> {
-  const fallback: WardResponse = {
-    ward: null,
-    challengers: [],
-    error: "unavailable",
-  };
-
+  const fallback: WardResponse = { ward: null, challengers: [], error: "unavailable" };
   try {
-    const res = await fetch(`${API_URL}/api/wards/${wardNum}`, {
-      next: { revalidate: 60 },
-    });
-
-    if (res.status === 404) {
-      return { ward: null, challengers: [], error: "not_found" };
-    }
-
+    const res = await fetch(`${API_URL}/api/wards/${wardNum}`, { next: { revalidate: 60 } });
+    if (res.status === 404) return { ward: null, challengers: [], error: "not_found" };
     if (!res.ok) return fallback;
-
     const data = (await res.json()) as WardResponse;
-    return {
-      ward: data.ward ?? null,
-      challengers: data.challengers ?? [],
-    };
+    return { ward: data.ward ?? null, challengers: data.challengers ?? [] };
   } catch (error) {
     console.error(`Failed to fetch ward ${wardNum}:`, error);
     return fallback;
   }
 }
 
-type PollTrendPoint = {
-  date: string;
-  [candidate: string]: number | string;
+export type ConsolidationTrend =
+  | "consolidating"
+  | "stalling"
+  | "reversing"
+  | "insufficient_data";
+
+export type PoolModel = {
+  phase_mode: "pre_nomination";
+  phase_mode_context: string;
+  pool: {
+    chow_floor: number;
+    chow_ceiling: number;
+    anti_chow_pool: number;
+    chow_h2h_current: number | null;
+    protective_progressive_activated: number;
+    protective_progressive_reserve: number;
+  };
+  candidates: Record<string, { share: number; capture_rate: number }>;
+  uncaptured_anti_chow: number;
+  consolidation_trend: ConsolidationTrend;
+  approval: { approve: number; disapprove: number; not_sure: number };
+  data_notes: {
+    full_field_poll_count: number;
+    total_polls: number;
+    approval_data_points: number;
+    h2h_available: boolean;
+  };
+};
+
+type PollTrendPoint = { date: string; [candidate: string]: number | string };
+
+// Kept for backward compatibility with the polls page
+export type ChowPressureBand = "low" | "moderate" | "elevated";
+export type ChowPressureTrend = "rising" | "easing" | "flat" | "insufficient";
+export type ChowPressure = {
+  value: number;
+  band: ChowPressureBand;
+  trend: ChowPressureTrend;
+  methodology_version: string;
+  computed_at: string;
+  diagnostics: {
+    adaptive_half_life_days: number;
+    adaptive_trend_horizon_days: number;
+    chow_share_std_recent: number;
+  };
 };
 
 type PollingAveragesResponse = {
+  pool_model: PoolModel | null;
   aggregated: Record<string, number>;
   polls_used: number;
   candidates: string[];
@@ -91,10 +115,12 @@ type PollingAveragesResponse = {
     excluded_from_model: boolean;
     excluded_reason: string | null;
   }[];
+  chow_pressure: ChowPressure | null;
 };
 
 export async function getPollingAverages(): Promise<PollingAveragesResponse> {
   const fallback: PollingAveragesResponse = {
+    pool_model: null,
     aggregated: {},
     polls_used: 0,
     candidates: [],
@@ -104,16 +130,14 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
     candidate_status: { declared: [], potential: [], declined: [] },
     candidate_ranges: { declared: {}, potential: {}, declined: {} },
     poll_history: [],
+    chow_pressure: null,
   };
-
   try {
-    const res = await fetch(`${API_URL}/api/polls/latest`, {
-      next: { revalidate: 60 },
-    });
+    const res = await fetch(`${API_URL}/api/polls/latest`, { next: { revalidate: 60 } });
     if (!res.ok) return fallback;
-
     const data = (await res.json()) as Partial<PollingAveragesResponse>;
     return {
+      pool_model: data.pool_model ?? null,
       aggregated: data.aggregated ?? {},
       polls_used: data.polls_used ?? 0,
       candidates: data.candidates ?? [],
@@ -123,6 +147,7 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
       candidate_status: data.candidate_status ?? { declared: [], potential: [], declined: [] },
       candidate_ranges: data.candidate_ranges ?? { declared: {}, potential: {}, declined: {} },
       poll_history: data.poll_history ?? [],
+      chow_pressure: data.chow_pressure ?? null,
     };
   } catch (error) {
     console.error("Failed to fetch polling averages:", error);

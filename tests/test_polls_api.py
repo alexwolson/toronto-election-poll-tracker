@@ -82,20 +82,18 @@ def test_polls_latest_trend_excludes_non_scenario_candidates(client, monkeypatch
             {
                 "poll_id": "default-scenario",
                 "date_published": "2026-03-20",
-                "field_tested": "chow, bradford, bailao",
+                "field_tested": "chow, bradford",
                 "chow": 0.40,
                 "bradford": 0.30,
-                "bailao": 0.20,
                 "matlow": 0.10,
             },
             {
                 "poll_id": "other-scenario",
                 "date_published": "2026-04-01",
-                "field_tested": "chow, bradford, matlow",
+                "field_tested": "chow, bradford, furey",
                 "chow": 0.10,
                 "bradford": 0.10,
-                "bailao": 0.00,
-                "matlow": 0.70,
+                "furey": 0.70,
             },
         ]
     )
@@ -106,95 +104,22 @@ def test_polls_latest_trend_excludes_non_scenario_candidates(client, monkeypatch
     assert response.status_code == 200
     data = response.json()
 
-    expected = {"date", "chow", "bradford", "bailao"}
+    expected = {"date", "chow", "bradford"}
     assert len(data["trend"]) > 0
     for point in data["trend"]:
         assert set(point.keys()) == expected
         assert "matlow" not in point
 
 
-def test_polls_latest_includes_chow_pressure_payload(client):
-    """GET /api/polls/latest should include chow pressure payload."""
+def test_polls_latest_returns_candidate_status_and_ranges(client):
     response = client.get("/api/polls/latest")
     assert response.status_code == 200
     data = response.json()
 
-    assert "chow_pressure" in data
-    assert "value" in data["chow_pressure"]
-    assert "trend" in data["chow_pressure"]
+    assert "candidate_status" in data
+    assert set(data["candidate_status"].keys()) == {"declared", "potential", "declined"}
 
-
-def test_polls_latest_includes_trust_diagnostics(client):
-    """GET /api/polls/latest should include trust diagnostics metadata."""
-    response = client.get("/api/polls/latest")
-    assert response.status_code == 200
-    data = response.json()
-
-    assert "total_polls_available" in data
-    assert "polls_with_non_scenario_candidates" in data
-
-
-def test_polls_latest_includes_chow_structural_context(client):
-    """GET /api/polls/latest should include separate structural context for Chow."""
-    response = client.get("/api/polls/latest")
-    assert response.status_code == 200
-    data = response.json()
-
-    assert "chow_structural_context" in data
-    assert "score" in data["chow_structural_context"]
-    assert data["chow_structural_context"]["score"] == 60
-
-
-def test_polls_latest_reads_chow_structural_context_from_full_defeatability_csv(
-    client, monkeypatch
-):
-    """Should source mayor structural score from processed full defeatability file."""
-    import pandas as pd
-
-    polls_df = pd.DataFrame(
-        [
-            {
-                "poll_id": "p1",
-                "date_published": "2026-03-01",
-                "field_tested": "chow, bradford, bailao",
-                "chow": 0.45,
-                "bradford": 0.30,
-                "bailao": 0.20,
-                "other": 0.05,
-            }
-        ]
-    )
-    full_defeatability_df = pd.DataFrame(
-        [
-            {
-                "Ward": "Mayor",
-                "Elected Councillor": "Olivia Chow",
-                "Defeatability Score": 61,
-            },
-            {
-                "Ward": "10",
-                "Elected Councillor": "Ausma Malik",
-                "Defeatability Score": 70,
-            },
-        ]
-    )
-
-    real_read_csv = pd.read_csv
-
-    def fake_read_csv(path, *args, **kwargs):
-        p = str(path)
-        if p.endswith("polls.csv"):
-            return polls_df.copy()
-        if p.endswith("defeatability_full.csv"):
-            return full_defeatability_df.copy()
-        return real_read_csv(path, *args, **kwargs)
-
-    monkeypatch.setattr(pd, "read_csv", fake_read_csv)
-
-    response = client.get("/api/polls/latest")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["chow_structural_context"]["score"] == 61
-    assert (
-        data["chow_structural_context"]["source"] == "Matt Elliott defeatability index"
-    )
+    assert "candidate_ranges" in data
+    assert "declared" in data["candidate_ranges"]
+    assert "potential" in data["candidate_ranges"]
+    assert "declined" in data["candidate_ranges"]

@@ -8,7 +8,12 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 import pytest
 
-from src.aggregator import aggregate_polls, compute_poll_weights, get_scenario_polls
+from src.aggregator import (
+    aggregate_polls,
+    compute_poll_weights,
+    exclude_polls_with_declined_candidates,
+    get_scenario_polls,
+)
 
 
 @pytest.fixture
@@ -113,3 +118,18 @@ def test_get_scenario_polls_ignores_whitespace_only_scenario_candidates() -> Non
     out = get_scenario_polls(df, ["chow", "bradford", "   "])
 
     assert out["poll_id"].tolist() == ["a"]
+
+
+def test_exclude_polls_with_declined_candidates() -> None:
+    df = pd.DataFrame(
+        [
+            {"poll_id": "a", "field_tested": "chow,bradford,bailao"},
+            {"poll_id": "b", "field_tested": "chow,bradford,tory"},
+            {"poll_id": "c", "field_tested": "chow,bradford"},
+            {"poll_id": "d", "field_tested": "chow, bradford, Mendicino"},
+        ]
+    )
+
+    out = exclude_polls_with_declined_candidates(df, {"tory", "mendicino"})
+
+    assert out["poll_id"].tolist() == ["a", "c"]

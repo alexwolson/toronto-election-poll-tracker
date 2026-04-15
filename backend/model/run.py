@@ -6,17 +6,19 @@ from pathlib import Path
 import pandas as pd
 
 from .aggregator import aggregate_polls, get_latest_scenario_polls, get_scenario_polls
+from .aggregator import exclude_polls_with_declined_candidates
+from .candidates import CANDIDATE_STATUS, DECLINED_CANDIDATE_IDS
 from .phase import detect_phase
 from .simulation import WardSimulation
 
 
 SCENARIOS = {
-    "chow_bradford_bailao": ["chow", "bradford", "bailao"],
     "chow_bradford": ["chow", "bradford"],
-    "open_field_bradford_bailao": ["bradford", "bailao"],
+    "chow_bradford_furey": ["chow", "bradford", "furey"],
+    "open_field_bradford_furey": ["bradford", "furey"],
 }
 
-DEFAULT_SCENARIO = "chow_bradford_bailao"
+DEFAULT_SCENARIO = "chow_bradford"
 
 
 def _data_dir() -> Path:
@@ -50,14 +52,62 @@ def _classify_race(row: dict, challengers_for_ward: list[dict]) -> str:
     return "safe"
 
 
+def _ensure_generic_challenger(
+    challengers: pd.DataFrame, ward_data: pd.DataFrame
+) -> pd.DataFrame:
+    required_cols = [
+        "ward",
+        "candidate_name",
+        "name_recognition_tier",
+        "fundraising_tier",
+        "mayoral_alignment",
+        "is_endorsed_by_departing",
+    ]
+    out = challengers.copy()
+    for col in required_cols:
+        if col not in out.columns:
+            out[col] = None
+
+    rows = []
+    wards_with_challengers = (
+        set(out["ward"].dropna().astype(int).tolist()) if not out.empty else set()
+    )
+    for _, row in ward_data.iterrows():
+        ward = int(row["ward"])
+        if not bool(row.get("is_running", True)):
+            continue
+        if ward not in wards_with_challengers:
+            rows.append(
+                {
+                    "ward": ward,
+                    "candidate_name": "Generic Challenger",
+                    "name_recognition_tier": "unknown",
+                    "fundraising_tier": "low",
+                    "mayoral_alignment": "unaligned",
+                    "is_endorsed_by_departing": False,
+                }
+            )
+
+    if rows:
+        out = pd.concat([out, pd.DataFrame(rows)], ignore_index=True)
+
+    return out
+
+
 @lru_cache(maxsize=1)
 def run_model() -> dict:
     """Run the full model pipeline and return structured results."""
     data = load_processed_data()
+    data["challengers"] = _ensure_generic_challenger(
+        data["challengers"], data["defeatability"]
+    )
 
     polls_df = data["polls"]
     candidates = SCENARIOS.get(DEFAULT_SCENARIO, [])
-    scenario_polls = get_scenario_polls(polls_df, candidates)
+    eligible_polls = exclude_polls_with_declined_candidates(
+        polls_df, DECLINED_CANDIDATE_IDS
+    )
+    scenario_polls = get_scenario_polls(eligible_polls, candidates)
     current_polls = get_latest_scenario_polls(scenario_polls)
 
     mayoral_shares = aggregate_polls(current_polls, candidates)
@@ -109,4 +159,5 @@ def run_model() -> dict:
         "phase": detect_phase(data["challengers"]),
         "scenarios": SCENARIOS,
         "default_scenario": DEFAULT_SCENARIO,
+        "candidate_status": CANDIDATE_STATUS,
     }

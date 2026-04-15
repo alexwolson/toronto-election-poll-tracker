@@ -43,10 +43,29 @@ export function PollingChart({ data, candidates }: PollingChartProps) {
   return (
     <ResponsiveContainer width="100%" height={400}>
       <LineChart data={formattedData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
-        <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}%`} />
-        <Tooltip formatter={(v) => typeof v === 'number' ? `${v.toFixed(1)}%` : String(v)} />
+        <CartesianGrid strokeDasharray="2 6" stroke="var(--border)" />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+          axisLine={{ stroke: "var(--border)" }}
+          tickLine={{ stroke: "var(--border)" }}
+        />
+        <YAxis
+          domain={[0, 60]}
+          tickFormatter={(v) => `${v}%`}
+          tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+          axisLine={{ stroke: "var(--border)" }}
+          tickLine={{ stroke: "var(--border)" }}
+        />
+        <Tooltip
+          contentStyle={{
+            borderRadius: "12px",
+            border: "1px solid var(--line-strong)",
+            background: "var(--panel)",
+            boxShadow: "0 14px 22px -18px rgba(31, 64, 122, 0.35)",
+          }}
+          formatter={(v) => typeof v === "number" ? `${v.toFixed(1)}%` : String(v)}
+        />
         <Legend />
         {candidates.map((c) => (
           <Line
@@ -55,9 +74,9 @@ export function PollingChart({ data, candidates }: PollingChartProps) {
             dataKey={c}
             stroke={COLORS[c] || DEFAULT_COLOR}
             name={c.charAt(0).toUpperCase() + c.slice(1)}
-            strokeWidth={2}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
+            strokeWidth={2.5}
+            dot={{ r: 2.5, strokeWidth: 0 }}
+            activeDot={{ r: 5 }}
           />
         ))}
       </LineChart>

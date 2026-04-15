@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build:data": "uv run -m scripts.process_all && uv run scripts/build_snapshot.py",
     "dev:backend": "cd backend && .venv/bin/python -m uvicorn main:app --reload --port 8000",
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan.bold,green.bold\" \"npm run dev:backend\" \"npm run dev:frontend\""

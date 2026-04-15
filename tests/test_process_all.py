@@ -5,7 +5,6 @@ from scripts.process_all import (
     process_polls,
     process_council_alignment,
     process_defeatability,
-    process_defeatability_full,
     write_processed,
     process_ward_population,
 )
@@ -51,16 +50,6 @@ def test_process_defeatability_rejects_bad_ward():
         process_defeatability(FIXTURES / "defeatability_bad_ward.csv")
 
 
-def test_process_defeatability_full_produces_clean_output():
-    result = process_defeatability_full(FIXTURES / "defeatability_full_valid.csv")
-    assert isinstance(result, pd.DataFrame)
-    assert "Ward" in result.columns
-    assert "Defeatability Score" in result.columns
-    mayor_row = result[result["Ward"].astype(str).str.lower() == "mayor"]
-    assert not mayor_row.empty
-    assert int(mayor_row.iloc[0]["Defeatability Score"]) == 60
-
-
 def test_process_ward_population_computes_growth(tmp_path):
     csv = tmp_path / "ward_population.csv"
     # validate_ward_population requires exactly 25 wards (1–25)
@@ -97,6 +86,40 @@ def test_process_defeatability_merges_pop_growth(tmp_path):
     assert result.loc[result["ward"] == 2, "pop_growth_pct"].iloc[0] == pytest.approx(
         -0.03
     )
+
+
+def test_process_defeatability_supports_city_hall_watcher_format(tmp_path):
+    watcher_csv = tmp_path / "data-qT4Kx.csv"
+    watcher_csv.write_text(
+        "Ward,Ward Name,Elected Councillor,Elector Share,Vote Share,Defeatability Score,New Voter Margin\n"
+        "Mayor,City of Toronto,Olivia Chow,13.83%,37.17%,60,109521\n"
+        "1,Etobicoke North,Vincent Crisanti,9.63%,41.07%,58,2531\n"
+        "19,Beaches-East York,Brad Bradford,19.50%,54.71%,26,-2045\n"
+    )
+
+    overrides_csv = tmp_path / "ward_defeatability.csv"
+    overrides_csv.write_text(
+        "ward,councillor_name,election_year,is_byelection_incumbent,is_running,vote_share,electorate_share,defeatability_score,notes,last_updated\n"
+        "1,Vincent Crisanti,2022,false,true,0.40,0.09,50,,2026-01-01\n"
+        "19,Brad Bradford,2022,false,false,0.54,0.19,20,Open seat,2026-01-01\n"
+    )
+
+    result = process_defeatability(
+        watcher_csv,
+        preserve_metadata_from=overrides_csv,
+    )
+
+    assert sorted(result["ward"].tolist()) == [1, 19]
+    assert result.loc[result["ward"] == 1, "vote_share"].iloc[0] == pytest.approx(
+        0.4107
+    )
+    assert result.loc[result["ward"] == 1, "electorate_share"].iloc[0] == pytest.approx(
+        0.0963
+    )
+    assert result.loc[result["ward"] == 1, "defeatability_score"].iloc[
+        0
+    ] == pytest.approx(58)
+    assert bool(result.loc[result["ward"] == 19, "is_running"].iloc[0]) is False
 
 
 def test_write_processed_creates_readable_file(tmp_path):

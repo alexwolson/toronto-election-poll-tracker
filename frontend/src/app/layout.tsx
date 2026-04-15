@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Newsreader, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { PhaseBanner } from "@/components/phase-banner";
 import { getWards } from "@/lib/api";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
+
+const ibmMono = IBM_Plex_Mono({
+  variable: "--font-ibm-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -31,15 +38,29 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sourceSans.variable} ${newsreader.variable} ${ibmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PhaseBanner phase={phase} />
-        <nav className="border-b px-6 py-3 flex gap-6 text-sm font-medium">
-          <Link href="/" className="hover:underline">Home</Link>
-          <Link href="/wards" className="hover:underline">Wards</Link>
-          <Link href="/polls" className="hover:underline">Polls</Link>
-        </nav>
+        <div className="site-bg" aria-hidden="true" />
+        <header className="sticky top-0 z-30 border-b border-[var(--line-soft)] bg-[color:var(--glass)] backdrop-blur-sm">
+          <PhaseBanner phase={phase} />
+          <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-3 md:px-8">
+            <Link href="/" className="brand-mark">
+              Toronto Civic Pulse
+            </Link>
+            <div className="flex items-center gap-1 rounded-full border border-[var(--line-soft)] bg-[var(--panel)] p-1 text-sm">
+              <Link href="/" className="nav-pill">
+                Home
+              </Link>
+              <Link href="/wards" className="nav-pill">
+                Wards
+              </Link>
+              <Link href="/polls" className="nav-pill">
+                Polls
+              </Link>
+            </div>
+          </nav>
+        </header>
         {children}
       </body>
     </html>

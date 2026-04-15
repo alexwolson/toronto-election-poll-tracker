@@ -15,11 +15,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.aggregator import aggregate_polls, get_latest_scenario_polls
-from src.coattails import compute_coattail_adjustment
-from src.lean import compute_ward_mayoral_lean
-from src.names import KNOWN_CANDIDATES
-from src.validate import (
+from backend.model.aggregator import aggregate_polls, get_latest_scenario_polls
+from backend.model.coattails import compute_coattail_adjustment
+from backend.model.lean import compute_ward_mayoral_lean
+from backend.model.names import KNOWN_CANDIDATES
+from backend.model.validate import (
     ValidationError,
     validate_challengers,
     validate_council_alignment,
@@ -75,7 +75,9 @@ def process_council_alignment(input_path: Path) -> pd.DataFrame:
 
 
 def process_defeatability(
-    input_path: Path, pop_growth: pd.Series | None = None
+    input_path: Path,
+    pop_growth: pd.Series | None = None,
+    preserve_metadata_from: Path | None = None,
 ) -> pd.DataFrame:
     """Load, validate, and normalise ward defeatability CSV.
 
@@ -88,6 +90,78 @@ def process_defeatability(
         sys.exit(1)
 
     df = pd.read_csv(input_path)
+
+    if "Ward" in df.columns:
+        rename_map = {
+            "Ward": "ward",
+            "Elected Councillor": "councillor_name",
+            "Vote Share": "vote_share",
+            "Elector Share": "electorate_share",
+            "Defeatability Score": "defeatability_score",
+            "New Voter Margin": "new_voter_margin",
+        }
+        df = df.rename(columns=rename_map)
+        df = df[df["ward"].astype(str).str.strip().str.match(r"^\d+$")].copy()
+        df["ward"] = df["ward"].astype(int)
+
+        for col in ["vote_share", "electorate_share"]:
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace("%", "", regex=False)
+                .str.strip()
+                .astype(float)
+                / 100.0
+            )
+
+        df["defeatability_score"] = pd.to_numeric(
+            df["defeatability_score"], errors="coerce"
+        )
+        df["notes"] = ""
+        if "new_voter_margin" in df.columns:
+            df["notes"] = "New Voter Margin: " + df["new_voter_margin"].astype(str)
+
+        if preserve_metadata_from is not None and preserve_metadata_from.exists():
+            prior = pd.read_csv(preserve_metadata_from)
+            prior_meta = prior[
+                [
+                    "ward",
+                    "election_year",
+                    "is_byelection_incumbent",
+                    "is_running",
+                    "last_updated",
+                ]
+            ].drop_duplicates(subset=["ward"])
+            df = df.merge(prior_meta, on="ward", how="left")
+        else:
+            df["election_year"] = 2022
+            df["is_byelection_incumbent"] = False
+            df["is_running"] = True
+            df["last_updated"] = datetime.now(timezone.utc).date().isoformat()
+
+        df["election_year"] = df["election_year"].fillna(2022).astype(int)
+        df["is_byelection_incumbent"] = (
+            df["is_byelection_incumbent"].fillna(False).astype(bool)
+        )
+        df["is_running"] = df["is_running"].fillna(True).astype(bool)
+        df["last_updated"] = df["last_updated"].fillna(
+            datetime.now(timezone.utc).date().isoformat()
+        )
+
+        df = df[
+            [
+                "ward",
+                "councillor_name",
+                "election_year",
+                "is_byelection_incumbent",
+                "is_running",
+                "vote_share",
+                "electorate_share",
+                "defeatability_score",
+                "notes",
+                "last_updated",
+            ]
+        ]
 
     try:
         df["ward"] = df["ward"].astype(int)
@@ -309,11 +383,19 @@ def main() -> None:
 
     print("Processing ward defeatability...")
     defeatability_path = RAW / "defeatability" / "ward_defeatability.csv"
-    if defeatability_path.exists():
-        defeatability = process_defeatability(defeatability_path, pop_growth=pop_growth)
+    watcher_path = RAW / "defeatability" / "data-qT4Kx.csv"
+    source_path = watcher_path if watcher_path.exists() else defeatability_path
+    if source_path.exists():
+        defeatability = process_defeatability(
+            source_path,
+            pop_growth=pop_growth,
+            preserve_metadata_from=defeatability_path
+            if defeatability_path.exists()
+            else None,
+        )
         write_processed(defeatability, PROCESSED / "ward_defeatability.csv")
     else:
-        print(f"  Skipping: {defeatability_path} (not found)")
+        print(f"  Skipping: {source_path} (not found)")
 
     print("Processing full defeatability table...")
     full_defeatability_path = RAW / "defeatability" / "data-qT4Kx.csv"

@@ -124,3 +124,26 @@ def get_scenario_polls(
     mask = df["field_tested"].apply(lambda f: norm(f) == target)
     out = df[mask]
     return out if not out.empty else df
+
+
+def exclude_polls_with_declined_candidates(
+    df: pd.DataFrame, declined_candidate_ids: set[str]
+) -> pd.DataFrame:
+    if df.empty or not declined_candidate_ids or "field_tested" not in df.columns:
+        return df
+
+    declined = {
+        str(c).strip().lower() for c in declined_candidate_ids if str(c).strip()
+    }
+
+    def has_declined(field: str) -> bool:
+        if pd.isna(field):
+            return False
+        candidates = {
+            str(c).strip().lower()
+            for c in str(field).split(",")
+            if str(c).strip() and str(c).strip().lower() != "other"
+        }
+        return len(candidates.intersection(declined)) > 0
+
+    return df[~df["field_tested"].apply(has_declined)]

@@ -1,44 +1,11 @@
 from fastapi import APIRouter
 from db.storage import init_db, get_all_polls, save_poll
 from scrapers.wikipedia import scrape_wikipedia_polls
-from model.chow_pressure import compute_chow_pressure_payload
+from model.candidates import CANDIDATE_STATUS, DECLINED_CANDIDATE_IDS
 
 router = APIRouter()
 
 init_db()
-
-
-def _read_chow_structural_context(data_dir):
-    import pandas as pd
-
-    default = {
-        "score": None,
-        "source": "Matt Elliott defeatability index",
-    }
-
-    path = data_dir / "defeatability_full.csv"
-    try:
-        df = pd.read_csv(path)
-    except Exception:
-        return default
-    required_cols = {"Ward", "Elected Councillor", "Defeatability Score"}
-    if not required_cols.issubset(set(df.columns)):
-        return default
-
-    mayor_rows = df[df["Ward"].astype(str).str.strip().str.lower() == "mayor"]
-    if mayor_rows.empty:
-        return default
-
-    score_val = pd.to_numeric(
-        mayor_rows.iloc[0]["Defeatability Score"], errors="coerce"
-    )
-    if pd.isna(score_val):
-        return default
-
-    return {
-        "score": int(score_val),
-        "source": "Matt Elliott defeatability index",
-    }
 
 
 @router.get("")
@@ -68,6 +35,7 @@ def get_latest_polls():
     import pandas as pd
     from model.aggregator import (
         aggregate_polls,
+        exclude_polls_with_declined_candidates,
         get_latest_scenario_polls,
         get_scenario_polls,
     )
@@ -76,38 +44,55 @@ def get_latest_polls():
     def normalize_candidate(value: str) -> str:
         return str(value).strip().lower()
 
-    def parse_field(field: str) -> list[str]:
+    def field_candidates(field: object) -> set[str]:
         if pd.isna(field):
-            return []
-        return [
+            return set()
+        return {
             normalize_candidate(c)
             for c in str(field).split(",")
-            if normalize_candidate(c)
-        ]
+            if normalize_candidate(c) and normalize_candidate(c) != "other"
+        }
+
+    def candidate_ranges(
+        df: pd.DataFrame,
+    ) -> dict[str, dict[str, dict[str, float] | None]]:
+        out: dict[str, dict[str, dict[str, float] | None]] = {
+            "declared": {},
+            "potential": {},
+            "declined": {},
+        }
+        for status, candidates in CANDIDATE_STATUS.items():
+            for candidate in candidates:
+                cid = candidate["id"]
+                if cid not in df.columns:
+                    out[status][cid] = None
+                    continue
+                series = pd.to_numeric(df[cid], errors="coerce").dropna()
+                if series.empty:
+                    out[status][cid] = None
+                    continue
+                out[status][cid] = {
+                    "min": round(float(series.min()) * 100, 1),
+                    "max": round(float(series.max()) * 100, 1),
+                }
+        return out
 
     data_dir = Path(__file__).parent.parent.parent / "data" / "processed"
     polls_df = pd.read_csv(data_dir / "polls.csv")
-    chow_structural_context = _read_chow_structural_context(data_dir)
+    polls_df = polls_df.copy()
+    polls_df["_field_candidates"] = polls_df["field_tested"].apply(field_candidates)
+    polls_df["_contains_declined"] = polls_df["_field_candidates"].apply(
+        lambda names: len(names.intersection(DECLINED_CANDIDATE_IDS)) > 0
+    )
 
     scenario_candidates = SCENARIOS.get(DEFAULT_SCENARIO, [])
-    scenario_set = set([normalize_candidate(c) for c in scenario_candidates])
-    scenario_polls = get_scenario_polls(polls_df, scenario_candidates)
+    eligible_polls = exclude_polls_with_declined_candidates(
+        polls_df, DECLINED_CANDIDATE_IDS
+    )
+    scenario_polls = get_scenario_polls(eligible_polls, scenario_candidates)
     current_polls = get_latest_scenario_polls(scenario_polls)
     aggregated = aggregate_polls(current_polls, scenario_candidates)
     aggregated = {k: round(v, 4) for k, v in aggregated.items() if v > 0.001}
-    chow_pressure = compute_chow_pressure_payload(current_polls)
-
-    polls_with_non_scenario_candidates = 0
-    if "field_tested" in polls_df.columns:
-        for field in polls_df["field_tested"].tolist():
-            field_set = set(parse_field(field))
-            non_scenario = [
-                c
-                for c in field_set
-                if c not in scenario_set and c not in {"other", "undecided"}
-            ]
-            if non_scenario:
-                polls_with_non_scenario_candidates += 1
 
     trend_df = current_polls.assign(
         _parsed_date=pd.to_datetime(current_polls["date_published"], errors="coerce"),
@@ -125,13 +110,37 @@ def get_latest_polls():
                 point[candidate] = 0.0
         trend.append(point)
 
+    history = []
+    for _, row in polls_df.sort_values("date_published", ascending=False).iterrows():
+        row_field = field_candidates(row.get("field_tested"))
+        is_head_to_head = len(row_field) == 2
+        excluded_reason = None
+        if bool(row.get("_contains_declined", False)):
+            excluded_reason = "declined_candidate"
+        elif is_head_to_head:
+            excluded_reason = "head_to_head"
+        history.append(
+            {
+                "poll_id": str(row.get("poll_id", "")),
+                "date_published": str(row.get("date_published", "")),
+                "firm": str(row.get("firm", "")),
+                "sample_size": int(row.get("sample_size", 0))
+                if pd.notna(row.get("sample_size"))
+                else 0,
+                "field_tested": str(row.get("field_tested", "")),
+                "excluded_from_model": excluded_reason is not None,
+                "excluded_reason": excluded_reason,
+            }
+        )
+
     return {
         "aggregated": aggregated,
         "polls_used": len(current_polls),
-        "total_polls_available": len(polls_df),
-        "polls_with_non_scenario_candidates": polls_with_non_scenario_candidates,
         "candidates": sorted(aggregated.keys()),
         "trend": trend,
-        "chow_pressure": chow_pressure,
-        "chow_structural_context": chow_structural_context,
+        "total_polls_available": int(len(polls_df)),
+        "excluded_declined_polls": int(polls_df["_contains_declined"].sum()),
+        "candidate_status": CANDIDATE_STATUS,
+        "candidate_ranges": candidate_ranges(polls_df),
+        "poll_history": history,
     }

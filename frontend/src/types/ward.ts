@@ -61,4 +61,5 @@ export interface WardsResponse {
 export interface WardResponse {
   ward: Ward | null;
   challengers: Challenger[];
+  error?: "not_found" | "unavailable";
 }

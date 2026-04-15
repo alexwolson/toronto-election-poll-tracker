@@ -43,14 +43,25 @@ export async function getWard(wardNum: number): Promise<WardResponse> {
   const fallback: WardResponse = {
     ward: null,
     challengers: [],
+    error: "unavailable",
   };
 
   try {
     const res = await fetch(`${API_URL}/api/wards/${wardNum}`, {
       next: { revalidate: 60 },
     });
+
+    if (res.status === 404) {
+      return { ward: null, challengers: [], error: "not_found" };
+    }
+
     if (!res.ok) return fallback;
-    return res.json();
+
+    const data = (await res.json()) as WardResponse;
+    return {
+      ward: data.ward ?? null,
+      challengers: data.challengers ?? [],
+    };
   } catch (error) {
     console.error(`Failed to fetch ward ${wardNum}:`, error);
     return fallback;
@@ -62,60 +73,37 @@ type PollTrendPoint = {
   [candidate: string]: number | string;
 };
 
-type ChowPressureBand = "low" | "moderate" | "elevated";
-type ChowPressureTrend = "rising" | "flat" | "easing" | "insufficient";
-
-type ChowPressurePayload = {
-  value: number;
-  band: ChowPressureBand;
-  trend: ChowPressureTrend;
-  methodology_version: string;
-  computed_at: string;
-  diagnostics: {
-    adaptive_half_life_days: number;
-    adaptive_trend_horizon_days: number;
-    chow_share_std_recent: number;
-  };
-};
-
 type PollingAveragesResponse = {
   aggregated: Record<string, number>;
   polls_used: number;
-  total_polls_available: number;
-  polls_with_non_scenario_candidates: number;
   candidates: string[];
   trend: PollTrendPoint[];
-  chow_pressure: ChowPressurePayload;
-  chow_structural_context: {
-    score: number | null;
-    source: string;
-  };
+  total_polls_available: number;
+  excluded_declined_polls: number;
+  candidate_status: Record<string, { id: string; name: string; summary: string }[]>;
+  candidate_ranges: Record<string, Record<string, { min: number; max: number } | null>>;
+  poll_history: {
+    poll_id: string;
+    date_published: string;
+    firm: string;
+    sample_size: number;
+    field_tested: string;
+    excluded_from_model: boolean;
+    excluded_reason: string | null;
+  }[];
 };
 
 export async function getPollingAverages(): Promise<PollingAveragesResponse> {
   const fallback: PollingAveragesResponse = {
     aggregated: {},
     polls_used: 0,
-    total_polls_available: 0,
-    polls_with_non_scenario_candidates: 0,
     candidates: [],
     trend: [],
-    chow_pressure: {
-      value: 0,
-      band: "low",
-      trend: "insufficient",
-      methodology_version: "v1-fragmentation-adjusted-demand",
-      computed_at: "",
-      diagnostics: {
-        adaptive_half_life_days: 21,
-        adaptive_trend_horizon_days: 28,
-        chow_share_std_recent: 0,
-      },
-    },
-    chow_structural_context: {
-      score: null,
-      source: "",
-    },
+    total_polls_available: 0,
+    excluded_declined_polls: 0,
+    candidate_status: { declared: [], potential: [], declined: [] },
+    candidate_ranges: { declared: {}, potential: {}, declined: {} },
+    poll_history: [],
   };
 
   try {
@@ -128,13 +116,13 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
     return {
       aggregated: data.aggregated ?? {},
       polls_used: data.polls_used ?? 0,
-      total_polls_available: data.total_polls_available ?? 0,
-      polls_with_non_scenario_candidates: data.polls_with_non_scenario_candidates ?? 0,
       candidates: data.candidates ?? [],
       trend: data.trend ?? [],
-      chow_pressure: data.chow_pressure ?? fallback.chow_pressure,
-      chow_structural_context:
-        data.chow_structural_context ?? fallback.chow_structural_context,
+      total_polls_available: data.total_polls_available ?? 0,
+      excluded_declined_polls: data.excluded_declined_polls ?? 0,
+      candidate_status: data.candidate_status ?? { declared: [], potential: [], declined: [] },
+      candidate_ranges: data.candidate_ranges ?? { declared: {}, potential: {}, declined: {} },
+      poll_history: data.poll_history ?? [],
     };
   } catch (error) {
     console.error("Failed to fetch polling averages:", error);

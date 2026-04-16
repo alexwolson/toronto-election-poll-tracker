@@ -11,7 +11,7 @@ export default async function Home() {
   return (
     <main>
       <div className="civic-shell space-y-8">
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
           <div className="surface-panel p-6 md:p-8">
             <p className="hero-kicker">Municipal projection desk</p>
             <h1 className="mt-4 text-4xl leading-tight font-heading md:text-6xl">

@@ -1,7 +1,6 @@
 // frontend/src/components/voter-alignment-dots.tsx
 import type { PoolModel } from "@/lib/api";
 import { computeDotCounts } from "@/lib/dot-counts";
-import type { DotCounts } from "@/lib/dot-counts";
 
 type DotVariant =
   | "chow-floor"
@@ -10,17 +9,18 @@ type DotVariant =
   | "anti-committed"
   | "disengaged";
 
+const VARIANT_CLASSES: Record<DotVariant, string> = {
+  "chow-floor":     "bg-[#2563eb]",
+  "chow-ceiling":   "bg-transparent border-[1.5px] border-dashed border-[#6898c4]",
+  "anti-available": "bg-transparent border-[1.5px] border-dashed border-[#c53030]",
+  "anti-committed": "bg-[#c53030]",
+  "disengaged":     "bg-[#c8c4be]",
+};
+
 function Dot({ variant }: { variant: DotVariant }) {
   const base = "block rounded-full box-border flex-shrink-0";
   const size = "w-[14px] h-[14px]";
-  const styles: Record<DotVariant, string> = {
-    "chow-floor":     "bg-[#2563eb]",
-    "chow-ceiling":   "bg-transparent border-[1.5px] border-dashed border-[#6898c4]",
-    "anti-available": "bg-transparent border-[1.5px] border-dashed border-[#c53030]",
-    "anti-committed": "bg-[#c53030]",
-    "disengaged":     "bg-[#c8c4be]",
-  };
-  return <span className={`${base} ${size} ${styles[variant]}`} />;
+  return <span className={`${base} ${size} ${VARIANT_CLASSES[variant]}`} />;
 }
 
 function makeDots(count: number, variant: DotVariant) {
@@ -59,17 +59,10 @@ function LegendItem({
 }) {
   const size = "w-[11px] h-[11px]";
   const base = "inline-block rounded-full flex-shrink-0 mt-[1px] box-border";
-  const styles: Record<DotVariant, string> = {
-    "chow-floor":     "bg-[#2563eb]",
-    "chow-ceiling":   "bg-transparent border-[1.5px] border-dashed border-[#6898c4]",
-    "anti-available": "bg-transparent border-[1.5px] border-dashed border-[#c53030]",
-    "anti-committed": "bg-[#c53030]",
-    "disengaged":     "bg-[#c8c4be]",
-  };
   const approxK = count * 5;
   return (
     <div className="flex items-start gap-[6px]">
-      <span className={`${base} ${size} ${styles[variant]}`} />
+      <span className={`${base} ${size} ${VARIANT_CLASSES[variant]}`} />
       <span className="font-mono text-[6.5px] text-[#444] leading-[1.4]">
         <strong>{label}</strong> — ~{approxK}K
         <br />
@@ -136,7 +129,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
           {makeDots(chowCeiling, "chow-ceiling")}
         </div>
 
-        {/* 50% divider */}
+        {/* 50% divider: h = 5 rows × 14px + 4 gaps × 3px = 82px */}
         <div className="w-[44px] flex-shrink-0 relative h-[82px]">
           <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#1a1a1a] -translate-x-1/2" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[color:var(--card)] px-[3px] py-[2px]">

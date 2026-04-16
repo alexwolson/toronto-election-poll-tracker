@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getWards, getPollingAverages } from "@/lib/api";
-import { MayoralPoolDisplay } from "@/components/mayoral-pool-display";
+import { VoterAlignmentDots } from "@/components/voter-alignment-dots";
 
 export default async function Home() {
   const [wardsData, pollsData] = await Promise.all([getWards(), getPollingAverages()]);
@@ -42,7 +42,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <MayoralPoolDisplay model={pollsData.pool_model} />
+          <VoterAlignmentDots model={pollsData.pool_model} />
         </section>
 
         <section className="grid gap-4 md:grid-cols-2">

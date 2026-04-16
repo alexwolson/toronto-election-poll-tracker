@@ -11,3 +11,5 @@ backend/model/__pycache__/
 backend/scrapers/__pycache__/
 backend/tasks/__pycache__/
 .DS_Store
+.superpowers/
+.worktrees/

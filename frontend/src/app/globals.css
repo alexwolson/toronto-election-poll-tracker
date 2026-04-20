@@ -49,11 +49,11 @@
 }
 
 :root {
-  --background: oklch(0.985 0.01 92);
+  --background: #faf9f6;
   --foreground: oklch(0.24 0.03 248);
-  --card: oklch(0.995 0.006 80);
+  --card: #faf9f6;
   --card-foreground: oklch(0.22 0.03 248);
-  --popover: oklch(0.995 0.006 80);
+  --popover: #faf9f6;
   --popover-foreground: oklch(0.22 0.03 248);
   --primary: oklch(0.42 0.08 255);
   --primary-foreground: oklch(0.98 0.01 90);
@@ -64,27 +64,27 @@
   --accent: oklch(0.74 0.12 77);
   --accent-foreground: oklch(0.24 0.04 248);
   --destructive: oklch(0.58 0.2 28);
-  --border: oklch(0.86 0.02 90);
-  --input: oklch(0.9 0.017 90);
+  --border: #ccc;
+  --input: #ccc;
   --ring: oklch(0.63 0.1 255);
   --chart-1: oklch(0.66 0.11 77);
   --chart-2: oklch(0.52 0.1 247);
   --chart-3: oklch(0.62 0.12 150);
   --chart-4: oklch(0.56 0.11 20);
   --chart-5: oklch(0.47 0.09 312);
-  --radius: 0.95rem;
-  --sidebar: oklch(0.98 0.008 90);
+  --radius: 0rem;
+  --sidebar: #faf9f6;
   --sidebar-foreground: oklch(0.24 0.03 248);
   --sidebar-primary: oklch(0.42 0.08 255);
   --sidebar-primary-foreground: oklch(0.98 0.01 90);
   --sidebar-accent: oklch(0.75 0.12 77);
   --sidebar-accent-foreground: oklch(0.24 0.03 248);
-  --sidebar-border: oklch(0.86 0.02 90);
+  --sidebar-border: #ccc;
   --sidebar-ring: oklch(0.63 0.1 255);
-  --line-soft: color-mix(in oklch, var(--foreground) 16%, white);
-  --line-strong: color-mix(in oklch, var(--foreground) 32%, white);
-  --panel: color-mix(in oklch, var(--card) 92%, white);
-  --glass: color-mix(in oklch, var(--background) 76%, white);
+  --line-soft: #ccc;
+  --line-strong: #1a1a1a;
+  --panel: #faf9f6;
+  --glass: #faf9f6;
 }
 
 @layer base {
@@ -92,20 +92,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at 18% 12%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 52%),
-      radial-gradient(circle at 88% 18%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 44%),
-      linear-gradient(to bottom, color-mix(in oklch, var(--background) 94%, white), var(--background));
+    background: #faf9f6;
+    color: oklch(0.24 0.03 248);
     min-height: 100vh;
   }
   html {
     @apply font-sans;
   }
-  h1,
-  h2,
-  h3,
-  .font-heading {
+  h1, h2, h3, .font-heading {
     font-family: var(--font-newsreader), serif;
     letter-spacing: -0.01em;
   }
@@ -124,72 +118,122 @@
   mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
 }
 
-.brand-mark {
-  font-family: var(--font-newsreader), serif;
-  font-size: clamp(1rem, 0.92rem + 0.45vw, 1.38rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--foreground);
-}
+/* ── Newspaper design system ─────────────────────────────── */
 
-.nav-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  padding: 0.35rem 0.86rem;
-  font-size: 0.84rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: color-mix(in oklch, var(--foreground) 80%, white);
-  transition: 180ms ease;
-}
-
-.nav-pill:hover {
-  border-color: var(--line-strong);
-  background: color-mix(in oklch, var(--accent) 26%, white);
-  color: var(--foreground);
-}
-
-.civic-shell {
+.np-shell {
   width: 100%;
   max-width: 72rem;
   margin: 0 auto;
-  padding: 2.2rem 1.25rem 3rem;
+  padding: 2rem 1.25rem 3rem;
 }
 
 @media (min-width: 768px) {
-  .civic-shell {
-    padding: 3rem 2rem 4rem;
+  .np-shell {
+    padding: 2.5rem 2rem 4rem;
   }
 }
 
-.hero-kicker {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--panel) 88%, white);
-  padding: 0.25rem 0.75rem;
+.np-kicker {
   font-family: var(--font-ibm-mono), monospace;
-  font-size: 0.71rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #888;
 }
 
-.surface-panel {
-  border: 1px solid var(--line-soft);
-  background: linear-gradient(145deg, color-mix(in oklch, var(--panel) 80%, white), var(--card));
-  border-radius: calc(var(--radius) * 1.35);
-  box-shadow:
-    0 12px 28px -24px color-mix(in oklch, var(--primary) 52%, transparent),
-    inset 0 1px 0 color-mix(in oklch, white 92%, transparent);
+.np-rule {
+  border: none;
+  border-top: 2px solid #1a1a1a;
+  margin: 0;
 }
 
-.stat-chip {
-  border: 1px solid var(--line-soft);
-  border-radius: calc(var(--radius) * 1.1);
-  background: color-mix(in oklch, var(--card) 88%, white);
+.np-rule-thin {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 0;
 }
+
+.np-cell {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  padding: 0.55rem 0.65rem;
+  background: #faf9f6;
+  transition: background 0.1s;
+}
+
+.np-cell:hover {
+  background: #f0ede8;
+}
+
+.np-tag {
+  display: inline-block;
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  line-height: 1.4;
+}
+
+.np-ward-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-left: 1px solid #ccc;
+  border-top: 1px solid #ccc;
+}
+
+@media (min-width: 640px) {
+  .np-ward-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .np-ward-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.np-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0;
+}
+
+.np-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.np-table th {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: #f0ede8;
+  border-bottom: 1px solid #ccc;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.np-table td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid #ccc;
+  vertical-align: top;
+}
+
+.np-table tr:hover td {
+  background: #f0ede8;
+}
+
+.np-table tr:last-child td {
+  border-bottom: none;
+}
+

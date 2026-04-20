@@ -13,7 +13,7 @@ export function MastheadNav() {
   const pathname = usePathname();
 
   return (
-    <nav style={{ borderTop: "2px solid #1a1a1a", display: "flex" }}>
+    <nav aria-label="Site navigation" style={{ borderTop: "2px solid #1a1a1a", display: "flex" }}>
       {NAV_LINKS.map((link, i) => {
         const active =
           link.href === "/"

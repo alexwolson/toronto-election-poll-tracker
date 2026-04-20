@@ -98,6 +98,7 @@
   }
   html {
     @apply font-sans;
+    font-size: 18px;
   }
   h1, h2, h3, .font-heading {
     font-family: var(--font-newsreader), serif;

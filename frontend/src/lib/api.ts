@@ -67,6 +67,7 @@ export type PoolModel = {
     protective_progressive_reserve: number;
   };
   candidates: Record<string, { share: number; capture_rate: number }>;
+  withdrawn_in_transition: number;
   uncaptured_anti_chow: number;
   consolidation_trend: ConsolidationTrend;
   approval: { approve: number; disapprove: number; not_sure: number };

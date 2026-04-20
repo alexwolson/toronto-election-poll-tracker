@@ -49,7 +49,7 @@ export default async function Home() {
           </div>
 
           {[
-            { label: "Total wards", value: 25 },
+            { label: "Total wards", value: wardsData.wards.length },
             { label: "Competitive", value: competitiveCount },
             { label: "Open seats", value: openCount },
             { label: "Polls tracked", value: pollsData.total_polls_available },
@@ -186,7 +186,6 @@ export default async function Home() {
         <div
           style={{
             padding: "1rem 1.25rem",
-            borderRight: "1px solid #ccc",
           }}
         >
           <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>

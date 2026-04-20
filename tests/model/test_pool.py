@@ -1,4 +1,5 @@
 """Tests for the Phase 1 mayoral pool model."""
+from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
 
@@ -140,3 +141,47 @@ def test_polls_latest_includes_pool_model():
     assert "pool" in pm
     assert "candidates" in pm
     assert "bradford" in pm["candidates"]
+
+
+def test_compute_withdrawn_share_returns_declined_share():
+    """Single multi-candidate poll: withdrawn candidate share is returned."""
+    from backend.model.pool import compute_withdrawn_share
+    polls = pd.DataFrame([{
+        "date_published": "2026-04-13",
+        "field_tested": "bradford,chow,furey",
+        "bradford": 0.35,
+        "chow": 0.46,
+        "furey": 0.11,
+    }])
+    result = compute_withdrawn_share(
+        polls, {"furey"},
+        reference_date=datetime(2026, 4, 13, tzinfo=timezone.utc),
+    )
+    assert abs(result - 0.11) < 0.001
+
+
+def test_compute_withdrawn_share_excludes_h2h_polls():
+    """H2H polls (only 1 non-Chow candidate) are excluded."""
+    from backend.model.pool import compute_withdrawn_share
+    polls = pd.DataFrame([{
+        "date_published": "2026-04-13",
+        "field_tested": "bradford,chow",
+        "bradford": 0.38,
+        "chow": 0.47,
+    }])
+    result = compute_withdrawn_share(polls, {"furey"})
+    assert result == 0.0
+
+
+def test_compute_withdrawn_share_empty_declined_ids():
+    """Empty declined set returns 0.0 regardless of poll content."""
+    from backend.model.pool import compute_withdrawn_share
+    polls = pd.DataFrame([{
+        "date_published": "2026-04-13",
+        "field_tested": "bradford,chow,furey",
+        "bradford": 0.35,
+        "chow": 0.46,
+        "furey": 0.11,
+    }])
+    result = compute_withdrawn_share(polls, set())
+    assert result == 0.0

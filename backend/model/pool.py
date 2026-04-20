@@ -191,6 +191,43 @@ def compute_candidate_capture_rates(
     return result
 
 
+def compute_withdrawn_share(
+    polls_df: pd.DataFrame,
+    declined_ids: set[str],
+    reference_date: datetime | None = None,
+) -> float:
+    """Recency-weighted share going to withdrawn/declined candidates in multi-candidate polls.
+
+    Uses multi-candidate polls (2+ non-Chow candidates) and 12-day half-life decay,
+    matching the mechanics of compute_candidate_capture_rates. Sums shares across
+    all declined_ids that appear as columns in the dataset.
+    Returns 0.0 if declined_ids is empty or no qualifying polls exist.
+    """
+    if not declined_ids:
+        return 0.0
+
+    multi = polls_df[
+        polls_df["field_tested"].apply(_count_non_chow_candidates) >= 2
+    ].copy()
+
+    if multi.empty:
+        return 0.0
+
+    weights = multi["date_published"].apply(
+        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
+    )
+    total_w = float(weights.sum())
+    if total_w <= 0:
+        return 0.0
+
+    total_share = pd.Series(0.0, index=multi.index)
+    for cand in declined_ids:
+        if cand in multi.columns:
+            total_share += pd.to_numeric(multi[cand], errors="coerce").fillna(0.0)
+
+    return float((total_share * weights).sum() / total_w)
+
+
 def compute_consolidation_trend(
     polls_df: pd.DataFrame,
     anti_chow_pool: float,

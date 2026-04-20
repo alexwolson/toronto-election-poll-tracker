@@ -41,7 +41,7 @@ export function WardCard({ ward }: WardCardProps) {
           style={{
             fontFamily: "var(--font-ibm-mono), monospace",
             fontSize: "0.55rem",
-            color: "#aaa",
+            color: "#666",
             textTransform: "uppercase",
             letterSpacing: "0.06em",
             marginBottom: "0.2rem",
@@ -71,7 +71,7 @@ export function WardCard({ ward }: WardCardProps) {
         >
           {titleName}
           {ward.is_byelection_incumbent && (
-            <span style={{ color: "#aaa" }}> · By-elec.</span>
+            <span style={{ color: "#666" }}> · By-elec.</span>
           )}
         </div>
         <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>

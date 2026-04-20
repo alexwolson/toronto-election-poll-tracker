@@ -44,7 +44,7 @@ export default async function RootLayout({
       className={`${sourceSans.variable} ${newsreader.variable} ${ibmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <div className="site-bg" aria-hidden="true" />
+
         <header style={{ borderBottom: "1px solid #ccc" }}>
           <div
             style={{
@@ -69,7 +69,7 @@ export default async function RootLayout({
               style={{
                 fontFamily: "var(--font-ibm-mono), monospace",
                 fontSize: "0.58rem",
-                color: "#888",
+                color: "#555",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 marginTop: "0.3rem",

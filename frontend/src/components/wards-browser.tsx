@@ -237,7 +237,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                   style={{
                     fontFamily: "var(--font-ibm-mono), monospace",
                     fontSize: "0.6rem",
-                    color: "#888",
+                    color: "#555",
                     textTransform: "uppercase",
                   }}
                 >
@@ -279,7 +279,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                       style={{
                         fontFamily: "var(--font-ibm-mono), monospace",
                         fontSize: "0.58rem",
-                        color: "#888",
+                        color: "#555",
                         marginTop: "0.1rem",
                       }}
                     >

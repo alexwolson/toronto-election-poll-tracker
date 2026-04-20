@@ -47,7 +47,7 @@ export default async function WardDetailPage({ params }: Props) {
       <main className="np-shell" style={{ maxWidth: "48rem" }}>
         <Link
           href="/wards"
-          style={{ ...MONO, fontSize: "0.65rem", color: "#888", textTransform: "uppercase", letterSpacing: "0.08em", textDecoration: "none", display: "inline-block", marginBottom: "1.5rem" }}
+          style={{ ...MONO, fontSize: "0.65rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.08em", textDecoration: "none", display: "inline-block", marginBottom: "1.5rem" }}
         >
           ← All Wards
         </Link>
@@ -56,7 +56,7 @@ export default async function WardDetailPage({ params }: Props) {
         </h1>
         <div style={{ border: "1px solid #ccc", padding: "1rem" }}>
           <p style={{ fontWeight: 600 }}>Ward data is temporarily unavailable.</p>
-          <p style={{ ...MONO, fontSize: "0.65rem", color: "#888", marginTop: "0.5rem" }}>
+          <p style={{ ...MONO, fontSize: "0.65rem", color: "#555", marginTop: "0.5rem" }}>
             The backend API might be down. Please try again shortly.
           </p>
         </div>
@@ -87,7 +87,7 @@ export default async function WardDetailPage({ params }: Props) {
         style={{
           ...MONO,
           fontSize: "0.62rem",
-          color: "#888",
+          color: "#555",
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           textDecoration: "none",
@@ -133,7 +133,7 @@ export default async function WardDetailPage({ params }: Props) {
       >
         {displayName}
         {ward.is_running && ward.is_byelection_incumbent && (
-          <span style={{ color: "#aaa" }}> · By-election incumbent</span>
+          <span style={{ color: "#666" }}> · By-election incumbent</span>
         )}
       </p>
       <hr className="np-rule" />
@@ -204,7 +204,7 @@ export default async function WardDetailPage({ params }: Props) {
                     <span
                       style={{
                         fontSize: "0.75rem",
-                        color: "#888",
+                        color: "#555",
                         display: "block",
                         marginTop: "0.1rem",
                       }}
@@ -269,11 +269,11 @@ export default async function WardDetailPage({ params }: Props) {
       <section>
         <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
           Challengers{" "}
-          <span style={{ color: "#bbb" }}>({challengers.length})</span>
+          <span style={{ color: "#777" }}>({challengers.length})</span>
         </div>
         <hr className="np-rule" />
         {challengers.length === 0 ? (
-          <p style={{ ...MONO, fontSize: "0.65rem", color: "#999", padding: "0.75rem 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <p style={{ ...MONO, fontSize: "0.65rem", color: "#666", padding: "0.75rem 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             No challenger data entered yet.
           </p>
         ) : (
@@ -288,7 +288,7 @@ export default async function WardDetailPage({ params }: Props) {
                         <span style={{ color: "#15803d", marginLeft: "0.4rem" }}>★</span>
                       )}
                     </span>
-                    <span style={{ ...MONO, fontSize: "0.6rem", color: "#888" }}>
+                    <span style={{ ...MONO, fontSize: "0.6rem", color: "#555" }}>
                       Aligned: {c.mayoral_alignment}
                       {c.fundraising_tier && ` · Fundraising: ${c.fundraising_tier}`}
                     </span>

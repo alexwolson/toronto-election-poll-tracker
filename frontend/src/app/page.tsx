@@ -41,7 +41,7 @@ export default async function Home() {
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.1em",
-              color: "#888",
+              color: "#555",
               marginBottom: "0.75rem",
             }}
           >
@@ -68,7 +68,7 @@ export default async function Home() {
                   fontSize: "0.55rem",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "#aaa",
+                  color: "#666",
                   marginBottom: "0.2rem",
                 }}
               >
@@ -92,7 +92,7 @@ export default async function Home() {
             style={{
               fontFamily: "var(--font-newsreader), serif",
               fontSize: "0.7rem",
-              color: "#999",
+              color: "#666",
               fontStyle: "italic",
               lineHeight: 1.5,
               marginTop: "0.75rem",
@@ -142,7 +142,7 @@ export default async function Home() {
             style={{
               fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.65rem",
-              color: "#aaa",
+              color: "#666",
             }}
           >
             →
@@ -176,7 +176,7 @@ export default async function Home() {
             style={{
               fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.65rem",
-              color: "#aaa",
+              color: "#666",
             }}
           >
             →
@@ -206,7 +206,7 @@ export default async function Home() {
             style={{
               fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.65rem",
-              color: "#999",
+              color: "#666",
               fontStyle: "italic",
             }}
           >

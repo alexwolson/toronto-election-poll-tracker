@@ -115,7 +115,7 @@ export default async function PollsPage() {
         {chartData.length > 0 ? (
           <PollingChart data={chartData} candidates={chartCandidates} />
         ) : (
-          <p style={{ ...MONO, fontSize: "0.65rem", color: "#999" }}>
+          <p style={{ ...MONO, fontSize: "0.65rem", color: "#666" }}>
             No polling data available yet.
           </p>
         )}
@@ -176,7 +176,7 @@ export default async function PollsPage() {
                       <div
                         style={{
                           fontSize: "0.75rem",
-                          color: "#888",
+                          color: "#555",
                           marginBottom: "0.25rem",
                           lineHeight: 1.4,
                         }}

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ward } from "@/types/ward";
 import { getVulnerabilityBand } from "@/lib/vulnerability";
 import { VulnerabilityPill } from "@/components/vulnerability-pill";
@@ -9,46 +8,84 @@ interface WardCardProps {
   ward: Ward;
 }
 
-const CLASS_STYLES: Record<string, string> = {
-  competitive: "bg-rose-100 text-rose-900 border border-rose-300/80",
-  open: "bg-amber-100 text-amber-900 border border-amber-300/80",
+const TOP_BORDER: Record<string, string> = {
+  competitive: "2px solid #c53030",
+  open: "2px solid #d97706",
+  safe: "1px solid #ccc",
+};
+
+const TAG_STYLE: Record<string, { color: string }> = {
+  competitive: { color: "#9b1c1c" },
+  open: { color: "#92400e" },
 };
 
 export function WardCard({ ward }: WardCardProps) {
-  const raceLabel = ward.race_class === "open"
-    ? "Open Seat"
-    : ward.race_class.charAt(0).toUpperCase() + ward.race_class.slice(1);
+  const raceLabel =
+    ward.race_class === "open"
+      ? "Open seat"
+      : ward.race_class === "competitive"
+      ? "Competitive"
+      : "";
   const vulnerabilityBand = getVulnerabilityBand(ward.defeatability_score);
   const titleName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
+  const wardNum = String(ward.ward).padStart(2, "0");
 
   return (
-    <Link href={`/wards/${ward.ward}`} className="block">
-      <Card className="surface-panel h-full cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--line-strong)]">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-center">
-            <CardTitle className="font-heading text-xl">{wardLabel}</CardTitle>
-            <div className="flex flex-col items-end gap-1">
-              {ward.race_class !== "safe" && (
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    CLASS_STYLES[ward.race_class] ?? ""
-                  }`}
-                >
-                  {raceLabel}
-                </span>
-              )}
-              <VulnerabilityPill band={vulnerabilityBand} />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="font-medium text-sm leading-tight">{titleName}</p>
+    <Link href={`/wards/${ward.ward}`} style={{ display: "block", textDecoration: "none" }}>
+      <div
+        className="np-cell"
+        style={{ borderTop: TOP_BORDER[ward.race_class] ?? "1px solid #ccc" }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ibm-mono), monospace",
+            fontSize: "0.55rem",
+            color: "#aaa",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            marginBottom: "0.2rem",
+          }}
+        >
+          Ward {wardNum}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-newsreader), serif",
+            fontSize: "0.88rem",
+            fontWeight: 700,
+            color: "#1a1a1a",
+            lineHeight: 1.2,
+            marginBottom: "0.25rem",
+          }}
+        >
+          {wardLabel}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-ibm-mono), monospace",
+            fontSize: "0.6rem",
+            color: "#555",
+            marginBottom: "0.45rem",
+          }}
+        >
+          {titleName}
           {ward.is_byelection_incumbent && (
-            <p className="text-xs text-muted-foreground mt-1 font-mono uppercase tracking-wider">By-election incumbent</p>
+            <span style={{ color: "#aaa" }}> · By-elec.</span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+          {ward.race_class !== "safe" && (
+            <span
+              className="np-tag"
+              style={TAG_STYLE[ward.race_class]}
+            >
+              {raceLabel}
+            </span>
+          )}
+          <VulnerabilityPill band={vulnerabilityBand} />
+        </div>
+      </div>
     </Link>
   );
 }

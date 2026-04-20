@@ -58,7 +58,7 @@ function LegendItem({ variant, label, count, description }: {
   return (
     <div className="flex items-start gap-[8px]">
       <span className={`${base} ${size} ${VARIANT_CLASSES[variant]}`} />
-      <span className="font-mono text-[9px] text-[#444] leading-[1.4]">
+      <span className="font-mono text-[11px] text-[#444] leading-[1.4]">
         <strong>{label}</strong> — ~{approxK}K
         <br />
         <em className="text-[#999] font-[family-name:var(--font-newsreader)]">{description}</em>
@@ -85,7 +85,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
   return (
     <div className="p-6 md:p-8">
       {/* Kicker */}
-      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#c53030] font-semibold mb-[4px]">
+      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#c53030] font-semibold mb-[4px]">
         Mayoral Race · Voter Alignment · Pre-nomination
       </p>
 
@@ -94,7 +94,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
         <div className="font-heading text-[26px] font-bold text-[#1a1a1a]">
           Where Toronto voters sit
         </div>
-        <div className="font-mono text-[9px] italic text-[#888]">
+        <div className="font-mono text-[11px] italic text-[#888]">
           Each dot ≈ 5,000 voters
         </div>
       </div>
@@ -102,17 +102,17 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
       {/* Zone labels */}
       <div className="flex mb-[8px] items-end gap-0">
         <div style={{ flex: "0 0 calc(10 * 20px + 9 * 4px)" }}>
-          <div className="font-mono text-[9px] font-bold text-[#2563eb] uppercase tracking-[0.08em] mb-[2px]">
+          <div className="font-mono text-[11px] font-bold text-[#2563eb] uppercase tracking-[0.08em] mb-[2px]">
             "Chow was better"
           </div>
-          <div className="font-mono text-[8px] text-[#888]">~250K · pro-Chow bloc</div>
+          <div className="font-mono text-[10px] text-[#888]">~250K · pro-Chow bloc</div>
         </div>
         <div style={{ width: "52px" }} />
         <div style={{ flex: "0 0 calc(10 * 20px + 9 * 4px)" }}>
-          <div className="font-mono text-[9px] font-bold text-[#c53030] uppercase tracking-[0.08em] mb-[2px]">
+          <div className="font-mono text-[11px] font-bold text-[#c53030] uppercase tracking-[0.08em] mb-[2px]">
             "Tory was better"
           </div>
-          <div className="font-mono text-[8px] text-[#888]">~150K active · Bradford base</div>
+          <div className="font-mono text-[10px] text-[#888]">~150K active · Bradford base</div>
         </div>
       </div>
 
@@ -128,7 +128,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
         <div className="flex-shrink-0 relative" style={{ width: "52px", height: "116px" }}>
           <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#1a1a1a] -translate-x-1/2" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#faf9f6] px-[4px] py-[2px]">
-            <div className="font-mono text-[9px] font-bold text-[#1a1a1a] whitespace-nowrap">
+            <div className="font-mono text-[11px] font-bold text-[#1a1a1a] whitespace-nowrap">
               50%
             </div>
           </div>
@@ -145,14 +145,14 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
       <div className="mt-[18px]">
         <div className="border-t border-dashed border-[#bbb] pt-[12px] flex items-start gap-[20px]">
           <div>
-            <div className="font-mono text-[9px] text-[#999] font-semibold uppercase tracking-[0.08em] mb-[8px] whitespace-nowrap">
+            <div className="font-mono text-[11px] text-[#999] font-semibold uppercase tracking-[0.08em] mb-[8px] whitespace-nowrap">
               Not yet engaged · ~100K
             </div>
             <div style={DISENGAGED_GRID_STYLE}>
               {makeDots(notEngaged, "disengaged")}
             </div>
           </div>
-          <div className="pt-[2px] font-[family-name:var(--font-newsreader)] text-[9px] text-[#999] leading-[1.55] italic max-w-[220px]">
+          <div className="pt-[2px] font-[family-name:var(--font-newsreader)] text-[11px] text-[#999] leading-[1.55] italic max-w-[220px]">
             Hasn't formed a strong view on Chow. Not currently part of the active
             contest — how they break will depend on the campaign.
           </div>

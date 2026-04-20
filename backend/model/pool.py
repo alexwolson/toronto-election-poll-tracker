@@ -27,7 +27,7 @@ CURRENT_HALF_LIFE_DAYS = 12.0
 APPROVAL_HALF_LIFE_DAYS = 30.0
 
 # Candidates to track in the anti-Chow pool.
-ANTI_CHOW_CANDIDATES = ["bradford", "furey"]
+ANTI_CHOW_CANDIDATES = ["bradford"]
 
 
 def _decay_weight(date_str: str, half_life: float, reference_date: datetime | None = None) -> float:

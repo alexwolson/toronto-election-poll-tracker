@@ -117,7 +117,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
           <div className="font-mono text-[6.5px] font-bold text-[#c53030] uppercase tracking-[0.08em] mb-[1px]">
             "Tory was better"
           </div>
-          <div className="font-mono text-[6px] text-[#888]">~150K active · Bradford / Furey base</div>
+          <div className="font-mono text-[6px] text-[#888]">~150K active · Bradford base</div>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
           variant="anti-committed"
           label="Anti-Chow, committed"
           count={antiCommitted}
-          description="Behind Bradford or Furey"
+          description="Behind Bradford"
         />
         <LegendItem
           variant="chow-ceiling"

@@ -12,7 +12,7 @@ The model draws methodological inspiration from Philippe J. Fournier's 338Canada
 
 ### Design Principle: Field Agnosticism
 
-The model is designed to be robust to different mayoral fields. As of the time of writing, Brad Bradford is the only declared mayoral candidate. Olivia Chow is widely expected to seek re-election but has not declared. John Tory, who had been widely speculated as a potential entrant, has confirmed he will not run. Other potential candidates include Ana Bailao, Anthony Furey, Josh Matlow, and Marco Mendicino.
+The model is designed to be robust to different mayoral fields. As of the time of writing, Brad Bradford is the only declared mayoral candidate. Olivia Chow is widely expected to seek re-election but has not declared. John Tory, who had been widely speculated as a potential entrant, has confirmed he will not run. Anthony Furey has also confirmed he will not run. Other potential candidates include Ana Bailao, Josh Matlow, and Marco Mendicino.
 
 Rather than building the model around an assumed two-candidate matchup, the model is parameterised to work with whatever mayoral field materialises. Ward-level lean is computed for any candidate with historical ward-level data. The coattail mechanism is anchored on the incumbent mayor's record, not on a specific challenger. The model can produce projections under different field scenarios and adapts as the field takes shape.
 

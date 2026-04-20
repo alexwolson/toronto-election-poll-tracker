@@ -14,8 +14,6 @@ from .simulation import WardSimulation, SAFE_DEFEATABILITY_THRESHOLD
 
 SCENARIOS = {
     "chow_bradford": ["chow", "bradford"],
-    "chow_bradford_furey": ["chow", "bradford", "furey"],
-    "open_field_bradford_furey": ["bradford", "furey"],
 }
 
 DEFAULT_SCENARIO = "chow_bradford"

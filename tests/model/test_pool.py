@@ -79,13 +79,12 @@ def test_compute_current_approval_reflects_recent_data():
     assert 0.33 <= result["disapprove"] <= 0.45, f"disapprove={result['disapprove']:.3f}"
 
 
-def test_compute_candidate_capture_rates_has_bradford_and_furey():
+def test_compute_candidate_capture_rates_has_bradford():
     from backend.model.pool import compute_candidate_capture_rates
     result = compute_candidate_capture_rates(_load_polls(), anti_chow_pool=0.38)
-    assert "bradford" in result and "furey" in result
-    for cand in ("bradford", "furey"):
-        assert 0.0 <= result[cand]["share"] <= 0.60
-        assert 0.0 <= result[cand]["capture_rate"] <= 2.0
+    assert "bradford" in result
+    assert 0.0 <= result["bradford"]["share"] <= 0.60
+    assert 0.0 <= result["bradford"]["capture_rate"] <= 2.0
 
 
 def test_compute_pool_model_returns_all_required_keys():
@@ -96,7 +95,6 @@ def test_compute_pool_model_returns_all_required_keys():
                 "protective_progressive_activated", "protective_progressive_reserve"):
         assert key in result["pool"], f"Missing pool key: {key}"
     assert "bradford" in result["candidates"]
-    assert "furey" in result["candidates"]
     assert "consolidation_trend" in result
     assert result["consolidation_trend"] in (
         "consolidating", "stalling", "reversing", "insufficient_data"

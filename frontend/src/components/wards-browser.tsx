@@ -101,7 +101,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
             fontSize: "0.7rem",
             padding: "0.35rem 0.6rem",
             border: "1px solid #ccc",
-            background: "#fff",
+            background: "#faf9f6",
             width: "220px",
             outline: "none",
           }}

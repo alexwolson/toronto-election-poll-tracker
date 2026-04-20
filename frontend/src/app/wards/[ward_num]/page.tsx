@@ -2,7 +2,6 @@ import { getWard } from "@/lib/api";
 import { Challenger } from "@/types/ward";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 import {
   getVulnerabilityBand,
   getVulnerabilitySignals,
@@ -13,6 +12,22 @@ import { getWardDisplayName } from "@/lib/ward-names";
 interface Props {
   params: Promise<{ ward_num: string }>;
 }
+
+// All three factors: negative value = increases risk, non-negative = reduces risk.
+// (vuln < 0, coat < 0, chal < 0 are all red in the existing colour logic.)
+function factorDirection(value: number): { label: string; color: string } {
+  return value < 0
+    ? { label: "↑ increases risk", color: "#c53030" }
+    : { label: "↓ reduces risk", color: "#15803d" };
+}
+
+const MONO: React.CSSProperties = {
+  fontFamily: "var(--font-ibm-mono), monospace",
+};
+
+const SERIF: React.CSSProperties = {
+  fontFamily: "var(--font-newsreader), serif",
+};
 
 export default async function WardDetailPage({ params }: Props) {
   const { ward_num } = await params;
@@ -29,18 +44,21 @@ export default async function WardDetailPage({ params }: Props) {
 
   if (!data.ward) {
     return (
-      <main>
-        <div className="civic-shell max-w-3xl">
-          <Link href="/wards" className="text-sm text-muted-foreground hover:underline font-mono">
-            ← All Wards
-          </Link>
-          <h1 className="mt-4 mb-2 text-4xl font-heading">Ward {wardNum}</h1>
-          <div className="surface-panel p-4">
-            <p className="font-medium">Ward data is temporarily unavailable.</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              The backend API might be down or still loading. Please try again shortly.
-            </p>
-          </div>
+      <main className="np-shell" style={{ maxWidth: "48rem" }}>
+        <Link
+          href="/wards"
+          style={{ ...MONO, fontSize: "0.65rem", color: "#888", textTransform: "uppercase", letterSpacing: "0.08em", textDecoration: "none", display: "inline-block", marginBottom: "1.5rem" }}
+        >
+          ← All Wards
+        </Link>
+        <h1 style={{ ...SERIF, fontSize: "2rem", fontWeight: 700, color: "#1a1a1a", marginBottom: "1rem" }}>
+          Ward {wardNum}
+        </h1>
+        <div style={{ border: "1px solid #ccc", padding: "1rem" }}>
+          <p style={{ fontWeight: 600 }}>Ward data is temporarily unavailable.</p>
+          <p style={{ ...MONO, fontSize: "0.65rem", color: "#888", marginTop: "0.5rem" }}>
+            The backend API might be down. Please try again shortly.
+          </p>
         </div>
       </main>
     );
@@ -52,138 +70,240 @@ export default async function WardDetailPage({ params }: Props) {
   const displayName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
 
-  const arrowIcon = (direction: "up" | "down" | "flat") => {
-    if (direction === "up") return ArrowUpRight;
-    if (direction === "down") return ArrowDownRight;
-    return ArrowRight;
-  };
+  const signalArrow = (direction: "up" | "down" | "flat") =>
+    direction === "up" ? "↑" : direction === "down" ? "↓" : "→";
+  const signalColor = (direction: "up" | "down" | "flat") =>
+    direction === "up"
+      ? "#c53030"
+      : direction === "down"
+      ? "#15803d"
+      : "#92400e";
 
   return (
-    <main>
-      <div className="civic-shell max-w-4xl space-y-6">
-        <Link href="/wards" className="text-sm text-muted-foreground hover:underline font-mono">
-          ← All Wards
-        </Link>
+    <main className="np-shell" style={{ maxWidth: "52rem" }}>
+      {/* Breadcrumb */}
+      <Link
+        href="/wards"
+        style={{
+          ...MONO,
+          fontSize: "0.62rem",
+          color: "#888",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          textDecoration: "none",
+          display: "inline-block",
+          marginBottom: "1.5rem",
+          padding: "0.2rem 0.4rem",
+        }}
+        onMouseEnter={(e) => {
+          (e.target as HTMLElement).style.background = "#f0ede8";
+        }}
+        onMouseLeave={(e) => {
+          (e.target as HTMLElement).style.background = "transparent";
+        }}
+      >
+        ← All Wards
+      </Link>
 
-        <section className="surface-panel p-6 md:p-8">
-          <p className="hero-kicker">Ward profile</p>
-          <h1 className="mt-4 text-4xl font-heading md:text-5xl">{wardLabel}</h1>
-          <p className="text-xl text-muted-foreground mt-2">
-          {displayName}
-          {ward.is_running && ward.is_byelection_incumbent && (
-            <span className="ml-2 text-sm font-normal font-mono uppercase tracking-wider">(by-election incumbent)</span>
-          )}
-          </p>
-        </section>
+      {/* Header */}
+      <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
+        Ward profile
+      </div>
+      <h1
+        style={{
+          ...SERIF,
+          fontSize: "clamp(1.6rem, 4vw, 2.5rem)",
+          fontWeight: 700,
+          color: "#1a1a1a",
+          margin: "0 0 0.25rem 0",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {wardLabel}
+      </h1>
+      <p
+        style={{
+          ...MONO,
+          fontSize: "0.72rem",
+          color: "#555",
+          marginBottom: "0.75rem",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+        }}
+      >
+        {displayName}
+        {ward.is_running && ward.is_byelection_incumbent && (
+          <span style={{ color: "#aaa" }}> · By-election incumbent</span>
+        )}
+      </p>
+      <hr className="np-rule" />
 
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-          <div className="surface-panel p-5">
-            <p className="text-sm text-muted-foreground">Vulnerability outlook</p>
-            <div className="mt-2">
-              <VulnerabilityPill band={vulnerabilityBand} />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Derived from electorate depth, prior vote share, and growth pressure.</p>
+      {/* Race class + vulnerability */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          border: "1px solid #ccc",
+          borderTop: "none",
+          marginBottom: "2rem",
+        }}
+      >
+        <div
+          style={{
+            padding: "0.75rem 1rem",
+            borderRight: "1px solid #ccc",
+          }}
+        >
+          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+            Race class
           </div>
-          <div className="surface-panel p-5">
-            <p className="text-sm text-muted-foreground">Race class</p>
-            <p className="mt-2 font-mono text-xs uppercase tracking-wider">{ward.race_class}</p>
-          </div>
+          <span
+            style={{
+              ...MONO,
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: "#1a1a1a",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            {ward.race_class}
+          </span>
         </div>
+        <div style={{ padding: "0.75rem 1rem" }}>
+          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+            Vulnerability
+          </div>
+          <VulnerabilityPill band={vulnerabilityBand} />
+        </div>
+      </div>
 
-        {ward.ward !== 19 && (
-          <section>
-            <h2 className="text-3xl font-heading mb-3">Vulnerability Signals</h2>
-            <div className="surface-panel divide-y divide-[var(--line-soft)]">
-              {vulnerabilitySignals.map((signal) => {
-                const Icon = arrowIcon(signal.direction);
-                const arrowClass =
-                  signal.direction === "up"
-                    ? "text-rose-700"
-                    : signal.direction === "down"
-                      ? "text-emerald-700"
-                      : "text-amber-700";
+      {/* Vulnerability signals */}
+      {ward.ward !== 19 && (
+        <section style={{ marginBottom: "2rem" }}>
+          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+            Vulnerability signals
+          </div>
+          <hr className="np-rule" />
+          <table className="np-table">
+            <tbody>
+              {vulnerabilitySignals.map((signal) => (
+                <tr key={signal.id}>
+                  <td>
+                    <span
+                      style={{
+                        ...SERIF,
+                        fontSize: "0.88rem",
+                        fontWeight: 600,
+                        color: "#1a1a1a",
+                        display: "block",
+                      }}
+                    >
+                      {signal.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        display: "block",
+                        marginTop: "0.1rem",
+                      }}
+                    >
+                      {signal.summary}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                    <span style={{ ...MONO, fontSize: "0.72rem", color: "#333", marginRight: "0.5rem" }}>
+                      {signal.valueLabel}
+                    </span>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: "0.85rem",
+                        color: signalColor(signal.direction),
+                      }}
+                    >
+                      {signalArrow(signal.direction)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
-                return (
-                  <div key={signal.id} className="grid gap-2 px-4 py-3 md:grid-cols-[1fr_auto] md:items-center">
-                    <div>
-                      <p className="font-medium">{signal.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{signal.summary}</p>
-                    </div>
-                    <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
-                      <span>{signal.valueLabel}</span>
-                      <span className={`inline-flex items-center ${arrowClass}`}>
-                        <Icon className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
+      {/* Model factors */}
+      {ward.is_running && (
+        <section style={{ marginBottom: "2rem" }}>
+          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+            Model factors
+          </div>
+          <hr className="np-rule" />
+          <table className="np-table">
+            <tbody>
+              {[
+                { label: "Vulnerability effect", dir: factorDirection(ward.factors.vuln) },
+                { label: "Coattail effect", dir: factorDirection(ward.factors.coat) },
+                { label: "Challenger effect", dir: factorDirection(ward.factors.chal) },
+              ].map(({ label, dir }) => (
+                <tr key={label}>
+                  <td>
+                    <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a" }}>
+                      {label}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <span style={{ ...MONO, fontSize: "0.72rem", color: dir.color }}>
+                      {dir.label}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
-        {ward.is_running && (
-          <section>
-            <h2 className="text-3xl font-heading mb-3">Model Factors</h2>
-            <div className="surface-panel divide-y divide-[var(--line-soft)] text-sm">
-              <div className="flex justify-between px-4 py-2">
-                <span className="text-muted-foreground">Vulnerability effect</span>
-                <span className={ward.factors.vuln < 0 ? "text-red-600" : "text-green-600"}>
-                  {ward.factors.vuln.toFixed(3)}
-                </span>
-              </div>
-              <div className="flex justify-between px-4 py-2">
-                <span className="text-muted-foreground">Coattail effect</span>
-                <span className={ward.factors.coat >= 0 ? "text-green-600" : "text-red-600"}>
-                  {ward.factors.coat.toFixed(3)}
-                </span>
-              </div>
-              <div className="flex justify-between px-4 py-2">
-                <span className="text-muted-foreground">Challenger effect</span>
-                <span className={ward.factors.chal < 0 ? "text-red-600" : "text-green-600"}>
-                  {ward.factors.chal.toFixed(3)}
-                </span>
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section>
-          <h2 className="text-3xl font-heading mb-3">
-            Challengers{" "}
-            <span className="text-sm font-normal text-muted-foreground font-mono uppercase tracking-wider">
-              ({challengers.length})
-            </span>
-          </h2>
-          {challengers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No challenger data entered yet.
-            </p>
-          ) : (
-            <div className="surface-panel divide-y divide-[var(--line-soft)] text-sm">
+      {/* Challengers */}
+      <section>
+        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+          Challengers{" "}
+          <span style={{ color: "#bbb" }}>({challengers.length})</span>
+        </div>
+        <hr className="np-rule" />
+        {challengers.length === 0 ? (
+          <p style={{ ...MONO, fontSize: "0.65rem", color: "#999", padding: "0.75rem 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            No challenger data entered yet.
+          </p>
+        ) : (
+          <table className="np-table">
+            <tbody>
               {challengers.map((c: Challenger) => (
-                <div key={c.candidate_name} className="px-4 py-3">
-                  <div className="flex justify-between">
-                    <span className="font-medium">{c.candidate_name}</span>
-                    <span className="text-muted-foreground capitalize font-mono text-xs uppercase tracking-wider">
+                <tr key={c.candidate_name}>
+                  <td>
+                    <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                      {c.candidate_name}
+                      {c.is_endorsed_by_departing && (
+                        <span style={{ color: "#15803d", marginLeft: "0.4rem" }}>★</span>
+                      )}
+                    </span>
+                    <span style={{ ...MONO, fontSize: "0.6rem", color: "#888" }}>
+                      Aligned: {c.mayoral_alignment}
+                      {c.fundraising_tier && ` · Fundraising: ${c.fundraising_tier}`}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "right", verticalAlign: "top" }}>
+                    <span className="np-tag" style={{ color: "#555" }}>
                       {c.name_recognition_tier}
                     </span>
-                  </div>
-                  <div className="text-muted-foreground mt-0.5 flex gap-4">
-                    <span>Aligned: {c.mayoral_alignment}</span>
-                    {c.fundraising_tier && (
-                      <span>Fundraising: {c.fundraising_tier}</span>
-                    )}
-                    {c.is_endorsed_by_departing && (
-                      <span className="text-green-700 font-medium">★ Endorsed</span>
-                    )}
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          )}
-        </section>
-      </div>
+            </tbody>
+          </table>
+        )}
+      </section>
     </main>
   );
 }

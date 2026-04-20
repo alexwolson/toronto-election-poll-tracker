@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Newsreader, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import { PhaseBanner } from "@/components/phase-banner";
+import { MastheadNav } from "@/components/masthead-nav";
 import { getWards } from "@/lib/api";
 
 const sourceSans = Source_Sans_3({
@@ -19,7 +18,7 @@ const newsreader = Newsreader({
 const ibmMono = IBM_Plex_Mono({
   variable: "--font-ibm-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -29,11 +28,15 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const data = await getWards();
   const phase = data.phase;
+
+  const monthYear = new Date()
+    .toLocaleDateString("en-CA", { month: "long", year: "numeric" })
+    .toUpperCase();
 
   return (
     <html
@@ -42,24 +45,40 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <div className="site-bg" aria-hidden="true" />
-        <header className="sticky top-0 z-30 border-b border-[var(--line-soft)] bg-[color:var(--glass)] backdrop-blur-sm">
-          <PhaseBanner phase={phase} />
-          <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-3 md:px-8">
-            <Link href="/" className="brand-mark">
+        <header style={{ borderBottom: "1px solid #ccc" }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "0.9rem 1rem 0.6rem",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-newsreader), serif",
+                fontSize: "clamp(1.1rem, 2.5vw, 1.9rem)",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: "#1a1a1a",
+                lineHeight: 1,
+              }}
+            >
               Toronto Civic Pulse
-            </Link>
-            <div className="flex items-center gap-1 rounded-full border border-[var(--line-soft)] bg-[var(--panel)] p-1 text-sm">
-              <Link href="/" className="nav-pill">
-                Home
-              </Link>
-              <Link href="/wards" className="nav-pill">
-                Wards
-              </Link>
-              <Link href="/polls" className="nav-pill">
-                Polls
-              </Link>
             </div>
-          </nav>
+            <div
+              style={{
+                fontFamily: "var(--font-ibm-mono), monospace",
+                fontSize: "0.58rem",
+                color: "#888",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                marginTop: "0.3rem",
+              }}
+            >
+              Municipal Projection Desk · {monthYear} · {phase.label.toUpperCase()}
+            </div>
+          </div>
+          <MastheadNav />
         </header>
         {children}
       </body>

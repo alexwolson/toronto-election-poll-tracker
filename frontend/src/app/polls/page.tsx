@@ -19,11 +19,18 @@ async function getPolls(): Promise<{ polls: Poll[] }> {
     const res = await fetch(`${API_URL}/api/polls`, { next: { revalidate: 60 } });
     if (!res.ok) return { polls: [] };
     return res.json();
-  } catch (err) {
-    console.error("Failed to fetch polls", err);
+  } catch {
     return { polls: [] };
   }
 }
+
+const MONO: React.CSSProperties = {
+  fontFamily: "var(--font-ibm-mono), monospace",
+};
+
+const SERIF: React.CSSProperties = {
+  fontFamily: "var(--font-newsreader), serif",
+};
 
 export default async function PollsPage() {
   const [pollsResponse, pollingAverages] = await Promise.all([
@@ -36,105 +43,223 @@ export default async function PollsPage() {
   const candidateStatus = pollingAverages.candidate_status;
   const candidateRanges = pollingAverages.candidate_ranges;
   const pollHistory = pollingAverages.poll_history;
-  
+
   return (
-    <main>
-      <div className="civic-shell space-y-6">
-        <section className="surface-panel p-6 md:p-8">
-          <p className="hero-kicker">Mayoral tracker</p>
-          <h1 className="mt-4 text-4xl font-heading md:text-5xl">Mayoral Polling</h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            Rolling trendline for major candidates plus historical poll records.
+    <main className="np-shell">
+      {/* Section header */}
+      <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
+        Mayoral tracker
+      </div>
+      <h1
+        style={{
+          ...SERIF,
+          fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+          fontWeight: 700,
+          margin: "0 0 0.5rem 0",
+          letterSpacing: "-0.01em",
+          color: "#1a1a1a",
+        }}
+      >
+        Mayoral Polling
+      </h1>
+      <hr className="np-rule" style={{ marginBottom: "0" }} />
+
+      {/* Stats row */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          border: "1px solid #ccc",
+          borderTop: "none",
+          marginBottom: "2rem",
+        }}
+      >
+        {[
+          { label: "Used in model", value: pollingAverages.polls_used },
+          { label: "Total polls", value: pollingAverages.total_polls_available },
+          { label: "Excluded declined", value: pollingAverages.excluded_declined_polls },
+        ].map((stat, i) => (
+          <div
+            key={stat.label}
+            style={{
+              padding: "0.75rem 1rem",
+              borderRight: i < 2 ? "1px solid #ccc" : "none",
+            }}
+          >
+            <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
+              {stat.label}
+            </div>
+            <div
+              style={{
+                ...SERIF,
+                fontSize: "1.6rem",
+                fontWeight: 700,
+                color: "#1a1a1a",
+                lineHeight: 1,
+              }}
+            >
+              {stat.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Polling chart */}
+      <div
+        style={{
+          border: "1px solid #ccc",
+          padding: "1rem",
+          marginBottom: "2rem",
+        }}
+      >
+        {chartData.length > 0 ? (
+          <PollingChart data={chartData} candidates={chartCandidates} />
+        ) : (
+          <p style={{ ...MONO, fontSize: "0.65rem", color: "#999" }}>
+            No polling data available yet.
           </p>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="stat-chip p-3">
-              <p className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">Used in model</p>
-              <p className="mt-1 text-xl font-semibold">{pollingAverages.polls_used}</p>
-            </div>
-            <div className="stat-chip p-3">
-              <p className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">Total polls</p>
-              <p className="mt-1 text-xl font-semibold">{pollingAverages.total_polls_available}</p>
-            </div>
-            <div className="stat-chip p-3">
-              <p className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">Excluded declined</p>
-              <p className="mt-1 text-xl font-semibold">{pollingAverages.excluded_declined_polls}</p>
-            </div>
-          </div>
-        </section>
+        )}
+      </div>
 
-        <section className="surface-panel p-4 md:p-6">
-          {chartData.length > 0 ? (
-            <PollingChart data={chartData} candidates={chartCandidates} />
-          ) : (
-            <p className="text-muted-foreground">No polling data available yet.</p>
-          )}
-        </section>
-
-        <section className="surface-panel p-5 md:p-6">
-          <h2 className="text-2xl font-heading mb-4">Candidate Status & Polling Ranges</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            {(["declared", "potential", "declined"] as const).map((status) => (
-              <div key={status} className="rounded-xl border border-[var(--line-soft)] bg-[color:var(--panel)] p-4">
-                <h3 className="text-lg font-heading capitalize">{status}</h3>
-                <div className="mt-3 space-y-3 text-sm">
-                  {(candidateStatus[status] ?? []).map((candidate) => {
-                    const range = candidateRanges[status]?.[candidate.id];
-                    return (
-                      <div key={candidate.id} className="border-b border-[var(--line-soft)] pb-2 last:border-b-0">
-                        <p className="font-medium">{candidate.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{candidate.summary}</p>
-                        <p className="mt-1 font-mono text-xs">
-                          Poll range: {range ? `${range.min}% to ${range.max}%` : "No comparable data"}
-                        </p>
-                      </div>
-                    );
-                  })}
+      {/* Candidate status */}
+      <div style={{ marginBottom: "2rem" }}>
+        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+          Candidate status &amp; polling ranges
+        </div>
+        <hr className="np-rule" />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            border: "1px solid #ccc",
+            borderTop: "none",
+          }}
+        >
+          {(["declared", "potential", "declined"] as const).map(
+            (status, i) => (
+              <div
+                key={status}
+                style={{
+                  borderRight: i < 2 ? "1px solid #ccc" : "none",
+                  padding: "0.75rem 1rem",
+                }}
+              >
+                <div
+                  className="np-kicker"
+                  style={{ marginBottom: "0.75rem", textTransform: "capitalize" }}
+                >
+                  {status}
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="surface-panel p-5 md:p-6">
-          <h2 className="text-2xl font-heading mb-4">Poll History</h2>
-          <div className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-[color:var(--panel)]">
-            <table className="w-full text-sm">
-              <thead className="bg-[color:var(--secondary)] text-muted-foreground">
-                <tr className="border-b border-[var(--line-soft)]">
-                  <th className="px-4 py-3 text-left font-medium">Date</th>
-                  <th className="px-4 py-3 text-left font-medium">Firm</th>
-                  <th className="px-4 py-3 text-right font-medium">Sample</th>
-                  <th className="px-4 py-3 text-right font-medium">Leading Candidate</th>
-                  <th className="px-4 py-3 text-right font-medium">Model Use</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--line-soft)]">
-                {(pollHistory.length > 0 ? pollHistory : polls).map((poll, i) => {
-                  const candidatesMap = ("candidates" in poll ? poll.candidates : {}) as Record<string, number>;
-                  const results = Object.entries(candidatesMap);
-                  const topCandidate: [string, number] = results.length > 0
-                    ? results.reduce((a, b) => (a[1] > b[1] ? a : b))
-                    : ["None", 0];
-                  const excluded = "excluded_from_model" in poll ? poll.excluded_from_model : false;
-                  const reason = "excluded_reason" in poll ? poll.excluded_reason : null;
+                {(candidateStatus[status] ?? []).map((candidate, j, arr) => {
+                  const range = candidateRanges[status]?.[candidate.id];
                   return (
-                    <tr key={i} className="hover:bg-[color:var(--secondary)]/60 transition-colors">
-                      <td className="px-4 py-2 font-mono text-xs md:text-sm">{"date_published" in poll ? poll.date_published : poll.poll_date}</td>
-                      <td className="px-4 py-2">{poll.firm}</td>
-                      <td className="px-4 py-2 text-right font-mono">{poll.sample_size}</td>
-                      <td className="px-4 py-2 text-right font-medium">
-                        {topCandidate[0].charAt(0).toUpperCase() + topCandidate[0].slice(1)} ({(topCandidate[1] * 100).toFixed(0)}%)
+                    <div
+                      key={candidate.id}
+                      style={{
+                        paddingBottom: "0.65rem",
+                        marginBottom: "0.65rem",
+                        borderBottom:
+                          j < arr.length - 1 ? "1px solid #e8e5e0" : "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...SERIF,
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          color: "#1a1a1a",
+                          marginBottom: "0.2rem",
+                        }}
+                      >
+                        {candidate.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#888",
+                          marginBottom: "0.25rem",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {candidate.summary}
+                      </div>
+                      <div style={{ ...MONO, fontSize: "0.62rem", color: "#555" }}>
+                        {range
+                          ? `${range.min}% – ${range.max}%`
+                          : "No comparable data"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Poll history */}
+      <div>
+        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+          Poll history
+        </div>
+        <hr className="np-rule" />
+        <div style={{ border: "1px solid #ccc", borderTop: "none", overflowX: "auto" }}>
+          <table className="np-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Firm</th>
+                <th style={{ textAlign: "right" }}>Sample</th>
+                <th style={{ textAlign: "right" }}>Leading candidate</th>
+                <th style={{ textAlign: "right" }}>Model use</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(pollHistory.length > 0 ? pollHistory : polls).map(
+                (poll, i) => {
+                  const candidatesMap = (
+                    "candidates" in poll ? poll.candidates : {}
+                  ) as Record<string, number>;
+                  const results = Object.entries(candidatesMap);
+                  const topCandidate: [string, number] =
+                    results.length > 0
+                      ? results.reduce((a, b) => (a[1] > b[1] ? a : b))
+                      : ["None", 0];
+                  const excluded =
+                    "excluded_from_model" in poll
+                      ? poll.excluded_from_model
+                      : false;
+                  const reason =
+                    "excluded_reason" in poll ? poll.excluded_reason : null;
+
+                  return (
+                    <tr key={i}>
+                      <td style={MONO}>
+                        {"date_published" in poll
+                          ? poll.date_published
+                          : poll.poll_date}
                       </td>
-                      <td className="px-4 py-2 text-right text-xs font-mono">
-                        {excluded ? `Excluded${reason ? ` (${reason})` : ""}` : "Included"}
+                      <td>{poll.firm}</td>
+                      <td style={{ ...MONO, textAlign: "right" }}>
+                        {poll.sample_size}
+                      </td>
+                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                        {topCandidate[0].charAt(0).toUpperCase() +
+                          topCandidate[0].slice(1)}{" "}
+                        ({(topCandidate[1] * 100).toFixed(0)}%)
+                      </td>
+                      <td style={{ ...MONO, textAlign: "right", fontSize: "0.65rem", color: excluded ? "#c53030" : "#15803d" }}>
+                        {excluded
+                          ? `Excluded${reason ? ` (${reason})` : ""}`
+                          : "Included"}
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                }
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   );

@@ -102,6 +102,7 @@ def test_compute_pool_model_returns_all_required_keys():
     )
     assert "approval" in result
     assert "data_notes" in result
+    assert "withdrawn_in_transition" in result
 
 
 def test_pool_model_floor_below_ceiling():
@@ -185,3 +186,13 @@ def test_compute_withdrawn_share_empty_declined_ids():
     }])
     result = compute_withdrawn_share(polls, set())
     assert result == 0.0
+
+
+def test_withdrawn_in_transition_non_negative():
+    """withdrawn_in_transition and uncaptured_anti_chow are both non-negative.
+    With Furey recently withdrawn, withdrawn_in_transition should be > 0."""
+    from backend.model.pool import compute_pool_model
+    result = compute_pool_model(_load_polls(), _load_approval())
+    assert result["withdrawn_in_transition"] >= 0.0
+    assert result["uncaptured_anti_chow"] >= 0.0
+    assert result["withdrawn_in_transition"] > 0.0

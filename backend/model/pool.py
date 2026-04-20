@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
+from .candidates import DECLINED_CANDIDATE_IDS
+
 
 # Floor uses candidate-count weighting (not recency) — it is a structural property.
 # Polls with fewer than 500 respondents are excluded as unreliable.
@@ -298,7 +300,8 @@ def compute_pool_model(
 
     captures = compute_candidate_capture_rates(polls_df, anti_chow_pool, reference_date)
     named_captured = sum(c["share"] for c in captures.values())
-    uncaptured = max(0.0, anti_chow_pool - named_captured)
+    withdrawn = compute_withdrawn_share(polls_df, DECLINED_CANDIDATE_IDS, reference_date)
+    uncaptured = max(0.0, anti_chow_pool - named_captured - withdrawn)
 
     trend = compute_consolidation_trend(polls_df, anti_chow_pool, reference_date)
 
@@ -328,6 +331,7 @@ def compute_pool_model(
             "protective_progressive_reserve": round(pp_reserve, 4),
         },
         "candidates": captures,
+        "withdrawn_in_transition": round(withdrawn, 4),
         "uncaptured_anti_chow": round(uncaptured, 4),
         "consolidation_trend": trend,
         "approval": {

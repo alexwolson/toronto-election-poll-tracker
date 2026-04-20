@@ -19,7 +19,7 @@ const VARIANT_CLASSES: Record<DotVariant, string> = {
 
 function Dot({ variant }: { variant: DotVariant }) {
   const base = "block rounded-full box-border flex-shrink-0";
-  const size = "w-[14px] h-[14px]";
+  const size = "w-[20px] h-[20px]";
   return <span className={`${base} ${size} ${VARIANT_CLASSES[variant]}`} />;
 }
 
@@ -31,39 +31,34 @@ function makeDots(count: number, variant: DotVariant) {
 
 const GRID_STYLE: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(10, 14px)",
-  gridTemplateRows: "repeat(5, 14px)",
-  gap: "3px",
+  gridTemplateColumns: "repeat(10, 20px)",
+  gridTemplateRows: "repeat(5, 20px)",
+  gap: "4px",
   gridAutoFlow: "column",
   flexShrink: 0,
 };
 
 const DISENGAGED_GRID_STYLE: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(10, 14px)",
-  gridTemplateRows: "repeat(2, 14px)",
-  gap: "3px",
+  gridTemplateColumns: "repeat(10, 20px)",
+  gridTemplateRows: "repeat(2, 20px)",
+  gap: "4px",
   gridAutoFlow: "column",
 };
 
-function LegendItem({
-  variant,
-  label,
-  count,
-  description,
-}: {
+function LegendItem({ variant, label, count, description }: {
   variant: DotVariant;
   label: string;
   count: number;
   description: string;
 }) {
-  const size = "w-[11px] h-[11px]";
+  const size = "w-[14px] h-[14px]";
   const base = "inline-block rounded-full flex-shrink-0 mt-[1px] box-border";
   const approxK = count * 5;
   return (
-    <div className="flex items-start gap-[6px]">
+    <div className="flex items-start gap-[8px]">
       <span className={`${base} ${size} ${VARIANT_CLASSES[variant]}`} />
-      <span className="font-mono text-[6.5px] text-[#444] leading-[1.4]">
+      <span className="font-mono text-[7px] text-[#444] leading-[1.4]">
         <strong>{label}</strong> — ~{approxK}K
         <br />
         <em className="text-[#999] font-[family-name:var(--font-newsreader)]">{description}</em>
@@ -75,7 +70,7 @@ function LegendItem({
 export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
   if (!model) {
     return (
-      <div className="surface-panel p-6 md:p-8">
+      <div>
         <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-muted-foreground">
           Mayoral Race
         </p>
@@ -88,52 +83,52 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
     computeDotCounts(model);
 
   return (
-    <div className="surface-panel p-6 md:p-8 inline-block">
+    <div className="p-6 md:p-8">
       {/* Kicker */}
-      <p className="font-mono text-[7px] uppercase tracking-[0.12em] text-[#c53030] font-semibold mb-[3px]">
+      <p className="font-mono text-[7px] uppercase tracking-[0.12em] text-[#c53030] font-semibold mb-[4px]">
         Mayoral Race · Voter Alignment · Pre-nomination
       </p>
 
       {/* Title row */}
-      <div className="flex justify-between items-baseline border-b-2 border-[#1a1a1a] pb-[6px] mb-[18px] w-[378px]">
-        <div className="font-heading text-[18px] font-bold text-[#1a1a1a]">
+      <div className="flex justify-between items-baseline border-b-2 border-[#1a1a1a] pb-[8px] mb-[20px]">
+        <div className="font-heading text-[22px] font-bold text-[#1a1a1a]">
           Where Toronto voters sit
         </div>
-        <div className="font-mono text-[6.5px] italic text-[#888]">
+        <div className="font-mono text-[7px] italic text-[#888]">
           Each dot ≈ 5,000 voters
         </div>
       </div>
 
       {/* Zone labels */}
-      <div className="flex w-[378px] mb-[6px] items-end gap-0">
-        <div className="w-[167px]">
-          <div className="font-mono text-[6.5px] font-bold text-[#2563eb] uppercase tracking-[0.08em] mb-[1px]">
+      <div className="flex mb-[8px] items-end gap-0">
+        <div style={{ flex: "0 0 calc(10 * 20px + 9 * 4px)" }}>
+          <div className="font-mono text-[7px] font-bold text-[#2563eb] uppercase tracking-[0.08em] mb-[2px]">
             "Chow was better"
           </div>
-          <div className="font-mono text-[6px] text-[#888]">~250K · pro-Chow bloc</div>
+          <div className="font-mono text-[6.5px] text-[#888]">~250K · pro-Chow bloc</div>
         </div>
-        <div className="w-[44px]" />
-        <div className="w-[167px]">
-          <div className="font-mono text-[6.5px] font-bold text-[#c53030] uppercase tracking-[0.08em] mb-[1px]">
+        <div style={{ width: "52px" }} />
+        <div style={{ flex: "0 0 calc(10 * 20px + 9 * 4px)" }}>
+          <div className="font-mono text-[7px] font-bold text-[#c53030] uppercase tracking-[0.08em] mb-[2px]">
             "Tory was better"
           </div>
-          <div className="font-mono text-[6px] text-[#888]">~150K active · Bradford base</div>
+          <div className="font-mono text-[6.5px] text-[#888]">~150K active · Bradford base</div>
         </div>
       </div>
 
       {/* Main dot row */}
-      <div className="flex items-start w-[378px] mb-[6px]">
+      <div className="flex items-start mb-[8px]">
         {/* Pro-Chow grid */}
         <div style={GRID_STYLE}>
           {makeDots(chowFloor, "chow-floor")}
           {makeDots(chowCeiling, "chow-ceiling")}
         </div>
 
-        {/* 50% divider: h = 5 rows × 14px + 4 gaps × 3px = 82px */}
-        <div className="w-[44px] flex-shrink-0 relative h-[82px]">
+        {/* 50% divider: h = 5 rows × 20px + 4 gaps × 4px = 116px */}
+        <div className="flex-shrink-0 relative" style={{ width: "52px", height: "116px" }}>
           <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#1a1a1a] -translate-x-1/2" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[color:var(--card)] px-[3px] py-[2px]">
-            <div className="font-mono text-[6px] font-bold text-[#1a1a1a] whitespace-nowrap">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#faf9f6] px-[4px] py-[2px]">
+            <div className="font-mono text-[7px] font-bold text-[#1a1a1a] whitespace-nowrap">
               50%
             </div>
           </div>
@@ -147,17 +142,17 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
       </div>
 
       {/* Not yet engaged section */}
-      <div className="w-[378px] mt-[14px]">
-        <div className="border-t border-dashed border-[#bbb] pt-[10px] flex items-start gap-[16px]">
+      <div className="mt-[18px]">
+        <div className="border-t border-dashed border-[#bbb] pt-[12px] flex items-start gap-[20px]">
           <div>
-            <div className="font-mono text-[6.5px] text-[#999] font-semibold uppercase tracking-[0.08em] mb-[6px] whitespace-nowrap">
+            <div className="font-mono text-[7px] text-[#999] font-semibold uppercase tracking-[0.08em] mb-[8px] whitespace-nowrap">
               Not yet engaged · ~100K
             </div>
             <div style={DISENGAGED_GRID_STYLE}>
               {makeDots(notEngaged, "disengaged")}
             </div>
           </div>
-          <div className="pt-[2px] font-[family-name:var(--font-newsreader)] text-[6.5px] text-[#999] leading-[1.55] italic max-w-[200px]">
+          <div className="pt-[2px] font-[family-name:var(--font-newsreader)] text-[7px] text-[#999] leading-[1.55] italic max-w-[220px]">
             Hasn't formed a strong view on Chow. Not currently part of the active
             contest — how they break will depend on the campaign.
           </div>
@@ -165,7 +160,7 @@ export function VoterAlignmentDots({ model }: { model: PoolModel | null }) {
       </div>
 
       {/* Legend */}
-      <div className="border-t border-[#ccc] pt-[10px] mt-[14px] w-[378px] grid grid-cols-2 gap-x-[20px] gap-y-[5px]">
+      <div className="border-t border-[#ccc] pt-[12px] mt-[18px] grid grid-cols-2 gap-x-[24px] gap-y-[7px]">
         <LegendItem
           variant="chow-floor"
           label="Chow floor"

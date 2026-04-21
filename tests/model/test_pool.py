@@ -181,6 +181,30 @@ def test_poll_detail_approval_polls_sorted_descending():
     assert dates == sorted(dates, reverse=True), "approval_polls should be sorted date desc"
 
 
+def test_poll_detail_floor_polls_sorted_descending():
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["floor_polls"]
+    if len(polls) > 1:
+        dates = [r["date"] for r in polls]
+        assert dates == sorted(dates, reverse=True), "floor_polls should be sorted date desc"
+
+
+def test_poll_detail_h2h_polls_sorted_descending():
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["h2h_polls"]
+    if len(polls) > 1:
+        dates = [r["date"] for r in polls]
+        assert dates == sorted(dates, reverse=True), "h2h_polls should be sorted date desc"
+
+
+def test_poll_detail_capture_polls_sorted_descending():
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["capture_polls"]
+    if len(polls) > 1:
+        dates = [r["date"] for r in polls]
+        assert dates == sorted(dates, reverse=True), "capture_polls should be sorted date desc"
+
+
 def test_poll_detail_floor_polls_shape():
     from backend.model.pool import compute_pool_model
     detail = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]

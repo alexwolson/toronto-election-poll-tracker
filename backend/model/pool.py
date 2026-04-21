@@ -260,7 +260,8 @@ def _get_approval_poll_detail(
     weights = approval_df["date"].apply(
         lambda d: _decay_weight(str(d), APPROVAL_HALF_LIFE_DAYS, reference_date)
     )
-    max_w = float(weights.max()) if weights.max() > 0 else 1.0
+    _max_w = float(weights.max())
+    max_w = _max_w if _max_w > 0 else 1.0
     has_source = "source" in approval_df.columns
     rows = []
     for idx, row in approval_df.iterrows():
@@ -277,12 +278,12 @@ def _get_approval_poll_detail(
 
 
 def _get_floor_poll_detail(polls_df: pd.DataFrame) -> list[dict]:
-    """Full-field qualifying polls (4+ non-Chow candidates, n≥500) with candidate weights.
+    """Full-field qualifying polls (3+ non-Chow candidates, n≥500) with candidate weights.
 
     No recency weighting — the floor is a structural property.
     Sorted by date descending.
     """
-    if "chow" not in polls_df.columns:
+    if "chow" not in polls_df.columns or "field_tested" not in polls_df.columns:
         return []
     df = polls_df.copy()
     df["_non_chow_count"] = df["field_tested"].apply(_count_non_chow_candidates)

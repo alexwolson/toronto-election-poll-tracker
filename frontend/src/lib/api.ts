@@ -1,6 +1,18 @@
 import { WardsResponse, WardResponse } from '../types/ward';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// In production, data is served as static JSON built by scripts/build_snapshot.py.
+// In development, fall back to the local FastAPI backend.
+function dataUrl(file: string): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/api/${file}`;
+  }
+  if (typeof window === 'undefined') {
+    // Server-side: use absolute URL via the static file
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+    return `${base}/data/${file}`;
+  }
+  return `/data/${file}`;
+}
 
 export async function getWards(): Promise<WardsResponse> {
   const fallback: WardsResponse = {
@@ -15,7 +27,7 @@ export async function getWards(): Promise<WardsResponse> {
     default_scenario: "",
   };
   try {
-    const res = await fetch(`${API_URL}/api/wards`, { next: { revalidate: 60 } });
+    const res = await fetch(dataUrl('model_snapshot.json'), { next: { revalidate: 3600 } });
     if (!res.ok) return fallback;
     const data = (await res.json()) as Partial<WardsResponse>;
     return {
@@ -38,11 +50,15 @@ export async function getWards(): Promise<WardsResponse> {
 export async function getWard(wardNum: number): Promise<WardResponse> {
   const fallback: WardResponse = { ward: null, challengers: [], error: "unavailable" };
   try {
-    const res = await fetch(`${API_URL}/api/wards/${wardNum}`, { next: { revalidate: 60 } });
-    if (res.status === 404) return { ward: null, challengers: [], error: "not_found" };
+    const res = await fetch(dataUrl('model_snapshot.json'), { next: { revalidate: 3600 } });
     if (!res.ok) return fallback;
-    const data = (await res.json()) as WardResponse;
-    return { ward: data.ward ?? null, challengers: data.challengers ?? [] };
+    const snapshot = (await res.json()) as { wards: NonNullable<WardResponse['ward']>[]; challengers: WardResponse['challengers'] };
+    const ward = snapshot.wards?.find((w) => w.ward === wardNum) ?? null;
+    if (!ward) return { ward: null, challengers: [], error: "not_found" };
+    const challengers = (snapshot.challengers ?? []).filter(
+      (c) => c.ward === wardNum && c.candidate_name !== "Generic Challenger"
+    );
+    return { ward, challengers };
   } catch (error) {
     console.error(`Failed to fetch ward ${wardNum}:`, error);
     return fallback;
@@ -123,7 +139,6 @@ export type PoolModel = {
 
 type PollTrendPoint = { date: string; [candidate: string]: number | string };
 
-// Kept for backward compatibility with the polls page
 export type ChowPressureBand = "low" | "moderate" | "elevated";
 export type ChowPressureTrend = "rising" | "easing" | "flat" | "insufficient";
 export type ChowPressure = {
@@ -176,7 +191,7 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
     chow_pressure: null,
   };
   try {
-    const res = await fetch(`${API_URL}/api/polls/latest`, { next: { revalidate: 60 } });
+    const res = await fetch(dataUrl('polls_snapshot.json'), { next: { revalidate: 3600 } });
     if (!res.ok) return fallback;
     const data = (await res.json()) as Partial<PollingAveragesResponse>;
     return {

@@ -193,7 +193,7 @@ describe("generateWardNarrative", () => {
   });
 
   it("returns null when coattail_detail is absent and fewer than 2 other signals are notable", () => {
-    const ward = makeWard({ coattail_detail: undefined, vote_share: 0.38 });
+    const ward = makeWard({ coattail_detail: undefined, vote_share: 0.55 });
     const challengers = [makeChallenger()]; // Generic only
     expect(generateWardNarrative(ward, challengers)).toBeNull();
   });

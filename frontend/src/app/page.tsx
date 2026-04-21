@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getWards, getPollingAverages } from "@/lib/api";
-import { VoterAlignmentDots } from "@/components/voter-alignment-dots";
+import { VoterAlignmentBars } from "@/components/voter-alignment-bars";
+import { ModelExplainer } from "@/components/model-explainer";
 
 export default async function Home() {
   const [wardsData, pollsData] = await Promise.all([
@@ -29,7 +30,7 @@ export default async function Home() {
       >
         {/* Main column: voter alignment dots */}
         <div style={{ borderRight: "1px solid #ccc" }}>
-          <VoterAlignmentDots model={pollsData.pool_model} />
+          <VoterAlignmentBars model={pollsData.pool_model} />
         </div>
 
         {/* Sidebar: stats */}
@@ -103,6 +104,9 @@ export default async function Home() {
           </p>
         </div>
       </div>
+
+      {/* Zone 1.5: Model explainer */}
+      <ModelExplainer model={pollsData.pool_model} />
 
       {/* Zone 2: Section teasers */}
       <div

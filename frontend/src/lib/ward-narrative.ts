@@ -16,9 +16,12 @@ function scoreChallenger(challengers: Challenger[], councillorName: string): Nar
       names.length === 1
         ? names[0]
         : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+    const verb = wellKnown.length === 1 ? "has" : "have";
+    const noun = wellKnown.length === 1 ? "a well-known challenger" : "well-known challengers";
     return {
-      sentence: `${nameStr} has entered the race as a well-known challenger, adding meaningful pressure on ${councillorName}.`,
+      sentence: `${nameStr} ${verb} entered the race as ${noun}, adding meaningful pressure on ${councillorName}.`,
       riskDirection: "raises",
+      canLowercase: false,
     };
   }
 
@@ -26,6 +29,7 @@ function scoreChallenger(challengers: Challenger[], councillorName: string): Nar
     return {
       sentence: "No challengers have registered yet, which keeps race pressure low for now.",
       riskDirection: "reduces",
+      canLowercase: false,
     };
   }
 

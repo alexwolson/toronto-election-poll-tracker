@@ -118,6 +118,17 @@ describe("generateWardNarrative", () => {
       expect(result).toContain("Jane Smith");
     });
 
+    it("uses plural verb when multiple well-known challengers are registered", () => {
+      const ward = makeWard({ vote_share: 0.38 });
+      const challengers = [
+        makeChallenger({ candidate_name: "Jane Smith", name_recognition_tier: "well-known" }),
+        makeChallenger({ candidate_name: "Bob Jones", name_recognition_tier: "well-known" }),
+      ];
+      const result = generateWardNarrative(ward, challengers);
+      expect(result).toContain("Jane Smith and Bob Jones");
+      expect(result).toContain("have entered");
+    });
+
     it("uses zero-challengers sentence when no named challengers registered", () => {
       // Only a Generic Challenger in the list
       const ward = makeWard({ vote_share: 0.38 });

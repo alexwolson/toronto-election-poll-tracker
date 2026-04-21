@@ -102,7 +102,6 @@ def test_compute_pool_model_returns_all_required_keys():
     )
     assert "approval" in result
     assert "data_notes" in result
-    assert "withdrawn_in_transition" in result
 
 
 def test_pool_model_floor_below_ceiling():
@@ -144,55 +143,103 @@ def test_polls_latest_includes_pool_model():
     assert "bradford" in pm["candidates"]
 
 
-def test_compute_withdrawn_share_returns_declined_share():
-    """Single multi-candidate poll: withdrawn candidate share is returned."""
-    from backend.model.pool import compute_withdrawn_share
-    polls = pd.DataFrame([{
-        "date_published": "2026-04-13",
-        "field_tested": "bradford,chow,furey",
-        "bradford": 0.35,
-        "chow": 0.46,
-        "furey": 0.11,
-    }])
-    result = compute_withdrawn_share(
-        polls, {"furey"},
-        reference_date=datetime(2026, 4, 13, tzinfo=timezone.utc),
-    )
-    assert abs(result - 0.11) < 0.001
+# ── poll_detail ────────────────────────────────────────────────
 
 
-def test_compute_withdrawn_share_excludes_h2h_polls():
-    """H2H polls (only 1 non-Chow candidate) are excluded."""
-    from backend.model.pool import compute_withdrawn_share
-    polls = pd.DataFrame([{
-        "date_published": "2026-04-13",
-        "field_tested": "bradford,chow",
-        "bradford": 0.38,
-        "chow": 0.47,
-    }])
-    result = compute_withdrawn_share(polls, {"furey"})
-    assert result == 0.0
-
-
-def test_compute_withdrawn_share_empty_declined_ids():
-    """Empty declined set returns 0.0 regardless of poll content."""
-    from backend.model.pool import compute_withdrawn_share
-    polls = pd.DataFrame([{
-        "date_published": "2026-04-13",
-        "field_tested": "bradford,chow,furey",
-        "bradford": 0.35,
-        "chow": 0.46,
-        "furey": 0.11,
-    }])
-    result = compute_withdrawn_share(polls, set())
-    assert result == 0.0
-
-
-def test_withdrawn_in_transition_non_negative():
-    """withdrawn_in_transition and uncaptured_anti_chow are both non-negative.
-    With Furey recently withdrawn, withdrawn_in_transition should be > 0."""
+def test_poll_detail_keys_present():
     from backend.model.pool import compute_pool_model
     result = compute_pool_model(_load_polls(), _load_approval())
-    assert result["withdrawn_in_transition"] >= 0.0
-    assert result["uncaptured_anti_chow"] >= 0.0
-    assert result["withdrawn_in_transition"] > 0.0
+    assert "poll_detail" in result
+    pd_keys = {"approval_polls", "floor_polls", "h2h_polls", "capture_polls"}
+    assert pd_keys == set(result["poll_detail"].keys())
+
+
+def test_poll_detail_approval_polls_shape():
+    from backend.model.pool import compute_pool_model
+    detail = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]
+    polls = detail["approval_polls"]
+    assert len(polls) > 0
+    for row in polls:
+        assert set(row.keys()) == {"date", "firm", "approve", "disapprove", "not_sure", "weight"}
+        assert 0.0 <= row["approve"] <= 1.0
+        assert 0.0 <= row["disapprove"] <= 1.0
+        assert 0.0 <= row["not_sure"] <= 1.0
+        assert 0.0 <= row["weight"] <= 1.0
+
+
+def test_poll_detail_approval_polls_weight_normalised():
+    """Most recent approval poll must have weight 1.0."""
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["approval_polls"]
+    assert polls[0]["weight"] == 1.0, "First row (most recent) should have weight 1.0"
+
+
+def test_poll_detail_approval_polls_sorted_descending():
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["approval_polls"]
+    dates = [r["date"] for r in polls]
+    assert dates == sorted(dates, reverse=True), "approval_polls should be sorted date desc"
+
+
+def test_poll_detail_floor_polls_shape():
+    from backend.model.pool import compute_pool_model
+    detail = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]
+    polls = detail["floor_polls"]
+    assert len(polls) > 0
+    for row in polls:
+        assert set(row.keys()) == {"date", "firm", "field_tested", "chow", "sample_size", "candidate_weight"}
+        assert 0.0 <= row["chow"] <= 1.0
+        assert row["sample_size"] >= 500
+        assert row["candidate_weight"] >= 3  # FULL_FIELD_THRESHOLD non-Chow candidates
+
+
+def test_poll_detail_h2h_polls_shape():
+    from backend.model.pool import compute_pool_model
+    detail = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]
+    polls = detail["h2h_polls"]
+    assert len(polls) > 0
+    for row in polls:
+        assert set(row.keys()) == {"date", "firm", "chow", "bradford", "sample_size", "recency_weight"}
+        assert 0.0 <= row["chow"] <= 1.0
+        assert 0.0 <= row["recency_weight"] <= 1.0
+
+
+def test_poll_detail_h2h_polls_weight_normalised():
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["h2h_polls"]
+    assert polls[0]["recency_weight"] == 1.0
+
+
+def test_poll_detail_capture_polls_shape():
+    from backend.model.pool import compute_pool_model
+    detail = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]
+    polls = detail["capture_polls"]
+    assert len(polls) > 0
+    for row in polls:
+        assert set(row.keys()) == {"date", "firm", "field_tested", "bradford", "recency_weight"}
+        assert 0.0 <= row["bradford"] <= 1.0
+        assert 0.0 <= row["recency_weight"] <= 1.0
+
+
+def test_poll_detail_capture_polls_weight_normalised():
+    from backend.model.pool import compute_pool_model
+    polls = compute_pool_model(_load_polls(), _load_approval())["poll_detail"]["capture_polls"]
+    assert polls[0]["recency_weight"] == 1.0
+
+
+def test_polls_latest_includes_poll_detail():
+    """GET /api/polls/latest returns pool_model.poll_detail with all four lists."""
+    import sys
+    sys.path.insert(0, str(_REPO_ROOT / "backend"))
+    from fastapi.testclient import TestClient
+    from main import app
+    client = TestClient(app)
+    response = client.get("/api/polls/latest")
+    assert response.status_code == 200
+    pm = response.json()["pool_model"]
+    assert "poll_detail" in pm
+    for key in ("approval_polls", "floor_polls", "h2h_polls", "capture_polls"):
+        assert key in pm["poll_detail"], f"Missing poll_detail.{key}"
+        assert isinstance(pm["poll_detail"][key], list)
+
+

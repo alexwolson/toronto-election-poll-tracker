@@ -12,8 +12,6 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from .candidates import DECLINED_CANDIDATE_IDS
-
 
 # Floor uses candidate-count weighting (not recency) — it is a structural property.
 # Polls with fewer than 500 respondents are excluded as unreliable.
@@ -193,42 +191,6 @@ def compute_candidate_capture_rates(
     return result
 
 
-def compute_withdrawn_share(
-    polls_df: pd.DataFrame,
-    declined_ids: set[str],
-    reference_date: datetime | None = None,
-) -> float:
-    """Recency-weighted share going to withdrawn/declined candidates in multi-candidate polls.
-
-    Uses multi-candidate polls (2+ non-Chow candidates) and 12-day half-life decay,
-    matching the mechanics of compute_candidate_capture_rates. Sums shares across
-    all declined_ids that appear as columns in the dataset.
-    Returns 0.0 if declined_ids is empty or no qualifying polls exist.
-    """
-    if not declined_ids:
-        return 0.0
-
-    multi = polls_df[
-        polls_df["field_tested"].apply(_count_non_chow_candidates) >= 2
-    ].copy()
-
-    if multi.empty:
-        return 0.0
-
-    weights = multi["date_published"].apply(
-        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
-    )
-    total_w = float(weights.sum())
-    if total_w <= 0:
-        return 0.0
-
-    total_share = pd.Series(0.0, index=multi.index)
-    for cand in declined_ids:
-        if cand in multi.columns:
-            total_share += pd.to_numeric(multi[cand], errors="coerce").fillna(0.0)
-
-    return float((total_share * weights).sum() / total_w)
-
 
 def compute_consolidation_trend(
     polls_df: pd.DataFrame,
@@ -277,6 +239,146 @@ def compute_consolidation_trend(
     return "stalling"
 
 
+def _safe_float(val: object) -> float:
+    """Convert value to float, returning 0.0 for NaN/None/unparseable."""
+    v = pd.to_numeric(val, errors="coerce")
+    return float(v) if pd.notna(v) else 0.0
+
+
+def _get_approval_poll_detail(
+    approval_df: pd.DataFrame,
+    reference_date: datetime | None = None,
+) -> list[dict]:
+    """Per-row approval data with weights normalised so max weight = 1.0.
+
+    Sorted by date descending (most recent first).
+    Uses 'source' column as firm name (approval_ratings.csv convention).
+    """
+    required = {"date", "approve", "disapprove", "not_sure"}
+    if approval_df.empty or not required.issubset(approval_df.columns):
+        return []
+    weights = approval_df["date"].apply(
+        lambda d: _decay_weight(str(d), APPROVAL_HALF_LIFE_DAYS, reference_date)
+    )
+    max_w = float(weights.max()) if weights.max() > 0 else 1.0
+    has_source = "source" in approval_df.columns
+    rows = []
+    for idx, row in approval_df.iterrows():
+        rows.append({
+            "date": str(row["date"]),
+            "firm": str(row["source"]) if has_source else "",
+            "approve": round(_safe_float(row["approve"]), 4),
+            "disapprove": round(_safe_float(row["disapprove"]), 4),
+            "not_sure": round(_safe_float(row["not_sure"]), 4),
+            "weight": round(float(weights[idx]) / max_w, 4),
+        })
+    rows.sort(key=lambda r: r["date"], reverse=True)
+    return rows
+
+
+def _get_floor_poll_detail(polls_df: pd.DataFrame) -> list[dict]:
+    """Full-field qualifying polls (4+ non-Chow candidates, n≥500) with candidate weights.
+
+    No recency weighting — the floor is a structural property.
+    Sorted by date descending.
+    """
+    if "chow" not in polls_df.columns:
+        return []
+    df = polls_df.copy()
+    df["_non_chow_count"] = df["field_tested"].apply(_count_non_chow_candidates)
+    df["_n"] = pd.to_numeric(
+        df.get("sample_size", pd.Series(dtype=float)), errors="coerce"
+    ).fillna(0)
+    qualifying = df[
+        (df["_non_chow_count"] >= FULL_FIELD_THRESHOLD) & (df["_n"] >= MIN_FLOOR_SAMPLE_SIZE)
+    ]
+    if qualifying.empty:
+        return []
+    rows = []
+    for _, row in qualifying.iterrows():
+        rows.append({
+            "date": str(row.get("date_published", "")),
+            "firm": str(row.get("firm", "")),
+            "field_tested": str(row.get("field_tested", "")),
+            "chow": round(_safe_float(row["chow"]), 4),
+            "sample_size": int(row["_n"]),
+            "candidate_weight": int(row["_non_chow_count"]),
+        })
+    rows.sort(key=lambda r: r["date"], reverse=True)
+    return rows
+
+
+def _get_h2h_poll_detail(
+    polls_df: pd.DataFrame,
+    reference_date: datetime | None = None,
+) -> list[dict]:
+    """Bradford vs Chow H2H polls with recency weights normalised so max weight = 1.0.
+
+    Applies the same filter as compute_current_h2h_chow: Bradford+Chow only,
+    exactly 1 non-Chow named candidate. Sorted by date descending.
+    """
+    if "chow" not in polls_df.columns:
+        return []
+    h2h = polls_df[
+        polls_df["field_tested"].apply(
+            lambda f: (
+                "bradford" in str(f).lower()
+                and "chow" in str(f).lower()
+                and _count_non_chow_candidates(f) == 1
+            )
+        )
+    ].copy()
+    if h2h.empty:
+        return []
+    weights = h2h["date_published"].apply(
+        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
+    )
+    max_w = float(weights.max()) if weights.max() > 0 else 1.0
+    rows = []
+    for idx, row in h2h.iterrows():
+        rows.append({
+            "date": str(row.get("date_published", "")),
+            "firm": str(row.get("firm", "")),
+            "chow": round(_safe_float(row["chow"]), 4),
+            "bradford": round(_safe_float(row.get("bradford", 0.0)), 4),
+            "sample_size": int(_safe_float(row.get("sample_size", 0))),
+            "recency_weight": round(float(weights[idx]) / max_w, 4),
+        })
+    rows.sort(key=lambda r: r["date"], reverse=True)
+    return rows
+
+
+def _get_capture_poll_detail(
+    polls_df: pd.DataFrame,
+    reference_date: datetime | None = None,
+) -> list[dict]:
+    """Multi-candidate polls (2+ non-Chow challengers) with recency weights normalised to max=1.0.
+
+    Used to show Bradford's anti-Chow pool capture rate per poll.
+    Sorted by date descending.
+    """
+    multi = polls_df[
+        polls_df["field_tested"].apply(_count_non_chow_candidates) >= 2
+    ].copy()
+    if multi.empty or "bradford" not in multi.columns:
+        return []
+    weights = multi["date_published"].apply(
+        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
+    )
+    max_w = float(weights.max()) if weights.max() > 0 else 1.0
+    rows = []
+    for idx, row in multi.iterrows():
+        rows.append({
+            "date": str(row.get("date_published", "")),
+            "firm": str(row.get("firm", "")),
+            "field_tested": str(row.get("field_tested", "")),
+            "bradford": round(_safe_float(row.get("bradford", 0.0)), 4),
+            "recency_weight": round(float(weights[idx]) / max_w, 4),
+        })
+    rows.sort(key=lambda r: r["date"], reverse=True)
+    return rows
+
+
 def compute_pool_model(
     polls_df: pd.DataFrame,
     approval_df: pd.DataFrame,
@@ -300,8 +402,7 @@ def compute_pool_model(
 
     captures = compute_candidate_capture_rates(polls_df, anti_chow_pool, reference_date)
     named_captured = sum(c["share"] for c in captures.values())
-    withdrawn = compute_withdrawn_share(polls_df, DECLINED_CANDIDATE_IDS, reference_date)
-    uncaptured = max(0.0, anti_chow_pool - named_captured - withdrawn)
+    uncaptured = max(0.0, anti_chow_pool - named_captured)
 
     trend = compute_consolidation_trend(polls_df, anti_chow_pool, reference_date)
 
@@ -331,7 +432,6 @@ def compute_pool_model(
             "protective_progressive_reserve": round(pp_reserve, 4),
         },
         "candidates": captures,
-        "withdrawn_in_transition": round(withdrawn, 4),
         "uncaptured_anti_chow": round(uncaptured, 4),
         "consolidation_trend": trend,
         "approval": {
@@ -344,5 +444,11 @@ def compute_pool_model(
             "total_polls": len(polls_df),
             "approval_data_points": len(approval_df),
             "h2h_available": chow_h2h is not None,
+        },
+        "poll_detail": {
+            "approval_polls": _get_approval_poll_detail(approval_df, reference_date),
+            "floor_polls": _get_floor_poll_detail(polls_df),
+            "h2h_polls": _get_h2h_poll_detail(polls_df, reference_date),
+            "capture_polls": _get_capture_poll_detail(polls_df, reference_date),
         },
     }

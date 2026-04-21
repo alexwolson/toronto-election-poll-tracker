@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException
-from model.run import run_model
 from model.snapshot import load_snapshot
 
 router = APIRouter()

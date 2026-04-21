@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Newsreader, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { MastheadNav } from "@/components/masthead-nav";
-import { getWards } from "@/lib/api";
 
 const sourceSans = Source_Sans_3({
   variable: "--font-source-sans",
@@ -26,14 +25,11 @@ export const metadata: Metadata = {
   description: "Ward-level council race projections and mayoral polling",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const data = await getWards();
-  const phase = data.phase;
-
   const monthYear = new Date()
     .toLocaleDateString("en-CA", { month: "long", year: "numeric" })
     .toUpperCase();
@@ -63,7 +59,7 @@ export default async function RootLayout({
                 lineHeight: 1,
               }}
             >
-              Toronto Civic Pulse
+              Toronto Election Modelling
             </div>
             <div
               style={{
@@ -75,7 +71,7 @@ export default async function RootLayout({
                 marginTop: "0.3rem",
               }}
             >
-              Municipal Projection Desk · {monthYear} · {phase.label.toUpperCase()}
+              Municipal Projection Desk · {monthYear}
             </div>
           </div>
           <MastheadNav />

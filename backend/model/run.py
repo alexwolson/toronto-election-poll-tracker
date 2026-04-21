@@ -130,6 +130,8 @@ def run_model() -> dict:
     for rec in data["challengers"].to_dict("records"):
         challengers_by_ward.setdefault(rec["ward"], []).append(rec)
 
+    coattails_indexed = data["coattails"].set_index("ward")
+
     wards_out = []
     for row in data["defeatability"].to_dict("records"):
         ward_num = row["ward"]
@@ -147,6 +149,13 @@ def run_model() -> dict:
         row["candidate_win_probabilities"] = results["candidate_win_probabilities"].get(
             ward_num, {}
         )
+        if ward_num in coattails_indexed.index:
+            cr = coattails_indexed.loc[ward_num]
+            row["coattail_detail"] = {
+                "alignment": round(float(cr["alignment"]), 4),
+                "alignment_delta": round(float(cr["alignment_delta"]), 4),
+                "ward_lean": round(float(cr["lean"]), 4),
+            }
         wards_out.append(row)
 
     return {

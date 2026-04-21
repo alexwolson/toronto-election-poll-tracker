@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Ward } from "@/types/ward";
 import { WardCard } from "@/components/ward-card";
 import { getWardDisplayName } from "@/lib/ward-names";
 import { getVulnerabilityBand } from "@/lib/vulnerability";
 
-type ViewMode = "grid" | "map" | "columns";
+type ViewMode = "grid" | "map";
 
 type VulnerabilityBandKey = "low" | "medium" | "high";
+
+interface GeoFeature {
+  wardNum: number;
+  paths: string[];
+  labelX: number;
+  labelY: number;
+}
 
 const BAND_ORDER: VulnerabilityBandKey[] = ["high", "medium", "low"];
 
@@ -35,9 +42,85 @@ interface WardsBrowserProps {
   wards: Ward[];
 }
 
+const SVG_W = 700;
+const SVG_H = 520;
+const SVG_PAD = 16;
+
+type RawRing = number[][];
+type RawPolygon = RawRing[];
+type RawMultiPolygon = RawPolygon[];
+
+interface RawFeature {
+  properties: Record<string, string>;
+  geometry: { type: string; coordinates: RawMultiPolygon };
+}
+
+interface RawGeoJSON {
+  features: RawFeature[];
+}
+
+function projectFeatures(geojson: RawGeoJSON): GeoFeature[] {
+  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const feat of geojson.features) {
+    for (const polygon of feat.geometry.coordinates) {
+      for (const ring of polygon) {
+        for (const [lon, lat] of ring) {
+          if (lon < minLon) minLon = lon;
+          if (lon > maxLon) maxLon = lon;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        }
+      }
+    }
+  }
+
+  const scaleX = (SVG_W - SVG_PAD * 2) / (maxLon - minLon);
+  const scaleY = (SVG_H - SVG_PAD * 2) / (maxLat - minLat);
+  const scale = Math.min(scaleX, scaleY);
+
+  function project([lon, lat]: number[]): [number, number] {
+    return [
+      SVG_PAD + (lon - minLon) * scale,
+      SVG_H - SVG_PAD - (lat - minLat) * scale,
+    ];
+  }
+
+  return geojson.features.map((feat) => {
+    const wardNum = parseInt(feat.properties.AREA_SHORT_CODE, 10);
+    const paths: string[] = [];
+    let sumX = 0, sumY = 0, ptCount = 0;
+
+    for (const polygon of feat.geometry.coordinates) {
+      for (const ring of polygon) {
+        const pts = ring.map(project);
+        paths.push("M " + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" L ") + " Z");
+        if (ring === polygon[0]) {
+          for (const [x, y] of pts) { sumX += x; sumY += y; ptCount++; }
+        }
+      }
+    }
+
+    return {
+      wardNum,
+      paths,
+      labelX: ptCount > 0 ? sumX / ptCount : 0,
+      labelY: ptCount > 0 ? sumY / ptCount : 0,
+    };
+  });
+}
+
 export function WardsBrowser({ wards }: WardsBrowserProps) {
   const [mode, setMode] = useState<ViewMode>("grid");
   const [filter, setFilter] = useState("");
+  const [geoFeatures, setGeoFeatures] = useState<GeoFeature[] | null>(null);
+
+  useEffect(() => {
+    if (mode !== "map" || geoFeatures !== null) return;
+    fetch("/data/toronto-wards.geojson")
+      .then((r) => r.json())
+      .then((data) => setGeoFeatures(projectFeatures(data)))
+      .catch(() => setGeoFeatures([]));
+  }, [mode, geoFeatures]);
 
   const filteredWards = filter.trim()
     ? wards.filter((w) => {
@@ -50,21 +133,13 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
       })
     : wards;
 
-  const wardsByBand: Record<VulnerabilityBandKey, Ward[]> = {
-    high: [],
-    medium: [],
-    low: [],
-  };
-  for (const ward of filteredWards) {
-    const band = getVulnerabilityBand(ward.defeatability_score);
-    wardsByBand[band].push(ward);
-  }
+  const wardLookup = Object.fromEntries(wards.map((w) => [w.ward, w]));
 
   return (
     <div>
       {/* Mode tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #ccc", marginBottom: "1rem" }}>
-        {(["grid", "map", "columns"] as ViewMode[]).map((m) => (
+        {(["grid", "map"] as ViewMode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
@@ -84,7 +159,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
               cursor: "pointer",
             }}
           >
-            {m === "grid" ? "Grid" : m === "map" ? "Map" : "Vulnerability"}
+            {m === "grid" ? "Grid" : "Map"}
           </button>
         ))}
       </div>
@@ -120,54 +195,54 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
       {/* Map mode */}
       {mode === "map" && (
         <div style={{ border: "1px solid #ccc", padding: "0.75rem" }}>
-          <svg
-            viewBox="0 0 600 500"
-            className="w-full h-auto"
-            style={{ border: "1px solid #ccc" }}
-          >
-            {/* Simple grid-based ward placeholders */}
-            {filteredWards.map((ward, i) => {
-              const band = getVulnerabilityBand(ward.defeatability_score);
-              const col = i % 5;
-              const row = Math.floor(i / 5);
-              const x = col * 110 + 10;
-              const y = row * 90 + 10;
-              return (
-                <g key={ward.ward}>
-                  <rect
-                    x={x}
-                    y={y}
-                    width={100}
-                    height={80}
-                    fill={BAND_COLORS[band]}
-                    stroke={BAND_STROKES[band]}
-                    strokeWidth={1}
-                  />
-                  <text
-                    x={x + 50}
-                    y={y + 30}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fontWeight="bold"
-                    fill="#1a1a1a"
-                  >
-                    {String(ward.ward).padStart(2, "0")}
-                  </text>
-                  <text
-                    x={x + 50}
-                    y={y + 48}
-                    textAnchor="middle"
-                    fontSize="7"
-                    fill="#555"
-                  >
-                    {getWardDisplayName(ward.ward).length > 14
-                      ? getWardDisplayName(ward.ward).slice(0, 13) + "…"
-                      : getWardDisplayName(ward.ward)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+          {!geoFeatures ? (
+            <div style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "#888", padding: "2rem", textAlign: "center" }}>
+              Loading map…
+            </div>
+          ) : geoFeatures.length === 0 ? (
+            <div style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "#888", padding: "2rem", textAlign: "center" }}>
+              Map data unavailable.
+            </div>
+          ) : (
+            <svg
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+              style={{ display: "block", width: "100%", height: "auto" }}
+            >
+              {geoFeatures.map(({ wardNum, paths, labelX, labelY }) => {
+                const ward = wardLookup[wardNum];
+                const band = ward ? getVulnerabilityBand(ward.defeatability_score) : "low";
+                const isFiltered = filter.trim()
+                  ? filteredWards.some((w) => w.ward === wardNum)
+                  : true;
+                return (
+                  <Link key={wardNum} href={`/wards/${wardNum}`}>
+                    <g style={{ cursor: "pointer" }} opacity={isFiltered ? 1 : 0.25}>
+                      {paths.map((d, i) => (
+                        <path
+                          key={i}
+                          d={d}
+                          fill={BAND_COLORS[band]}
+                          stroke={BAND_STROKES[band]}
+                          strokeWidth={0.8}
+                        />
+                      ))}
+                      <text
+                        x={labelX}
+                        y={labelY + 3}
+                        textAnchor="middle"
+                        fontSize={9}
+                        fontWeight={700}
+                        fill="#1a1a1a"
+                        style={{ pointerEvents: "none" }}
+                      >
+                        {String(wardNum).padStart(2, "0")}
+                      </text>
+                    </g>
+                  </Link>
+                );
+              })}
+            </svg>
+          )}
           {/* Legend */}
           <div
             style={{
@@ -200,98 +275,6 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
         </div>
       )}
 
-      {/* Columns (vulnerability) mode */}
-      {mode === "columns" && (
-        <div
-          style={{
-            display: "grid",
-            gap: "0",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            border: "1px solid #ccc",
-            borderRight: "none",
-          }}
-        >
-          {BAND_ORDER.map((band) => (
-            <div key={band} style={{ borderRight: "1px solid #ccc", padding: "1rem" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  borderBottom: "1px solid #ccc",
-                  paddingBottom: "0.5rem",
-                  marginBottom: "0.75rem",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "var(--font-newsreader), serif",
-                    fontSize: "1.1rem",
-                    fontWeight: 700,
-                    color: "#1a1a1a",
-                  }}
-                >
-                  {BAND_LABELS[band]}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-ibm-mono), monospace",
-                    fontSize: "0.6rem",
-                    color: "#555",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {wardsByBand[band].length}
-                </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                {wardsByBand[band].map((ward) => (
-                  <Link
-                    key={ward.ward}
-                    href={`/wards/${ward.ward}`}
-                    style={{
-                      display: "block",
-                      padding: "0.4rem 0.5rem",
-                      borderBottom: "1px solid #e8e5e0",
-                      textDecoration: "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        gap: "0.5rem",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--font-newsreader), serif",
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          color: "#1a1a1a",
-                        }}
-                      >
-                        {getWardDisplayName(ward.ward)}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-ibm-mono), monospace",
-                        fontSize: "0.58rem",
-                        color: "#555",
-                        marginTop: "0.1rem",
-                      }}
-                    >
-                      {ward.is_running ? ward.councillor_name : "Open seat"}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

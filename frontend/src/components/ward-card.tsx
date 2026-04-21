@@ -9,23 +9,12 @@ interface WardCardProps {
 }
 
 const TOP_BORDER: Record<string, string> = {
-  competitive: "2px solid #c53030",
-  open: "2px solid #d97706",
-  safe: "1px solid #ccc",
-};
-
-const TAG_STYLE: Record<string, { color: string }> = {
-  competitive: { color: "#9b1c1c" },
-  open: { color: "#92400e" },
+  high: "2px solid #ef4444",
+  medium: "2px solid #f59e0b",
+  low: "1px solid #ccc",
 };
 
 export function WardCard({ ward }: WardCardProps) {
-  const raceLabel =
-    ward.race_class === "open"
-      ? "Open seat"
-      : ward.race_class === "competitive"
-      ? "Competitive"
-      : "";
   const vulnerabilityBand = getVulnerabilityBand(ward.defeatability_score);
   const titleName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
@@ -35,7 +24,7 @@ export function WardCard({ ward }: WardCardProps) {
     <Link href={`/wards/${ward.ward}`} style={{ display: "block", textDecoration: "none" }}>
       <div
         className="np-cell"
-        style={{ borderTop: TOP_BORDER[ward.race_class] ?? "1px solid #ccc" }}
+        style={{ borderTop: TOP_BORDER[vulnerabilityBand] ?? "1px solid #ccc" }}
       >
         <div
           style={{
@@ -75,14 +64,6 @@ export function WardCard({ ward }: WardCardProps) {
           )}
         </div>
         <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          {ward.race_class !== "safe" && (
-            <span
-              className="np-tag"
-              style={TAG_STYLE[ward.race_class]}
-            >
-              {raceLabel}
-            </span>
-          )}
           <VulnerabilityPill band={vulnerabilityBand} />
         </div>
       </div>

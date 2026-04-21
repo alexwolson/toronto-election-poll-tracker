@@ -4,6 +4,12 @@ export interface Factors {
   chal: number;
 }
 
+export interface CoattailDetail {
+  alignment: number;       // councillor's Chow alignment score (0–1)
+  alignment_delta: number; // deviation from mean councillor alignment
+  ward_lean: number;       // ward Chow lean vs city average
+}
+
 export interface Ward {
   ward: number;
   councillor_name: string;
@@ -17,6 +23,7 @@ export interface Ward {
   };
   race_class: "safe" | "competitive" | "open";
   factors: Factors;
+  coattail_detail?: CoattailDetail;
   candidate_win_probabilities?: Record<string, number>;
   vote_share?: number;
   electorate_share?: number;

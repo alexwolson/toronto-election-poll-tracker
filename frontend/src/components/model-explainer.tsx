@@ -49,8 +49,10 @@ const STEP_BODY: Record<1 | 2 | 3 | 4, ReactNode> = {
         persuadable; how they break depends on the campaign.
       </p>
       <p>
-        We weight approval data with a 30-day half-life, because approval moves
-        slowly and older readings are still informative.
+        We weight approval data by recency rank: the most recent poll gets full
+        weight (1/1), the second most recent half weight (1/2), and so on. This
+        gives older readings meaningful but diminishing influence without
+        requiring an arbitrary half-life parameter.
       </p>
     </>
   ),
@@ -82,10 +84,10 @@ const STEP_BODY: Record<1 | 2 | 3 | 4, ReactNode> = {
         make comparisons misleading.
       </p>
       <p>
-        Recent polls dominate here. A <em>12-day half-life</em> means a poll
-        from three weeks ago carries roughly a quarter of the weight of
-        today&apos;s. This gives us Chow&apos;s current position within the
-        floor-to-ceiling range set in steps 1 and 2.
+        Recent polls dominate here. We weight by recency rank — the most recent
+        Bradford vs Chow poll gets weight 1/1, the next 1/2, and so on. This
+        gives us Chow&apos;s current position within the floor-to-ceiling range
+        set in steps 1 and 2.
       </p>
     </>
   ),
@@ -246,7 +248,7 @@ function Step3Drawer({ model }: { model: PoolModel }) {
               <th className="me-num">Chow</th>
               <th className="me-num">Bradford</th>
               <th className="me-num">n</th>
-              <th className="me-num">Recency weight</th>
+              <th className="me-num">1/rank weight</th>
             </tr>
           </thead>
           <tbody>
@@ -261,7 +263,7 @@ function Step3Drawer({ model }: { model: PoolModel }) {
               </tr>
             ))}
             <tr className="me-row--total">
-              <td colSpan={2}>Recency-weighted average</td>
+              <td colSpan={2}>1/rank-weighted average</td>
               <td className="me-num">{pct(currentChow)}</td>
               <td className="me-num me-dim">—</td>
               <td className="me-num me-dim">—</td>
@@ -314,7 +316,7 @@ function Step4Drawer({ model }: { model: PoolModel }) {
               <th>Firm</th>
               <th>Field tested</th>
               <th className="me-num">Bradford</th>
-              <th className="me-num">Recency weight</th>
+              <th className="me-num">1/rank weight</th>
             </tr>
           </thead>
           <tbody>
@@ -328,7 +330,7 @@ function Step4Drawer({ model }: { model: PoolModel }) {
               </tr>
             ))}
             <tr className="me-row--total">
-              <td colSpan={3}>Recency-weighted Bradford share</td>
+              <td colSpan={3}>1/rank-weighted Bradford share</td>
               <td className="me-num">{pct(bradfordShare)}</td>
               <td className="me-num me-dim">—</td>
             </tr>
@@ -340,7 +342,7 @@ function Step4Drawer({ model }: { model: PoolModel }) {
             label="Bradford share"
             value={pct(bradfordShare)}
             color="#00a2bf"
-            sublabel="Recency-weighted avg across multi-candidate polls"
+            sublabel="1/rank-weighted avg across multi-candidate polls"
           />
           <ComputedValue
             label="Capture rate"
@@ -388,7 +390,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
   }[] = [
     {
       num: 1,
-      source: `Approval polls · ${data_notes.approval_data_points} data points · 30-day half-life`,
+      source: `Approval polls · ${data_notes.approval_data_points} data points · 1/rank weighting`,
       title: 'Set the size of each voter pool',
       pills: [
         { label: `Chow ceiling ${pct(pool.chow_ceiling)}`, className: 'me-pill me-pill--purple' },
@@ -412,7 +414,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
     },
     {
       num: 3,
-      source: `Bradford vs Chow H2H polls · 12-day half-life`,
+      source: `Bradford vs Chow H2H polls · 1/rank weighting`,
       title: 'Where does Chow sit in the likely match-up?',
       pills: [
         { label: `Current position ${pct(currentChow)}`, className: 'me-pill me-pill--purple' },
@@ -421,7 +423,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
     },
     {
       num: 4,
-      source: `Multi-candidate polls · 2+ challengers tested`,
+      source: `Multi-candidate polls · 2+ challengers tested · 1/rank weighting`,
       title: 'How much of the anti-Chow vote has Bradford captured?',
       pills: [
         { label: `Bradford capture ${pct(captureRate)}`, className: 'me-pill me-pill--blue' },

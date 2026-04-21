@@ -13,10 +13,11 @@ MAX_HALF_LIFE_DAYS = 42.0
 
 def effective_number_of_parties(shares: list[float]) -> float:
     cleaned = [float(s) for s in shares if s is not None and s > 0]
-    denom = sum(s * s for s in cleaned)
-    if denom <= 0:
+    total = sum(cleaned)
+    if total <= 0:
         return 1.0
-    return 1.0 / denom
+    normalized = [s / total for s in cleaned]
+    return 1.0 / sum(s * s for s in normalized)
 
 
 def consolidation_factor(non_chow_shares: list[float]) -> float:

@@ -41,9 +41,10 @@ def detect_phase(challengers: pd.DataFrame) -> dict:
 
     Returns a dict with keys: phase (int), label (str), description (str).
     """
-    if challengers.empty:
+    real = challengers[challengers["candidate_name"] != "Generic Challenger"] if not challengers.empty else challengers
+    if real.empty:
         phase = 1
-    elif "fundraising_tier" not in challengers.columns or challengers["fundraising_tier"].isna().all():
+    elif "fundraising_tier" not in real.columns or real["fundraising_tier"].isna().all():
         phase = 2
     else:
         phase = 3

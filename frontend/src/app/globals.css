@@ -347,11 +347,12 @@
 }
 
 /* Segment colours */
-.va-seg-chow-floor     { background: #854a90; }
-.va-seg-chow-ceiling   { background: #c4a0cc; }
-.va-seg-anti-committed { background: #00a2bf; }
-.va-seg-anti-available { background: #aadde8; }
-.va-seg-disengaged     { background: #c8c4be; }
+.va-seg-chow-floor      { background: #854a90; }
+.va-seg-chow-activated  { background: #aa78ba; }
+.va-seg-chow-ceiling    { background: #c4a0cc; }
+.va-seg-anti-committed  { background: #00a2bf; }
+.va-seg-anti-available  { background: #aadde8; }
+.va-seg-disengaged      { background: #c8c4be; }
 
 /* ── Model Explainer ─────────────────────────────────────── */
 

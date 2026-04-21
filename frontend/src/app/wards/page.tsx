@@ -6,7 +6,7 @@ export default async function WardsPage() {
   const wards = data.wards || [];
   const safeCount = wards.filter((w) => w.race_class === "safe").length;
   const competitiveCount = wards.filter(
-    (w) => w.race_class === "competitive"
+    (w) => w.race_class === "competitive" && w.defeatability_score >= 55
   ).length;
   const openCount = wards.filter((w) => w.race_class === "open").length;
 

@@ -7,7 +7,6 @@ Designed for the pre-nomination period (before August 21, 2026).
 """
 from __future__ import annotations
 
-import math
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -20,25 +19,19 @@ MIN_FLOOR_SAMPLE_SIZE = 500
 # Minimum number of non-Chow named candidates for a poll to count as "full field."
 FULL_FIELD_THRESHOLD = 3
 
-# Half-life for recency-weighted current metrics (H2H share, candidate captures).
-CURRENT_HALF_LIFE_DAYS = 12.0
-
-# Half-life for approval data weighting — approval changes slowly.
-APPROVAL_HALF_LIFE_DAYS = 30.0
-
 # Candidates to track in the anti-Chow pool.
 ANTI_CHOW_CANDIDATES = ["bradford"]
 
 
-def _decay_weight(date_str: str, half_life: float, reference_date: datetime | None = None) -> float:
-    """Exponential decay weight for a poll date."""
-    if reference_date is None:
-        reference_date = datetime.now(timezone.utc)
-    pub = pd.to_datetime(date_str, utc=True)
-    if hasattr(pub, "tzinfo") and pub.tzinfo is None:
-        pub = pub.replace(tzinfo=timezone.utc)
-    age_days = max(0.0, (reference_date - pub).total_seconds() / 86400)
-    return math.exp(-math.log(2) / half_life * age_days)
+def _rank_weights(dates: pd.Series) -> pd.Series:
+    """Harmonic recency weights: most recent poll → 1/1, next → 1/2, etc.
+
+    Polls with equal dates receive consecutive ranks in their original order.
+    NaN dates receive weight 0.
+    """
+    parsed = pd.to_datetime(dates, utc=True, errors="coerce")
+    ranks = parsed.rank(method="first", ascending=False, na_option="bottom")
+    return (1.0 / ranks).where(parsed.notna(), 0.0)
 
 
 def _count_non_chow_candidates(field_tested: object) -> int:
@@ -110,9 +103,7 @@ def compute_current_h2h_chow(
     if h2h.empty:
         return None
 
-    weights = h2h["date_published"].apply(
-        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
-    )
+    weights = _rank_weights(h2h["date_published"])
     shares = pd.to_numeric(h2h["chow"], errors="coerce")
     valid = shares.notna()
     if not valid.any():
@@ -139,9 +130,7 @@ def compute_current_approval(
     if not required_cols.issubset(approval_df.columns):
         return {"approve": 0.0, "disapprove": 0.0, "not_sure": 0.0}
 
-    weights = approval_df["date"].apply(
-        lambda d: _decay_weight(str(d), APPROVAL_HALF_LIFE_DAYS, reference_date)
-    )
+    weights = _rank_weights(approval_df["date"])
     total_w = float(weights.sum())
     if total_w <= 0:
         return {"approve": 0.0, "disapprove": 0.0, "not_sure": 0.0}
@@ -175,9 +164,7 @@ def compute_candidate_capture_rates(
             result[cand] = {"share": 0.0, "capture_rate": 0.0}
             continue
 
-        weights = multi["date_published"].apply(
-            lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
-        )
+        weights = _rank_weights(multi["date_published"])
         shares = pd.to_numeric(multi[cand], errors="coerce").fillna(0.0)
         total_w = float(weights.sum())
         if total_w <= 0:
@@ -257,11 +244,7 @@ def _get_approval_poll_detail(
     required = {"date", "approve", "disapprove", "not_sure"}
     if approval_df.empty or not required.issubset(approval_df.columns):
         return []
-    weights = approval_df["date"].apply(
-        lambda d: _decay_weight(str(d), APPROVAL_HALF_LIFE_DAYS, reference_date)
-    )
-    _max_w = float(weights.max())
-    max_w = _max_w if _max_w > 0 else 1.0
+    weights = _rank_weights(approval_df["date"])
     has_source = "source" in approval_df.columns
     rows = []
     for idx, row in approval_df.iterrows():
@@ -271,7 +254,7 @@ def _get_approval_poll_detail(
             "approve": round(_safe_float(row["approve"]), 4),
             "disapprove": round(_safe_float(row["disapprove"]), 4),
             "not_sure": round(_safe_float(row["not_sure"]), 4),
-            "weight": round(float(weights[idx]) / max_w, 4),
+            "weight": round(float(weights[idx]), 4),
         })
     rows.sort(key=lambda r: r["date"], reverse=True)
     return rows
@@ -331,10 +314,7 @@ def _get_h2h_poll_detail(
     ].copy()
     if h2h.empty:
         return []
-    weights = h2h["date_published"].apply(
-        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
-    )
-    max_w = float(weights.max()) if weights.max() > 0 else 1.0
+    weights = _rank_weights(h2h["date_published"])
     rows = []
     for idx, row in h2h.iterrows():
         rows.append({
@@ -343,7 +323,7 @@ def _get_h2h_poll_detail(
             "chow": round(_safe_float(row["chow"]), 4),
             "bradford": round(_safe_float(row.get("bradford", 0.0)), 4),
             "sample_size": int(_safe_float(row.get("sample_size", 0))),
-            "recency_weight": round(float(weights[idx]) / max_w, 4),
+            "recency_weight": round(float(weights[idx]), 4),
         })
     rows.sort(key=lambda r: r["date"], reverse=True)
     return rows
@@ -363,10 +343,7 @@ def _get_capture_poll_detail(
     ].copy()
     if multi.empty or "bradford" not in multi.columns:
         return []
-    weights = multi["date_published"].apply(
-        lambda d: _decay_weight(d, CURRENT_HALF_LIFE_DAYS, reference_date)
-    )
-    max_w = float(weights.max()) if weights.max() > 0 else 1.0
+    weights = _rank_weights(multi["date_published"])
     rows = []
     for idx, row in multi.iterrows():
         rows.append({
@@ -374,7 +351,7 @@ def _get_capture_poll_detail(
             "firm": str(row.get("firm", "")),
             "field_tested": str(row.get("field_tested", "")),
             "bradford": round(_safe_float(row.get("bradford", 0.0)), 4),
-            "recency_weight": round(float(weights[idx]) / max_w, 4),
+            "recency_weight": round(float(weights[idx]), 4),
         })
     rows.sort(key=lambda r: r["date"], reverse=True)
     return rows

@@ -4,7 +4,7 @@ import type { Ward, Challenger } from "@/types/ward";
 
 function makeWard(overrides: Partial<Ward> = {}): Ward {
   return {
-    ward: 1,
+    ward: 99, // outside PRONOUNS map → defaults to they/them/their
     councillor_name: "Test Councillor",
     is_running: true,
     is_byelection_incumbent: false,

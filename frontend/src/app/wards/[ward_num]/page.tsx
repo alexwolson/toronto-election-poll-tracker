@@ -1,4 +1,4 @@
-import { getWard } from "@/lib/api";
+import { getWard, getWards } from "@/lib/api";
 import { Challenger } from "@/types/ward";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +7,10 @@ import {
   getVulnerabilitySignals,
 } from "@/lib/vulnerability";
 import { VulnerabilityPill } from "@/components/vulnerability-pill";
+import { SignalRangeBar } from "@/components/signal-range-bar";
+import { CoattailBars } from "@/components/coattail-bars";
 import { getWardDisplayName } from "@/lib/ward-names";
+import { generateWardNarrative } from "@/lib/ward-narrative";
 
 interface Props {
   params: Promise<{ ward_num: string }>;
@@ -37,7 +40,7 @@ export default async function WardDetailPage({ params }: Props) {
     notFound();
   }
 
-  const data = await getWard(wardNum);
+  const [data, allWardsData] = await Promise.all([getWard(wardNum), getWards()]);
   if (data.error === "not_found") {
     notFound();
   }
@@ -65,25 +68,50 @@ export default async function WardDetailPage({ params }: Props) {
   }
 
   const { ward, challengers } = data;
+  const narrativeLede = generateWardNarrative(ward, challengers);
   const vulnerabilityBand = getVulnerabilityBand(ward.defeatability_score);
   const vulnerabilitySignals = getVulnerabilitySignals(ward);
   const displayName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
 
-  const signalArrow = (direction: "up" | "down" | "flat") =>
-    direction === "up" ? "↑" : direction === "down" ? "↓" : "→";
-  const signalColor = (direction: "up" | "down" | "flat") =>
-    direction === "up"
-      ? "#c53030"
-      : direction === "down"
-      ? "#15803d"
-      : "#92400e";
+  const allWards = allWardsData.wards;
+  function signalRange(field: "vote_share" | "electorate_share" | "pop_growth_pct") {
+    const vals = allWards.map((w) => w[field]).filter((v): v is number => v !== undefined);
+    if (vals.length === 0) return { min: 0, max: 1 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }
+  const signalRanges = {
+    vote_share: { ...signalRange("vote_share"), minLabel: "more vulnerable", maxLabel: "less vulnerable", moreVulnerableSide: "min" as const },
+    electorate_share: { ...signalRange("electorate_share"), minLabel: "more vulnerable", maxLabel: "less vulnerable", moreVulnerableSide: "min" as const },
+    pop_growth_pct: { ...signalRange("pop_growth_pct"), minLabel: "less vulnerable", maxLabel: "more vulnerable", moreVulnerableSide: "max" as const },
+  };
+  const signalValues: Record<string, number | undefined> = {
+    vote_share: ward.vote_share,
+    electorate_share: ward.electorate_share,
+    pop_growth_pct: ward.pop_growth_pct,
+  };
+  const toPercent = (v: number) => `${(v * 100).toFixed(1)}%`;
+
+  function coattailRange(field: "ward_lean" | "alignment") {
+    const vals = allWards
+      .map((w) => w.coattail_detail?.[field])
+      .filter((v): v is number => v !== undefined);
+    if (vals.length === 0) return { min: 0, max: 1 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }
+  const coattailRanges = {
+    ward_lean: coattailRange("ward_lean"),
+    alignment: coattailRange("alignment"),
+  };
+  const formatLean = (v: number) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+  const formatAlignment = (v: number) => `${(v * 100).toFixed(0)}%`;
 
   return (
     <main className="np-shell" style={{ maxWidth: "52rem" }}>
       {/* Breadcrumb */}
       <Link
         href="/wards"
+        className="np-back-link"
         style={{
           ...MONO,
           fontSize: "0.62rem",
@@ -94,12 +122,6 @@ export default async function WardDetailPage({ params }: Props) {
           display: "inline-block",
           marginBottom: "1.5rem",
           padding: "0.2rem 0.4rem",
-        }}
-        onMouseEnter={(e) => {
-          (e.target as HTMLElement).style.background = "#f0ede8";
-        }}
-        onMouseLeave={(e) => {
-          (e.target as HTMLElement).style.background = "transparent";
         }}
       >
         ← All Wards
@@ -138,128 +160,129 @@ export default async function WardDetailPage({ params }: Props) {
       </p>
       <hr className="np-rule" />
 
-      {/* Race class + vulnerability */}
+      {narrativeLede && (
+        <p
+          style={{
+            ...SERIF,
+            fontSize: "0.92rem",
+            lineHeight: 1.6,
+            color: "#1a1a1a",
+            margin: "1.25rem 0 1.5rem 0",
+          }}
+        >
+          {narrativeLede}
+        </p>
+      )}
+
+      {/* Vulnerability */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
           border: "1px solid #ccc",
           borderTop: "none",
           marginBottom: "2rem",
+          padding: "0.75rem 1rem",
         }}
       >
-        <div
-          style={{
-            padding: "0.75rem 1rem",
-            borderRight: "1px solid #ccc",
-          }}
-        >
-          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Race class
-          </div>
-          <span
-            style={{
-              ...MONO,
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              color: "#1a1a1a",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            {ward.race_class}
-          </span>
+        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+          Vulnerability
         </div>
-        <div style={{ padding: "0.75rem 1rem" }}>
-          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Vulnerability
-          </div>
-          <VulnerabilityPill band={vulnerabilityBand} />
-        </div>
+        <VulnerabilityPill band={vulnerabilityBand} />
       </div>
 
-      {/* Vulnerability signals */}
-      {ward.ward !== 19 && (
+      {/* Signals & factors */}
+      {(ward.ward !== 19 || ward.is_running) && (
         <section style={{ marginBottom: "2rem" }}>
           <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Vulnerability signals
+            Signals &amp; factors
           </div>
           <hr className="np-rule" />
           <table className="np-table">
             <tbody>
-              {vulnerabilitySignals.map((signal) => (
+              {/* Vulnerability signals */}
+              {ward.ward !== 19 && vulnerabilitySignals.map((signal) => (
                 <tr key={signal.id}>
                   <td>
-                    <span
-                      style={{
-                        ...SERIF,
-                        fontSize: "0.88rem",
-                        fontWeight: 600,
-                        color: "#1a1a1a",
-                        display: "block",
-                      }}
-                    >
+                    <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
                       {signal.label}
                     </span>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#555",
-                        display: "block",
-                        marginTop: "0.1rem",
-                      }}
-                    >
+                    <span style={{ fontSize: "0.75rem", color: "#555", display: "block", marginTop: "0.25rem" }}>
+                      {signal.explanation}
+                    </span>
+                    <span style={{ fontSize: "0.72rem", color: "#888", display: "block", marginTop: "0.2rem" }}>
                       {signal.summary}
                     </span>
                   </td>
-                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                    <span style={{ ...MONO, fontSize: "0.72rem", color: "#333", marginRight: "0.5rem" }}>
-                      {signal.valueLabel}
-                    </span>
-                    <span
-                      style={{
-                        ...MONO,
-                        fontSize: "0.85rem",
-                        color: signalColor(signal.direction),
-                      }}
-                    >
-                      {signalArrow(signal.direction)}
-                    </span>
+                  <td style={{ verticalAlign: "middle", paddingLeft: "1.5rem" }}>
+                    <SignalRangeBar
+                      value={signalValues[signal.id]}
+                      min={signalRanges[signal.id].min}
+                      max={signalRanges[signal.id].max}
+                      formatValue={toPercent}
+                      moreVulnerableSide={signalRanges[signal.id].moreVulnerableSide}
+                      minLabel={signalRanges[signal.id].minLabel}
+                      maxLabel={signalRanges[signal.id].maxLabel}
+                    />
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </section>
-      )}
 
-      {/* Model factors */}
-      {ward.is_running && (
-        <section style={{ marginBottom: "2rem" }}>
-          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Model factors
-          </div>
-          <hr className="np-rule" />
-          <table className="np-table">
-            <tbody>
-              {[
-                { label: "Vulnerability effect", dir: factorDirection(ward.factors.vuln) },
-                { label: "Coattail effect", dir: factorDirection(ward.factors.coat) },
-                { label: "Challenger effect", dir: factorDirection(ward.factors.chal) },
-              ].map(({ label, dir }) => (
-                <tr key={label}>
-                  <td>
-                    <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a" }}>
-                      {label}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <span style={{ ...MONO, fontSize: "0.72rem", color: dir.color }}>
-                      {dir.label}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {/* Coattail effect */}
+              {ward.is_running && ward.coattail_detail && (() => {
+                const { alignment, ward_lean } = ward.coattail_detail;
+                return (
+                  <tr>
+                    <td style={{ verticalAlign: "top" }}>
+                      <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                        Coattail effect
+                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#555", display: "block", marginTop: "0.25rem" }}>
+                        Mayors tend to help or hurt councillors who share their political brand. This factor captures how closely the councillor votes with Mayor Chow and how strongly Chow&rsquo;s coalition performs in this ward.
+                      </span>
+                    </td>
+                    <td style={{ verticalAlign: "top", paddingLeft: "1.5rem" }}>
+                      <CoattailBars
+                        wardLean={ward_lean}
+                        leanMin={coattailRanges.ward_lean.min}
+                        leanMax={coattailRanges.ward_lean.max}
+                        alignment={alignment}
+                        alignMin={coattailRanges.alignment.min}
+                        alignMax={coattailRanges.alignment.max}
+                      />
+                    </td>
+                  </tr>
+                );
+              })()}
+
+              {/* Challenger effect */}
+              {ward.is_running && (() => {
+                const named = challengers.filter((c: Challenger) => c.candidate_name !== "Generic Challenger");
+                const wellKnown = named.filter((c: Challenger) => c.name_recognition_tier === "well-known");
+                const known = named.filter((c: Challenger) => c.name_recognition_tier === "known");
+                const chalText =
+                  named.length === 0 ? "No challengers registered yet; minimal pressure modelled" :
+                  wellKnown.length > 0 ? `${wellKnown.length > 1 ? "Multiple" : "One"} well-known challenger${wellKnown.length > 1 ? "s" : ""} registered: ${wellKnown.map((c: Challenger) => c.candidate_name).join(" and ")}` :
+                  known.length > 0 ? `Known challenger${known.length > 1 ? "s" : ""} registered (${known.map((c: Challenger) => c.candidate_name).join(" and ")}); no high-profile entrants yet` :
+                  `${named.length} low-profile challenger${named.length > 1 ? "s" : ""} registered; no named threats yet`;
+                const dir = factorDirection(ward.factors.chal);
+                return (
+                  <tr>
+                    <td>
+                      <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                        Challenger effect
+                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#555", display: "block", marginTop: "0.25rem" }}>
+                        The strength of the strongest announced challenger, based on name recognition and fundraising. Well-known challengers with resources apply significantly more pressure than low-profile entries.
+                      </span>
+                      <span style={{ fontSize: "0.72rem", color: "#888", display: "block", marginTop: "0.2rem" }}>
+                        {chalText}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right", verticalAlign: "top" }}>
+                      <span style={{ ...MONO, fontSize: "0.72rem", color: dir.color }}>{dir.label}</span>
+                    </td>
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </section>

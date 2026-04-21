@@ -46,21 +46,17 @@ describe("generateWardNarrative", () => {
   });
 
   it("joins two risk-raising signals with 'On top of that,'", () => {
-    // Low vote share (raises) + well-known challenger (raises)
-    const ward = makeWard({ vote_share: 0.38 });
-    const challengers = [
-      makeChallenger({ candidate_name: "Jane Smith", name_recognition_tier: "well-known" }),
-    ];
-    const result = generateWardNarrative(ward, challengers);
+    // Low vote share (raises) + low electorate share (raises)
+    const ward = makeWard({ vote_share: 0.38, electorate_share: 0.08 });
+    const result = generateWardNarrative(ward, []);
     expect(result).not.toBeNull();
     expect(result).toContain("On top of that,");
   });
 
   it("joins two risk-reducing signals with 'Adding to this,'", () => {
-    // Strong vote share (reduces) + zero named challengers (reduces)
-    const ward = makeWard({ vote_share: 0.68 });
-    const challengers: Challenger[] = []; // zero challengers
-    const result = generateWardNarrative(ward, challengers);
+    // Strong vote share (reduces) + broad electorate share (reduces)
+    const ward = makeWard({ vote_share: 0.68, electorate_share: 0.22 });
+    const result = generateWardNarrative(ward, []);
     expect(result).not.toBeNull();
     expect(result).toContain("Adding to this,");
   });
@@ -84,14 +80,16 @@ describe("generateWardNarrative", () => {
   });
 
   it("caps output at 3 signals", () => {
-    // Well-known challenger + low vote share + low electorate share + pop growth (4 notables)
-    const ward = makeWard({ vote_share: 0.38, electorate_share: 0.08, pop_growth_pct: 0.05 });
-    const challengers = [
-      makeChallenger({ candidate_name: "Jane Smith", name_recognition_tier: "well-known" }),
-    ];
-    const result = generateWardNarrative(ward, challengers);
+    // Low vote share + notable coattail + low electorate + pop growth (4 notables, cap at 3)
+    const ward = makeWard({
+      vote_share: 0.38,
+      electorate_share: 0.08,
+      pop_growth_pct: 0.05,
+      coattail_detail: { alignment: 0.82, alignment_delta: 0.1, ward_lean: 0.06 },
+    });
+    const result = generateWardNarrative(ward, []);
     expect(result).not.toBeNull();
-    // Should not contain population growth sentence (4th signal, below cap)
+    // pop growth is 4th in priority order — should be excluded
     expect(result).not.toContain("grown rapidly");
   });
 
@@ -109,7 +107,7 @@ describe("generateWardNarrative", () => {
       expect(result).toContain("wide cushion");
     });
 
-    it("names a well-known challenger in the challenger sentence", () => {
+    it.skip("names a well-known challenger in the challenger sentence (re-enable after May 1)", () => {
       const ward = makeWard({ vote_share: 0.38 });
       const challengers = [
         makeChallenger({ candidate_name: "Jane Smith", name_recognition_tier: "well-known" }),
@@ -118,7 +116,7 @@ describe("generateWardNarrative", () => {
       expect(result).toContain("Jane Smith");
     });
 
-    it("uses plural verb when multiple well-known challengers are registered", () => {
+    it.skip("uses plural verb when multiple well-known challengers are registered (re-enable after May 1)", () => {
       const ward = makeWard({ vote_share: 0.38 });
       const challengers = [
         makeChallenger({ candidate_name: "Jane Smith", name_recognition_tier: "well-known" }),
@@ -129,7 +127,7 @@ describe("generateWardNarrative", () => {
       expect(result).toContain("have entered");
     });
 
-    it("uses zero-challengers sentence when no named challengers registered", () => {
+    it.skip("uses zero-challengers sentence when no named challengers registered (re-enable after May 1)", () => {
       // Only a Generic Challenger in the list
       const ward = makeWard({ vote_share: 0.38 });
       const challengers = [makeChallenger()]; // Generic Challenger

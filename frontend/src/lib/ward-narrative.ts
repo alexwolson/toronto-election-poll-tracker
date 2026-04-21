@@ -1,9 +1,20 @@
 import type { Ward, Challenger } from "@/types/ward";
+import { getPronounsForWard, type Pronouns } from "@/lib/ward-pronouns";
 
 interface NarrativeSignal {
   sentence: string;
   riskDirection: "raises" | "reduces";
   canLowercase?: boolean;
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function conjugate(verb: string, plural: boolean): string {
+  if (plural) return verb;
+  if (verb === "have") return "has";
+  return verb + "s";
 }
 
 function scoreChallenger(challengers: Challenger[], councillorName: string): NarrativeSignal | null {
@@ -36,19 +47,19 @@ function scoreChallenger(challengers: Challenger[], councillorName: string): Nar
   return null;
 }
 
-function scoreVoteShare(ward: Ward): NarrativeSignal | null {
+function scoreVoteShare(ward: Ward, p: Pronouns): NarrativeSignal | null {
   const vote = ward.vote_share;
   if (vote === undefined) return null;
   if (vote < 0.45) {
     return {
-      sentence: `${ward.councillor_name}'s 2022 vote share was low — they won with a thin margin that leaves little buffer against a credible challenger.`,
+      sentence: `${ward.councillor_name}'s 2022 vote share was low — ${p.subject} won with a thin margin that leaves little buffer against a credible challenger.`,
       riskDirection: "raises",
       canLowercase: false,
     };
   }
   if (vote > 0.62) {
     return {
-      sentence: `${ward.councillor_name}'s 2022 vote share was strong, giving them a wide cushion against most challengers.`,
+      sentence: `${ward.councillor_name}'s 2022 vote share was strong, giving ${p.object} a wide cushion against most challengers.`,
       riskDirection: "reduces",
       canLowercase: false,
     };
@@ -56,7 +67,7 @@ function scoreVoteShare(ward: Ward): NarrativeSignal | null {
   return null;
 }
 
-function scoreCoattail(ward: Ward): NarrativeSignal | null {
+function scoreCoattail(ward: Ward, p: Pronouns): NarrativeSignal | null {
   if (!ward.coattail_detail) return null;
   const { alignment, ward_lean } = ward.coattail_detail;
 
@@ -68,49 +79,52 @@ function scoreCoattail(ward: Ward): NarrativeSignal | null {
   if (!highAlignment && !lowAlignment) return null;
   if (!positiveLean && !negativeLean) return null;
 
+  const votes = conjugate("vote", p.pluralVerb);
+  const has = conjugate("have", p.pluralVerb);
+
   if (highAlignment && positiveLean) {
     return {
       sentence:
-        "They vote closely with Mayor Chow, and this ward has historically leaned toward Chow's coalition — a combination that could reinforce their support.",
+        `${cap(p.subject)} ${votes} closely with Mayor Chow, and this ward has historically leaned toward Chow's coalition — a combination that could reinforce ${p.possessive} support.`,
       riskDirection: "reduces",
     };
   }
   if (highAlignment && negativeLean) {
     return {
       sentence:
-        "They vote closely with Mayor Chow, but this ward has historically been cool toward Chow's coalition — an alignment that may not play to their advantage.",
+        `${cap(p.subject)} ${votes} closely with Mayor Chow, but this ward has historically been cool toward Chow's coalition — an alignment that may not play to ${p.possessive} advantage.`,
       riskDirection: "raises",
     };
   }
   if (lowAlignment && positiveLean) {
     return {
       sentence:
-        "They have kept distance from Mayor Chow's voting record, even though this ward has historically leaned toward Chow's coalition.",
+        `${cap(p.subject)} ${has} kept distance from Mayor Chow's voting record, even though this ward has historically leaned toward Chow's coalition.`,
       riskDirection: "raises",
     };
   }
   // lowAlignment && negativeLean
   return {
     sentence:
-      "They have kept distance from Mayor Chow's voting record, which aligns with this ward's historically cool reception of Chow's coalition.",
+      `${cap(p.subject)} ${has} kept distance from Mayor Chow's voting record, which aligns with this ward's historically cool reception of Chow's coalition.`,
     riskDirection: "reduces",
   };
 }
 
-function scoreElectorateShare(ward: Ward): NarrativeSignal | null {
+function scoreElectorateShare(ward: Ward, p: Pronouns): NarrativeSignal | null {
   const e = ward.electorate_share;
   if (e === undefined) return null;
   if (e < 0.11) {
     return {
       sentence:
-        "Their base is thin relative to the registered electorate — a challenger running a strong voter-drive could activate enough new voters to tip the result.",
+        `${cap(p.possessive)} base is thin relative to the registered electorate — a challenger running a strong voter-drive could activate enough new voters to tip the result.`,
       riskDirection: "raises",
     };
   }
   if (e > 0.18) {
     return {
       sentence:
-        "Their vote penetrates broadly into the registered electorate, making it harder for a challenger to close the gap through voter mobilisation alone.",
+        `${cap(p.possessive)} vote penetrates broadly into the registered electorate, making it harder for a challenger to close the gap through voter mobilisation alone.`,
       riskDirection: "reduces",
     };
   }
@@ -147,11 +161,14 @@ function pickConnective(prev: NarrativeSignal, next: NarrativeSignal): string {
 export function generateWardNarrative(ward: Ward, challengers: Challenger[]): string | null {
   if (!ward.is_running) return null;
 
+  const p = getPronounsForWard(ward.ward);
+
   const scoreFns = [
-    () => scoreChallenger(challengers, ward.councillor_name),
-    () => scoreVoteShare(ward),
-    () => scoreCoattail(ward),
-    () => scoreElectorateShare(ward),
+    // challenger signal re-enabled after May 1 registration deadline
+    // () => scoreChallenger(challengers, ward.councillor_name),
+    () => scoreVoteShare(ward, p),
+    () => scoreCoattail(ward, p),
+    () => scoreElectorateShare(ward, p),
     () => scorePopGrowth(ward),
   ];
 

@@ -49,6 +49,48 @@ export async function getWard(wardNum: number): Promise<WardResponse> {
   }
 }
 
+type ApprovalPollRow = {
+  date: string;
+  firm: string;
+  approve: number;
+  disapprove: number;
+  not_sure: number;
+  weight: number;
+};
+
+type FloorPollRow = {
+  date: string;
+  firm: string;
+  field_tested: string;
+  chow: number;
+  sample_size: number;
+  candidate_weight: number;
+};
+
+type H2HPollRow = {
+  date: string;
+  firm: string;
+  chow: number;
+  bradford: number;
+  sample_size: number;
+  recency_weight: number;
+};
+
+type CapturePollRow = {
+  date: string;
+  firm: string;
+  field_tested: string;
+  bradford: number;
+  recency_weight: number;
+};
+
+export type PollDetail = {
+  approval_polls: ApprovalPollRow[];
+  floor_polls: FloorPollRow[];
+  h2h_polls: H2HPollRow[];
+  capture_polls: CapturePollRow[];
+};
+
 export type ConsolidationTrend =
   | "consolidating"
   | "stalling"
@@ -67,7 +109,6 @@ export type PoolModel = {
     protective_progressive_reserve: number;
   };
   candidates: Record<string, { share: number; capture_rate: number }>;
-  withdrawn_in_transition: number;
   uncaptured_anti_chow: number;
   consolidation_trend: ConsolidationTrend;
   approval: { approve: number; disapprove: number; not_sure: number };
@@ -77,6 +118,7 @@ export type PoolModel = {
     approval_data_points: number;
     h2h_available: boolean;
   };
+  poll_detail: PollDetail;
 };
 
 type PollTrendPoint = { date: string; [candidate: string]: number | string };
@@ -138,7 +180,17 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
     if (!res.ok) return fallback;
     const data = (await res.json()) as Partial<PollingAveragesResponse>;
     return {
-      pool_model: data.pool_model ?? null,
+      pool_model: data.pool_model
+        ? {
+            ...data.pool_model,
+            poll_detail: data.pool_model.poll_detail ?? {
+              approval_polls: [],
+              floor_polls: [],
+              h2h_polls: [],
+              capture_polls: [],
+            },
+          }
+        : null,
       aggregated: data.aggregated ?? {},
       polls_used: data.polls_used ?? 0,
       candidates: data.candidates ?? [],

@@ -103,8 +103,6 @@ export default async function WardDetailPage({ params }: Props) {
     ward_lean: coattailRange("ward_lean"),
     alignment: coattailRange("alignment"),
   };
-  const formatLean = (v: number) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
-  const formatAlignment = (v: number) => `${(v * 100).toFixed(0)}%`;
 
   return (
     <main className="np-shell" style={{ maxWidth: "52rem" }}>

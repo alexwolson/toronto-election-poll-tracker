@@ -1,17 +1,13 @@
 import { WardsResponse, WardResponse } from '../types/ward';
 
-// In production, data is served as static JSON built by scripts/build_snapshot.py.
-// In development, fall back to the local FastAPI backend.
+const DATA_BASE_URL =
+  'https://raw.githubusercontent.com/alexwolson/toronto-election-poll-tracker-data/main/data/processed';
+
 function dataUrl(file: string): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return `${process.env.NEXT_PUBLIC_API_URL}/api/${file}`;
   }
-  if (typeof window === 'undefined') {
-    // Server-side: use absolute URL via the static file
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
-    return `${base}/data/${file}`;
-  }
-  return `/data/${file}`;
+  return `${DATA_BASE_URL}/${file}`;
 }
 
 export async function getWards(): Promise<WardsResponse> {

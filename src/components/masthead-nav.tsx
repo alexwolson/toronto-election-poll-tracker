@@ -4,16 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/wards", label: "Wards" },
-  { href: "/polls", label: "Polls" },
+  { href: "/", label: "Mayor" },
+  { href: "/wards", label: "Council" },
 ];
 
 export function MastheadNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Site navigation" style={{ borderTop: "2px solid #1a1a1a", display: "flex" }}>
+    <nav aria-label="Site navigation" style={{ borderTop: "2px solid #1a1a1a", display: "flex", justifyContent: "center" }}>
       {NAV_LINKS.map((link, i) => {
         const active =
           link.href === "/"

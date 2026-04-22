@@ -444,9 +444,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
       <div className="me-intro">
         <div className="me-kicker">How the model works</div>
         <div className="me-dek">
-          The visualization above isn&apos;t a poll average — it&apos;s a
-          structural picture of where the electorate sits right now. Here&apos;s
-          how we build it from the raw polling data.
+          Most Toronto mayoral polls were conducted before key challengers declined to run. Rather than averaging noisy vote intentions, we use the raw data to extract the underlying structure of the electorate.
         </div>
       </div>
 

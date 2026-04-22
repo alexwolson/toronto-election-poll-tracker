@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getWards, getPollingAverages } from "@/lib/api";
 import { VoterAlignmentBars } from "@/components/voter-alignment-bars";
 import { ModelExplainer } from "@/components/model-explainer";
@@ -89,135 +88,12 @@ export default async function Home() {
             </div>
           ))}
 
-          <p
-            style={{
-              fontFamily: "var(--font-newsreader), serif",
-              fontSize: "0.7rem",
-              color: "#666",
-              fontStyle: "italic",
-              lineHeight: 1.5,
-              marginTop: "0.75rem",
-            }}
-          >
-            Tracking the Toronto 2026 mayoral race and ward-level council
-            dynamics. Nominations open May 1.
-          </p>
         </div>
       </div>
 
       {/* Zone 1.5: Model explainer */}
       <ModelExplainer model={pollsData.pool_model} />
 
-      {/* Zone 2: Section teasers */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          borderLeft: "1px solid #ccc",
-          borderBottom: "1px solid #ccc",
-          marginTop: "2rem",
-          borderTop: "2px solid #1a1a1a",
-        }}
-      >
-        <Link
-          href="/wards"
-          style={{
-            display: "block",
-            padding: "1rem 1.25rem",
-            borderRight: "1px solid #ccc",
-            textDecoration: "none",
-          }}
-        >
-          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Council
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-newsreader), serif",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: "#1a1a1a",
-              marginBottom: "0.5rem",
-            }}
-          >
-            Ward-by-ward race projections
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-ibm-mono), monospace",
-              fontSize: "0.65rem",
-              color: "#666",
-            }}
-          >
-            →
-          </div>
-        </Link>
-
-        <Link
-          href="/polls"
-          style={{
-            display: "block",
-            padding: "1rem 1.25rem",
-            borderRight: "1px solid #ccc",
-            textDecoration: "none",
-          }}
-        >
-          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Polling
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-newsreader), serif",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: "#1a1a1a",
-              marginBottom: "0.5rem",
-            }}
-          >
-            Mayoral poll tracker
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-ibm-mono), monospace",
-              fontSize: "0.65rem",
-              color: "#666",
-            }}
-          >
-            →
-          </div>
-        </Link>
-
-        <div
-          style={{
-            padding: "1rem 1.25rem",
-          }}
-        >
-          <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Model
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-newsreader), serif",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: "#1a1a1a",
-              marginBottom: "0.5rem",
-            }}
-          >
-            Pre-nomination phase
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-ibm-mono), monospace",
-              fontSize: "0.65rem",
-              color: "#666",
-              fontStyle: "italic",
-            }}
-          >
-            Structural factors only — field not yet set
-          </div>
-        </div>
-      </div>
     </main>
   );
 }

@@ -179,7 +179,7 @@ export default async function WardDetailPage({ params }: Props) {
         {ward.is_running ? (
           <VulnerabilityPill band={vulnerabilityBand} />
         ) : (
-          <span className="np-tag" style={{ color: "#6b7280", borderColor: "#6b7280" }}>Open seat</span>
+          <span className="np-tag" style={{ color: "var(--vuln-open-fg)", borderColor: "var(--vuln-open-fg)" }}>Open seat</span>
         )}
       </div>
 

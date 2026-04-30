@@ -6,6 +6,12 @@ const MONO: React.CSSProperties = {
   fontFamily: "var(--font-ibm-mono), monospace",
 };
 
+const LINK: React.CSSProperties = {
+  color: "#1a1a1a",
+  textDecoration: "underline",
+  textUnderlineOffset: "2px",
+};
+
 function SourceRow({
   name,
   url,
@@ -34,7 +40,7 @@ function SourceRow({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ ...SERIF, color: "#1a1a1a" }}
+          style={{ ...SERIF, ...LINK }}
         >
           {name}
         </a>
@@ -89,43 +95,84 @@ export default function SourcesPage() {
           }}
         >
           <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-            Primary contributor
+            Data source
           </div>
           <div
             style={{
               ...SERIF,
               fontWeight: 700,
               fontSize: "1.1rem",
-              marginBottom: "0.6rem",
+              marginBottom: "0.2rem",
+              color: "#1a1a1a",
             }}
           >
+            Matt Elliott
+          </div>
+          <div
+            style={{
+              ...MONO,
+              fontSize: "0.68rem",
+              color: "#666",
+              marginBottom: "0.65rem",
+            }}
+          >
+            <a
+              href="https://www.thestar.com/users/profile/matt-elliott/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#666", textDecoration: "underline", textUnderlineOffset: "2px" }}
+            >
+              Contributing Columnist, Toronto Star
+            </a>
+            {" · "}
             <a
               href="https://cityhallwatcher.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#1a1a1a" }}
+              style={{ color: "#666", textDecoration: "underline", textUnderlineOffset: "2px" }}
             >
-              Matt Elliott · City Hall Watcher
+              City Hall Watcher
             </a>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-            {[
-              {
-                label: "Council Defeatability Index",
-                desc: "Vulnerability scores and methodology for all 25 wards",
-              },
-              {
-                label: "Council voting alignment scores",
-                desc: "Councillor alignment scores under the Chow and Tory mayoralties",
-              },
-            ].map(({ label, desc }) => (
-              <div
-                key={label}
-                style={{ ...MONO, fontSize: "0.72rem", color: "#444" }}
+          <div
+            style={{
+              fontSize: "0.875rem",
+              color: "#444",
+              lineHeight: 1.6,
+              marginBottom: "0.85rem",
+            }}
+          >
+            Elliott publishes City Hall Watcher, the essential newsletter for
+            anyone following Toronto municipal politics. The council projections
+            in this model draw on two of his published analytical works, used
+            with permission.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div style={{ ...MONO, fontSize: "0.72rem", color: "#444" }}>
+              <a
+                href="https://toronto.cityhallwatcher.com/p/looking-ahead-to-the-heartbreak-that"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ ...LINK, fontWeight: 600 }}
               >
-                <span style={{ fontWeight: 600 }}>{label}</span> — {desc}
-              </div>
-            ))}
+                Council Defeatability Index
+              </a>
+              <span style={{ color: "#888", marginLeft: "0.35rem" }}>[paywalled]</span>
+              {" "}— Vulnerability scores and methodology for all 25 wards, based on
+              incumbent vote share, electorate share, and ward population growth
+            </div>
+            <div style={{ ...MONO, fontSize: "0.72rem", color: "#444" }}>
+              <a
+                href="https://www.councilscorecard.ca/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ ...LINK, fontWeight: 600 }}
+              >
+                Council Scorecard
+              </a>
+              <span style={{ color: "#888", marginLeft: "0.35rem" }}>[paywalled]</span>
+              {" "}— Councillor voting alignment scores under both the Chow and Tory mayoralties
+            </div>
           </div>
         </div>
 
@@ -169,9 +216,9 @@ export default function SourcesPage() {
                 rel="noopener noreferrer"
                 style={{
                   ...SERIF,
+                  ...LINK,
                   fontWeight: 600,
                   fontSize: "0.95rem",
-                  color: "#1a1a1a",
                 }}
               >
                 {firm.name}

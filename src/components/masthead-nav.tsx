@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_LINKS = [
   { href: "/", label: "Mayor" },
   { href: "/wards", label: "Council" },
+  { href: "/sources", label: "Sources" },
 ];
 
 export function MastheadNav() {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getWards } from "@/lib/api";
 import { WardsBrowser } from "@/components/wards-browser";
 
@@ -63,7 +64,9 @@ export default async function WardsPage() {
         <hr className="np-rule" style={{ marginBottom: "1.5rem" }} />
       </div>
 
-      <WardsBrowser wards={wards} />
+      <Suspense>
+        <WardsBrowser wards={wards} />
+      </Suspense>
     </main>
   );
 }

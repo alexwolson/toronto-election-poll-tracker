@@ -326,7 +326,7 @@
 .va-bar-track {
   width: 100%;
   height: 48px;
-  background: color-mix(in oklch, #ccc 28%, #faf9f6);
+  background: color-mix(in oklch, var(--line-soft) 28%, var(--bg-base));
   position: relative;
 }
 

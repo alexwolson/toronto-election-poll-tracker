@@ -20,41 +20,41 @@ export default async function WardsPage() {
         </div>
         <div className="np-section-header">
           <h1
+            className="font-heading"
             style={{
-              fontFamily: "var(--font-newsreader), serif",
               fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
               fontWeight: 700,
               margin: 0,
               letterSpacing: "-0.01em",
-              color: "#1a1a1a",
+              color: "var(--text-strong)",
             }}
           >
             All Wards
           </h1>
           <div
+            className="font-mono"
             style={{
               display: "flex",
               gap: "1.5rem",
-              fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.7rem",
-              color: "#555",
+              color: "var(--text-mid)",
               paddingBottom: "0.25rem",
             }}
           >
             <span>
-              <span style={{ fontWeight: 700, color: "#1a1a1a" }}>
+              <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>
                 {safeCount}
               </span>{" "}
               safe
             </span>
             <span>
-              <span style={{ fontWeight: 700, color: "#9b1c1c" }}>
+              <span style={{ fontWeight: 700, color: "var(--vuln-high-fg)" }}>
                 {competitiveCount}
               </span>{" "}
               competitive
             </span>
             <span>
-              <span style={{ fontWeight: 700, color: "#92400e" }}>
+              <span style={{ fontWeight: 700, color: "var(--vuln-med-fg)" }}>
                 {openCount}
               </span>{" "}
               open

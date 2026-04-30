@@ -229,7 +229,7 @@ export default function SourcesPage() {
       </div>
 
       {/* Section 3: Background data */}
-      <div>
+      <div style={{ marginBottom: "2.5rem" }}>
         <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
           Background data
         </div>
@@ -244,6 +244,50 @@ export default function SourcesPage() {
           url="https://338canada.com"
           description="Methodological inspiration for polling aggregation; model by Philippe J. Fournier"
         />
+      </div>
+
+      {/* Section 4: About */}
+      <div>
+        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
+          About
+        </div>
+        <hr className="np-rule" style={{ marginBottom: "1.25rem" }} />
+        <p
+          style={{
+            fontSize: "0.9375rem",
+            lineHeight: 1.65,
+            color: "#333",
+            margin: "0 0 0.85rem 0",
+            maxWidth: "60ch",
+          }}
+        >
+          This site was built by Alex Olson, based in Toronto. He works at the
+          University of Toronto&rsquo;s Faculty of Applied Science &amp;
+          Engineering, leading the Centre for Analytics &amp; AI Engineering
+          (CARTE) in the Department of Mechanical &amp; Industrial Engineering,
+          with a focus on AI education, curriculum design, and applied machine
+          learning.
+        </p>
+        <p
+          style={{
+            fontSize: "0.9375rem",
+            lineHeight: 1.65,
+            color: "#333",
+            margin: 0,
+            maxWidth: "60ch",
+          }}
+        >
+          Outside of work he is involved with{" "}
+          <a
+            href="https://civictech.ca"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={LINK}
+          >
+            Civic Tech Toronto
+          </a>{" "}
+          and has a long-standing interest in Toronto municipal politics.
+        </p>
       </div>
     </main>
   );

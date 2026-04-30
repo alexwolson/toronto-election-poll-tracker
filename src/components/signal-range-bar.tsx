@@ -17,18 +17,18 @@ const TOTAL_H = 24;
 
 // 6rem matches LEFT_LABEL_MIN_W in coattail-bars.tsx — keeps all tracks aligned
 const LEFT_LABEL_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
+  fontFamily: "var(--font-ibm-mono)",
   fontSize: "0.6rem",
-  color: "#999",
+  color: "var(--text-faint)",
   whiteSpace: "nowrap",
   minWidth: "6rem",
   textAlign: "right",
 };
 
 const RIGHT_LABEL_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
+  fontFamily: "var(--font-ibm-mono)",
   fontSize: "0.6rem",
-  color: "#999",
+  color: "var(--text-faint)",
   whiteSpace: "nowrap",
 };
 
@@ -42,7 +42,7 @@ export function SignalRangeBar({
   maxLabel,
 }: SignalRangeBarProps) {
   let indicatorX: number | null = null;
-  let color = "#555";
+  let color = "var(--text-mid)";
 
   if (value !== undefined) {
     const ratio = max > min ? (value - min) / (max - min) : 0.5;
@@ -51,7 +51,7 @@ export function SignalRangeBar({
     if (moreVulnerableSide !== undefined) {
       const vulnerableRatio = moreVulnerableSide === "min" ? 1 - ratio : ratio;
       color =
-        vulnerableRatio > 0.6 ? "#c53030" : vulnerableRatio < 0.35 ? "#15803d" : "#92400e";
+        vulnerableRatio > 0.6 ? "var(--vuln-high-fg)" : vulnerableRatio < 0.35 ? "var(--vuln-low-line-hover)" : "var(--vuln-med-fg)";
     }
   }
 
@@ -75,7 +75,7 @@ export function SignalRangeBar({
           y={TRACK_Y}
           width={TRACK_W}
           height={TRACK_H}
-          fill="#e8e5e0"
+          fill="var(--track-bg)"
           rx={1}
         />
 
@@ -93,7 +93,7 @@ export function SignalRangeBar({
               y={TRACK_Y - 5}
               textAnchor="middle"
               fontSize={8}
-              fontFamily="var(--font-ibm-mono), monospace"
+              fontFamily="var(--font-ibm-mono)"
               fontWeight={600}
               fill={color}
             >

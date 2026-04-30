@@ -24,10 +24,6 @@ async function getPolls(): Promise<{ polls: Poll[] }> {
   }
 }
 
-const MONO: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
-};
-
 const SERIF: React.CSSProperties = {
   fontFamily: "var(--font-newsreader), serif",
 };
@@ -57,7 +53,7 @@ export default async function PollsPage() {
           fontWeight: 700,
           margin: "0 0 0.5rem 0",
           letterSpacing: "-0.01em",
-          color: "#1a1a1a",
+          color: "var(--text-strong)",
         }}
       >
         Mayoral Polling
@@ -69,7 +65,7 @@ export default async function PollsPage() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
-          border: "1px solid #ccc",
+          border: "1px solid var(--line-soft)",
           borderTop: "none",
           marginBottom: "2rem",
         }}
@@ -83,7 +79,7 @@ export default async function PollsPage() {
             key={stat.label}
             style={{
               padding: "0.75rem 1rem",
-              borderRight: i < 2 ? "1px solid #ccc" : "none",
+              borderRight: i < 2 ? "1px solid var(--line-soft)" : "none",
             }}
           >
             <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
@@ -94,7 +90,7 @@ export default async function PollsPage() {
                 ...SERIF,
                 fontSize: "1.6rem",
                 fontWeight: 700,
-                color: "#1a1a1a",
+                color: "var(--text-strong)",
                 lineHeight: 1,
               }}
             >
@@ -107,7 +103,7 @@ export default async function PollsPage() {
       {/* Polling chart */}
       <div
         style={{
-          border: "1px solid #ccc",
+          border: "1px solid var(--line-soft)",
           padding: "1rem",
           marginBottom: "2rem",
         }}
@@ -115,7 +111,7 @@ export default async function PollsPage() {
         {chartData.length > 0 ? (
           <PollingChart data={chartData} candidates={chartCandidates} />
         ) : (
-          <p style={{ ...MONO, fontSize: "0.65rem", color: "#666" }}>
+          <p className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-soft)" }}>
             No polling data available yet.
           </p>
         )}
@@ -131,7 +127,7 @@ export default async function PollsPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
-            border: "1px solid #ccc",
+            border: "1px solid var(--line-soft)",
             borderTop: "none",
           }}
         >
@@ -140,7 +136,7 @@ export default async function PollsPage() {
               <div
                 key={status}
                 style={{
-                  borderRight: i < 2 ? "1px solid #ccc" : "none",
+                  borderRight: i < 2 ? "1px solid var(--line-soft)" : "none",
                   padding: "0.75rem 1rem",
                 }}
               >
@@ -159,7 +155,7 @@ export default async function PollsPage() {
                         paddingBottom: "0.65rem",
                         marginBottom: "0.65rem",
                         borderBottom:
-                          j < arr.length - 1 ? "1px solid #e8e5e0" : "none",
+                          j < arr.length - 1 ? "1px solid var(--track-bg)" : "none",
                       }}
                     >
                       <div
@@ -167,7 +163,7 @@ export default async function PollsPage() {
                           ...SERIF,
                           fontSize: "0.9rem",
                           fontWeight: 600,
-                          color: "#1a1a1a",
+                          color: "var(--text-strong)",
                           marginBottom: "0.2rem",
                         }}
                       >
@@ -176,14 +172,14 @@ export default async function PollsPage() {
                       <div
                         style={{
                           fontSize: "0.75rem",
-                          color: "#555",
+                          color: "var(--text-mid)",
                           marginBottom: "0.25rem",
                           lineHeight: 1.4,
                         }}
                       >
                         {candidate.summary}
                       </div>
-                      <div style={{ ...MONO, fontSize: "0.62rem", color: "#555" }}>
+                      <div className="font-mono" style={{ fontSize: "0.62rem", color: "var(--text-mid)" }}>
                         {range
                           ? `${range.min}% – ${range.max}%`
                           : "No comparable data"}
@@ -203,7 +199,7 @@ export default async function PollsPage() {
           Poll history
         </div>
         <hr className="np-rule" />
-        <div style={{ border: "1px solid #ccc", borderTop: "none", overflowX: "auto" }}>
+        <div style={{ border: "1px solid var(--line-soft)", borderTop: "none", overflowX: "auto" }}>
           <table className="np-table">
             <thead>
               <tr>
@@ -234,13 +230,13 @@ export default async function PollsPage() {
 
                   return (
                     <tr key={i}>
-                      <td style={MONO}>
+                      <td className="font-mono">
                         {"date_published" in poll
                           ? poll.date_published
                           : poll.poll_date}
                       </td>
                       <td>{poll.firm}</td>
-                      <td style={{ ...MONO, textAlign: "right" }}>
+                      <td className="font-mono" style={{ textAlign: "right" }}>
                         {poll.sample_size}
                       </td>
                       <td style={{ textAlign: "right", fontWeight: 600 }}>
@@ -248,7 +244,7 @@ export default async function PollsPage() {
                           topCandidate[0].slice(1)}{" "}
                         ({(topCandidate[1] * 100).toFixed(0)}%)
                       </td>
-                      <td style={{ ...MONO, textAlign: "right", fontSize: "0.65rem", color: excluded ? "#c53030" : "#15803d" }}>
+                      <td className="font-mono" style={{ textAlign: "right", fontSize: "0.65rem", color: excluded ? "var(--vuln-high-fg)" : "var(--vuln-low-line-hover)" }}>
                         {excluded
                           ? `Excluded${reason ? ` (${reason})` : ""}`
                           : "Included"}

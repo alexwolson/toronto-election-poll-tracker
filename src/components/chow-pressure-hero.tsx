@@ -123,7 +123,7 @@ function PressureGauge({
         fontSize="13"
         fontWeight="700"
         fill="currentColor"
-        style={{ fontFamily: "var(--font-ibm-mono), monospace" }}
+        className="font-mono"
       >
         {percent}%
       </text>

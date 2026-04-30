@@ -18,17 +18,17 @@ const BAR_H = 24;
 const LEFT_LABEL_MIN_W = "6rem";
 
 const LABEL_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
+  fontFamily: "var(--font-ibm-mono)",
   fontSize: "0.6rem",
-  color: "#999",
+  color: "var(--text-faint)",
   whiteSpace: "nowrap",
   alignSelf: "center",
 };
 
 const KICKER_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
+  fontFamily: "var(--font-ibm-mono)",
   fontSize: "0.58rem",
-  color: "#777",
+  color: "var(--text-soft)",
   textTransform: "uppercase",
   letterSpacing: "0.05em",
   gridColumn: "1 / -1",
@@ -44,13 +44,13 @@ function barGeometry(value: number, min: number, max: number, fmt: (v: number) =
 function BarSvg({ indX, labelX, label }: { indX: number; labelX: number; label: string }) {
   return (
     <svg viewBox={`0 0 ${BAR_W} ${BAR_H}`} width={BAR_W} height={BAR_H} style={{ display: "block" }}>
-      <rect x={TRACK_X} y={TRACK_Y} width={TRACK_W} height={TRACK_H} fill="#e8e5e0" rx={1} />
-      <rect x={indX - 1} y={TRACK_Y - 4} width={2} height={TRACK_H + 8} fill="#555" />
+      <rect x={TRACK_X} y={TRACK_Y} width={TRACK_W} height={TRACK_H} fill="var(--track-bg)" rx={1} />
+      <rect x={indX - 1} y={TRACK_Y - 4} width={2} height={TRACK_H + 8} fill="var(--track-fill)" />
       <text
         x={labelX} y={TRACK_Y - 5}
         textAnchor="middle" fontSize={8}
-        fontFamily="var(--font-ibm-mono), monospace"
-        fontWeight={600} fill="#555"
+        fontFamily="var(--font-ibm-mono)"
+        fontWeight={600} fill="var(--track-fill)"
       >
         {label}
       </text>

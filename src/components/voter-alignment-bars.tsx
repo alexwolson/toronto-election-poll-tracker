@@ -33,14 +33,13 @@ function PeakMarker({ value, pollPct }: { value: number; pollPct: number }) {
         height: 0,
         borderLeft: "4px solid transparent",
         borderRight: "4px solid transparent",
-        borderBottom: "6px solid #1a1a1a",
+        borderBottom: "6px solid var(--text-strong)",
         opacity: 0.55,
         flexShrink: 0,
       }} />
-      <span style={{
-        fontFamily: "var(--font-ibm-mono), monospace",
+      <span className="font-mono" style={{
         fontSize: "0.55rem",
-        color: "#1a1a1a",
+        color: "var(--text-strong)",
         opacity: 0.65,
       }}>
         best poll {pollPct}%
@@ -116,26 +115,26 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
     <div className="p-6 md:p-8">
       <div className="va-title-row">
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "1rem" }}>
-          <span className="font-heading" style={{ fontSize: "1.6rem", fontWeight: 700, color: "#1a1a1a" }}>
+          <span className="font-heading" style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--text-strong)" }}>
             Where Toronto voters sit
           </span>
           {/* Scenario toggles */}
-          <div style={{ display: "flex", border: "1px solid #ccc", flexShrink: 0 }}>
+          <div style={{ display: "flex", border: "1px solid var(--line-soft)", flexShrink: 0 }}>
             {(["current", "chow", "bradford"] as Scenario[]).map((s, i) => (
               <button
                 key={s}
                 onClick={() => setScenario(s)}
+                className="font-mono"
                 style={{
-                  fontFamily: "var(--font-ibm-mono), monospace",
                   fontSize: "0.58rem",
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   padding: "0.35rem 0.75rem",
                   border: "none",
-                  borderRight: i < 2 ? "1px solid #ccc" : "none",
-                  background: scenario === s ? "#1a1a1a" : "transparent",
-                  color: scenario === s ? "#fff" : "#555",
+                  borderRight: i < 2 ? "1px solid var(--line-soft)" : "none",
+                  background: scenario === s ? "var(--text-strong)" : "transparent",
+                  color: scenario === s ? "#fff" : "var(--text-mid)",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                 }}
@@ -145,7 +144,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
             ))}
           </div>
         </div>
-        <div style={{ fontFamily: "var(--font-newsreader), serif", fontSize: "0.85rem", fontStyle: "italic", color: "#555", marginTop: "0.3rem" }}>
+        <div className="font-heading" style={{ fontSize: "0.85rem", fontStyle: "italic", color: "var(--text-mid)", marginTop: "0.3rem" }}>
           {isCurrent
             ? "Structural model, not a poll average"
             : `Theoretical scenario — ${scenario === "chow" ? "Chow" : "Bradford"} best-case: all voters lock in, undecideds break one way`}
@@ -154,7 +153,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
 
       {/* Pro-Chow */}
       <div className="va-row">
-        <div className="va-zone-label" style={{ color: "#854a90" }}>
+        <div className="va-zone-label" style={{ color: "var(--color-chow)" }}>
           Olivia Chow
           <span className="va-zone-share">
             {isCurrent ? `${pct(chowTotal)} of electorate` : `${pct(chowBarTotal)} projected`}
@@ -170,7 +169,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
                 <div className="va-seg va-seg-chow-activated" style={{ width: safeWidth(ppActivated, chowBarTotal) }} />
                 <div className="va-seg va-seg-chow-ceiling"   style={{ width: safeWidth(ppReserve,   chowBarTotal) }} />
                 {chowBonus > 0 && (
-                  <div className="va-seg" style={{ width: safeWidth(chowBonus, chowBarTotal), background: "#b89ec4" }} />
+                  <div className="va-seg" style={{ width: safeWidth(chowBonus, chowBarTotal), background: "var(--color-chow-soft)" }} />
                 )}
               </>
             )}
@@ -190,7 +189,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
 
       {/* Anti-Chow / Bradford */}
       <div className="va-row">
-        <div className="va-zone-label" style={{ color: "#00a2bf" }}>
+        <div className="va-zone-label" style={{ color: "var(--color-bradford)" }}>
           Brad Bradford
           <span className="va-zone-share">
             {isCurrent ? `${pct(antiTotal)} of electorate` : `${pct(bradfordBarTotal)} projected`}
@@ -205,7 +204,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
                 <div className="va-seg va-seg-anti-committed" style={{ width: safeWidth(bradfordShare, bradfordBarTotal) }} />
                 <div className="va-seg va-seg-anti-available" style={{ width: safeWidth(uncaptured,    bradfordBarTotal) }} />
                 {bradfordBonus > 0 && (
-                  <div className="va-seg" style={{ width: safeWidth(bradfordBonus, bradfordBarTotal), background: "#7ecfde" }} />
+                  <div className="va-seg" style={{ width: safeWidth(bradfordBonus, bradfordBarTotal), background: "var(--color-bradford-soft)" }} />
                 )}
               </>
             )}
@@ -225,7 +224,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
 
       {/* Not engaged / did not vote */}
       <div className="va-row">
-        <div className="va-zone-label" style={{ color: "#666" }}>
+        <div className="va-zone-label" style={{ color: "var(--text-soft)" }}>
           {isCurrent ? "Not yet engaged" : "Other candidate / did not vote"}
           <span className="va-zone-share">{pct(notSureDisplay)} of electorate</span>
         </div>

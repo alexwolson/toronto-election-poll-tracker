@@ -20,17 +20,9 @@ interface Props {
 // (vuln < 0, coat < 0, chal < 0 are all red in the existing colour logic.)
 function factorDirection(value: number): { label: string; color: string } {
   return value < 0
-    ? { label: "↑ increases risk", color: "#c53030" }
-    : { label: "↓ reduces risk", color: "#15803d" };
+    ? { label: "↑ increases risk", color: "var(--vuln-high-fg)" }
+    : { label: "↓ reduces risk", color: "var(--vuln-low-fg)" };
 }
-
-const MONO: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
-};
-
-const SERIF: React.CSSProperties = {
-  fontFamily: "var(--font-newsreader), serif",
-};
 
 export default async function WardDetailPage({ params }: Props) {
   const { ward_num } = await params;
@@ -50,16 +42,17 @@ export default async function WardDetailPage({ params }: Props) {
       <main className="np-shell" style={{ maxWidth: "48rem" }}>
         <Link
           href="/wards"
-          style={{ ...MONO, fontSize: "0.65rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.08em", textDecoration: "none", display: "inline-block", marginBottom: "1.5rem" }}
+          className="font-mono"
+          style={{ fontSize: "0.65rem", color: "var(--text-mid)", textTransform: "uppercase", letterSpacing: "0.08em", textDecoration: "none", display: "inline-block", marginBottom: "1.5rem" }}
         >
           ← All Wards
         </Link>
-        <h1 style={{ ...SERIF, fontSize: "2rem", fontWeight: 700, color: "#1a1a1a", marginBottom: "1rem" }}>
+        <h1 className="font-heading" style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text-strong)", marginBottom: "1rem" }}>
           Ward {wardNum}
         </h1>
-        <div style={{ border: "1px solid #ccc", padding: "1rem" }}>
+        <div style={{ border: "1px solid var(--line-soft)", padding: "1rem" }}>
           <p style={{ fontWeight: 600 }}>Ward data is temporarily unavailable.</p>
-          <p style={{ ...MONO, fontSize: "0.65rem", color: "#555", marginTop: "0.5rem" }}>
+          <p className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-mid)", marginTop: "0.5rem" }}>
             The backend API might be down. Please try again shortly.
           </p>
         </div>
@@ -109,11 +102,10 @@ export default async function WardDetailPage({ params }: Props) {
       {/* Breadcrumb */}
       <Link
         href="/wards"
-        className="np-back-link"
+        className="np-back-link font-mono"
         style={{
-          ...MONO,
           fontSize: "0.62rem",
-          color: "#555",
+          color: "var(--text-mid)",
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           textDecoration: "none",
@@ -130,11 +122,11 @@ export default async function WardDetailPage({ params }: Props) {
         Ward profile
       </div>
       <h1
+        className="font-heading"
         style={{
-          ...SERIF,
           fontSize: "clamp(1.6rem, 4vw, 2.5rem)",
           fontWeight: 700,
-          color: "#1a1a1a",
+          color: "var(--text-strong)",
           margin: "0 0 0.25rem 0",
           letterSpacing: "-0.01em",
         }}
@@ -142,10 +134,10 @@ export default async function WardDetailPage({ params }: Props) {
         {wardLabel}
       </h1>
       <p
+        className="font-mono"
         style={{
-          ...MONO,
           fontSize: "0.72rem",
-          color: "#555",
+          color: "var(--text-mid)",
           marginBottom: "0.75rem",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
@@ -153,18 +145,18 @@ export default async function WardDetailPage({ params }: Props) {
       >
         {displayName}
         {ward.is_running && ward.is_byelection_incumbent && (
-          <span style={{ color: "#666" }}> · By-election incumbent</span>
+          <span style={{ color: "var(--text-soft)" }}> · By-election incumbent</span>
         )}
       </p>
       <hr className="np-rule" />
 
       {narrativeLede && (
         <p
+          className="font-heading"
           style={{
-            ...SERIF,
             fontSize: "0.92rem",
             lineHeight: 1.6,
-            color: "#1a1a1a",
+            color: "var(--text-strong)",
             margin: "1.25rem 0 1.5rem 0",
           }}
         >
@@ -175,7 +167,7 @@ export default async function WardDetailPage({ params }: Props) {
       {/* Vulnerability */}
       <div
         style={{
-          border: "1px solid #ccc",
+          border: "1px solid var(--line-soft)",
           borderTop: "none",
           marginBottom: "2rem",
           padding: "0.75rem 1rem",
@@ -187,7 +179,7 @@ export default async function WardDetailPage({ params }: Props) {
         {ward.is_running ? (
           <VulnerabilityPill band={vulnerabilityBand} />
         ) : (
-          <span className="np-tag" style={{ color: "#6b7280", borderColor: "#6b7280" }}>Open seat</span>
+          <span className="np-tag" style={{ color: "var(--vuln-open-fg)", borderColor: "var(--vuln-open-fg)" }}>Open seat</span>
         )}
       </div>
 
@@ -204,13 +196,13 @@ export default async function WardDetailPage({ params }: Props) {
               {vulnerabilitySignals.map((signal) => (
                 <tr key={signal.id}>
                   <td>
-                    <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                    <span className="font-heading" style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-strong)", display: "block" }}>
                       {signal.label}
                     </span>
-                    <span style={{ fontSize: "0.75rem", color: "#555", display: "block", marginTop: "0.25rem" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-mid)", display: "block", marginTop: "0.25rem" }}>
                       {signal.explanation}
                     </span>
-                    <span style={{ fontSize: "0.72rem", color: "#888", display: "block", marginTop: "0.2rem" }}>
+                    <span style={{ fontSize: "0.72rem", color: "var(--text-faint)", display: "block", marginTop: "0.2rem" }}>
                       {signal.summary}
                     </span>
                   </td>
@@ -234,10 +226,10 @@ export default async function WardDetailPage({ params }: Props) {
                 return (
                   <tr>
                     <td style={{ verticalAlign: "top" }}>
-                      <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                      <span className="font-heading" style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-strong)", display: "block" }}>
                         Coattail effect
                       </span>
-                      <span style={{ fontSize: "0.75rem", color: "#555", display: "block", marginTop: "0.25rem" }}>
+                      <span style={{ fontSize: "0.75rem", color: "var(--text-mid)", display: "block", marginTop: "0.25rem" }}>
                         Mayors tend to help or hurt councillors who share their political brand. This factor captures how closely the councillor votes with Mayor Chow and how strongly Chow&rsquo;s coalition performs in this ward.
                       </span>
                     </td>
@@ -269,18 +261,18 @@ export default async function WardDetailPage({ params }: Props) {
                 return (
                   <tr>
                     <td>
-                      <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                      <span className="font-heading" style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-strong)", display: "block" }}>
                         Challenger effect
                       </span>
-                      <span style={{ fontSize: "0.75rem", color: "#555", display: "block", marginTop: "0.25rem" }}>
+                      <span style={{ fontSize: "0.75rem", color: "var(--text-mid)", display: "block", marginTop: "0.25rem" }}>
                         The strength of the strongest announced challenger, based on name recognition and fundraising. Well-known challengers with resources apply significantly more pressure than low-profile entries.
                       </span>
-                      <span style={{ fontSize: "0.72rem", color: "#888", display: "block", marginTop: "0.2rem" }}>
+                      <span style={{ fontSize: "0.72rem", color: "var(--text-faint)", display: "block", marginTop: "0.2rem" }}>
                         {chalText}
                       </span>
                     </td>
                     <td style={{ textAlign: "right", verticalAlign: "top" }}>
-                      <span style={{ ...MONO, fontSize: "0.72rem", color: dir.color }}>{dir.label}</span>
+                      <span className="font-mono" style={{ fontSize: "0.72rem", color: dir.color }}>{dir.label}</span>
                     </td>
                   </tr>
                 );
@@ -294,11 +286,11 @@ export default async function WardDetailPage({ params }: Props) {
       <section>
         <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
           Challengers{" "}
-          <span style={{ color: "#777" }}>({challengers.length})</span>
+          <span style={{ color: "var(--text-soft)" }}>({challengers.length})</span>
         </div>
         <hr className="np-rule" />
         {challengers.length === 0 ? (
-          <p style={{ ...MONO, fontSize: "0.65rem", color: "#666", padding: "0.75rem 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <p className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-soft)", padding: "0.75rem 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             No challenger data entered yet.
           </p>
         ) : (
@@ -307,19 +299,19 @@ export default async function WardDetailPage({ params }: Props) {
               {challengers.map((c: Challenger) => (
                 <tr key={c.candidate_name}>
                   <td>
-                    <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>
+                    <span className="font-heading" style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-strong)", display: "block" }}>
                       {c.candidate_name}
                       {c.is_endorsed_by_departing && (
-                        <span style={{ color: "#15803d", marginLeft: "0.4rem" }}>★</span>
+                        <span style={{ color: "var(--vuln-low-line-hover)", marginLeft: "0.4rem" }}>★</span>
                       )}
                     </span>
-                    <span style={{ ...MONO, fontSize: "0.6rem", color: "#555" }}>
+                    <span className="font-mono" style={{ fontSize: "0.6rem", color: "var(--text-mid)" }}>
                       Aligned: {c.mayoral_alignment}
                       {c.fundraising_tier && ` · Fundraising: ${c.fundraising_tier}`}
                     </span>
                   </td>
                   <td style={{ textAlign: "right", verticalAlign: "top" }}>
-                    <span className="np-tag" style={{ color: "#555" }}>
+                    <span className="np-tag" style={{ color: "var(--text-mid)" }}>
                       {c.name_recognition_tier}
                     </span>
                   </td>

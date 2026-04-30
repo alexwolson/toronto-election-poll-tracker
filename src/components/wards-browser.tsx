@@ -28,32 +28,13 @@ const BAND_LABELS: Record<BandKey, string> = {
   open: "Open seat",
 };
 
-const BAND_COLORS: Record<BandKey, string> = {
-  high: "#fee2e2",
-  medium: "#fef3c7",
-  low: "#dcfce7",
-  open: "#e5e5e5",
-};
-
-const BAND_STROKES: Record<BandKey, string> = {
-  high: "#ef4444",
-  medium: "#f59e0b",
-  low: "#22c55e",
-  open: "#999999",
-};
-
-const BAND_COLORS_HOVER: Record<BandKey, string> = {
-  high: "#fca5a5",
-  medium: "#fde68a",
-  low: "#86efac",
-  open: "#d4d4d4",
-};
-
-const BAND_STROKES_HOVER: Record<BandKey, string> = {
-  high: "#b91c1c",
-  medium: "#b45309",
-  low: "#15803d",
-  open: "#666666",
+const BAND: Record<BandKey, {
+  bg: string; stroke: string; bgHover: string; strokeHover: string;
+}> = {
+  high:   { bg: "var(--vuln-high-bg)",  stroke: "var(--vuln-high-line)",  bgHover: "var(--vuln-high-bg-hover)",  strokeHover: "var(--vuln-high-line-hover)" },
+  medium: { bg: "var(--vuln-med-bg)",   stroke: "var(--vuln-med-line)",   bgHover: "var(--vuln-med-bg-hover)",   strokeHover: "var(--vuln-med-line-hover)" },
+  low:    { bg: "var(--vuln-low-bg)",   stroke: "var(--vuln-low-line)",   bgHover: "var(--vuln-low-bg-hover)",   strokeHover: "var(--vuln-low-line-hover)" },
+  open:   { bg: "var(--vuln-open-bg)",  stroke: "var(--vuln-open-line)",  bgHover: "var(--vuln-open-bg-hover)",  strokeHover: "var(--vuln-open-line-hover)" },
 };
 
 interface WardsBrowserProps {
@@ -261,24 +242,24 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
   return (
     <div>
       {/* Mode tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #ccc", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--line-soft)", marginBottom: "1rem" }}>
         {(["grid", "map"] as ViewMode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
+            className="font-mono"
             style={{
-              fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.62rem",
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
               padding: "0.4rem 1rem",
-              background: mode === m ? "#1a1a1a" : "transparent",
-              color: mode === m ? "#fff" : "#555",
+              background: mode === m ? "var(--text-strong)" : "transparent",
+              color: mode === m ? "#fff" : "var(--text-mid)",
               borderTop: "none",
               borderLeft: "none",
               borderBottom: "none",
-              borderRight: "1px solid #ccc",
+              borderRight: "1px solid var(--line-soft)",
               cursor: "pointer",
             }}
           >
@@ -294,12 +275,12 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
           placeholder="Filter wards…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
+          className="font-mono"
           style={{
-            fontFamily: "var(--font-ibm-mono), monospace",
             fontSize: "0.7rem",
             padding: "0.35rem 0.6rem",
-            border: "1px solid #ccc",
-            background: "#faf9f6",
+            border: "1px solid var(--line-soft)",
+            background: "var(--bg-base)",
             width: "220px",
             outline: "none",
           }}
@@ -310,24 +291,24 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
       {mode === "grid" && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "1rem" }}>
-            <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.6rem", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em", marginRight: "0.25rem" }}>Sort</span>
+            <span className="font-mono" style={{ fontSize: "0.6rem", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginRight: "0.25rem" }}>Sort</span>
             {([["ward", "Ward №"], ["vuln", "Vulnerability"], ["name", "Name"]] as [SortField, string][]).map(([field, label]) => {
               const active = sortField === field;
               return (
                 <button
                   key={field}
                   onClick={() => handleSortClick(field)}
+                  className="font-mono"
                   style={{
-                    fontFamily: "var(--font-ibm-mono), monospace",
                     fontSize: "0.6rem",
                     fontWeight: active ? 700 : 400,
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
                     padding: "0.25rem 0.5rem",
-                    background: active ? "#1a1a1a" : "transparent",
-                    color: active ? "#fff" : "#555",
+                    background: active ? "var(--text-strong)" : "transparent",
+                    color: active ? "#fff" : "var(--text-mid)",
                     border: "1px solid",
-                    borderColor: active ? "#1a1a1a" : "#ccc",
+                    borderColor: active ? "var(--text-strong)" : "var(--line-soft)",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -352,18 +333,18 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
       {mode === "map" && (
         <div
           style={{
-            background: "#faf9f6",
-            border: "1px solid #e0ddd8",
+            background: "var(--bg-base)",
+            border: "1px solid var(--line-inner)",
             borderRadius: "2px",
             padding: "1rem 1rem 0.75rem",
           }}
         >
           {!geoFeatures ? (
-            <div style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "#888", padding: "2rem", textAlign: "center" }}>
+            <div className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-faint)", padding: "2rem", textAlign: "center" }}>
               Loading map…
             </div>
           ) : geoFeatures.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "#888", padding: "2rem", textAlign: "center" }}>
+            <div className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-faint)", padding: "2rem", textAlign: "center" }}>
               Map data unavailable.
             </div>
           ) : (
@@ -403,8 +384,8 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                             key={i}
                             className="ward-path"
                             d={d}
-                            fill={isHovered ? BAND_COLORS_HOVER[band] : BAND_COLORS[band]}
-                            stroke={isHovered ? BAND_STROKES_HOVER[band] : BAND_STROKES[band]}
+                            fill={isHovered ? BAND[band].bgHover : BAND[band].bg}
+                            stroke={isHovered ? BAND[band].strokeHover : BAND[band].stroke}
                             strokeWidth={isHovered ? 2.5 : 1.3}
                           />
                         ))}
@@ -414,7 +395,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                           textAnchor="middle"
                           fontSize={10}
                           fontWeight={700}
-                          fill="#1a1a1a"
+                          fill="var(--text-strong)"
                           style={{ pointerEvents: "none" }}
                         >
                           {String(wardNum).padStart(2, "0")}
@@ -437,14 +418,14 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                 : ward.councillor_name;
             return (
               <div
+                className="font-mono"
                 style={{
                   position: "fixed",
                   left: tooltipPos.x + 14,
                   top: tooltipPos.y - 10,
-                  background: "#1a1a1a",
+                  background: "var(--text-strong)",
                   color: "#fff",
                   padding: "0.4rem 0.6rem",
-                  fontFamily: "var(--font-ibm-mono), monospace",
                   fontSize: "0.65rem",
                   lineHeight: 1.4,
                   pointerEvents: "none",
@@ -453,23 +434,23 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                 }}
               >
                 <div style={{ fontWeight: 700 }}>{name}</div>
-                <div style={{ color: "#aaa", marginTop: "0.1rem" }}>{subtitle}</div>
+                <div style={{ color: "var(--text-ghost)", marginTop: "0.1rem" }}>{subtitle}</div>
               </div>
             );
           })()}
 
           {/* Legend */}
           <div
+            className="font-mono"
             style={{
               marginTop: "0.75rem",
               display: "flex",
               flexWrap: "wrap",
               gap: "0.75rem",
-              fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.6rem",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
-              color: "#555",
+              color: "var(--text-mid)",
             }}
           >
             {BAND_ORDER.map((band) => (
@@ -479,8 +460,8 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                     display: "inline-block",
                     width: "12px",
                     height: "12px",
-                    backgroundColor: BAND_COLORS[band],
-                    border: `1px solid ${BAND_STROKES[band]}`,
+                    backgroundColor: BAND[band].bg,
+                    border: `1px solid ${BAND[band].stroke}`,
                   }}
                 />
                 {BAND_LABELS[band]}

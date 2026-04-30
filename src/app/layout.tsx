@@ -41,7 +41,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
 
-        <header style={{ borderBottom: "1px solid #ccc" }}>
+        <header style={{ borderBottom: "1px solid var(--line-soft)" }}>
           <div
             style={{
               textAlign: "center",
@@ -49,23 +49,23 @@ export default function RootLayout({
             }}
           >
             <div
+              className="font-heading"
               style={{
-                fontFamily: "var(--font-newsreader), serif",
                 fontSize: "clamp(1.1rem, 2.5vw, 1.9rem)",
                 fontWeight: 700,
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
-                color: "#1a1a1a",
+                color: "var(--text-strong)",
                 lineHeight: 1,
               }}
             >
               Toronto Election Modelling
             </div>
             <div
+              className="font-mono"
               style={{
-                fontFamily: "var(--font-ibm-mono), monospace",
                 fontSize: "0.58rem",
-                color: "#555",
+                color: "var(--text-mid)",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 marginTop: "0.3rem",

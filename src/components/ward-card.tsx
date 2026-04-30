@@ -19,12 +19,13 @@ export function WardCard({ ward }: WardCardProps) {
   const titleName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
   const wardNum = String(ward.ward).padStart(2, "0");
+  const borderTop = ward.is_running ? (TOP_BORDER[vulnerabilityBand] ?? "1px solid #ccc") : "2px solid #6b7280";
 
   return (
     <Link href={`/wards/${ward.ward}`} style={{ display: "block", textDecoration: "none" }}>
       <div
         className="np-cell"
-        style={{ borderTop: TOP_BORDER[vulnerabilityBand] ?? "1px solid #ccc" }}
+        style={{ borderTop }}
       >
         <div
           style={{
@@ -64,7 +65,11 @@ export function WardCard({ ward }: WardCardProps) {
           )}
         </div>
         <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          <VulnerabilityPill band={vulnerabilityBand} />
+          {ward.is_running ? (
+            <VulnerabilityPill band={vulnerabilityBand} />
+          ) : (
+            <span className="np-tag" style={{ color: "#6b7280", borderColor: "#6b7280" }}>Open seat</span>
+          )}
         </div>
       </div>
     </Link>

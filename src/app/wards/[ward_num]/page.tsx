@@ -184,11 +184,15 @@ export default async function WardDetailPage({ params }: Props) {
         <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
           Vulnerability
         </div>
-        <VulnerabilityPill band={vulnerabilityBand} />
+        {ward.is_running ? (
+          <VulnerabilityPill band={vulnerabilityBand} />
+        ) : (
+          <span className="np-tag" style={{ color: "#6b7280", borderColor: "#6b7280" }}>Open seat</span>
+        )}
       </div>
 
       {/* Signals & factors */}
-      {(ward.ward !== 19 || ward.is_running) && (
+      {ward.is_running && (
         <section style={{ marginBottom: "2rem" }}>
           <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
             Signals &amp; factors
@@ -197,7 +201,7 @@ export default async function WardDetailPage({ params }: Props) {
           <table className="np-table">
             <tbody>
               {/* Vulnerability signals */}
-              {ward.ward !== 19 && vulnerabilitySignals.map((signal) => (
+              {vulnerabilitySignals.map((signal) => (
                 <tr key={signal.id}>
                   <td>
                     <span style={{ ...SERIF, fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", display: "block" }}>

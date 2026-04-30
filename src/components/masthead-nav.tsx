@@ -33,7 +33,7 @@ export function MastheadNav() {
               borderRight:
                 i < NAV_LINKS.length - 1 ? "1px solid var(--line-soft)" : "none",
               background: active ? "var(--text-strong)" : "transparent",
-              color: active ? "#fff" : "#333",
+              color: active ? "#fff" : "var(--text-strong)",
               textDecoration: "none",
               display: "block",
             }}

@@ -1,13 +1,5 @@
-const SERIF: React.CSSProperties = {
-  fontFamily: "var(--font-newsreader), serif",
-};
-
-const MONO: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono), monospace",
-};
-
 const LINK: React.CSSProperties = {
-  color: "#1a1a1a",
+  color: "var(--text-strong)",
   textDecoration: "underline",
   textUnderlineOffset: "2px",
 };
@@ -25,12 +17,12 @@ function SourceRow({
     <div
       style={{
         padding: "1rem 0",
-        borderBottom: "1px solid #e8e5e0",
+        borderBottom: "1px solid var(--line-inner)",
       }}
     >
       <div
+        className="font-heading"
         style={{
-          ...SERIF,
           fontWeight: 700,
           fontSize: "1rem",
           marginBottom: "0.25rem",
@@ -40,7 +32,8 @@ function SourceRow({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ ...SERIF, ...LINK }}
+          className="font-heading"
+          style={{ ...LINK }}
         >
           {name}
         </a>
@@ -66,13 +59,13 @@ export default function SourcesPage() {
         Data &amp; Attribution
       </div>
       <h1
+        className="font-heading"
         style={{
-          ...SERIF,
           fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
           fontWeight: 700,
           margin: "0 0 0.5rem 0",
           letterSpacing: "-0.01em",
-          color: "#1a1a1a",
+          color: "var(--text-strong)",
         }}
       >
         Sources
@@ -89,8 +82,8 @@ export default function SourcesPage() {
         {/* Matt Elliott callout */}
         <div
           style={{
-            background: "#f5f5f0",
-            border: "1px solid #ccc",
+            background: "var(--bg-raised)",
+            border: "1px solid var(--line-soft)",
             padding: "1rem 1.25rem",
           }}
         >
@@ -98,21 +91,21 @@ export default function SourcesPage() {
             Data source
           </div>
           <div
+            className="font-heading"
             style={{
-              ...SERIF,
               fontWeight: 700,
               fontSize: "1.1rem",
               marginBottom: "0.2rem",
-              color: "#1a1a1a",
+              color: "var(--text-strong)",
             }}
           >
             Matt Elliott
           </div>
           <div
+            className="font-mono"
             style={{
-              ...MONO,
               fontSize: "0.68rem",
-              color: "#666",
+              color: "var(--text-soft)",
               marginBottom: "0.65rem",
             }}
           >
@@ -120,7 +113,7 @@ export default function SourcesPage() {
               href="https://www.thestar.com/users/profile/matt-elliott/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#666", textDecoration: "underline", textUnderlineOffset: "2px" }}
+              style={{ color: "var(--text-soft)", textDecoration: "underline", textUnderlineOffset: "2px" }}
             >
               Contributing Columnist, Toronto Star
             </a>
@@ -129,7 +122,7 @@ export default function SourcesPage() {
               href="https://cityhallwatcher.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#666", textDecoration: "underline", textUnderlineOffset: "2px" }}
+              style={{ color: "var(--text-soft)", textDecoration: "underline", textUnderlineOffset: "2px" }}
             >
               City Hall Watcher
             </a>
@@ -148,7 +141,7 @@ export default function SourcesPage() {
             with permission.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <div style={{ ...MONO, fontSize: "0.72rem", color: "#444" }}>
+            <div className="font-mono" style={{ fontSize: "0.72rem", color: "#444" }}>
               <a
                 href="https://toronto.cityhallwatcher.com/p/looking-ahead-to-the-heartbreak-that"
                 target="_blank"
@@ -157,11 +150,11 @@ export default function SourcesPage() {
               >
                 Council Defeatability Index
               </a>
-              <span style={{ color: "#888", marginLeft: "0.35rem" }}>[paywalled]</span>
+              <span style={{ color: "var(--text-faint)", marginLeft: "0.35rem" }}>[paywalled]</span>
               {" "}— Vulnerability scores and methodology for all 25 wards, based on
               incumbent vote share, electorate share, and ward population growth
             </div>
-            <div style={{ ...MONO, fontSize: "0.72rem", color: "#444" }}>
+            <div className="font-mono" style={{ fontSize: "0.72rem", color: "#444" }}>
               <a
                 href="https://www.councilscorecard.ca/"
                 target="_blank"
@@ -170,7 +163,7 @@ export default function SourcesPage() {
               >
                 Council Scorecard
               </a>
-              <span style={{ color: "#888", marginLeft: "0.35rem" }}>[paywalled]</span>
+              <span style={{ color: "var(--text-faint)", marginLeft: "0.35rem" }}>[paywalled]</span>
               {" "}— Councillor voting alignment scores under both the Chow and Tory mayoralties
             </div>
           </div>
@@ -191,31 +184,31 @@ export default function SourcesPage() {
         </div>
         <hr className="np-rule" style={{ marginBottom: "1rem" }} />
         <div
+          className="font-mono"
           style={{
-            ...MONO,
             fontSize: "0.72rem",
-            color: "#555",
+            color: "var(--text-mid)",
             marginBottom: "1rem",
           }}
         >
           Polls compiled manually from published firm releases.
         </div>
-        <div style={{ border: "1px solid #ccc" }}>
+        <div style={{ border: "1px solid var(--line-soft)" }}>
           {POLLING_FIRMS.map((firm, i) => (
             <div
               key={firm.name}
               style={{
                 padding: "0.75rem 1rem",
                 borderBottom:
-                  i < POLLING_FIRMS.length - 1 ? "1px solid #e8e5e0" : "none",
+                  i < POLLING_FIRMS.length - 1 ? "1px solid var(--line-inner)" : "none",
               }}
             >
               <a
                 href={firm.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="font-heading"
                 style={{
-                  ...SERIF,
                   ...LINK,
                   fontWeight: 600,
                   fontSize: "0.95rem",

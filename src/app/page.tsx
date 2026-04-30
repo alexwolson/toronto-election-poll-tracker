@@ -22,26 +22,26 @@ export default async function Home() {
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 200px",
-          border: "1px solid #ccc",
-          borderTop: "2px solid #1a1a1a",
+          border: "1px solid var(--line-soft)",
+          borderTop: "2px solid var(--line-strong)",
           marginBottom: "0",
         }}
       >
         {/* Main column: voter alignment dots */}
-        <div style={{ borderRight: "1px solid #ccc" }}>
+        <div style={{ borderRight: "1px solid var(--line-soft)" }}>
           <VoterAlignmentBars model={pollsData.pool_model} />
         </div>
 
         {/* Sidebar: stats */}
         <div style={{ padding: "1.5rem 1rem" }}>
           <div
+            className="font-mono"
             style={{
-              fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.58rem",
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.1em",
-              color: "#555",
+              color: "var(--text-mid)",
               marginBottom: "0.75rem",
             }}
           >
@@ -59,27 +59,27 @@ export default async function Home() {
               style={{
                 paddingBottom: "0.65rem",
                 marginBottom: "0.65rem",
-                borderBottom: i < arr.length - 1 ? "1px solid #e0ddd8" : "none",
+                borderBottom: i < arr.length - 1 ? "1px solid var(--line-inner)" : "none",
               }}
             >
               <div
+                className="font-mono"
                 style={{
-                  fontFamily: "var(--font-ibm-mono), monospace",
                   fontSize: "0.55rem",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "#666",
+                  color: "var(--text-soft)",
                   marginBottom: "0.2rem",
                 }}
               >
                 {stat.label}
               </div>
               <div
+                className="font-heading"
                 style={{
-                  fontFamily: "var(--font-newsreader), serif",
                   fontSize: "1.4rem",
                   fontWeight: 700,
-                  color: "#1a1a1a",
+                  color: "var(--text-strong)",
                   lineHeight: 1,
                 }}
               >

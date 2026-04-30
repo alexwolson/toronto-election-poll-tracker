@@ -155,7 +155,7 @@ export default async function PollsPage() {
                         paddingBottom: "0.65rem",
                         marginBottom: "0.65rem",
                         borderBottom:
-                          j < arr.length - 1 ? "1px solid #e8e5e0" : "none",
+                          j < arr.length - 1 ? "1px solid var(--track-bg)" : "none",
                       }}
                     >
                       <div

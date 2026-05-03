@@ -150,6 +150,18 @@ export type ChowPressure = {
   };
 };
 
+type RegisteredCandidate = {
+  first_name: string;
+  last_name: string;
+  status: string;
+  date_nomination: string;
+};
+
+type RegisteredCandidates = {
+  mayors: RegisteredCandidate[];
+  councillors: Record<string, RegisteredCandidate[]>;
+};
+
 type PollingAveragesResponse = {
   pool_model: PoolModel | null;
   aggregated: Record<string, number>;
@@ -170,6 +182,7 @@ type PollingAveragesResponse = {
     excluded_reason: string | null;
   }[];
   chow_pressure: ChowPressure | null;
+  registered_candidates: RegisteredCandidates | null;
 };
 
 export async function getPollingAverages(): Promise<PollingAveragesResponse> {
@@ -185,6 +198,7 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
     candidate_ranges: { declared: {}, potential: {}, declined: {} },
     poll_history: [],
     chow_pressure: null,
+    registered_candidates: null,
   };
   try {
     const res = await fetch(dataUrl('polls_snapshot.json'), { next: { revalidate: 3600 } });
@@ -212,6 +226,7 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
       candidate_ranges: data.candidate_ranges ?? { declared: {}, potential: {}, declined: {} },
       poll_history: data.poll_history ?? [],
       chow_pressure: data.chow_pressure ?? null,
+      registered_candidates: data.registered_candidates ?? null,
     };
   } catch (error) {
     console.error("Failed to fetch polling averages:", error);

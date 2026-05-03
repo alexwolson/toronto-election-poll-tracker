@@ -291,7 +291,7 @@ export default async function WardDetailPage({ params }: Props) {
         <hr className="np-rule" />
         {challengers.length === 0 ? (
           <p className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-soft)", padding: "0.75rem 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            No challenger data entered yet.
+            No challengers registered yet.
           </p>
         ) : (
           <table className="np-table">
@@ -305,15 +305,19 @@ export default async function WardDetailPage({ params }: Props) {
                         <span style={{ color: "var(--vuln-low-line-hover)", marginLeft: "0.4rem" }}>★</span>
                       )}
                     </span>
-                    <span className="font-mono" style={{ fontSize: "0.6rem", color: "var(--text-mid)" }}>
-                      Aligned: {c.mayoral_alignment}
-                      {c.fundraising_tier && ` · Fundraising: ${c.fundraising_tier}`}
-                    </span>
+                    {(c.mayoral_alignment !== "unaligned" || (c.fundraising_tier && c.fundraising_tier !== "low")) && (
+                      <span className="font-mono" style={{ fontSize: "0.6rem", color: "var(--text-mid)" }}>
+                        {c.mayoral_alignment !== "unaligned" && `Aligned: ${c.mayoral_alignment}`}
+                        {c.fundraising_tier && c.fundraising_tier !== "low" && `${c.mayoral_alignment !== "unaligned" ? " · " : ""}Fundraising: ${c.fundraising_tier}`}
+                      </span>
+                    )}
                   </td>
                   <td style={{ textAlign: "right", verticalAlign: "top" }}>
-                    <span className="np-tag" style={{ color: "var(--text-mid)" }}>
-                      {c.name_recognition_tier}
-                    </span>
+                    {c.name_recognition_tier !== "unknown" && (
+                      <span className="np-tag" style={{ color: "var(--text-mid)" }}>
+                        {c.name_recognition_tier}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

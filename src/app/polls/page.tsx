@@ -39,6 +39,12 @@ export default async function PollsPage() {
   const candidateStatus = pollingAverages.candidate_status;
   const candidateRanges = pollingAverages.candidate_ranges;
   const pollHistory = pollingAverages.poll_history;
+  const nominationDates = new Map(
+    (pollingAverages.registered_candidates?.mayors ?? []).map((c) => [
+      `${c.first_name} ${c.last_name}`.toLowerCase(),
+      c.date_nomination,
+    ])
+  );
 
   return (
     <main className="np-shell">
@@ -184,6 +190,14 @@ export default async function PollsPage() {
                           ? `${range.min}% – ${range.max}%`
                           : "No comparable data"}
                       </div>
+                      {status === "declared" && (() => {
+                        const date = nominationDates.get(candidate.name.toLowerCase());
+                        return date ? (
+                          <div className="font-mono" style={{ fontSize: "0.62rem", color: "var(--text-faint)", marginTop: "0.1rem" }}>
+                            Filed {date}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   );
                 })}

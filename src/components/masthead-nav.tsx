@@ -23,13 +23,12 @@ export function MastheadNav() {
           <Link
             key={link.href}
             href={link.href}
-            className="font-mono"
+            className="font-mono nav-link"
             style={{
               fontSize: "0.68rem",
               fontWeight: 600,
               textTransform: "uppercase" as const,
               letterSpacing: "0.1em",
-              padding: "0.55rem 1.5rem",
               borderRight:
                 i < NAV_LINKS.length - 1 ? "1px solid var(--line-soft)" : "none",
               background: active ? "var(--text-strong)" : "transparent",

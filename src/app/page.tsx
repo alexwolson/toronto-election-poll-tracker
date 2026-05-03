@@ -18,22 +18,14 @@ export default async function Home() {
   return (
     <main className="np-shell">
       {/* Zone 1: Hero — dots + sidebar */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 200px",
-          border: "1px solid var(--line-soft)",
-          borderTop: "2px solid var(--line-strong)",
-          marginBottom: "0",
-        }}
-      >
+      <div className="np-hero-grid">
         {/* Main column: voter alignment dots */}
-        <div style={{ borderRight: "1px solid var(--line-soft)" }}>
+        <div>
           <VoterAlignmentBars model={pollsData.pool_model} />
         </div>
 
         {/* Sidebar: stats */}
-        <div style={{ padding: "1.5rem 1rem" }}>
+        <div className="np-hero-sidebar" style={{ padding: "1.5rem 1rem" }}>
           <div
             className="font-mono"
             style={{

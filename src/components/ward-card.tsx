@@ -11,7 +11,7 @@ interface WardCardProps {
 const TOP_BORDER: Record<string, string> = {
   high:   "2px solid var(--win-high-line)",
   medium: "2px solid var(--win-med-line)",
-  low:    "1px solid var(--line-soft)",
+  low:    "2px solid var(--win-low-line)",
 };
 
 export function WardCard({ ward }: WardCardProps) {

@@ -1,24 +1,26 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { WinProbabilityBand } from "@/lib/vulnerability";
 
 interface WinProbabilityPillProps {
   band: WinProbabilityBand;
 }
 
-const BAND_STYLE: Record<WinProbabilityBand, string> = {
-  low: "bg-rose-100 text-rose-900 border-rose-300/80",
-  medium: "bg-amber-100 text-amber-900 border-amber-300/80",
-  high: "bg-emerald-100 text-emerald-900 border-emerald-300/80",
+const BAND_STYLE: Record<WinProbabilityBand, { color: string }> = {
+  high:   { color: "var(--win-high-fg)" },
+  medium: { color: "var(--win-med-fg)" },
+  low:    { color: "var(--win-low-fg)" },
+};
+
+const BAND_ARROW: Record<WinProbabilityBand, string> = {
+  high:   "↑",
+  medium: "—",
+  low:    "↓",
 };
 
 export function WinProbabilityPill({ band }: WinProbabilityPillProps) {
-  const Icon = band === "high" ? ArrowUpRight : band === "low" ? ArrowDownRight : Minus;
+  const { color } = BAND_STYLE[band];
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[0.7rem] font-mono uppercase tracking-[0.1em] ${BAND_STYLE[band]}`}
-    >
-      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {band} win probability
+    <span className="np-tag" style={{ color, borderColor: color }}>
+      {BAND_ARROW[band]} {band} win prob.
     </span>
   );
 }

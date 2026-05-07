@@ -127,6 +127,19 @@
   --vuln-open-bg-hover: #d4d4d4;
   --vuln-open-line-hover: #666;
 
+  /* ── Win probability levels ── */
+  --win-high-fg:   #166534;
+  --win-high-line: #22c55e;
+  --win-high-bg:   #dcfce7;
+
+  --win-med-fg:    #92400e;
+  --win-med-line:  #f59e0b;
+  --win-med-bg:    #fef3c7;
+
+  --win-low-fg:    #9b1c1c;
+  --win-low-line:  #ef4444;
+  --win-low-bg:    #fee2e2;
+
   /* ── Candidate segment colours ── */
   --color-chow:        #854a90;
   --color-chow-mid:    #aa78ba;

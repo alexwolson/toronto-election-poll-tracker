@@ -5,8 +5,10 @@ import { notFound } from "next/navigation";
 import {
   getVulnerabilityBand,
   getVulnerabilitySignals,
+  getWinProbabilityBand,
 } from "@/lib/vulnerability";
 import { VulnerabilityPill } from "@/components/vulnerability-pill";
+import { WinProbabilityPill } from "@/components/win-probability-pill";
 import { SignalRangeBar } from "@/components/signal-range-bar";
 import { CoattailBars } from "@/components/coattail-bars";
 import { getWardDisplayName } from "@/lib/ward-names";
@@ -63,6 +65,7 @@ export default async function WardDetailPage({ params }: Props) {
   const { ward, challengers } = data;
   const narrativeLede = generateWardNarrative(ward, challengers);
   const vulnerabilityBand = getVulnerabilityBand(ward.defeatability_score);
+  const winProbabilityBand = getWinProbabilityBand(ward.win_probability);
   const vulnerabilitySignals = getVulnerabilitySignals(ward);
   const displayName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
@@ -164,7 +167,7 @@ export default async function WardDetailPage({ params }: Props) {
         </p>
       )}
 
-      {/* Vulnerability */}
+      {/* Win probability */}
       <div
         style={{
           border: "1px solid var(--line-soft)",
@@ -174,10 +177,10 @@ export default async function WardDetailPage({ params }: Props) {
         }}
       >
         <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-          Vulnerability
+          Win probability
         </div>
         {ward.is_running ? (
-          <VulnerabilityPill band={vulnerabilityBand} />
+          <WinProbabilityPill band={winProbabilityBand} />
         ) : (
           <span className="np-tag" style={{ color: "var(--vuln-open-fg)", borderColor: "var(--vuln-open-fg)" }}>Open seat</span>
         )}
@@ -192,6 +195,21 @@ export default async function WardDetailPage({ params }: Props) {
           <hr className="np-rule" />
           <table className="np-table">
             <tbody>
+              {/* Vulnerability row */}
+              <tr>
+                <td>
+                  <span className="font-heading" style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-strong)", display: "block" }}>
+                    Vulnerability
+                  </span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-mid)", display: "block", marginTop: "0.25rem" }}>
+                    Structural exposure based on past vote share, electorate size, and ward growth.
+                  </span>
+                </td>
+                <td style={{ verticalAlign: "middle", paddingLeft: "1.5rem" }}>
+                  <VulnerabilityPill band={vulnerabilityBand} />
+                </td>
+              </tr>
+
               {/* Vulnerability signals */}
               {vulnerabilitySignals.map((signal) => (
                 <tr key={signal.id}>

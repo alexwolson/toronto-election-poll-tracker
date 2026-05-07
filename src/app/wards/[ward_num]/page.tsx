@@ -197,7 +197,7 @@ export default async function WardDetailPage({ params }: Props) {
             <tbody>
               {/* Vulnerability row */}
               <tr>
-                <td>
+                <td style={{ verticalAlign: "top" }}>
                   <span className="font-heading" style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-strong)", display: "block" }}>
                     Vulnerability
                   </span>

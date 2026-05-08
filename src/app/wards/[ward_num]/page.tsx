@@ -270,11 +270,14 @@ export default async function WardDetailPage({ params }: Props) {
                 const named = challengers.filter((c: Challenger) => c.candidate_name !== "Generic Challenger");
                 const wellKnown = named.filter((c: Challenger) => c.name_recognition_tier === "well-known");
                 const known = named.filter((c: Challenger) => c.name_recognition_tier === "known");
+                const listNames = (cs: Challenger[]) =>
+                  cs.length === 1 ? cs[0].candidate_name :
+                  cs.slice(0, -1).map((c: Challenger) => c.candidate_name).join(", ") + " and " + cs[cs.length - 1].candidate_name;
                 const chalText =
-                  named.length === 0 ? "No challengers registered yet; minimal pressure modelled" :
-                  wellKnown.length > 0 ? `${wellKnown.length > 1 ? "Multiple" : "One"} well-known challenger${wellKnown.length > 1 ? "s" : ""} registered: ${wellKnown.map((c: Challenger) => c.candidate_name).join(" and ")}` :
-                  known.length > 0 ? `Known challenger${known.length > 1 ? "s" : ""} registered (${known.map((c: Challenger) => c.candidate_name).join(" and ")}); no high-profile entrants yet` :
-                  `${named.length} low-profile challenger${named.length > 1 ? "s" : ""} registered; no named threats yet`;
+                  named.length === 0 ? "No challengers registered" :
+                  wellKnown.length > 0 ? `${listNames(wellKnown)} registered` :
+                  known.length > 0 ? `${listNames(known)} registered` :
+                  `${named.length} challenger${named.length > 1 ? "s" : ""} registered`;
                 const dir = factorDirection(ward.factors.chal);
                 return (
                   <tr>

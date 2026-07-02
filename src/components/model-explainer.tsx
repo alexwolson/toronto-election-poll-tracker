@@ -43,16 +43,18 @@ const STEP_BODY: Record<1 | 2 | 3 | 4, ReactNode> = {
         is running.
       </p>
       <p>
-        Those who approve form Chow&apos;s reachable universe. Those who
-        disapprove are the anti-Chow pool — the bloc any challenger needs to
-        consolidate to win. &ldquo;Not sure&rdquo; voters are genuinely
-        persuadable; how they break depends on the campaign.
+        Those who disapprove are the anti-Chow pool — the bloc any challenger
+        needs to consolidate to win. Everyone else — approvers plus the
+        genuinely unsure — forms Chow&apos;s reachable universe, her ceiling.
+        Approval alone is not a ceiling on vote share: voters do back
+        candidates they disapprove of, so we define the ceiling as everyone
+        not actively hostile to her.
       </p>
       <p>
-        We weight approval data by recency rank: the most recent poll gets full
-        weight (1/1), the second most recent half weight (1/2), and so on. This
-        gives older readings meaningful but diminishing influence without
-        requiring an arbitrary half-life parameter.
+        We weight approval readings by recency with a 30-day half-life: a
+        month-old reading counts half as much as today&apos;s, a reading from
+        last winter barely registers. A fresh data point always outweighs a
+        backlog of stale ones.
       </p>
     </>
   ),
@@ -84,10 +86,11 @@ const STEP_BODY: Record<1 | 2 | 3 | 4, ReactNode> = {
         make comparisons misleading.
       </p>
       <p>
-        Recent polls dominate here. We weight by recency rank — the most recent
-        Bradford vs Chow poll gets weight 1/1, the next 1/2, and so on. This
-        gives us Chow&apos;s current position within the floor-to-ceiling range
-        set in steps 1 and 2.
+        Recent polls dominate here. We weight by recency with a 12-day
+        half-life — the same decay the site&apos;s main polling average uses —
+        so the newest Bradford vs Chow reading effectively sets the number.
+        This gives us Chow&apos;s current position within the floor-to-ceiling
+        range set in steps 1 and 2.
       </p>
     </>
   ),
@@ -152,7 +155,7 @@ function Step1Drawer({ model }: { model: PoolModel }) {
             label="Chow ceiling"
             value={pct(pool.chow_ceiling)}
             color="#854a90"
-            sublabel="Weighted approve rate → Chow's reachable universe"
+            sublabel="Everyone not in the anti-Chow pool (approve + not sure)"
           />
           <ComputedValue
             label="Anti-Chow pool"

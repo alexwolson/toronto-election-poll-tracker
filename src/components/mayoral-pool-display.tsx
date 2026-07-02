@@ -112,7 +112,7 @@ export function MayoralPoolDisplay({ model }: { model: PoolModel | null }) {
       <div className="h-px bg-[var(--line-soft)]" />
 
       <p className="text-xs text-muted-foreground leading-relaxed">
-        {model.phase_mode_context} Floor from {model.data_notes.full_field_poll_count} full-field polls; approval anchors from {model.data_notes.approval_data_points} Liaison Strategies surveys.
+        {model.phase_mode_context} Floor from {model.data_notes.full_field_poll_count} full-field polls; approval anchors from {model.data_notes.approval_data_points} public approval readings.
       </p>
     </div>
   );

@@ -95,9 +95,13 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
   const isChow = scenario === "chow";
   const isBradford = scenario === "bradford";
 
-  // Chow: best-case gets ceiling + notSure; bradford best-case she gets floor only
-  const chowBarTotal = isChow ? chowTotal + notSure : isBradford ? chowFloor : chowTotal;
-  const chowBonus = isChow ? notSure : 0; // undecideds absorbed by Chow
+  // Ceiling is 1 − disapprove, so the not-sure bloc is already inside
+  // ppReserve; the approve-only part of the reserve is what stays home in
+  // Bradford's best case (his bonus absorbs the not-sures).
+  const approveReserve = Math.max(0, ppReserve - notSure);
+
+  // Chow: best-case gets her full ceiling (approve + not sure); bradford best-case she gets floor only
+  const chowBarTotal = isBradford ? chowFloor : chowTotal;
 
   // Bradford: best-case gets all anti-Chow + notSure; chow best-case he gets base only
   const bradfordBarTotal = isBradford ? antiTotal + notSure : isChow ? bradfordShare : antiTotal;
@@ -105,8 +109,8 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
 
   // In scenario mode, the "not engaged" row becomes "other / did not vote"
   // Chow best-case: uncaptured anti-Chow stay home
-  // Bradford best-case: Chow's soft support stays home
-  const didNotVote = isChow ? uncaptured : isBradford ? ppActivated + ppReserve : 0;
+  // Bradford best-case: Chow's soft support stays home (not-sures went to him)
+  const didNotVote = isChow ? uncaptured : isBradford ? ppActivated + approveReserve : 0;
   const notSureDisplay = isCurrent ? notSure : didNotVote;
 
   const showPeakMarkers = isCurrent;
@@ -168,9 +172,6 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
                 <div className="va-seg va-seg-chow-floor"     style={{ width: safeWidth(chowFloor,   chowBarTotal) }} />
                 <div className="va-seg va-seg-chow-activated" style={{ width: safeWidth(ppActivated, chowBarTotal) }} />
                 <div className="va-seg va-seg-chow-ceiling"   style={{ width: safeWidth(ppReserve,   chowBarTotal) }} />
-                {chowBonus > 0 && (
-                  <div className="va-seg" style={{ width: safeWidth(chowBonus, chowBarTotal), background: "var(--color-chow-soft)" }} />
-                )}
               </>
             )}
           </div>
@@ -179,8 +180,8 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
           )}
         </div>
         <div className="va-bar-sublabel">
-          {isCurrent && `Polling baseline ${pct(chowFloor)} · May activate if race tightens ${pct(ppActivated)} · Approves but undecided ${pct(ppReserve)}`}
-          {isChow && `Polling baseline ${pct(chowFloor)} · Soft support ${pct(ppActivated + ppReserve)} · Undecided voters ${pct(chowBonus)}`}
+          {isCurrent && `Polling baseline ${pct(chowFloor)} · May activate if race tightens ${pct(ppActivated)} · Open to her but undecided ${pct(ppReserve)}`}
+          {isChow && `Polling baseline ${pct(chowFloor)} · Soft support and undecideds ${pct(ppActivated + ppReserve)}`}
           {isBradford && `Polling baseline only — soft support stays home`}
         </div>
       </div>
@@ -245,7 +246,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
           <LegendItem cssClass="va-seg-anti-committed" label="Bradford polling baseline — more volatile while the challenger field remains unsettled" />
           <LegendItem cssClass="va-seg-chow-activated" label="Chow supporters who may activate if the race tightens" />
           <LegendItem cssClass="va-seg-anti-available" label="Backed an opposing candidate that has since declined to run" />
-          <LegendItem cssClass="va-seg-chow-ceiling"   label="Approves of Chow but hasn't committed to voting for her" />
+          <LegendItem cssClass="va-seg-chow-ceiling"   label="Open to Chow — approves or unsure, but hasn't committed to voting for her" />
           <LegendItem cssClass="va-seg-disengaged"     label="No strong view on Chow yet" />
         </div>
       )}

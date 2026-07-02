@@ -110,15 +110,18 @@ export type ConsolidationTrend =
   | "insufficient_data";
 
 export type PoolModel = {
-  phase_mode: "pre_nomination";
+  phase_mode: "pre_nomination" | "post_nomination";
   phase_mode_context: string;
   pool: {
     chow_floor: number;
+    /** Everyone not hostile to Chow: 1 − disapprove (approve + not sure). */
     chow_ceiling: number;
     anti_chow_pool: number;
     chow_h2h_current: number | null;
     protective_progressive_activated: number;
     protective_progressive_reserve: number;
+    /** Signed approve − current support; negative = reluctant support. */
+    chow_approval_gap?: number;
   };
   candidates: Record<string, { share: number; capture_rate: number }>;
   uncaptured_anti_chow: number;

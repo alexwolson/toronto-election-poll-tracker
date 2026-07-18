@@ -304,7 +304,9 @@ function Step4Drawer({ model }: { model: PoolModel }) {
         ? 'Reversing — losing opposition support'
         : consolidation_trend === 'stalling'
           ? 'Stalling — opposition not consolidating'
-          : 'Insufficient data to determine trend';
+          : consolidation_trend === 'consolidated'
+            ? 'Consolidated — Bradford is the sole remaining challenger'
+            : 'Insufficient data to determine trend';
 
   return (
     <div className="me-drawer">
@@ -434,7 +436,9 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
           label:
             consolidation_trend === 'insufficient_data'
               ? 'Insufficient data'
-              : `Trend: ${consolidation_trend}`,
+              : consolidation_trend === 'consolidated'
+                ? 'Field consolidated'
+                : `Trend: ${consolidation_trend}`,
           className: 'me-pill me-pill--dark',
         },
       ],

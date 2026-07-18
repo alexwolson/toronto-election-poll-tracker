@@ -4,6 +4,7 @@ const TREND_CONFIG: Record<ConsolidationTrend, { label: string; arrow: string; d
   consolidating: { label: "Consolidating", arrow: "↑", description: "Anti-Chow vote concentrating around a leading candidate" },
   stalling:      { label: "Stalling",      arrow: "→", description: "Anti-Chow consolidation has not advanced recently" },
   reversing:     { label: "Fragmenting",   arrow: "↓", description: "Anti-Chow vote becoming more dispersed" },
+  consolidated:  { label: "Consolidated",  arrow: "✓", description: "Bradford is the sole remaining challenger — recent polls are head-to-head" },
   insufficient_data: { label: "Insufficient data", arrow: "–", description: "Too few polls to assess consolidation direction" },
 };
 

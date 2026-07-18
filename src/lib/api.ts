@@ -107,6 +107,7 @@ export type ConsolidationTrend =
   | "consolidating"
   | "stalling"
   | "reversing"
+  | "consolidated"
   | "insufficient_data";
 
 export type PoolModel = {

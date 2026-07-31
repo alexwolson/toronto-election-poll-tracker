@@ -1,4 +1,5 @@
 import type { PoolModel, ConsolidationTrend } from "@/lib/api";
+import { getCandidateColor, getCandidateName, getLeadingCandidate } from "@/lib/pool-candidates";
 
 const TREND_CONFIG: Record<ConsolidationTrend, { label: string; arrow: string; description: string }> = {
   consolidating: { label: "Consolidating", arrow: "↑", description: "Anti-Chow vote concentrating around a leading candidate" },
@@ -17,12 +18,21 @@ function PoolBar({ pool, candidates, uncaptured }: {
   candidates: PoolModel["candidates"];
   uncaptured: number;
 }) {
+  const candidateSegments = Object.entries(candidates)
+    .filter(([, c]) => c.share > 0.005)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([slug, c]) => ({
+      key: slug,
+      label: getCandidateName(slug),
+      value: c.share,
+      color: getCandidateColor(slug),
+    }));
+
   const segments = [
     { key: "chow_floor",    label: "Chow (durable)",                      value: pool.chow_floor,                       color: "var(--chart-2)" },
     { key: "pp_activated",  label: "Protective progressives (activated)",  value: pool.protective_progressive_activated, color: "color-mix(in oklch, var(--chart-2) 55%, transparent)" },
     { key: "pp_reserve",    label: "Protective progressives (reserve)",    value: pool.protective_progressive_reserve,   color: "color-mix(in oklch, var(--chart-2) 25%, var(--border))" },
-    { key: "bradford",      label: "Bradford",                             value: candidates["bradford"]?.share ?? 0,   color: "oklch(0.58 0.2 28)" },
-    { key: "furey",         label: "Furey",                                value: candidates["furey"]?.share ?? 0,      color: "oklch(0.66 0.15 50)" },
+    ...candidateSegments,
     { key: "uncaptured",    label: "Uncaptured anti-Chow",                 value: uncaptured,                           color: "var(--muted)" },
   ].filter((s) => s.value > 0.005);
 
@@ -63,6 +73,7 @@ export function MayoralPoolDisplay({ model }: { model: PoolModel | null }) {
 
   const trend = TREND_CONFIG[model.consolidation_trend];
   const { pool, candidates, uncaptured_anti_chow } = model;
+  const leading = getLeadingCandidate(candidates);
 
   return (
     <div className="surface-panel p-6 md:p-8 space-y-5">
@@ -97,8 +108,10 @@ export function MayoralPoolDisplay({ model }: { model: PoolModel | null }) {
           <p className="text-xs text-muted-foreground">current disapproval</p>
         </div>
         <div>
-          <p className="font-mono text-[0.65rem] uppercase tracking-wider text-muted-foreground">Bradford capture</p>
-          <p className="mt-0.5 text-xl font-semibold">{pct(candidates["bradford"]?.capture_rate ?? 0)}</p>
+          <p className="font-mono text-[0.65rem] uppercase tracking-wider text-muted-foreground">
+            {leading ? `${getCandidateName(leading[0])} capture` : "Leading capture"}
+          </p>
+          <p className="mt-0.5 text-xl font-semibold">{pct(leading?.[1].capture_rate ?? 0)}</p>
           <p className="text-xs text-muted-foreground">of anti-Chow pool</p>
         </div>
         {pool.chow_h2h_current !== null && (

@@ -88,7 +88,11 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
 
   const { floor_polls, h2h_polls, capture_polls } = model.poll_detail;
   const chowPeak = Math.max(0, ...floor_polls.map((p) => p.chow), ...h2h_polls.map((p) => p.chow));
-  const bradfordPeak = Math.max(0, ...capture_polls.map((p) => p.bradford), ...h2h_polls.map((p) => p.bradford));
+  const bradfordPeak = Math.max(
+    0,
+    ...(capture_polls["bradford"] ?? []).map((p) => p.share),
+    ...h2h_polls.map((p) => p.bradford)
+  );
 
   // Scenario-derived bar values
   const isCurrent = scenario === "current";

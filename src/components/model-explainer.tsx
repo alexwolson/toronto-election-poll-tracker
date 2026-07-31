@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import type { PoolModel } from '@/lib/api';
+import { getCandidateColor, getCandidateName, getLeadingCandidate, pollTestedCandidate } from '@/lib/pool-candidates';
 
 function pct(v: number): string {
   return `${Math.round(v * 100)}%`;
@@ -102,11 +103,12 @@ const STEP_BODY: Record<1 | 2 | 3 | 4, ReactNode> = {
         pool remains uncaptured by any challenger.
       </p>
       <p>
-        Bradford&apos;s capture rate is his share in multi-candidate polls
-        divided by the total anti-Chow pool. We also track whether it&apos;s
-        rising, stalling, or reversing: comparing his mean rate in the past 90
-        days against older polls. A rising rate means he&apos;s consolidating
-        the opposition; stalling means the field may be waiting for someone else.
+        Each tracked challenger&apos;s capture rate is their share in
+        multi-candidate polls divided by the total anti-Chow pool. The trend
+        indicator tracks Bradford specifically — whether his rate is rising,
+        stalling, or reversing, comparing his mean rate in the past 90 days
+        against older polls. A rising rate means he&apos;s consolidating the
+        opposition; stalling means the field may be waiting for someone else.
       </p>
     </>
   ),
@@ -295,8 +297,9 @@ function Step3Drawer({ model }: { model: PoolModel }) {
 
 function Step4Drawer({ model }: { model: PoolModel }) {
   const { pool, candidates, consolidation_trend, uncaptured_anti_chow, poll_detail } = model;
-  const bradfordShare = candidates['bradford']?.share ?? 0;
-  const captureRate = pool.anti_chow_pool > 0 ? bradfordShare / pool.anti_chow_pool : 0;
+  const polledCandidates = Object.entries(candidates)
+    .filter(([, c]) => c.share > 0)
+    .sort(([, a], [, b]) => b.capture_rate - a.capture_rate);
   const trendLabel =
     consolidation_trend === 'consolidating'
       ? 'Rising — consolidating the opposition'
@@ -313,47 +316,71 @@ function Step4Drawer({ model }: { model: PoolModel }) {
       <div className="me-drawer-title">
         Step 4 · Multi-candidate polls used for capture rate
       </div>
+      {polledCandidates.map(([slug, candidate]) => {
+        const rows = (poll_detail.capture_polls[slug] ?? []).filter((row) =>
+          pollTestedCandidate(row.field_tested, slug)
+        );
+        const color = getCandidateColor(slug);
+        return (
+          <div key={slug} className="me-drawer-cols" style={{ marginBottom: '1.25rem' }}>
+            <div>
+              <div className="me-computed-kicker" style={{ color }}>
+                {getCandidateName(slug)}
+              </div>
+              <table className="me-data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Firm</th>
+                    <th>Field tested</th>
+                    <th className="me-num">Share</th>
+                    <th className="me-num">1/rank weight</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} className={i === 0 ? 'me-row--highlight' : ''}>
+                      <td>{row.date}</td>
+                      <td>{row.firm}</td>
+                      <td>{row.field_tested}</td>
+                      <td className="me-num">{pct(row.share)}</td>
+                      <td className="me-num">{wt(row.recency_weight)}</td>
+                    </tr>
+                  ))}
+                  <tr className="me-row--total">
+                    <td colSpan={3}>1/rank-weighted share</td>
+                    <td className="me-num">{pct(candidate.share)}</td>
+                    <td className="me-num me-dim">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div className="me-computed-kicker">Computed values</div>
+              <ComputedValue
+                label={`${getCandidateName(slug)} share`}
+                value={pct(candidate.share)}
+                color={color}
+                sublabel="1/rank-weighted avg across multi-candidate polls"
+              />
+              <ComputedValue
+                label="Capture rate"
+                value={pct(candidate.capture_rate)}
+                color={color}
+                sublabel={`${pct(candidate.share)} ÷ ${pct(pool.anti_chow_pool)} anti-Chow pool`}
+              />
+            </div>
+          </div>
+        );
+      })}
       <div className="me-drawer-cols">
-        <table className="me-data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Firm</th>
-              <th>Field tested</th>
-              <th className="me-num">Bradford</th>
-              <th className="me-num">1/rank weight</th>
-            </tr>
-          </thead>
-          <tbody>
-            {poll_detail.capture_polls.map((row, i) => (
-              <tr key={i} className={i === 0 ? 'me-row--highlight' : ''}>
-                <td>{row.date}</td>
-                <td>{row.firm}</td>
-                <td>{row.field_tested}</td>
-                <td className="me-num">{pct(row.bradford)}</td>
-                <td className="me-num">{wt(row.recency_weight)}</td>
-              </tr>
-            ))}
-            <tr className="me-row--total">
-              <td colSpan={3}>1/rank-weighted Bradford share</td>
-              <td className="me-num">{pct(bradfordShare)}</td>
-              <td className="me-num me-dim">—</td>
-            </tr>
-          </tbody>
-        </table>
+        <div />
         <div>
           <div className="me-computed-kicker">Computed values</div>
           <ComputedValue
-            label="Bradford share"
-            value={pct(bradfordShare)}
-            color="#00a2bf"
-            sublabel="1/rank-weighted avg across multi-candidate polls"
-          />
-          <ComputedValue
-            label="Capture rate"
-            value={pct(captureRate)}
-            color="#00a2bf"
-            sublabel={`${pct(bradfordShare)} ÷ ${pct(pool.anti_chow_pool)} anti-Chow pool → ${pct(uncaptured_anti_chow)} of pool still uncaptured`}
+            label="Uncaptured anti-Chow"
+            value={pct(uncaptured_anti_chow)}
+            sublabel="Anti-Chow pool minus every tracked candidate's share"
           />
           <ComputedValue
             label="Consolidation trend"
@@ -377,10 +404,12 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
   if (!model) return null;
 
   const { pool, approval, candidates, consolidation_trend, data_notes, poll_detail } = model;
-  const bradfordShare = candidates['bradford']?.share ?? 0;
   const antiChowPool = pool.anti_chow_pool;
-  const captureRate = antiChowPool > 0 ? bradfordShare / antiChowPool : 0;
   const currentChow = pool.chow_h2h_current ?? pool.chow_floor;
+  const leading = getLeadingCandidate(candidates);
+  const leadingName = leading ? getCandidateName(leading[0]) : 'the leading challenger';
+  const leadingCaptureRate = leading?.[1].capture_rate ?? 0;
+  const capturePollCount = Object.values(poll_detail.capture_polls)[0]?.length ?? 0;
 
   function toggle(step: 1 | 2 | 3 | 4) {
     setActiveStep((prev) => (prev === step ? null : step));
@@ -429,9 +458,9 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
     {
       num: 4,
       source: `Multi-candidate polls · 2+ challengers tested · 1/rank weighting`,
-      title: 'How much of the anti-Chow vote has Bradford captured?',
+      title: `How much of the anti-Chow vote has ${leadingName} captured?`,
       pills: [
-        { label: `Bradford capture ${pct(captureRate)}`, className: 'me-pill me-pill--blue' },
+        { label: `${leadingName} capture ${pct(leadingCaptureRate)}`, className: 'me-pill me-pill--blue' },
         {
           label:
             consolidation_trend === 'insufficient_data'
@@ -442,7 +471,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
           className: 'me-pill me-pill--dark',
         },
       ],
-      pollCount: poll_detail.capture_polls.length,
+      pollCount: capturePollCount,
     },
   ];
 

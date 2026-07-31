@@ -92,7 +92,7 @@ type CapturePollRow = {
   date: string;
   firm: string;
   field_tested: string;
-  bradford: number;
+  share: number;
   recency_weight: number;
 };
 
@@ -100,7 +100,8 @@ export type PollDetail = {
   approval_polls: ApprovalPollRow[];
   floor_polls: FloorPollRow[];
   h2h_polls: H2HPollRow[];
-  capture_polls: CapturePollRow[];
+  /** Keyed by candidate slug (e.g. "bradford", "alexander") — see PoolModel.candidates. */
+  capture_polls: Record<string, CapturePollRow[]>;
 };
 
 export type ConsolidationTrend =
@@ -216,7 +217,7 @@ export async function getPollingAverages(): Promise<PollingAveragesResponse> {
               approval_polls: [],
               floor_polls: [],
               h2h_polls: [],
-              capture_polls: [],
+              capture_polls: {},
             },
           }
         : null,

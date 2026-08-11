@@ -68,8 +68,11 @@ function scoreVoteShare(ward: Ward, p: Pronouns): NarrativeSignal | null {
 }
 
 function scoreCoattail(ward: Ward, p: Pronouns): NarrativeSignal | null {
-  if (!ward.coattail_detail) return null;
-  const { alignment, ward_lean } = ward.coattail_detail;
+  const current = ward.evidence?.mayoral_context;
+  const legacy = ward.coattail_detail;
+  if (!current && !legacy) return null;
+  const alignment = current?.councillor_chow_alignment ?? legacy!.alignment;
+  const ward_lean = current?.ward_chow_lean ?? legacy!.ward_lean;
 
   const highAlignment = alignment > 0.7;
   const lowAlignment = alignment < 0.4;

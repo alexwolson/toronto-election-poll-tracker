@@ -6,12 +6,11 @@ type PoolCandidate = PoolModel["candidates"][string];
  * Fixed, non-cycled color per candidate slug — matches ANTI_CHOW_CANDIDATES
  * order in the backend's pool.py. A slug not yet listed here falls back to
  * RESERVE_COLOR rather than reusing (repainting) an existing candidate's color.
- * Validated with the dataviz skill's palette validator (chroma floor, CVD
- * separation, contrast) against this app's card surface (#faf9f6).
+ * Candidate colours are shared with the polling chart and CSS design tokens.
  */
 const CANDIDATE_COLORS: Record<string, string> = {
-  bradford: "oklch(0.58 0.2 28)",
-  alexander: "oklch(0.47 0.16 312)",
+  bradford: "#2E8B57",
+  alexander: "#F8C466",
 };
 const RESERVE_COLOR = "oklch(0.6 0.14 150)";
 

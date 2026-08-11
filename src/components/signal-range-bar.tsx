@@ -15,23 +15,6 @@ const TRACK_H = 4;
 const TOTAL_W = 120;
 const TOTAL_H = 24;
 
-// 6rem matches LEFT_LABEL_MIN_W in coattail-bars.tsx — keeps all tracks aligned
-const LEFT_LABEL_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono)",
-  fontSize: "0.6rem",
-  color: "var(--text-faint)",
-  whiteSpace: "nowrap",
-  minWidth: "6rem",
-  textAlign: "right",
-};
-
-const RIGHT_LABEL_STYLE: React.CSSProperties = {
-  fontFamily: "var(--font-ibm-mono)",
-  fontSize: "0.6rem",
-  color: "var(--text-faint)",
-  whiteSpace: "nowrap",
-};
-
 export function SignalRangeBar({
   value,
   min,
@@ -61,14 +44,11 @@ export function SignalRangeBar({
       : null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-      <span style={LEFT_LABEL_STYLE}>{minLabel}</span>
-
+    <div className="signal-range">
       <svg
         viewBox={`0 0 ${TOTAL_W} ${TOTAL_H}`}
-        width={TOTAL_W}
-        height={TOTAL_H}
-        style={{ display: "block", flexShrink: 0 }}
+        role="img"
+        aria-label={value === undefined ? "Signal value unavailable" : `${formatValue(value)}, from ${minLabel} to ${maxLabel}`}
       >
         <rect
           x={TRACK_X}
@@ -102,8 +82,10 @@ export function SignalRangeBar({
           </>
         )}
       </svg>
-
-      <span style={RIGHT_LABEL_STYLE}>{maxLabel}</span>
+      <div className="signal-range-labels font-mono" aria-hidden="true">
+        <span>{minLabel}</span>
+        <span>{maxLabel}</span>
+      </div>
     </div>
   );
 }

@@ -1,23 +1,21 @@
 import { Suspense } from "react";
-import { getWards } from "@/lib/api";
+import { getWards } from "@/lib/council-api";
 import { WardsBrowser } from "@/components/wards-browser";
+import { getRaceStatusCounts } from "@/lib/site-view-models";
+import {
+  displayCouncilDate,
+  forecastReasonLabel,
+} from "@/lib/council-presentation";
 
 export default async function WardsPage() {
   const data = await getWards();
   const wards = data.wards || [];
-  const safeCount = wards.filter((w) => w.race_class === "safe").length;
-  const competitiveCount = wards.filter(
-    (w) => w.race_class === "competitive" && w.defeatability_score >= 55
-  ).length;
-  const openCount = wards.filter((w) => w.race_class === "open").length;
+  const counts = getRaceStatusCounts(wards);
 
   return (
-    <main className="np-shell">
-      {/* Section header */}
-      <div style={{ marginBottom: "0" }}>
-        <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
-          Ward monitor
-        </div>
+    <main id="main-content" className="np-shell">
+      <header className="council-page-lead">
+        <div className="np-kicker">Council</div>
         <div className="np-section-header">
           <h1
             className="font-heading"
@@ -31,38 +29,29 @@ export default async function WardsPage() {
           >
             All Wards
           </h1>
-          <div
-            className="font-mono"
-            style={{
-              display: "flex",
-              gap: "1.5rem",
-              fontSize: "0.7rem",
-              color: "var(--text-mid)",
-              paddingBottom: "0.25rem",
-            }}
-          >
-            <span>
-              <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>
-                {safeCount}
-              </span>{" "}
-              safe
-            </span>
-            <span>
-              <span style={{ fontWeight: 700, color: "var(--vuln-high-fg)" }}>
-                {competitiveCount}
-              </span>{" "}
-              competitive
-            </span>
-            <span>
-              <span style={{ fontWeight: 700, color: "var(--vuln-med-fg)" }}>
-                {openCount}
-              </span>{" "}
-              open
-            </span>
+          <div className="council-status-summary font-mono" aria-label={`${counts.safe} Safe, ${counts.competitive} Competitive, and ${counts.open} Open wards; ${counts.total} total`}>
+            <span><strong>{counts.safe}</strong> Safe</span>
+            <span><strong>{counts.competitive}</strong> Competitive</span>
+            <span><strong>{counts.open}</strong> Open</span>
+            <span aria-hidden="true">= {counts.total} wards</span>
           </div>
         </div>
-        <hr className="np-rule" style={{ marginBottom: "1.5rem" }} />
-      </div>
+        <p className="section-dek">
+          Race status is today’s evidence assessment—not a win probability.
+        </p>
+      </header>
+
+      <details className="council-forecast-note">
+        <summary><strong>Ward probabilities are not published</strong><span>Why?</span></summary>
+        <div>
+          <p>The site can identify exposed and open races, but the tested model has not cleared the standard required for candidate odds or Council composition. Evidence updated {displayCouncilDate(data.as_of)}.</p>
+          <ul>
+            {data.council_model.forecast.unavailable_reasons.map((reason) => (
+              <li key={reason}>{forecastReasonLabel(reason)}</li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       <Suspense>
         <WardsBrowser wards={wards} />

@@ -1,33 +1,26 @@
 import Link from "next/link";
 import { Ward } from "@/types/ward";
-import { getWinProbabilityBand } from "@/lib/vulnerability";
-import { WinProbabilityPill } from "@/components/win-probability-pill";
 import { getWardDisplayName } from "@/lib/ward-names";
 
 interface WardCardProps {
   ward: Ward;
 }
 
-const TOP_BORDER: Record<string, string> = {
-  high:   "2px solid var(--win-high-line)",
-  medium: "2px solid var(--win-med-line)",
-  low:    "2px solid var(--win-low-line)",
+const STATUS_LABEL: Record<Ward["race_class"], string> = {
+  safe: "Safe",
+  competitive: "Competitive",
+  open: "Open",
 };
 
 export function WardCard({ ward }: WardCardProps) {
-  const winProbabilityBand = getWinProbabilityBand(ward.win_probability);
   const titleName = ward.is_running ? ward.councillor_name : "Open seat";
   const wardLabel = getWardDisplayName(ward.ward);
   const wardNum = String(ward.ward).padStart(2, "0");
-  const borderTop = ward.is_running
-    ? (TOP_BORDER[winProbabilityBand] ?? "1px solid var(--line-soft)")
-    : "2px solid var(--vuln-open-fg)";
 
   return (
-    <Link href={`/wards/${ward.ward}`} style={{ display: "block", textDecoration: "none" }}>
+    <Link href={`/wards/${ward.ward}`} className="ward-card-link" aria-label={`${wardLabel}: ${STATUS_LABEL[ward.race_class]} race. ${titleName}.`}>
       <div
-        className="np-cell"
-        style={{ borderTop }}
+        className={`np-cell ward-card ward-card--${ward.race_class}`}
       >
         <div
           className="font-mono"
@@ -66,12 +59,11 @@ export function WardCard({ ward }: WardCardProps) {
             <span style={{ color: "var(--text-soft)" }}> · By-elec.</span>
           )}
         </div>
-        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+        <div className="ward-card-signals">
+          <span className={`race-status race-status--${ward.race_class}`}>{STATUS_LABEL[ward.race_class]}</span>
           {ward.is_running ? (
-            <WinProbabilityPill band={winProbabilityBand} />
-          ) : (
-            <span className="np-tag" style={{ color: "var(--vuln-open-fg)", borderColor: "var(--vuln-open-fg)" }}>Open seat</span>
-          )}
+            <span>Vulnerability {Math.round(ward.defeatability_score)}</span>
+          ) : <span>No running incumbent</span>}
         </div>
       </div>
     </Link>

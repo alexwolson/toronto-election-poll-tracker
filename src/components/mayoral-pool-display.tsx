@@ -3,8 +3,9 @@ import { getCandidateColor, getCandidateName, getLeadingCandidate } from "@/lib/
 
 const TREND_CONFIG: Record<ConsolidationTrend, { label: string; arrow: string; description: string }> = {
   consolidating: { label: "Consolidating", arrow: "↑", description: "Anti-Chow vote concentrating around a leading candidate" },
+  fragmented:    { label: "Fragmented",    arrow: "↔", description: "More than one challenger holds a meaningful share of current-field support" },
   stalling:      { label: "Stalling",      arrow: "→", description: "Anti-Chow consolidation has not advanced recently" },
-  reversing:     { label: "Fragmenting",   arrow: "↓", description: "Anti-Chow vote becoming more dispersed" },
+  reversing:     { label: "Reversing",     arrow: "↓", description: "The leading challenger's share has fallen across comparable periods" },
   consolidated:  { label: "Consolidated",  arrow: "✓", description: "Bradford is the sole remaining challenger — recent polls are head-to-head" },
   insufficient_data: { label: "Insufficient data", arrow: "–", description: "Too few polls to assess consolidation direction" },
 };
@@ -109,10 +110,10 @@ export function MayoralPoolDisplay({ model }: { model: PoolModel | null }) {
         </div>
         <div>
           <p className="font-mono text-[0.65rem] uppercase tracking-wider text-muted-foreground">
-            {leading ? `${getCandidateName(leading[0])} capture` : "Leading capture"}
+            {leading ? `${getCandidateName(leading[0])} allocation` : "Leading allocation"}
           </p>
           <p className="mt-0.5 text-xl font-semibold">{pct(leading?.[1].capture_rate ?? 0)}</p>
-          <p className="text-xs text-muted-foreground">of anti-Chow pool</p>
+          <p className="text-xs text-muted-foreground">of modelled anti-Chow opportunity</p>
         </div>
         {pool.chow_h2h_current !== null && (
           <div>

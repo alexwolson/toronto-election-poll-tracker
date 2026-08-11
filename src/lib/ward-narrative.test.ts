@@ -6,12 +6,46 @@ function makeWard(overrides: Partial<Ward> = {}): Ward {
   return {
     ward: 99, // outside PRONOUNS map → defaults to they/them/their
     councillor_name: "Test Councillor",
+    election_year: 2022,
     is_running: true,
     is_byelection_incumbent: false,
     defeatability_score: 40,
     win_probability: 0.6,
     race_class: "competitive",
-    factors: { vuln: 0, coat: 0, chal: 0 },
+    race_status_reasons: ["high_structural_vulnerability"],
+    evidence: {
+      prior_result: {
+        election_year: 2022,
+        incumbent_share: 0.55,
+        electorate_share: 0.14,
+        margin: 0.2,
+        runner_up: "Runner-up",
+        runner_up_share: 0.35,
+        by_election: false,
+      },
+      registered_field: {
+        candidate_count: 2,
+        challenger_count: 1,
+        known_challenger_count: 0,
+        well_known_challenger_count: 0,
+        credible_challenger_count: 0,
+        strongest_name_recognition_tier: "unknown",
+        returning_runner_up: false,
+      },
+      ward_polling: {
+        availability: "unavailable",
+        current_field_poll_count: 0,
+        total_poll_count: 0,
+        polls: [],
+      },
+    },
+    forecast: {
+      status: "insufficient_data",
+      unavailable_reasons: [],
+      model_version: "incumbent_retention_v1",
+      incumbent_win_probability: null,
+      incumbent_probability_interval: null,
+    },
     coattail_detail: { alignment: 0.5, alignment_delta: 0, ward_lean: 0 },
     vote_share: 0.55,       // flat — unremarkable
     electorate_share: 0.14, // flat — unremarkable

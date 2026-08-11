@@ -6,11 +6,10 @@ import Link from "next/link";
 import { Ward } from "@/types/ward";
 import { WardCard } from "@/components/ward-card";
 import { getWardDisplayName } from "@/lib/ward-names";
-import { getVulnerabilityBand } from "@/lib/vulnerability";
 import polylabel from "polylabel";
 
 type ViewMode = "grid" | "map";
-type BandKey = "high" | "medium" | "low" | "open";
+type StatusKey = Ward["race_class"];
 
 interface GeoFeature {
   wardNum: number;
@@ -19,22 +18,20 @@ interface GeoFeature {
   labelY: number;
 }
 
-const BAND_ORDER: BandKey[] = ["high", "medium", "low", "open"];
+const STATUS_ORDER: StatusKey[] = ["safe", "competitive", "open"];
 
-const BAND_LABELS: Record<BandKey, string> = {
-  high: "High vulnerability",
-  medium: "Moderate vulnerability",
-  low: "Low vulnerability",
-  open: "Open seat",
+const STATUS_LABELS: Record<StatusKey, string> = {
+  safe: "Safe",
+  competitive: "Competitive",
+  open: "Open",
 };
 
-const BAND: Record<BandKey, {
+const STATUS_STYLE: Record<StatusKey, {
   bg: string; stroke: string; bgHover: string; strokeHover: string;
 }> = {
-  high:   { bg: "var(--vuln-high-bg)",  stroke: "var(--vuln-high-line)",  bgHover: "var(--vuln-high-bg-hover)",  strokeHover: "var(--vuln-high-line-hover)" },
-  medium: { bg: "var(--vuln-med-bg)",   stroke: "var(--vuln-med-line)",   bgHover: "var(--vuln-med-bg-hover)",   strokeHover: "var(--vuln-med-line-hover)" },
-  low:    { bg: "var(--vuln-low-bg)",   stroke: "var(--vuln-low-line)",   bgHover: "var(--vuln-low-bg-hover)",   strokeHover: "var(--vuln-low-line-hover)" },
-  open:   { bg: "var(--vuln-open-bg)",  stroke: "var(--vuln-open-line)",  bgHover: "var(--vuln-open-bg-hover)",  strokeHover: "var(--vuln-open-line-hover)" },
+  safe: { bg: "var(--vuln-low-bg)", stroke: "var(--vuln-low-line)", bgHover: "var(--vuln-low-bg-hover)", strokeHover: "var(--vuln-low-line-hover)" },
+  competitive: { bg: "var(--vuln-med-bg)", stroke: "var(--vuln-med-line)", bgHover: "var(--vuln-med-bg-hover)", strokeHover: "var(--vuln-med-line-hover)" },
+  open: { bg: "var(--vuln-open-bg)", stroke: "var(--vuln-open-line)", bgHover: "var(--vuln-open-bg-hover)", strokeHover: "var(--vuln-open-line-hover)" },
 };
 
 interface WardsBrowserProps {
@@ -234,11 +231,6 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
 
   const wardLookup = Object.fromEntries(wards.map((w) => [w.ward, w]));
 
-  function getBand(ward: Ward | undefined): BandKey {
-    if (!ward || ward.race_class === "open") return "open";
-    return getVulnerabilityBand(ward.defeatability_score);
-  }
-
   return (
     <div>
       {/* Mode tabs */}
@@ -247,6 +239,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
           <button
             key={m}
             onClick={() => setMode(m)}
+            aria-pressed={mode === m}
             className="font-mono"
             style={{
               fontSize: "0.62rem",
@@ -269,10 +262,12 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
       </div>
 
       {/* Filter input */}
-      <div style={{ marginBottom: "1rem" }}>
+      <div className="ward-search-row">
+        <label htmlFor="ward-filter" className="font-mono">Search wards</label>
         <input
+          id="ward-filter"
           type="text"
-          placeholder="Filter wards…"
+          placeholder="Ward, councillor, or number"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="font-mono"
@@ -281,16 +276,19 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
             padding: "0.35rem 0.6rem",
             border: "1px solid var(--line-soft)",
             background: "var(--bg-base)",
-            width: "220px",
-            outline: "none",
+            width: "100%",
           }}
         />
       </div>
 
+      <p className="ward-result-count font-mono" aria-live="polite">
+        Showing {filteredWards.length} of {wards.length} wards
+      </p>
+
       {/* Grid mode */}
       {mode === "grid" && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "1rem" }}>
+          <div className="ward-sort-controls">
             <span className="font-mono" style={{ fontSize: "0.6rem", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginRight: "0.25rem" }}>Sort</span>
             {([["ward", "Ward №"], ["vuln", "Vulnerability"], ["name", "Name"]] as [SortField, string][]).map(([field, label]) => {
               const active = sortField === field;
@@ -321,11 +319,11 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
               );
             })}
           </div>
-          <div className="np-ward-grid">
-            {filteredWards.map((ward) => (
-              <WardCard key={ward.ward} ward={ward} />
-            ))}
-          </div>
+          {filteredWards.length > 0 ? (
+            <div className="np-ward-grid">
+              {filteredWards.map((ward) => <WardCard key={ward.ward} ward={ward} />)}
+            </div>
+          ) : <p className="empty-state">No wards match “{filter}”. Try a ward number, neighbourhood, or councillor name.</p>}
         </>
       )}
 
@@ -364,13 +362,23 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
               <g filter="url(#ward-shadow)">
                 {geoFeatures.map(({ wardNum, paths, labelX, labelY }) => {
                   const ward = wardLookup[wardNum];
-                  const band = getBand(ward);
+                  const status: StatusKey = ward?.race_class ?? "open";
                   const isFiltered = filter.trim()
                     ? filteredWards.some((w) => w.ward === wardNum)
                     : true;
                   const isHovered = hoveredWard === wardNum;
                   return (
-                    <Link key={wardNum} href={`/wards/${wardNum}`}>
+                    <Link
+                      key={wardNum}
+                      href={`/wards/${wardNum}`}
+                      className="ward-map-link"
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`${getWardDisplayName(wardNum)}: ${STATUS_LABELS[status]}. ${ward?.is_running ? `Vulnerability score ${Math.round(ward.defeatability_score)}; election forecast ${ward.forecast.status === "available" ? "available" : "unavailable"}.` : "Open seat."}`}
+                      onFocus={() => setHoveredWard(wardNum)}
+                      onBlur={() => setHoveredWard(null)}
+                      onPointerDown={() => setHoveredWard(wardNum)}
+                    >
                       <g
                         className="ward-g"
                         style={{ cursor: "pointer" }}
@@ -379,13 +387,14 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                         onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
                         onMouseLeave={() => { setHoveredWard(null); setTooltipPos(null); }}
                       >
+                        <title>{getWardDisplayName(wardNum)} — {STATUS_LABELS[status]}</title>
                         {paths.map((d, i) => (
                           <path
                             key={i}
                             className="ward-path"
                             d={d}
-                            fill={isHovered ? BAND[band].bgHover : BAND[band].bg}
-                            stroke={isHovered ? BAND[band].strokeHover : BAND[band].stroke}
+                            fill={isHovered ? STATUS_STYLE[status].bgHover : STATUS_STYLE[status].bg}
+                            stroke={isHovered ? STATUS_STYLE[status].strokeHover : STATUS_STYLE[status].stroke}
                             strokeWidth={isHovered ? 2.5 : 1.3}
                           />
                         ))}
@@ -409,7 +418,7 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
           )}
 
           {/* Cursor-following tooltip */}
-          {hoveredWard !== null && tooltipPos !== null && (() => {
+          {hoveredWard !== null && (() => {
             const ward = wardLookup[hoveredWard];
             const name = getWardDisplayName(hoveredWard);
             const subtitle =
@@ -417,24 +426,16 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
                 ? "Open seat"
                 : ward.councillor_name;
             return (
-              <div
-                className="font-mono"
-                style={{
-                  position: "fixed",
-                  left: tooltipPos.x + 14,
-                  top: tooltipPos.y - 10,
-                  background: "var(--text-strong)",
-                  color: "#fff",
-                  padding: "0.4rem 0.6rem",
-                  fontSize: "0.65rem",
-                  lineHeight: 1.4,
-                  pointerEvents: "none",
-                  zIndex: 9999,
-                  maxWidth: "220px",
-                }}
-              >
+              <div className={`map-ward-summary font-mono${tooltipPos ? " map-ward-summary--pointer" : ""}`} style={tooltipPos ? { left: tooltipPos.x + 14, top: tooltipPos.y - 10 } : undefined} role="status">
                 <div style={{ fontWeight: 700 }}>{name}</div>
-                <div style={{ color: "var(--text-ghost)", marginTop: "0.1rem" }}>{subtitle}</div>
+                <div>{STATUS_LABELS[ward?.race_class ?? "open"]} · {subtitle}</div>
+                {ward?.is_running && (
+                  <div>
+                    Vulnerability {Math.round(ward.defeatability_score)} · {ward.forecast.status === "available" && ward.forecast.incumbent_win_probability !== null
+                      ? `Forecast ${Math.round(ward.forecast.incumbent_win_probability * 100)}%`
+                      : "Forecast unavailable"}
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -453,21 +454,34 @@ export function WardsBrowser({ wards }: WardsBrowserProps) {
               color: "var(--text-mid)",
             }}
           >
-            {BAND_ORDER.map((band) => (
-              <span key={band} style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+            {STATUS_ORDER.map((status) => (
+              <span key={status} style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                 <span
                   style={{
                     display: "inline-block",
                     width: "12px",
                     height: "12px",
-                    backgroundColor: BAND[band].bg,
-                    border: `1px solid ${BAND[band].stroke}`,
+                    backgroundColor: STATUS_STYLE[status].bg,
+                    border: `1px solid ${STATUS_STYLE[status].stroke}`,
                   }}
                 />
-                {BAND_LABELS[band]}
+                {STATUS_LABELS[status]}
               </span>
             ))}
           </div>
+
+          <details className="map-link-disclosure">
+            <summary>Browse all {wards.length} map wards as links</summary>
+            <ul>
+              {[...wards].sort((a, b) => a.ward - b.ward).map((ward) => (
+                <li key={ward.ward}>
+                  <Link href={`/wards/${ward.ward}`}>
+                    Ward {String(ward.ward).padStart(2, "0")} — {getWardDisplayName(ward.ward)} · {STATUS_LABELS[ward.race_class]}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
         </div>
       )}
     </div>

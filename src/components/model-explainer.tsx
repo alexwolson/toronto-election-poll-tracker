@@ -1,6 +1,4 @@
-'use client';
-
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { PoolModel } from '@/lib/api';
 import { getCandidateColor, getCandidateName, getLeadingCandidate, pollTestedCandidate } from '@/lib/pool-candidates';
 
@@ -103,12 +101,25 @@ const STEP_BODY: Record<1 | 2 | 3 | 4, ReactNode> = {
         pool remains uncaptured by any challenger.
       </p>
       <p>
-        Each tracked challenger&apos;s capture rate is their share in
-        multi-candidate polls divided by the total anti-Chow pool. The trend
-        indicator tracks Bradford specifically — whether his rate is rising,
-        stalling, or reversing, comparing his mean rate in the past 90 days
-        against older polls. A rising rate means he&apos;s consolidating the
-        opposition; stalling means the field may be waiting for someone else.
+        We use only exact current-field polls: Chow, Bradford, and Alexander
+        must all have measured support, and no obsolete named candidate can be
+        present. A candidate who was not tested is unmeasured, not assigned zero
+        support.
+      </p>
+      <p>
+        Approval and vote intention have different denominators, so the mapping
+        is an explicit structural assumption rather than a direct measurement.
+        We take the full non-Chow response mix on the current ballot — Bradford,
+        Alexander, and other or uncommitted responses — and apply those
+        proportions to the approval-derived anti-Chow opportunity. This keeps
+        the measured polling split visible and leaves unmatched opposition
+        responses unallocated.
+      </p>
+      <p>
+        The lane status is non-directional when only its current split is known:
+        multiple meaningful challengers means fragmented, not reversing. A
+        directional label is used only when comparable earlier and later data
+        establish movement.
       </p>
     </>
   ),
@@ -156,13 +167,13 @@ function Step1Drawer({ model }: { model: PoolModel }) {
           <ComputedValue
             label="Chow ceiling"
             value={pct(pool.chow_ceiling)}
-            color="#854a90"
+            color="#854A90"
             sublabel="Everyone not in the anti-Chow pool (approve + not sure)"
           />
           <ComputedValue
             label="Anti-Chow pool"
             value={pct(pool.anti_chow_pool)}
-            color="#00a2bf"
+            color="#2E8B57"
             sublabel="Weighted disapprove rate → Available to any challenger"
           />
           <ComputedValue
@@ -221,7 +232,7 @@ function Step2Drawer({ model }: { model: PoolModel }) {
           <ComputedValue
             label="Chow floor"
             value={pct(pool.chow_floor)}
-            color="#854a90"
+            color="#854A90"
             sublabel="Candidate-count weighted avg → Holds regardless of field size"
           />
           <ComputedValue
@@ -253,7 +264,7 @@ function Step3Drawer({ model }: { model: PoolModel }) {
               <th className="me-num">Chow</th>
               <th className="me-num">Bradford</th>
               <th className="me-num">n</th>
-              <th className="me-num">1/rank weight</th>
+              <th className="me-num">Recency weight</th>
             </tr>
           </thead>
           <tbody>
@@ -268,7 +279,7 @@ function Step3Drawer({ model }: { model: PoolModel }) {
               </tr>
             ))}
             <tr className="me-row--total">
-              <td colSpan={2}>1/rank-weighted average</td>
+              <td colSpan={2}>Recency-weighted average</td>
               <td className="me-num">{pct(currentChow)}</td>
               <td className="me-num me-dim">—</td>
               <td className="me-num me-dim">—</td>
@@ -281,7 +292,7 @@ function Step3Drawer({ model }: { model: PoolModel }) {
           <ComputedValue
             label="Chow current (H2H)"
             value={pct(currentChow)}
-            color="#854a90"
+            color="#854A90"
             sublabel={`Within floor (${pct(pool.chow_floor)}) to ceiling (${pct(pool.chow_ceiling)}) range`}
           />
           <ComputedValue
@@ -303,8 +314,10 @@ function Step4Drawer({ model }: { model: PoolModel }) {
   const trendLabel =
     consolidation_trend === 'consolidating'
       ? 'Rising — consolidating the opposition'
+      : consolidation_trend === 'fragmented'
+        ? 'Fragmented — multiple challengers hold meaningful current-field support'
       : consolidation_trend === 'reversing'
-        ? 'Reversing — losing opposition support'
+        ? 'Reversing — the leading challenger lost support across comparable periods'
         : consolidation_trend === 'stalling'
           ? 'Stalling — opposition not consolidating'
           : consolidation_trend === 'consolidated'
@@ -314,17 +327,18 @@ function Step4Drawer({ model }: { model: PoolModel }) {
   return (
     <div className="me-drawer">
       <div className="me-drawer-title">
-        Step 4 · Multi-candidate polls used for capture rate
+        Step 4 · Exact current-field polls used for structural allocation
       </div>
       {polledCandidates.map(([slug, candidate]) => {
         const rows = (poll_detail.capture_polls[slug] ?? []).filter((row) =>
           pollTestedCandidate(row.field_tested, slug)
         );
         const color = getCandidateColor(slug);
+        const textColor = slug === 'alexander' ? '#7A5200' : color;
         return (
           <div key={slug} className="me-drawer-cols" style={{ marginBottom: '1.25rem' }}>
             <div>
-              <div className="me-computed-kicker" style={{ color }}>
+              <div className="me-computed-kicker" style={{ color: textColor }}>
                 {getCandidateName(slug)}
               </div>
               <table className="me-data-table">
@@ -334,7 +348,7 @@ function Step4Drawer({ model }: { model: PoolModel }) {
                     <th>Firm</th>
                     <th>Field tested</th>
                     <th className="me-num">Share</th>
-                    <th className="me-num">1/rank weight</th>
+                    <th className="me-num">Recency weight</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -348,8 +362,8 @@ function Step4Drawer({ model }: { model: PoolModel }) {
                     </tr>
                   ))}
                   <tr className="me-row--total">
-                    <td colSpan={3}>1/rank-weighted share</td>
-                    <td className="me-num">{pct(candidate.share)}</td>
+                    <td colSpan={3}>Current-field polling average</td>
+                    <td className="me-num">{pct(candidate.polling_share ?? candidate.share)}</td>
                     <td className="me-num me-dim">—</td>
                   </tr>
                 </tbody>
@@ -359,15 +373,21 @@ function Step4Drawer({ model }: { model: PoolModel }) {
               <div className="me-computed-kicker">Computed values</div>
               <ComputedValue
                 label={`${getCandidateName(slug)} share`}
-                value={pct(candidate.share)}
-                color={color}
-                sublabel="1/rank-weighted avg across multi-candidate polls"
+                value={pct(candidate.polling_share ?? candidate.share)}
+                color={textColor}
+                sublabel="Decided/leaning average on the common current ballot"
               />
               <ComputedValue
-                label="Capture rate"
+                label="Share of combined Bradford–Alexander support"
+                value={pct(candidate.lane_share ?? 0)}
+                color={textColor}
+                sublabel="Relative split among the two tracked challengers"
+              />
+              <ComputedValue
+                label="Modelled anti-Chow allocation"
                 value={pct(candidate.capture_rate)}
-                color={color}
-                sublabel={`${pct(candidate.share)} ÷ ${pct(pool.anti_chow_pool)} anti-Chow pool`}
+                color={textColor}
+                sublabel={`${pct(candidate.share)} of the electorate after mapping the full non-Chow response mix onto the ${pct(pool.anti_chow_pool)} structural opportunity`}
               />
             </div>
           </div>
@@ -380,10 +400,10 @@ function Step4Drawer({ model }: { model: PoolModel }) {
           <ComputedValue
             label="Uncaptured anti-Chow"
             value={pct(uncaptured_anti_chow)}
-            sublabel="Anti-Chow pool minus every tracked candidate's share"
+            sublabel="Other or uncommitted non-Chow responses mapped onto the structural opportunity"
           />
           <ComputedValue
-            label="Consolidation trend"
+            label="Challenger-lane status"
             value={
               consolidation_trend === 'insufficient_data'
                 ? 'No data'
@@ -399,8 +419,6 @@ function Step4Drawer({ model }: { model: PoolModel }) {
 }
 
 export function ModelExplainer({ model }: { model: PoolModel | null }) {
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4 | null>(null);
-
   if (!model) return null;
 
   const { pool, approval, candidates, consolidation_trend, data_notes, poll_detail } = model;
@@ -411,10 +429,6 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
   const leadingCaptureRate = leading?.[1].capture_rate ?? 0;
   const capturePollCount = Object.values(poll_detail.capture_polls)[0]?.length ?? 0;
 
-  function toggle(step: 1 | 2 | 3 | 4) {
-    setActiveStep((prev) => (prev === step ? null : step));
-  }
-
   const steps: {
     num: 1 | 2 | 3 | 4;
     source: string;
@@ -424,7 +438,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
   }[] = [
     {
       num: 1,
-      source: `Approval polls · ${data_notes.approval_data_points} data points · 1/rank weighting`,
+      source: `Approval polls · ${data_notes.approval_data_points} data points · recency weighting`,
       title: 'Set the size of each voter pool',
       pills: [
         { label: `Chow ceiling ${pct(pool.chow_ceiling)}`, className: 'me-pill me-pill--purple' },
@@ -448,7 +462,7 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
     },
     {
       num: 3,
-      source: `Bradford vs Chow H2H polls · 1/rank weighting`,
+      source: `Bradford vs Chow H2H polls · recency weighting`,
       title: 'Where does Chow sit in the likely match-up?',
       pills: [
         { label: `Current position ${pct(currentChow)}`, className: 'me-pill me-pill--purple' },
@@ -457,17 +471,17 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
     },
     {
       num: 4,
-      source: `Multi-candidate polls · 2+ challengers tested · 1/rank weighting`,
-      title: `How much of the anti-Chow vote has ${leadingName} captured?`,
+      source: `Exact current-field polls · full non-Chow response mix · recency weighting`,
+      title: `How is the structural challenger opportunity currently allocated?`,
       pills: [
-        { label: `${leadingName} capture ${pct(leadingCaptureRate)}`, className: 'me-pill me-pill--blue' },
+        { label: `${leadingName} allocation ${pct(leadingCaptureRate)}`, className: 'me-pill me-pill--blue' },
         {
           label:
             consolidation_trend === 'insufficient_data'
               ? 'Insufficient data'
               : consolidation_trend === 'consolidated'
                 ? 'Field consolidated'
-                : `Trend: ${consolidation_trend}`,
+                : `Lane status: ${consolidation_trend}`,
           className: 'me-pill me-pill--dark',
         },
       ],
@@ -484,37 +498,35 @@ export function ModelExplainer({ model }: { model: PoolModel | null }) {
         </div>
       </div>
 
-      <div className="me-steps">
+      <div className="me-steps me-method-steps">
         {steps.map((step) => (
-          <div
+          <details
             key={step.num}
-            className={`me-step${activeStep === step.num ? ' me-step--active' : ''}`}
-            onClick={() => toggle(step.num)}
+            className="me-method-step"
           >
-            <div className="me-step-header">
-              <span className="me-step-badge">Step {step.num}</span>
-              <span className="me-step-source">{step.source}</span>
-            </div>
-            <div className="me-step-title">{step.title}</div>
-            <div className="me-step-body">{STEP_BODY[step.num]}</div>
-            <div className="me-step-output">
-              {step.pills.map((pill) => (
-                <span key={pill.label} className={pill.className}>
-                  {pill.label}
-                </span>
-              ))}
-              <div className="me-expand-hint">
-                {activeStep === step.num ? '↑' : '↓'} See {step.pollCount} polls
+            <summary>
+              <div className="me-step-header">
+                <span className="me-step-badge">Step {step.num}</span>
+                <span className="me-step-source">{step.source}</span>
               </div>
-            </div>
-          </div>
+              <div className="me-step-title">{step.title}</div>
+              <div className="me-step-output">
+                {step.pills.map((pill) => (
+                  <span key={pill.label} className={pill.className}>
+                    {pill.label}
+                  </span>
+                ))}
+                <div className="me-expand-hint">Open explanation and {step.pollCount} source polls</div>
+              </div>
+            </summary>
+            <div className="me-step-body me-method-prose">{STEP_BODY[step.num]}</div>
+            {step.num === 1 && <Step1Drawer model={model} />}
+            {step.num === 2 && <Step2Drawer model={model} />}
+            {step.num === 3 && <Step3Drawer model={model} />}
+            {step.num === 4 && <Step4Drawer model={model} />}
+          </details>
         ))}
       </div>
-
-      {activeStep === 1 && <Step1Drawer model={model} />}
-      {activeStep === 2 && <Step2Drawer model={model} />}
-      {activeStep === 3 && <Step3Drawer model={model} />}
-      {activeStep === 4 && <Step4Drawer model={model} />}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PoolModel } from "@/lib/api";
+import { getCandidateColor, getCandidateName } from "@/lib/pool-candidates";
 
 type Scenario = "current" | "chow" | "bradford";
 
@@ -20,7 +21,7 @@ function PeakMarker({ value, pollPct }: { value: number; pollPct: number }) {
       style={{
         position: "absolute",
         bottom: -20,
-        left: `${value * 100}%`,
+        left: `${Math.min(82, value * 100)}%`,
         display: "flex",
         alignItems: "center",
         gap: "4px",
@@ -60,7 +61,7 @@ function LegendItem({ cssClass, label }: { cssClass: string; label: string }) {
 const SCENARIO_LABELS: Record<Scenario, string> = {
   current: "Current",
   chow: "Chow best-case",
-  bradford: "Bradford best-case",
+  bradford: "Bradford consolidates",
 };
 
 export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
@@ -81,8 +82,14 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
   const ppReserve = model.pool.protective_progressive_reserve;
 
   const antiTotal = model.pool.anti_chow_pool;
-  const bradfordShare = model.candidates["bradford"]?.share ?? 0;
   const uncaptured = model.uncaptured_anti_chow;
+  const challengerSegments = Object.entries(model.candidates)
+    .filter(([, candidate]) => candidate.share > 0)
+    .sort(([, a], [, b]) => b.share - a.share);
+  const challengerBase = challengerSegments.reduce(
+    (sum, [, candidate]) => sum + candidate.share,
+    0
+  );
 
   const notSure = model.approval.not_sure;
 
@@ -108,7 +115,11 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
   const chowBarTotal = isBradford ? chowFloor : chowTotal;
 
   // Bradford: best-case gets all anti-Chow + notSure; chow best-case he gets base only
-  const bradfordBarTotal = isBradford ? antiTotal + notSure : isChow ? bradfordShare : antiTotal;
+  const bradfordBarTotal = isBradford
+    ? antiTotal + notSure
+    : isChow
+      ? challengerBase
+      : antiTotal;
   const bradfordBonus = isBradford ? notSure : 0; // undecideds absorbed by Bradford
 
   // In scenario mode, the "not engaged" row becomes "other / did not vote"
@@ -122,23 +133,25 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
   return (
     <div className="p-6 md:p-8">
       <div className="va-title-row">
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "1rem" }}>
-          <span className="font-heading" style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--text-strong)" }}>
-            Where Toronto voters sit
+        <div className="va-heading-row">
+          <span className="font-heading va-heading">
+            Structural support ranges
           </span>
-          {/* Scenario toggles */}
-          <div style={{ display: "flex", border: "1px solid var(--line-soft)", flexShrink: 0 }}>
+          <div className="va-scenario-group">
+            <span className="font-mono va-scenario-instruction">Choose a scenario</span>
+            <div className="va-scenario-controls" aria-label="Choose a model scenario">
             {(["current", "chow", "bradford"] as Scenario[]).map((s, i) => (
               <button
                 key={s}
                 onClick={() => setScenario(s)}
+                aria-pressed={scenario === s}
                 className="font-mono"
                 style={{
                   fontSize: "0.58rem",
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  padding: "0.35rem 0.75rem",
+                  padding: "0.35rem 0.6rem",
                   border: "none",
                   borderRight: i < 2 ? "1px solid var(--line-soft)" : "none",
                   background: scenario === s ? "var(--text-strong)" : "transparent",
@@ -150,21 +163,24 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
                 {SCENARIO_LABELS[s]}
               </button>
             ))}
+            </div>
           </div>
         </div>
         <div className="font-heading" style={{ fontSize: "0.85rem", fontStyle: "italic", color: "var(--text-mid)", marginTop: "0.3rem" }}>
           {isCurrent
             ? "Structural model, not a poll average"
-            : `Theoretical scenario — ${scenario === "chow" ? "Chow" : "Bradford"} best-case: all voters lock in, undecideds break one way`}
+            : scenario === "chow"
+              ? "Theoretical Chow best-case — soft supporters activate while remaining opposition stays home"
+              : "Theoretical Bradford consolidation — he absorbs the challenger lane and undecided voters"}
         </div>
       </div>
 
       {/* Pro-Chow */}
       <div className="va-row">
         <div className="va-zone-label" style={{ color: "var(--color-chow)" }}>
-          Olivia Chow
+          Chow polling baseline
           <span className="va-zone-share">
-            {isCurrent ? `${pct(chowTotal)} of electorate` : `${pct(chowBarTotal)} projected`}
+            {isCurrent ? `${pct(chowFloor)} current · ${pct(chowTotal)} ceiling` : `${pct(chowBarTotal)} scenario`}
           </span>
         </div>
         <div className="va-bar-track" style={{ marginBottom: showPeakMarkers && chowPeak > 0 ? "1.4rem" : undefined, background: "none" }}>
@@ -184,7 +200,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
           )}
         </div>
         <div className="va-bar-sublabel">
-          {isCurrent && `Polling baseline ${pct(chowFloor)} · May activate if race tightens ${pct(ppActivated)} · Open to her but undecided ${pct(ppReserve)}`}
+          {isCurrent && `Modelled support range ${pct(chowFloor)}–${pct(chowTotal)} · Potential activation ${pct(ppActivated)} · Reserve ${pct(ppReserve)}`}
           {isChow && `Polling baseline ${pct(chowFloor)} · Soft support and undecideds ${pct(ppActivated + ppReserve)}`}
           {isBradford && `Polling baseline only — soft support stays home`}
         </div>
@@ -192,22 +208,43 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
 
       <hr className="va-separator" />
 
-      {/* Anti-Chow / Bradford */}
+      {/* Anti-Chow challenger lane */}
       <div className="va-row">
-        <div className="va-zone-label" style={{ color: "var(--color-bradford)" }}>
-          Brad Bradford
+        <div className="va-zone-label" style={{ color: "var(--text-strong)" }}>
+          Challenger opportunity
           <span className="va-zone-share">
-            {isCurrent ? `${pct(antiTotal)} of electorate` : `${pct(bradfordBarTotal)} projected`}
+            {isCurrent
+              ? `${pct(antiTotal)} structural maximum`
+              : `${pct(bradfordBarTotal)} scenario`}
           </span>
         </div>
         <div className="va-bar-track" style={{ marginBottom: showPeakMarkers && bradfordPeak > 0 ? "1.4rem" : undefined, background: "none" }}>
           <div className="va-bar" style={{ width: `${bradfordBarTotal * 100}%` }}>
             {isChow ? (
               <div className="va-seg va-seg-anti-committed" style={{ width: "100%" }} />
+            ) : isCurrent ? (
+              <>
+                {challengerSegments.map(([slug, candidate]) => (
+                  <div
+                    key={slug}
+                    className="va-seg"
+                    title={`${getCandidateName(slug)}: ${pct(candidate.share)} of electorate; ${pct(candidate.polling_share ?? candidate.share)} in current-field polling`}
+                    style={{
+                      width: safeWidth(candidate.share, bradfordBarTotal),
+                      background: getCandidateColor(slug),
+                      backgroundImage: slug === "alexander" ? "repeating-linear-gradient(135deg, transparent 0 7px, rgba(58, 37, 0, 0.35) 7px 9px)" : undefined,
+                      boxShadow: slug === "alexander" ? "inset 0 0 0 1px #5B4000" : undefined,
+                    }}
+                  />
+                ))}
+                <div
+                  className="va-seg va-seg-anti-available"
+                  style={{ width: safeWidth(uncaptured, bradfordBarTotal) }}
+                />
+              </>
             ) : (
               <>
-                <div className="va-seg va-seg-anti-committed" style={{ width: safeWidth(bradfordShare, bradfordBarTotal) }} />
-                <div className="va-seg va-seg-anti-available" style={{ width: safeWidth(uncaptured,    bradfordBarTotal) }} />
+                <div className="va-seg va-seg-anti-committed" style={{ width: safeWidth(antiTotal, bradfordBarTotal) }} />
                 {bradfordBonus > 0 && (
                   <div className="va-seg" style={{ width: safeWidth(bradfordBonus, bradfordBarTotal), background: "var(--color-bradford-soft)" }} />
                 )}
@@ -219,9 +256,11 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
           )}
         </div>
         <div className="va-bar-sublabel">
-          {isCurrent && `Polling baseline ${pct(bradfordShare)} · Anti-Chow voters without a candidate ${pct(uncaptured)}`}
-          {isBradford && `Polling baseline ${pct(bradfordShare)} · Unaligned anti-Chow ${pct(uncaptured)} · Undecided voters ${pct(bradfordBonus)}`}
-          {isChow && `Polling baseline only — unaligned anti-Chow stay home`}
+          {isCurrent && `Candidate allocation: ${challengerSegments
+            .map(([slug, candidate]) => `${getCandidateName(slug)} polling ${pct(candidate.polling_share ?? candidate.share)}`)
+            .join(" · ")} · Other/uncommitted opposition ${pct(uncaptured)}`}
+          {isBradford && `All modelled anti-Chow opportunity ${pct(antiTotal)} · Undecided voters ${pct(bradfordBonus)}`}
+          {isChow && `Current challenger baselines only — remaining anti-Chow voters stay home`}
         </div>
       </div>
 
@@ -230,7 +269,7 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
       {/* Not engaged / did not vote */}
       <div className="va-row">
         <div className="va-zone-label" style={{ color: "var(--text-soft)" }}>
-          {isCurrent ? "Not yet engaged" : "Other candidate / did not vote"}
+          {isCurrent ? "Not yet committed" : "Other candidate / did not vote"}
           <span className="va-zone-share">{pct(notSureDisplay)} of electorate</span>
         </div>
         <div className="va-bar-track" style={{ background: "none" }}>
@@ -247,9 +286,22 @@ export function VoterAlignmentBars({ model }: { model: PoolModel | null }) {
       {isCurrent && (
         <div className="va-legend">
           <LegendItem cssClass="va-seg-chow-floor"     label="Chow polling baseline — consistent support across all poll types" />
-          <LegendItem cssClass="va-seg-anti-committed" label="Bradford polling baseline — more volatile while the challenger field remains unsettled" />
+          {challengerSegments.map(([slug, candidate]) => (
+            <div className="va-legend-item" key={slug}>
+              <span
+                className={`va-swatch ${slug === "alexander" ? "va-swatch--alexander" : ""}`}
+                style={{ backgroundColor: getCandidateColor(slug) }}
+              />
+              <span>
+                {getCandidateName(slug)} — {pct(candidate.capture_rate)} of the
+                modelled anti-Chow opportunity; {pct(candidate.lane_share ?? 0)} of combined Bradford–Alexander support
+              </span>
+            </div>
+          ))}
           <LegendItem cssClass="va-seg-chow-activated" label="Chow supporters who may activate if the race tightens" />
-          <LegendItem cssClass="va-seg-anti-available" label="Backed an opposing candidate that has since declined to run" />
+          {uncaptured > 0 && (
+            <LegendItem cssClass="va-seg-anti-available" label="Anti-Chow voters not yet allocated to a tracked challenger" />
+          )}
           <LegendItem cssClass="va-seg-chow-ceiling"   label="Open to Chow — approves or unsure, but hasn't committed to voting for her" />
           <LegendItem cssClass="va-seg-disengaged"     label="No strong view on Chow yet" />
         </div>

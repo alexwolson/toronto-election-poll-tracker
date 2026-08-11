@@ -1,64 +1,14 @@
-import { WardsResponse, WardResponse } from '../types/ward';
+export { getWard, getWards } from "./council-api";
 
+const DATA_REVISION = process.env.NEXT_PUBLIC_DATA_REVISION?.trim() || "main";
 const DATA_BASE_URL =
-  'https://raw.githubusercontent.com/alexwolson/toronto-election-poll-tracker-data/main/data/processed';
+  `https://raw.githubusercontent.com/alexwolson/toronto-election-poll-tracker-data/${DATA_REVISION}/data/processed`;
 
 function dataUrl(file: string): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return `${process.env.NEXT_PUBLIC_API_URL}/api/${file}`;
+    return `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/${file}`;
   }
   return `${DATA_BASE_URL}/${file}`;
-}
-
-export async function getWards(): Promise<WardsResponse> {
-  const fallback: WardsResponse = {
-    wards: [],
-    challengers: [],
-    composition_mean: 0,
-    composition_std: 0,
-    composition_by_mayor: {},
-    mayoral_averages: {},
-    phase: { phase: 1, label: "", description: "" },
-    scenarios: {},
-    default_scenario: "",
-  };
-  try {
-    const res = await fetch(dataUrl('model_snapshot.json'), { next: { revalidate: 3600 } });
-    if (!res.ok) return fallback;
-    const data = (await res.json()) as Partial<WardsResponse>;
-    return {
-      wards: data.wards ?? [],
-      challengers: data.challengers ?? [],
-      composition_mean: data.composition_mean ?? 0,
-      composition_std: data.composition_std ?? 0,
-      composition_by_mayor: data.composition_by_mayor ?? {},
-      mayoral_averages: data.mayoral_averages ?? {},
-      phase: data.phase ?? { phase: 1, label: "", description: "" },
-      scenarios: data.scenarios ?? {},
-      default_scenario: data.default_scenario ?? "",
-    };
-  } catch (error) {
-    console.error("Failed to fetch wards:", error);
-    return fallback;
-  }
-}
-
-export async function getWard(wardNum: number): Promise<WardResponse> {
-  const fallback: WardResponse = { ward: null, challengers: [], error: "unavailable" };
-  try {
-    const res = await fetch(dataUrl('model_snapshot.json'), { next: { revalidate: 3600 } });
-    if (!res.ok) return fallback;
-    const snapshot = (await res.json()) as { wards: NonNullable<WardResponse['ward']>[]; challengers: WardResponse['challengers'] };
-    const ward = snapshot.wards?.find((w) => w.ward === wardNum) ?? null;
-    if (!ward) return { ward: null, challengers: [], error: "not_found" };
-    const challengers = (snapshot.challengers ?? []).filter(
-      (c) => c.ward === wardNum && c.candidate_name !== "Generic Challenger"
-    );
-    return { ward, challengers };
-  } catch (error) {
-    console.error(`Failed to fetch ward ${wardNum}:`, error);
-    return fallback;
-  }
 }
 
 type ApprovalPollRow = {
@@ -106,6 +56,7 @@ export type PollDetail = {
 
 export type ConsolidationTrend =
   | "consolidating"
+  | "fragmented"
   | "stalling"
   | "reversing"
   | "consolidated"
@@ -125,7 +76,19 @@ export type PoolModel = {
     /** Signed approve − current support; negative = reluctant support. */
     chow_approval_gap?: number;
   };
-  candidates: Record<string, { share: number; capture_rate: number }>;
+  candidates: Record<
+    string,
+    {
+      /** Modelled electorate allocation within the structural anti-Chow pool. */
+      share: number;
+      /** Measured decided/leaning share in exact current-field polls. */
+      polling_share?: number;
+      /** Share of combined Bradford–Alexander polling support. */
+      lane_share?: number;
+      /** Share of all non-Chow current-field responses mapped to the anti-Chow pool. */
+      capture_rate: number;
+    }
+  >;
   uncaptured_anti_chow: number;
   consolidation_trend: ConsolidationTrend;
   approval: { approve: number; disapprove: number; not_sure: number };
@@ -134,6 +97,7 @@ export type PoolModel = {
     total_polls: number;
     approval_data_points: number;
     h2h_available: boolean;
+    current_field_poll_count?: number;
   };
   poll_detail: PollDetail;
 };
@@ -183,6 +147,7 @@ type PollingAveragesResponse = {
     firm: string;
     sample_size: number;
     field_tested: string;
+    candidates: Record<string, number>;
     excluded_from_model: boolean;
     excluded_reason: string | null;
   }[];

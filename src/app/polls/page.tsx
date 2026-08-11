@@ -1,276 +1,268 @@
 import { PollingChart } from "@/components/polling-chart";
-import { getPollingAverages } from "@/lib/api";
+import { MayoralEvidence } from "@/components/mayoral-evidence";
+import { MayoralForecast } from "@/components/mayoral-forecast";
+import { getPollingAverages } from "@/lib/mayoral-api";
+import {
+  getPollBreakdown,
+  humanizePollReason,
+  partitionCandidateRoster,
+  type CandidateSummary,
+} from "@/lib/site-view-models";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const FEATURED_IDS = ["chow", "bradford", "alexander"];
 
-interface CandidateResult {
-  [key: string]: number;
+function displayDate(value: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
 }
 
-interface Poll {
-  poll_date: string;
-  firm: string;
-  sample_size: number;
-  candidates: CandidateResult;
+function CandidateCard({
+  candidate,
+  range,
+  average,
+  filed,
+  compact = false,
+}: {
+  candidate: CandidateSummary;
+  range: { min: number; max: number } | null | undefined;
+  average?: number;
+  filed?: string;
+  compact?: boolean;
+}) {
+  const facts = [
+    typeof average === "number" ? `Current-field average ${Math.round(average * 100)}%` : null,
+    range ? `Tracked range ${range.min}%–${range.max}%` : null,
+    filed ? `Filed ${displayDate(filed)}` : null,
+  ].filter((fact): fact is string => Boolean(fact));
+
+  return (
+    <article className={`roster-card roster-card--${candidate.id}${compact ? " roster-card--compact" : ""}`}>
+      <div className="roster-card-title">
+        <span className={`candidate-marker candidate-marker--${candidate.id}`} aria-hidden="true" />
+        <h3>{candidate.name}</h3>
+        {candidate.id === "alexander" && <span className="candidate-new-tag">New field</span>}
+      </div>
+      {candidate.summary && <p>{candidate.summary}</p>}
+      {facts.length > 0 && (
+        <div className="roster-card-facts font-mono">
+          {facts.map((fact) => <span key={fact}>{fact}</span>)}
+        </div>
+      )}
+    </article>
+  );
 }
 
-async function getPolls(): Promise<{ polls: Poll[] }> {
-  try {
-    const res = await fetch(`${API_URL}/api/polls`, { next: { revalidate: 60 } });
-    if (!res.ok) return { polls: [] };
-    return res.json();
-  } catch {
-    return { polls: [] };
-  }
+function CandidateNameList({ candidates }: { candidates: CandidateSummary[] }) {
+  return (
+    <ul className="roster-name-list" aria-label="Other declared mayoral candidates">
+      {candidates.map((candidate) => (
+        <li key={candidate.id}>{candidate.name}</li>
+      ))}
+    </ul>
+  );
 }
-
-const SERIF: React.CSSProperties = {
-  fontFamily: "var(--font-newsreader), serif",
-};
 
 export default async function PollsPage() {
-  const [pollsResponse, pollingAverages] = await Promise.all([
-    getPolls(),
-    getPollingAverages(),
-  ]);
-  const polls = pollsResponse.polls || [];
-  const chartData = pollingAverages.trend;
-  const chartCandidates = pollingAverages.candidates;
+  const pollingAverages = await getPollingAverages();
+  const race = pollingAverages.mayoral_race;
+  const chartData = race.current_field.series;
+  const chartCandidates = race.target_field;
   const candidateStatus = pollingAverages.candidate_status;
   const candidateRanges = pollingAverages.candidate_ranges;
   const pollHistory = pollingAverages.poll_history;
+  const breakdown = getPollBreakdown(
+    pollHistory,
+    pollingAverages.total_polls_available
+  );
+  const roster = partitionCandidateRoster(candidateStatus, FEATURED_IDS);
   const nominationDates = new Map(
-    (pollingAverages.registered_candidates?.mayors ?? []).map((c) => [
-      `${c.first_name} ${c.last_name}`.toLowerCase(),
-      c.date_nomination,
+    (pollingAverages.registered_candidates?.mayors ?? []).map((candidate) => [
+      `${candidate.first_name} ${candidate.last_name}`.toLowerCase(),
+      candidate.date_nomination,
     ])
   );
+  const chartDates = chartData.map((point) => String(point.date));
+  const firstChartDate = chartDates.length > 0 ? [...chartDates].sort()[0] : null;
+  const entryEvents = candidateStatus.declared.flatMap((candidate) => {
+    const date = nominationDates.get(candidate.name.toLowerCase());
+    return date && chartCandidates.includes(candidate.id) && (!firstChartDate || date >= firstChartDate)
+      ? [{ date, label: `${candidate.name} enters` }]
+      : [];
+  });
+  const currentFieldPollCount = breakdown.currentField;
+
+  const stats = [
+    { label: "Current-field polls", value: breakdown.currentField },
+    { label: "Head-to-head polls", value: breakdown.headToHead },
+    { label: "Different or obsolete fields", value: breakdown.differentField },
+    ...(breakdown.other > 0 ? [{ label: "Other", value: breakdown.other }] : []),
+    { label: "Total tracked", value: breakdown.total },
+  ];
 
   return (
-    <main className="np-shell">
-      {/* Section header */}
-      <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
-        Mayoral tracker
-      </div>
-      <h1
-        style={{
-          ...SERIF,
-          fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
-          fontWeight: 700,
-          margin: "0 0 0.5rem 0",
-          letterSpacing: "-0.01em",
-          color: "var(--text-strong)",
-        }}
-      >
-        Mayoral Polling
-      </h1>
-      <hr className="np-rule" style={{ marginBottom: "0" }} />
+    <main id="main-content" className="np-shell">
+      <header className="page-lead">
+        <p className="np-kicker">Mayor</p>
+        <h1>Polls and candidates</h1>
+        <p>
+          Current-field polls test the candidates running now. Other polls remain in the archive but do not enter today’s average.
+        </p>
+      </header>
 
-      {/* Stats row */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          border: "1px solid var(--line-soft)",
-          borderTop: "none",
-          marginBottom: "2rem",
-        }}
-      >
-        {[
-          { label: "Used in model", value: pollingAverages.polls_used },
-          { label: "Total polls", value: pollingAverages.total_polls_available },
-          { label: "Excluded declined", value: pollingAverages.excluded_declined_polls },
-        ].map((stat, i) => (
-          <div
-            key={stat.label}
-            style={{
-              padding: "0.75rem 1rem",
-              borderRight: i < 2 ? "1px solid var(--line-soft)" : "none",
-            }}
-          >
-            <div className="np-kicker" style={{ marginBottom: "0.3rem" }}>
-              {stat.label}
-            </div>
-            <div
-              style={{
-                ...SERIF,
-                fontSize: "1.6rem",
-                fontWeight: 700,
-                color: "var(--text-strong)",
-                lineHeight: 1,
-              }}
-            >
-              {stat.value}
-            </div>
-          </div>
-        ))}
-      </div>
+      <section className="poll-breakdown-line" aria-labelledby="poll-breakdown-heading">
+        <h2 id="poll-breakdown-heading" className="sr-only">Tracked poll breakdown</h2>
+        {stats.map((stat) => <span key={stat.label}><strong>{stat.value}</strong> {stat.label}</span>)}
+      </section>
 
-      {/* Polling chart */}
-      <div
-        style={{
-          border: "1px solid var(--line-soft)",
-          padding: "1rem",
-          marginBottom: "2rem",
-        }}
-      >
-        {chartData.length > 0 ? (
-          <PollingChart data={chartData} candidates={chartCandidates} />
-        ) : (
-          <p className="font-mono" style={{ fontSize: "0.65rem", color: "var(--text-soft)" }}>
-            No polling data available yet.
+      <section className="polling-takeaway" aria-labelledby="observed-evidence-heading">
+        <div className="simple-section-heading">
+          <p className="np-kicker">Observed evidence</p>
+          <h2 id="observed-evidence-heading" className="section-title">Current picture</h2>
+          <p>Switch between vote intention, head-to-head polling, and approval.</p>
+        </div>
+        <MayoralEvidence race={race} />
+      </section>
+
+      <details className="section-disclosure model-home">
+        <summary>
+          <span><strong>Election-day forecast</strong><small>Modelled projection, not a polling average</small></span>
+        </summary>
+        <div className="section-disclosure-body"><MayoralForecast race={race} /></div>
+      </details>
+
+      <figure className="poll-figure" aria-labelledby="poll-chart-title" aria-describedby="poll-chart-note">
+        <figcaption>
+          <p className="np-kicker">Trend</p>
+          <h2 id="poll-chart-title">The two comparable polls</h2>
+          <p id="poll-chart-note" className="chart-note font-mono">
+            Poll-reported vote intention · {currentFieldPollCount} like-for-like current-field {currentFieldPollCount === 1 ? "poll" : "polls"}.
           </p>
-        )}
-      </div>
-
-      {/* Candidate status */}
-      <div style={{ marginBottom: "2rem" }}>
-        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-          Candidate status &amp; polling ranges
-        </div>
-        <hr className="np-rule" />
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            border: "1px solid var(--line-soft)",
-            borderTop: "none",
-          }}
-        >
-          {(["declared", "potential", "declined"] as const).map(
-            (status, i) => (
-              <div
-                key={status}
-                style={{
-                  borderRight: i < 2 ? "1px solid var(--line-soft)" : "none",
-                  padding: "0.75rem 1rem",
-                }}
-              >
-                <div
-                  className="np-kicker"
-                  style={{ marginBottom: "0.75rem", textTransform: "capitalize" }}
-                >
-                  {status}
-                </div>
-                {(candidateStatus[status] ?? []).map((candidate, j, arr) => {
-                  const range = candidateRanges[status]?.[candidate.id];
-                  return (
-                    <div
-                      key={candidate.id}
-                      style={{
-                        paddingBottom: "0.65rem",
-                        marginBottom: "0.65rem",
-                        borderBottom:
-                          j < arr.length - 1 ? "1px solid var(--track-bg)" : "none",
-                      }}
-                    >
-                      <div
-                        style={{
-                          ...SERIF,
-                          fontSize: "0.9rem",
-                          fontWeight: 600,
-                          color: "var(--text-strong)",
-                          marginBottom: "0.2rem",
-                        }}
-                      >
-                        {candidate.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-mid)",
-                          marginBottom: "0.25rem",
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {candidate.summary}
-                      </div>
-                      <div className="font-mono" style={{ fontSize: "0.62rem", color: "var(--text-mid)" }}>
-                        {range
-                          ? `${range.min}% – ${range.max}%`
-                          : "No comparable data"}
-                      </div>
-                      {status === "declared" && (() => {
-                        const date = nominationDates.get(candidate.name.toLowerCase());
-                        return date ? (
-                          <div className="font-mono" style={{ fontSize: "0.62rem", color: "var(--text-faint)", marginTop: "0.1rem" }}>
-                            Filed {date}
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  );
-                })}
+        </figcaption>
+        {chartData.length > 0 ? (
+          <>
+            <PollingChart data={chartData} candidates={chartCandidates} events={entryEvents} />
+            <details className="data-disclosure">
+              <summary>View chart data as a table</summary>
+              <div className="table-scroll" tabIndex={0} aria-label="Current-field polling data table">
+                <table className="np-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      {chartCandidates.map((candidate) => <th key={candidate}>{candidate}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartData.map((row) => (
+                      <tr key={String(row.date)}>
+                        <td>{displayDate(String(row.date))}</td>
+                        {chartCandidates.map((candidate) => (
+                          <td key={candidate}>{Math.round(Number(row[candidate]) * 100)}%</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )
-          )}
-        </div>
-      </div>
+            </details>
+          </>
+        ) : (
+          <p className="empty-state">No current-field polling data are available yet.</p>
+        )}
+      </figure>
 
-      {/* Poll history */}
-      <div>
-        <div className="np-kicker" style={{ marginBottom: "0.4rem" }}>
-          Poll history
+      <details className="section-disclosure candidate-roster">
+        <summary><span><strong>Candidates</strong><small>{roster.featured.length} featured · {roster.remainingDeclared.length} other declared · {roster.declined.length} declined</small></span></summary>
+        <div className="section-disclosure-body">
+        <div className="featured-roster-grid" aria-label="Featured current-field candidates">
+          {roster.featured.map((candidate) => (
+            <CandidateCard
+              key={candidate.id}
+              candidate={candidate}
+              range={candidateRanges.declared?.[candidate.id]}
+              average={race.current_field.candidates[candidate.id]}
+              filed={nominationDates.get(candidate.name.toLowerCase())}
+            />
+          ))}
         </div>
-        <hr className="np-rule" />
-        <div style={{ border: "1px solid var(--line-soft)", borderTop: "none", overflowX: "auto" }}>
+
+        <p className="roster-note">Polling figures appear only for candidates tested in comparable current-field polls.</p>
+
+        {roster.remainingDeclared.length > 0 && (
+          <details className="roster-disclosure">
+            <summary>Other declared candidates <span>{roster.remainingDeclared.length}</span></summary>
+            <CandidateNameList candidates={roster.remainingDeclared} />
+          </details>
+        )}
+
+        {roster.potential.length > 0 && (
+          <details className="roster-disclosure">
+            <summary>Potential candidates <span>{roster.potential.length}</span></summary>
+            <div className="roster-list">
+              {roster.potential.map((candidate) => (
+                <CandidateCard compact key={candidate.id} candidate={candidate} range={candidateRanges.potential?.[candidate.id]} />
+              ))}
+            </div>
+          </details>
+        )}
+
+        {roster.declined.length > 0 && (
+          <details className="roster-disclosure">
+            <summary>Declined candidates <span>{roster.declined.length}</span></summary>
+            <div className="roster-list">
+              {roster.declined.map((candidate) => (
+                <CandidateCard compact key={candidate.id} candidate={candidate} range={candidateRanges.declined?.[candidate.id]} />
+              ))}
+            </div>
+          </details>
+        )}
+        </div>
+      </details>
+
+      <details className="section-disclosure poll-history">
+        <summary><span><strong>Poll archive</strong><small>All {pollHistory.length} tracked polls and how each is used</small></span></summary>
+        <div className="section-disclosure-body">
+        <p className="section-dek">
+          Excluded polls remain here because they show how the race and possible candidate fields have changed, even when they are not comparable with today’s field.
+        </p>
+        <div className="table-scroll" tabIndex={0} aria-label="Complete poll history table">
           <table className="np-table">
+            <caption>Every tracked mayoral poll and how it is used</caption>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Firm</th>
-                <th style={{ textAlign: "right" }}>Sample</th>
-                <th style={{ textAlign: "right" }}>Leading candidate</th>
-                <th style={{ textAlign: "right" }}>Model use</th>
+                <th>Sample</th>
+                <th>Leader</th>
+                <th>Use</th>
               </tr>
             </thead>
             <tbody>
-              {(pollHistory.length > 0 ? pollHistory : polls).map(
-                (poll, i) => {
-                  const candidatesMap = (
-                    "candidates" in poll ? poll.candidates : {}
-                  ) as Record<string, number>;
-                  const results = Object.entries(candidatesMap);
-                  const topCandidate: [string, number] =
-                    results.length > 0
-                      ? results.reduce((a, b) => (a[1] > b[1] ? a : b))
-                      : ["None", 0];
-                  const excluded =
-                    "excluded_from_model" in poll
-                      ? poll.excluded_from_model
-                      : false;
-                  const reason =
-                    "excluded_reason" in poll ? poll.excluded_reason : null;
+              {pollHistory.map((poll, index) => {
+                const results = Object.entries(poll.candidates ?? {});
+                const topCandidate: [string, number] = results.length > 0
+                  ? results.reduce((a, b) => (a[1] > b[1] ? a : b))
+                  : ["None", 0];
+                const date = poll.date_published;
 
-                  return (
-                    <tr key={i}>
-                      <td className="font-mono">
-                        {"date_published" in poll
-                          ? poll.date_published
-                          : poll.poll_date}
-                      </td>
-                      <td>{poll.firm}</td>
-                      <td className="font-mono" style={{ textAlign: "right" }}>
-                        {poll.sample_size}
-                      </td>
-                      <td style={{ textAlign: "right", fontWeight: 600 }}>
-                        {topCandidate[0].charAt(0).toUpperCase() +
-                          topCandidate[0].slice(1)}{" "}
-                        ({(topCandidate[1] * 100).toFixed(0)}%)
-                      </td>
-                      <td className="font-mono" style={{ textAlign: "right", fontSize: "0.65rem", color: excluded ? "var(--vuln-high-fg)" : "var(--vuln-low-line-hover)" }}>
-                        {excluded
-                          ? `Excluded${reason ? ` (${reason})` : ""}`
-                          : "Included"}
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
+                return (
+                  <tr key={poll.poll_id || `${poll.firm}-${date}-${index}`}>
+                    <td className="font-mono">{displayDate(date)}</td>
+                    <td>{poll.firm}</td>
+                    <td className="font-mono">{poll.sample_size}</td>
+                    <td>{topCandidate[0].charAt(0).toUpperCase() + topCandidate[0].slice(1)} ({Math.round(topCandidate[1] * 100)}%)</td>
+                    <td className="font-mono">{humanizePollReason(poll.use)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+      </details>
     </main>
   );
 }

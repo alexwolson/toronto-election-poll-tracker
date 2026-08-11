@@ -40,39 +40,13 @@ export default function RootLayout({
       className={`${sourceSans.variable} ${newsreader.variable} ${ibmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-
-        <header style={{ borderBottom: "1px solid var(--line-soft)" }}>
-          <div
-            style={{
-              textAlign: "center",
-              padding: "0.9rem 1rem 0.6rem",
-            }}
-          >
-            <div
-              className="font-heading"
-              style={{
-                fontSize: "clamp(1.1rem, 2.5vw, 1.9rem)",
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                color: "var(--text-strong)",
-                lineHeight: 1,
-              }}
-            >
-              Toronto Election Modelling
-            </div>
-            <div
-              className="font-mono"
-              style={{
-                fontSize: "0.58rem",
-                color: "var(--text-mid)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                marginTop: "0.3rem",
-              }}
-            >
-              Municipal Projection Desk · {monthYear}
-            </div>
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
+        <header className="site-header">
+          <div className="site-brand">
+            <div className="font-heading">Toronto Election 2026</div>
+            <div className="font-mono">Polls and Council races · {monthYear}</div>
           </div>
           <MastheadNav />
         </header>

@@ -14,6 +14,22 @@ export function isPublished(card: ForecastQuantityCard): boolean {
   return card.availability === "Forecast Available" && card.band !== null;
 }
 
+/**
+ * Render a published frequency band as a sentence unit: "about 4 in 5" →
+ * "about 4 times in 5", "less than 1 in 10" → "less than 1 time in 10"
+ * (singular for a count of one). The ADR 0006 band vocabulary stays canonical
+ * in the feed; this is display wording only, applied to every frequency line.
+ * Statements without the "N in M" shape (including the empty withheld case)
+ * pass through unchanged.
+ */
+export function frequencyWithUnit(statement: string): string {
+  return statement.replace(
+    /(\d+) in (\d+)/,
+    (_match, count: string, denominator: string) =>
+      `${count} time${count === "1" ? "" : "s"} in ${denominator}`,
+  );
+}
+
 export interface CandidateWin {
   candidateId: string;
   name: string;
@@ -32,7 +48,7 @@ function toCandidateWin(
     candidateId,
     name: candidateName(candidateId),
     band: card.band!,
-    frequencyStatement: card.frequency_statement ?? "",
+    frequencyStatement: frequencyWithUnit(card.frequency_statement ?? ""),
     probability: card.probability ?? 0,
   };
 }
@@ -65,7 +81,7 @@ export function agnosticQuantities(feed: MayoralForecastFeed): AgnosticQuantity[
     {
       key: "close_result",
       label: "Chance of a close result",
-      frequencyStatement: feed.close_result.frequency_statement ?? "",
+      frequencyStatement: frequencyWithUnit(feed.close_result.frequency_statement ?? ""),
     },
   ];
 }
@@ -88,7 +104,7 @@ export function incumbentDefeat(feed: MayoralForecastFeed): IncumbentDefeat | nu
     candidateId: id,
     name,
     label: `Chance ${name} loses to any candidate`,
-    frequencyStatement: feed.incumbent_defeat.frequency_statement ?? "",
+    frequencyStatement: frequencyWithUnit(feed.incumbent_defeat.frequency_statement ?? ""),
   };
 }
 

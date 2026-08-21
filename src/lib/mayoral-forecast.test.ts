@@ -4,6 +4,7 @@ import type { ForecastQuantityCard, MayoralForecastFeed } from "@/types/feeds";
 import {
   agnosticQuantities,
   evidenceBasisLine,
+  frequencyWithUnit,
   incumbentDefeat,
   leadForecast,
   publishedCandidateWins,
@@ -64,7 +65,7 @@ describe("lead forecast", () => {
     expect(lead!.candidateId).toBe("chow");
     expect(lead!.name).toBe("Olivia Chow");
     expect(lead!.band).toBe("70–<90%");
-    expect(lead!.frequencyStatement).toBe("about 4 in 5");
+    expect(lead!.frequencyStatement).toBe("about 4 times in 5");
   });
 
   it("is null when nothing is published", () => {
@@ -91,7 +92,7 @@ describe("incumbent defeat", () => {
     expect(d!.candidateId).toBe("chow");
     expect(d!.name).toBe("Olivia Chow");
     expect(d!.label).toBe("Chance Olivia Chow loses to any candidate");
-    expect(d!.frequencyStatement).toBe("about 1 in 5");
+    expect(d!.frequencyStatement).toBe("about 1 time in 5");
   });
 
   it("is null when its gate fails or the race is open", () => {
@@ -128,7 +129,25 @@ describe("agnostic quantities", () => {
     };
     const a = agnosticQuantities(published);
     expect(a.map((q) => q.key)).toEqual(["close_result"]);
-    expect(a[0].frequencyStatement).toBe("about 1 in 5");
+    expect(a[0].frequencyStatement).toBe("about 1 time in 5");
+  });
+});
+
+describe("frequencyWithUnit (display wording, ADR 0006 bands stay canonical)", () => {
+  it("pluralizes a count above one", () => {
+    expect(frequencyWithUnit("about 4 in 5")).toBe("about 4 times in 5");
+    expect(frequencyWithUnit("about 2 in 5")).toBe("about 2 times in 5");
+    expect(frequencyWithUnit("about 9 in 10")).toBe("about 9 times in 10");
+  });
+
+  it("uses the singular for a count of one", () => {
+    expect(frequencyWithUnit("about 1 in 5")).toBe("about 1 time in 5");
+    expect(frequencyWithUnit("less than 1 in 10")).toBe("less than 1 time in 10");
+  });
+
+  it("passes empty or non-matching statements through unchanged", () => {
+    expect(frequencyWithUnit("")).toBe("");
+    expect(frequencyWithUnit("about even")).toBe("about even");
   });
 });
 

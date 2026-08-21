@@ -4,7 +4,13 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** decomposed
+
+> Umbrella ticket. Broken into sub-tickets 02–05 (see [../spec.md](../spec.md) and
+> [../map.md](../map.md)). Work the sub-tickets, not this file. The acceptance
+> criteria below are distributed across them: candidate-history provenance +
+> direction (02), rendering + icons + dedup (03), opponent placement (04),
+> incumbent CDI component explanations (05).
 
 - [ ] Every displayed candidate-history signal names the relevant candidate or opponent and states the actual fact that caused the signal to appear; none repeats the current generic catalog sentences about “qualifying elected-office,” “Returning councillors,” or historical candidates in the abstract.
 - [ ] Each displayed candidate-history signal has an upward or downward zigzag/trend icon for historically positive or negative direction. The icon does not imply magnitude, probability, causality, or a forecast, and has an accessible text equivalent such as “positive historical signal” or “negative historical signal.”

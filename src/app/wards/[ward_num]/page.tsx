@@ -8,6 +8,7 @@ import {
   partyLabel,
   resultLabel,
 } from "@/lib/council-history";
+import { ownHistorySignals } from "@/lib/council-signals";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { CouncilCandidate, CouncilRaceCard, PastElection } from "@/types/feeds";
 
@@ -51,6 +52,25 @@ function PastElectionRow({ election }: { election: PastElection }) {
   );
 }
 
+function DirectionIcon({ direction }: { direction: "positive" | "negative" }) {
+  const positive = direction === "positive";
+  const label = positive ? "positive historical signal" : "negative historical signal";
+  // a rising (positive) or falling (negative) zigzag — direction only, no magnitude
+  const points = positive ? "2,11 6,7 9,9 14,3" : "2,3 6,7 9,5 14,11";
+  return (
+    <svg
+      className={`signal-icon signal-icon--${direction}`}
+      width="16"
+      height="14"
+      viewBox="0 0 16 14"
+      role="img"
+      aria-label={label}
+    >
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
 function CandidateItem({
   candidate,
   isIncumbent,
@@ -59,9 +79,9 @@ function CandidateItem({
   isIncumbent: boolean;
 }) {
   const history = candidate.past_elections;
-  const hints = candidate.historical_hints;
+  const signals = ownHistorySignals(candidate.historical_hints);
   const headline = historyHeadline(history, isIncumbent);
-  const expandable = history.length > 0 || hints.length > 0;
+  const expandable = history.length > 0 || signals.length > 0;
 
   const label = (
     <>
@@ -86,11 +106,19 @@ function CandidateItem({
               ))}
             </ul>
           )}
-          {hints.map((hint, i) => (
-            <p key={i} className="hint-item">
-              {hint.copy}
-            </p>
-          ))}
+          {signals.length > 0 && (
+            <div className="signal-group">
+              <p className="signal-group__note">Historical context — not a forecast</p>
+              <ul className="signal-list">
+                {signals.map((sig) => (
+                  <li key={sig.key} className={`signal signal--${sig.direction}`}>
+                    <DirectionIcon direction={sig.direction} />
+                    <span>{sig.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </details>
     </li>

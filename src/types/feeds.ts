@@ -127,6 +127,22 @@ export interface Incumbent {
   exposure_triggers: ExposureTrigger[];
 }
 
+/** Structured provenance behind a fired signal (ADR 0047 amendment / ticket 02). */
+export interface SignalSource {
+  opponent_name: string | null;
+  office_type: string | null;
+  year: number | null;
+  district_name: string | null;
+  result: "won" | "lost" | null;
+  rank: number | null;
+  field_size: number | null;
+  margin: number | null;
+  victory_count: number | null;
+  qualifying_candidacy_count: number | null;
+  /** "resolved" | "measured_zero" */
+  coverage: string;
+}
+
 export interface FiredHint {
   hint_id: string;
   subject: "own_history" | "opponent_history";
@@ -137,6 +153,9 @@ export interface FiredHint {
   ci_high_pp: number;
   effect_unit: string;
   evidence_tier: string;
+  /** "positive" | "negative" — signed historical direction (ticket 02) */
+  direction: "positive" | "negative" | "";
+  source: SignalSource | null;
 }
 
 export interface Biography {

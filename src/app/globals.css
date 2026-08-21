@@ -2739,6 +2739,41 @@ body { line-height: 1.55; }
   border-left: 2px solid var(--line-soft);
   margin: 0.4rem 0;
 }
+
+/* ── Historical-hint signals (race-specific, ticket 03) ── */
+.signal-group {
+  margin: 0.5rem 0 0.35rem;
+}
+.signal-group__note {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  margin: 0 0 0.3rem;
+}
+.signal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.signal {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  padding: 0.2rem 0;
+}
+.signal-icon {
+  flex: none;
+}
+.signal-icon--positive {
+  color: var(--vuln-low-fg);
+}
+.signal-icon--negative {
+  color: var(--vuln-high-fg);
+}
 .prior-result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));

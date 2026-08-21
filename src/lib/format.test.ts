@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatSharePct } from "./format";
+import { formatDate, formatSharePct, isoDayNumber } from "./format";
 
 describe("formatDate", () => {
   it("renders an ISO date without a timezone shift", () => {
@@ -17,5 +17,14 @@ describe("formatSharePct", () => {
   it("rounds a share to a whole percent", () => {
     expect(formatSharePct(0.4851)).toBe("49%");
     expect(formatSharePct(0.1)).toBe("10%");
+  });
+});
+
+describe("isoDayNumber", () => {
+  it("is a monotonic day count with correct spacing", () => {
+    expect(isoDayNumber("1970-01-01")).toBe(0);
+    expect(isoDayNumber("1970-01-02")).toBe(1);
+    expect(isoDayNumber("2026-08-16") - isoDayNumber("2026-07-29")).toBe(18);
+    expect(isoDayNumber("2026-01-01")).toBeGreaterThan(isoDayNumber("2025-12-31"));
   });
 });

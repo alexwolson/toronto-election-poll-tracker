@@ -17,3 +17,12 @@ export function formatDate(iso: string): string {
 export function formatSharePct(share: number): string {
   return `${Math.round(share * 100)}%`;
 }
+
+/** An ISO date as a day number (days since the Unix epoch, UTC) — a numeric
+ *  horizontal coordinate for time-series fitting. Pure (no clock access). */
+export function isoDayNumber(iso: string): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return NaN;
+  const [, y, m, d] = match;
+  return Math.round(Date.UTC(Number(y), Number(m) - 1, Number(d)) / 86_400_000);
+}

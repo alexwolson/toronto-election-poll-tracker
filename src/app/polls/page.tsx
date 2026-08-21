@@ -5,7 +5,7 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import { viableField } from "@/lib/mayoral-forecast";
-import { pollRows, pollsterRegistry } from "@/lib/polling";
+import { candidateTrends, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -19,7 +19,7 @@ export default async function PollsPage() {
   ]);
 
   const field = viableField(forecast);
-  const rows = pollRows(polling, field);
+  const trends = candidateTrends(polling, field);
   const series: ChartSeries[] = field.map((id) => {
     const meta = candidateMeta(id);
     // recharts renders SVG in the DOM, so the palette CSS variable resolves.
@@ -47,16 +47,22 @@ export default async function PollsPage() {
         )}
       </section>
 
-      {rows.length > 0 ? (
+      {polling.polls.length > 0 ? (
         <section aria-labelledby="trend-heading" style={{ margin: "1.5rem 0 2rem" }}>
           <div className="simple-section-heading">
             <p className="np-kicker">Trend</p>
             <h2 id="trend-heading" className="section-title">
               Reported share over time
             </h2>
-            <p>One point per poll. Gaps mean a candidate was not tested in that poll.</p>
+            <p>
+              Each dot is an individual poll. The curve is a{" "}
+              <strong>LOESS smoother</strong>{" "}over that candidate&rsquo;s own
+              polls — a descriptive trend, <strong>not</strong>{" "}a polling average
+              and not the forecast. A candidate tested in too few polls shows dots
+              only.
+            </p>
           </div>
-          <PollingChart rows={rows} series={series} />
+          <PollingChart trends={trends} series={series} />
         </section>
       ) : (
         <p className="forecast-unavailable">Polling data is currently unavailable.</p>

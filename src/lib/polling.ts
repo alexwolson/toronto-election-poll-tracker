@@ -3,34 +3,9 @@
  * (spec §Chart: raw current-field points, no modelled average).
  */
 
+import { isoDayNumber } from "@/lib/format";
+import { type LoessPoint, loessCurve } from "@/lib/loess";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
-
-export interface PollRow {
-  date: string;
-  poll_id: string;
-  firm: string;
-  /** each requested candidate's reported share, or null if not field-tested */
-  [candidateId: string]: string | number | null;
-}
-
-/** One chronological row per poll, each carrying the requested field's shares
- *  (null where a candidate was not tested). Candidates outside the field are
- *  omitted entirely, so the chart shows only the current race. */
-export function pollRows(feed: MayoralPollingFeed, field: string[]): PollRow[] {
-  return [...feed.polls]
-    .sort((a, b) => a.date_conducted.localeCompare(b.date_conducted))
-    .map((poll) => {
-      const row: PollRow = {
-        date: poll.date_conducted,
-        poll_id: poll.poll_id,
-        firm: poll.firm,
-      };
-      for (const id of field) {
-        row[id] = id in poll.shares ? poll.shares[id] : null;
-      }
-      return row;
-    });
-}
 
 /** The newest poll's shares, restricted to the field. */
 export function latestFieldShares(
@@ -65,4 +40,41 @@ export function pollsterRegistry(feed: MayoralPollingFeed): PollsterCount[] {
 /** Convenience re-export shape for the archive table (newest first, as fed). */
 export function pollArchive(feed: MayoralPollingFeed): Poll[] {
   return feed.polls;
+}
+
+export interface TrendMarker {
+  x: number; // fieldwork date as a day number
+  y: number; // reported share (0..1)
+  poll_id: string;
+}
+
+export interface CandidateTrend {
+  id: string;
+  /** raw poll observations for this candidate, chronological */
+  markers: TrendMarker[];
+  /** LOESS smoother over the markers, or null when there are too few to fit */
+  curve: LoessPoint[] | null;
+}
+
+/**
+ * Per-candidate trend: raw markers plus a LOESS smoother, each candidate fitted
+ * only from its own reported shares (a poll that didn't test a candidate
+ * contributes nothing — never zero-filled or inferred from another candidate).
+ */
+export function candidateTrends(
+  feed: MayoralPollingFeed,
+  field: string[],
+): CandidateTrend[] {
+  return field.map((id) => {
+    const markers: TrendMarker[] = feed.polls
+      .filter((poll) => id in poll.shares)
+      .map((poll) => ({
+        x: isoDayNumber(poll.date_conducted),
+        y: poll.shares[id],
+        poll_id: poll.poll_id,
+      }))
+      .sort((a, b) => a.x - b.x);
+    const curve = loessCurve(markers.map((m) => ({ x: m.x, y: m.y })));
+    return { id, markers, curve };
+  });
 }

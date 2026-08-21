@@ -1,42 +1,10 @@
 import { describe, expect, it } from "vitest";
 import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed } from "@/types/feeds";
-import { latestFieldShares, pollRows, pollsterRegistry } from "./polling";
+import { candidateTrends, latestFieldShares, pollsterRegistry } from "./polling";
 
 const feed = pollingFixture as unknown as MayoralPollingFeed;
 const FIELD = ["chow", "bradford", "alexander"];
-
-describe("poll rows for the chart", () => {
-  it("emits one chronological row per poll, restricted to the current field", () => {
-    const rows = pollRows(feed, FIELD);
-    // chronological: dates non-decreasing
-    for (let i = 1; i < rows.length; i++) {
-      expect(rows[i].date >= rows[i - 1].date).toBe(true);
-    }
-    const last = rows[rows.length - 1];
-    expect(last.poll_id).toBe("liaison-2026-08-16");
-    expect(last.chow).toBeCloseTo(0.4851, 4);
-    expect(last.bradford).toBeCloseTo(0.3762, 4);
-    expect(last.alexander).toBeCloseTo(0.1089, 4);
-  });
-
-  it("leaves a candidate null in polls that did not test them", () => {
-    const rows = pollRows(feed, FIELD);
-    const early = rows.find((r) => r.poll_id === "liaison-2026-07-26");
-    expect(early).toBeDefined();
-    // Alexander was not in the field for that poll.
-    expect(early!.alexander).toBeNull();
-    expect(early!.chow).toBeCloseTo(0.49, 2);
-  });
-
-  it("ignores candidates outside the requested field", () => {
-    const rows = pollRows(feed, FIELD);
-    for (const row of rows) {
-      expect("tory" in row).toBe(false);
-      expect("ford" in row).toBe(false);
-    }
-  });
-});
 
 describe("latest field shares", () => {
   it("reads the newest poll, restricted to the field", () => {
@@ -44,6 +12,39 @@ describe("latest field shares", () => {
     expect(shares.chow).toBeCloseTo(0.4851, 4);
     expect(shares.alexander).toBeCloseTo(0.1089, 4);
     expect("other" in shares).toBe(false);
+  });
+});
+
+describe("candidate trends", () => {
+  it("fits a LOESS curve per candidate from that candidate's own polls", () => {
+    const trends = candidateTrends(feed, FIELD);
+    const chow = trends.find((t) => t.id === "chow")!;
+    // markers are that candidate's polls, chronological, shares in (0,1)
+    expect(chow.markers.length).toBeGreaterThan(5);
+    for (let i = 1; i < chow.markers.length; i++) {
+      expect(chow.markers[i].x >= chow.markers[i - 1].x).toBe(true);
+    }
+    expect(chow.markers.every((m) => m.y > 0 && m.y < 1)).toBe(true);
+    // enough observations → a curve, bounded to the observed date range
+    expect(chow.curve).not.toBeNull();
+    expect(chow.curve![0].x).toBe(chow.markers[0].x);
+    expect(chow.curve![chow.curve!.length - 1].x).toBe(
+      chow.markers[chow.markers.length - 1].x,
+    );
+  });
+
+  it("leaves a thin series as markers only (no curve)", () => {
+    const alexander = candidateTrends(feed, FIELD).find((t) => t.id === "alexander")!;
+    expect(alexander.markers.length).toBeLessThan(5); // tested in only a few polls
+    expect(alexander.curve).toBeNull();
+  });
+
+  it("does not zero-fill a candidate not tested in a poll", () => {
+    const bradford = candidateTrends(feed, FIELD).find((t) => t.id === "bradford")!;
+    // every marker is a real reported share, never a 0 stand-in
+    expect(bradford.markers.every((m) => m.y > 0)).toBe(true);
+    // fewer markers than total polls, because some polls didn't test bradford
+    expect(bradford.markers.length).toBeLessThan(feed.polls.length);
   });
 });
 

@@ -8,7 +8,7 @@ import {
   partyLabel,
   resultLabel,
 } from "@/lib/council-history";
-import { ownHistorySignals } from "@/lib/council-signals";
+import { notableChallengers, ownHistorySignals } from "@/lib/council-signals";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { CouncilCandidate, CouncilRaceCard, PastElection } from "@/types/feeds";
 
@@ -129,6 +129,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
   const attention = wardAttentionLevel(card);
   const inc = card.incumbent;
   const prior = card.prior_result;
+  const challengers = notableChallengers(card);
 
   return (
     <main id="main-content" className="np-shell">
@@ -221,6 +222,24 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
               <dd>{prior.field_size}</dd>
             </div>
           </dl>
+        </section>
+      )}
+
+      {challengers.length > 0 && (
+        <section className="ward-detail-section">
+          <h2>Notable challengers</h2>
+          <p className="derived-item__label">
+            Non-incumbent candidates who have previously won elected office — historical
+            context, not a forecast.
+          </p>
+          <ul className="notable-list">
+            {challengers.map((c) => (
+              <li key={c.name}>
+                <span className="candidate-row__name">{c.name}</span> — former {c.office}{" "}
+                ({c.year})
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

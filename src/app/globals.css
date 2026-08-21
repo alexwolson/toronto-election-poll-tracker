@@ -2774,6 +2774,18 @@ body { line-height: 1.55; }
 .signal-icon--negative {
   color: var(--vuln-high-fg);
 }
+
+.notable-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+.notable-list li {
+  font-size: 0.85rem;
+  color: var(--text-mid);
+  padding: 0.22rem 0;
+  border-bottom: 1px solid var(--line-inner);
+}
 .prior-result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));

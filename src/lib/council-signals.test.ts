@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { FiredHint, SignalSource } from "@/types/feeds";
-import { ownHistorySignals } from "./council-signals";
+import councilFixture from "../../fixtures/council_race_cards.json";
+import type {
+  CouncilRaceCardsFeed,
+  FiredHint,
+  SignalSource,
+} from "@/types/feeds";
+import { notableChallengers, ownHistorySignals } from "./council-signals";
+
+const council = councilFixture as unknown as CouncilRaceCardsFeed;
 
 function source(over: Partial<SignalSource> = {}): SignalSource {
   return {
@@ -120,5 +127,32 @@ describe("ownHistorySignals", () => {
 
   it("is empty when a candidate has no own-history signals (Ahmad)", () => {
     expect(ownHistorySignals([])).toEqual([]);
+  });
+});
+
+describe("notableChallengers (race-level)", () => {
+  it("surfaces a non-incumbent former office-holder once, identified (Ward 23)", () => {
+    const dong = notableChallengers(council.wards["23"]).find(
+      (c) => c.name === "Han Dong",
+    );
+    expect(dong).toBeDefined();
+    expect(dong!.office).toBe("MP");
+    expect(dong!.year).toBeGreaterThan(2000);
+  });
+
+  it("excludes the incumbent (first-class) and all-losses challengers (Ward 20)", () => {
+    const names = notableChallengers(council.wards["20"]).map((c) => c.name);
+    // Kandavel is the incumbent; Kaid only ever lost
+    expect(names).not.toContain("Parthi Kandavel");
+    expect(names).not.toContain("Naser Kaid");
+  });
+
+  it("never lists the sitting incumbent even when they are a former office-holder", () => {
+    for (const card of Object.values(council.wards)) {
+      if (card.is_open_seat) continue;
+      expect(notableChallengers(card).map((c) => c.name)).not.toContain(
+        card.incumbent.name,
+      );
+    }
   });
 });

@@ -5,8 +5,8 @@
  * and non-predictive — no magnitude, probability, or causal claim.
  */
 
-import { ordinal } from "@/lib/council-history";
-import type { FiredHint } from "@/types/feeds";
+import { officeLabel, ordinal } from "@/lib/council-history";
+import type { CouncilRaceCard, FiredHint, PastElection } from "@/types/feeds";
 
 export interface HistorySignal {
   key: string;
@@ -94,6 +94,49 @@ export function ownHistorySignals(hints: FiredHint[]): HistorySignal[] {
     if (hint.subject !== "own_history") continue;
     const signal = explainOwnHint(hint);
     if (signal) out.push({ ...signal, direction: signal.direction ?? direction(hint) });
+  }
+  return out;
+}
+
+// ── race-level opponent history (ticket 04) ─────────────────────────────────
+
+const OFFICE_SENIORITY: Record<string, number> = {
+  mayor: 5,
+  mp: 4,
+  mpp: 3,
+  councillor: 2,
+  trustee: 1,
+};
+
+export interface NotableChallenger {
+  name: string;
+  /** e.g. "MP" — the most senior office they previously won */
+  office: string;
+  year: number;
+}
+
+/**
+ * Notable challengers, surfaced once at race level rather than as per-candidate
+ * opponent signals (ticket 04): each non-incumbent candidate who has previously
+ * *won* elected office, identified by their most senior prior win. The sitting
+ * incumbent is excluded — their record is already first-class in the incumbent
+ * section, so an opponent signal about them would merely duplicate it. Derived
+ * from each candidate's own linked history, so it is not gated by which other
+ * candidates are identity-matched.
+ */
+export function notableChallengers(card: CouncilRaceCard): NotableChallenger[] {
+  const incumbentName = card.is_open_seat ? null : card.incumbent.name;
+  const out: NotableChallenger[] = [];
+  for (const candidate of card.candidates) {
+    if (incumbentName && candidate.display_name === incumbentName) continue;
+    const wins = candidate.past_elections.filter((e) => e.result === "won");
+    if (wins.length === 0) continue;
+    const top = wins.reduce((a: PastElection, b: PastElection) =>
+      (OFFICE_SENIORITY[b.office_type] ?? 0) > (OFFICE_SENIORITY[a.office_type] ?? 0)
+        ? b
+        : a,
+    );
+    out.push({ name: candidate.display_name, office: officeLabel(top), year: top.year });
   }
   return out;
 }

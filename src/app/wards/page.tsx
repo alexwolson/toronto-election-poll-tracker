@@ -1,61 +1,39 @@
-import { Suspense } from "react";
-import { getWards } from "@/lib/council-api";
 import { WardsBrowser } from "@/components/wards-browser";
-import { getRaceStatusCounts } from "@/lib/site-view-models";
-import {
-  displayCouncilDate,
-  forecastReasonLabel,
-} from "@/lib/council-presentation";
+import { loadCouncilRaceCards } from "@/lib/feeds";
+import { indexCounts, wardIndexView } from "@/lib/council";
+
+export const metadata = {
+  title: "Council — Toronto 2026",
+  description: "The 25 ward council races, by attention.",
+};
 
 export default async function WardsPage() {
-  const data = await getWards();
-  const wards = data.wards || [];
-  const counts = getRaceStatusCounts(wards);
+  const council = await loadCouncilRaceCards();
+  const items = wardIndexView(council);
+  const counts = indexCounts(council);
 
   return (
     <main id="main-content" className="np-shell">
-      <header className="council-page-lead">
-        <div className="np-kicker">Council</div>
-        <div className="np-section-header">
-          <h1
-            className="font-heading"
-            style={{
-              fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
-              fontWeight: 700,
-              margin: 0,
-              letterSpacing: "-0.01em",
-              color: "var(--text-strong)",
-            }}
-          >
-            All Wards
-          </h1>
-          <div className="council-status-summary font-mono" aria-label={`${counts.safe} Safe, ${counts.competitive} Competitive, and ${counts.open} Open wards; ${counts.total} total`}>
-            <span><strong>{counts.safe}</strong> Safe</span>
-            <span><strong>{counts.competitive}</strong> Competitive</span>
-            <span><strong>{counts.open}</strong> Open</span>
-            <span aria-hidden="true">= {counts.total} wards</span>
-          </div>
-        </div>
-        <p className="section-dek">
-          Race status is today’s evidence assessment—not a win probability.
+      <section className="race-hero" aria-labelledby="council-heading">
+        <p className="np-kicker">Toronto council · 2026</p>
+        <h1 id="council-heading">The 25 ward races</h1>
+        {council.base_rate_note && (
+          <p className="race-hero-dek">{council.base_rate_note}</p>
+        )}
+        <p className="race-hero-meta font-mono">
+          {counts.open} open {counts.open === 1 ? "seat" : "seats"} ·{" "}
+          {counts.withTriggers} incumbents with a fired exposure trigger. No win
+          probabilities are published for council.
         </p>
-      </header>
+      </section>
 
-      <details className="council-forecast-note">
-        <summary><strong>Ward probabilities are not published</strong><span>Why?</span></summary>
-        <div>
-          <p>The site can identify exposed and open races, but the tested model has not cleared the standard required for candidate odds or Council composition. Evidence updated {displayCouncilDate(data.as_of)}.</p>
-          <ul>
-            {data.council_model.forecast.unavailable_reasons.map((reason) => (
-              <li key={reason}>{forecastReasonLabel(reason)}</li>
-            ))}
-          </ul>
-        </div>
-      </details>
-
-      <Suspense>
-        <WardsBrowser wards={wards} />
-      </Suspense>
+      <section aria-label="Ward races">
+        {items.length > 0 ? (
+          <WardsBrowser items={items} />
+        ) : (
+          <p className="forecast-unavailable">Council data is currently unavailable.</p>
+        )}
+      </section>
     </main>
   );
 }

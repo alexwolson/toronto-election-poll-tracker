@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { href: "/", label: "Mayor" },
   { href: "/polls", label: "Polls" },
   { href: "/wards", label: "Council" },
-  { href: "/sources", label: "About" },
+  { href: "/how-it-works", label: "How it works" },
 ];
 
 export function MastheadNav() {

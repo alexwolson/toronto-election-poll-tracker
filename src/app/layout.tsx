@@ -22,7 +22,7 @@ const ibmMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Toronto 2026 Elections",
-  description: "Ward-level council race projections and mayoral polling",
+  description: "A mayoral forecast, the polls behind it, and the 25 council races.",
 };
 
 export default function RootLayout({
@@ -40,13 +40,14 @@ export default function RootLayout({
       className={`${sourceSans.variable} ${newsreader.variable} ${ibmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <div className="site-bg" aria-hidden="true" />
         <a className="skip-link" href="#main-content">
           Skip to main content
         </a>
         <header className="site-header">
           <div className="site-brand">
             <div className="font-heading">Toronto Election 2026</div>
-            <div className="font-mono">Polls and Council races · {monthYear}</div>
+            <div className="font-mono">Mayoral forecast · Polls · Council · {monthYear}</div>
           </div>
           <MastheadNav />
         </header>

@@ -31,18 +31,32 @@ export function officeLabel(election: PastElection): string {
   }
 }
 
-/** Shorten common party names; null for non-partisan (municipal) races. */
+// Exact canonical party name -> concise public label. Exact matching only, so an
+// unrelated party whose name merely contains "Liberal"/"Green"/etc. is never
+// collapsed. Unknown parties keep their canonical name; non-partisan races (empty
+// party) get no label.
+const PARTY_LABELS: Record<string, string> = {
+  // Federal
+  "Conservative Party of Canada": "Conservative",
+  "Liberal Party of Canada": "Liberal",
+  "New Democratic Party": "NDP",
+  "Green Party of Canada": "Green",
+  "People's Party - PPC": "PPC",
+  "People's Party of Canada": "PPC",
+  // Ontario
+  "Progressive Conservative Party of Ontario": "PC",
+  "Ontario Liberal Party": "Liberal",
+  "New Democratic Party of Ontario": "NDP",
+  "Green Party of Ontario": "Green",
+  "New Blue Party of Ontario": "New Blue",
+  "Ontario Party": "Ontario Party",
+};
+
+/** Concise public party label by exact canonical name; the canonical name itself
+ *  for parties without an approved label; null for non-partisan (municipal). */
 export function partyLabel(party: string | null): string | null {
   if (!party) return null;
-  const p = party.toLowerCase();
-  if (p.includes("progressive conservative")) return "PC";
-  if (p.includes("liberal")) return "Liberal";
-  if (p.includes("new democratic") || p.includes("ndp")) return "NDP";
-  if (p.includes("green")) return "Green";
-  if (p.includes("people's") || p.includes("peoples")) return "PPC";
-  if (p.includes("bloc")) return "Bloc";
-  if (p.includes("conservative")) return "Conservative";
-  return party;
+  return PARTY_LABELS[party] ?? party;
 }
 
 export function ordinal(n: number): string {

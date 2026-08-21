@@ -34,11 +34,32 @@ describe("officeLabel", () => {
 });
 
 describe("partyLabel", () => {
-  it("shortens common party names, drops non-partisan", () => {
+  it("normalizes federal parties to their public labels", () => {
+    expect(partyLabel("Conservative Party of Canada")).toBe("Conservative");
     expect(partyLabel("Liberal Party of Canada")).toBe("Liberal");
-    expect(partyLabel("Ontario Liberal Party")).toBe("Liberal");
-    expect(partyLabel("Progressive Conservative Party of Ontario")).toBe("PC");
     expect(partyLabel("New Democratic Party")).toBe("NDP");
+    expect(partyLabel("Green Party of Canada")).toBe("Green");
+    expect(partyLabel("People's Party - PPC")).toBe("PPC");
+  });
+
+  it("normalizes Ontario parties to their public labels", () => {
+    expect(partyLabel("Progressive Conservative Party of Ontario")).toBe("PC");
+    expect(partyLabel("Ontario Liberal Party")).toBe("Liberal");
+    expect(partyLabel("New Democratic Party of Ontario")).toBe("NDP");
+    expect(partyLabel("Green Party of Ontario")).toBe("Green");
+    expect(partyLabel("New Blue Party of Ontario")).toBe("New Blue");
+    expect(partyLabel("Ontario Party")).toBe("Ontario Party");
+  });
+
+  it("uses exact matching — never collapses an unrelated party by substring", () => {
+    expect(partyLabel("Christian Heritage Liberal Party")).toBe(
+      "Christian Heritage Liberal Party",
+    );
+    expect(partyLabel("People's Voice")).toBe("People's Voice");
+  });
+
+  it("keeps an unknown party's canonical name and drops non-partisan races", () => {
+    expect(partyLabel("Some Independent Party")).toBe("Some Independent Party");
     expect(partyLabel(null)).toBeNull();
     expect(partyLabel("")).toBeNull();
   });

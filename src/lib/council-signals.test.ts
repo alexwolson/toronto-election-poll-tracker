@@ -48,29 +48,20 @@ function hint(over: Partial<FiredHint>): FiredHint {
   };
 }
 
-const GENERIC = /qualifying elected-office|received more council vote share/;
-
 describe("ownHistorySignals", () => {
-  it("explains the binary all-past-races victory hint from complete history", () => {
+  it("reads a prior win as a condition plus direction, without a count", () => {
     const [sig] = ownHistorySignals([
       hint({
         hint_id: "own_any_all_past_race_victory__non_incumbent_non_returning",
         direction: "positive",
-        source: source({
-          office_type: "trustee",
-          year: 2022,
-          result: "won",
-          victory_count: 2,
-          qualifying_candidacy_count: 3,
-        }),
+        source: source({ victory_count: 2, qualifying_candidacy_count: 3 }),
       }),
     ]);
     expect(sig.direction).toBe("positive");
-    expect(sig.text).toBe("Won 2 of 3 previous races.");
-    expect(sig.text).not.toMatch(GENERIC);
+    expect(sig.text).toBe("Won a previous election, which helps.");
   });
 
-  it("combines the any-history and multiple-races flags into one count", () => {
+  it("omits the generic all-history race-count hints", () => {
     const signals = ownHistorySignals([
       hint({
         hint_id: "own_any_all_past_race__non_incumbent_non_returning",
@@ -81,23 +72,15 @@ describe("ownHistorySignals", () => {
         source: source({ qualifying_candidacy_count: 3 }),
       }),
     ]);
-    expect(signals).toHaveLength(1);
-    expect(signals[0].text).toBe("Has run in 3 previous races.");
+    expect(signals).toEqual([]);
   });
 
-  it("does not invent a positive/negative cutoff for a continuous recent margin", () => {
+  it("does not surface the continuous recent-margin row", () => {
     const signals = ownHistorySignals([
       hint({
         hint_id: "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
         direction: "negative",
-        source: source({
-          office_type: "trustee",
-          year: 2022,
-          result: "lost",
-          rank: 7,
-          field_size: 8,
-          margin: -0.26,
-        }),
+        source: source({ result: "lost", margin: -0.26 }),
       }),
     ]);
     expect(signals).toEqual([]);
@@ -119,111 +102,82 @@ describe("ownHistorySignals", () => {
     expect(signals).toEqual([]);
   });
 
-  it("collapses Neemuchwala's sole MPP race into one non-contradictory fact", () => {
+  it("renders the named-office and returning-councillor conditions with direction", () => {
     const signals = ownHistorySignals([
-      hint({
-        hint_id: "own_any_all_past_race__non_incumbent_non_returning",
-        source: source({ qualifying_candidacy_count: 1 }),
-      }),
+      hint({ hint_id: "own_returning_councillor__open_contest", direction: "positive" }),
+      hint({ hint_id: "own_prior_win_type__trustee", direction: "positive" }),
       hint({
         hint_id: "own_prior_mpp_race__non_incumbent_non_returning",
-        source: source({
-          office_type: "mpp",
-          year: 2022,
-          result: "lost",
-          rank: 3,
-          field_size: 6,
-          margin: -0.28,
-          qualifying_candidacy_count: 1,
-        }),
-      }),
-      hint({
-        hint_id: "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
-        direction: "negative",
-        source: source({
-          office_type: "mpp",
-          year: 2022,
-          result: "lost",
-          rank: 3,
-          field_size: 6,
-          margin: -0.28,
-          qualifying_candidacy_count: 1,
-        }),
-      }),
-    ]);
-    expect(signals).toEqual([
-      expect.objectContaining({
         direction: "positive",
-        text: "Previously 3rd of 6 in the 2022 MPP race, about 28 points behind.",
-      }),
-    ]);
-  });
-
-  it("treats Rupasinghe's close runner-up result as history, not a negative verdict", () => {
-    const signals = ownHistorySignals([
-      hint({
-        hint_id: "own_multiple_all_past_races__non_incumbent_non_returning",
-        source: source({ qualifying_candidacy_count: 2 }),
-      }),
-      hint({
-        hint_id: "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
-        direction: "negative",
-        source: source({
-          office_type: "councillor",
-          year: 2023,
-          result: "lost",
-          rank: 2,
-          field_size: 23,
-          margin: -0.05,
-        }),
-      }),
-    ]);
-    expect(signals).toEqual([
-      expect.objectContaining({
-        direction: "positive",
-        text: "Has run in 2 previous races.",
-      }),
-    ]);
-  });
-
-  it("renders the named-office and Returning-councillor flags plainly", () => {
-    const signals = ownHistorySignals([
-      hint({ hint_id: "own_returning_councillor__open_contest" }),
-      hint({ hint_id: "own_prior_win_type__trustee" }),
-      hint({
-        hint_id: "own_prior_mpp_race__non_incumbent_non_returning",
         source: source({ office_type: "mpp", year: 2022, result: "lost" }),
       }),
     ]);
     expect(signals.map((signal) => signal.text)).toEqual([
-      "Previously served as a Toronto councillor.",
-      "Previously elected as a school-board trustee.",
-      "Previously ran in the 2022 MPP race.",
+      "Previously served as a Toronto councillor, which helps.",
+      "Previously elected as a school-board trustee, which helps.",
+      "Previously ran for MPP, which helps.",
     ]);
   });
 
-  it("ignores every retired all-but-council hint", () => {
-    const sigs = ownHistorySignals([
+  it("Stella Kargiannakis (Ward 21): a prior MPP loss reads as the tested condition, which helps", () => {
+    // Her MPP races were losses, but the approved hint's supplied direction is
+    // positive: the card names the condition + direction, never presenting the
+    // loss as positive evidence. The specific result stays in her chronological
+    // history list, and the generic race-count hints are omitted.
+    const signals = ownHistorySignals([
       hint({
-        hint_id: "own_prior_elected_victory_count",
-        direction: "negative",
+        hint_id: "own_any_all_past_race__non_incumbent_non_returning",
+        source: source({ qualifying_candidacy_count: 6 }),
       }),
-      hint({ hint_id: "own_most_recent_prior_elected_margin" }),
-      hint({ hint_id: "own_any_prior_elected_office__open_contest" }),
+      hint({
+        hint_id: "own_multiple_all_past_races__non_incumbent_non_returning",
+        source: source({ qualifying_candidacy_count: 6 }),
+      }),
+      hint({
+        hint_id: "own_prior_mpp_race__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({
+          office_type: "mpp",
+          year: 2022,
+          result: "lost",
+          rank: 3,
+          field_size: 6,
+          margin: -0.28,
+        }),
+      }),
     ]);
-    expect(sigs).toEqual([]);
+    expect(signals.map((signal) => signal.text)).toEqual([
+      "Previously ran for MPP, which helps.",
+    ]);
+    expect(signals[0].text).not.toMatch(/behind|3rd|lost/);
   });
 
-  it("names the trustee office and reads positive", () => {
-    const [sig] = ownHistorySignals([
+  it("states only the trustee condition when the sole win is the trustee race", () => {
+    const signals = ownHistorySignals([
       hint({ hint_id: "own_prior_win_type__trustee", direction: "positive" }),
+      hint({
+        hint_id: "own_any_all_past_race_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ victory_count: 1, qualifying_candidacy_count: 1 }),
+      }),
     ]);
-    expect(sig.direction).toBe("positive");
-    expect(sig.text).toContain("school-board trustee");
+    expect(signals.map((signal) => signal.text)).toEqual([
+      "Previously elected as a school-board trustee, which helps.",
+    ]);
   });
 
-  it("drops opponent and unknown hints from candidate cards", () => {
+  it("carries a negative direction through the wording", () => {
+    const [sig] = ownHistorySignals([
+      hint({ hint_id: "own_prior_win_type__trustee", direction: "negative" }),
+    ]);
+    expect(sig.direction).toBe("negative");
+    expect(sig.text).toBe("Previously elected as a school-board trustee, which hurts.");
+  });
+
+  it("ignores retired all-but-council hints and opponent hints", () => {
     const sigs = ownHistorySignals([
+      hint({ hint_id: "own_prior_elected_victory_count", direction: "negative" }),
+      hint({ hint_id: "own_any_prior_elected_office__open_contest" }),
       hint({
         hint_id: "opponent_strongest_prior_elected_margin",
         subject: "opponent_history",

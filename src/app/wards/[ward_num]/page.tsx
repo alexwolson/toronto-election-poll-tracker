@@ -112,7 +112,6 @@ function CandidateItem({
           )}
           {signals.length > 0 && (
             <div className="signal-group">
-              <p className="signal-group__note">Historical context — not a forecast</p>
               <ul className="signal-list">
                 {signals.map((sig) => (
                   <li key={sig.key} className={`signal signal--${sig.direction}`}>
@@ -186,16 +185,13 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
           {exposureFacts.length > 0 && (
             <>
               <p className="derived-item__label" style={{ marginTop: "1rem" }}>
-                Why this race draws attention — historical context, not a forecast
+                Why this race draws attention
               </p>
               <ul className="trigger-list">
                 {exposureFacts.map((f) => (
                   <li key={f.key}>{f.text}</li>
                 ))}
               </ul>
-              <p className="signal-group__note" style={{ marginTop: "0.45rem" }}>
-                Council Defeatability Index by Matt Elliott · City Hall Watcher
-              </p>
             </>
           )}
         </section>
@@ -237,8 +233,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
         <section className="ward-detail-section">
           <h2>Notable challengers</h2>
           <p className="derived-item__label">
-            Non-incumbent candidates who have previously won elected office — historical
-            context, not a forecast.
+            Non-incumbent candidates who have previously won elected office.
           </p>
           <ul className="notable-list">
             {challengers.map((c) => (

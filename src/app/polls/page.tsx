@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { PollArchive } from "@/components/poll-archive";
 import { PollingChart, type ChartSeries } from "@/components/polling-chart";
 import { candidateMeta, candidateName } from "@/lib/candidates";
@@ -35,9 +34,6 @@ export default async function PollsPage() {
         <h1 id="polls-heading">The polls</h1>
         <p className="race-hero-dek">
           Every public poll of the current field, shown as individual readings.
-          These are raw polls — <strong>not</strong> a modelled average, and not
-          the forecast. The <Link href="/" className="text-link">forecast</Link>{" "}
-          weighs the full record.
         </p>
         {latest && (
           <p className="race-hero-meta font-mono">
@@ -54,13 +50,6 @@ export default async function PollsPage() {
             <h2 id="trend-heading" className="section-title">
               Reported share over time
             </h2>
-            <p>
-              Each dot is an individual poll. The curve is a{" "}
-              <strong>LOESS smoother</strong>{" "}over that candidate&rsquo;s own
-              polls — a descriptive trend, <strong>not</strong>{" "}a polling average
-              and not the forecast. A candidate tested in too few polls shows dots
-              only.
-            </p>
           </div>
           <PollingChart trends={trends} series={series} />
         </section>

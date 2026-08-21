@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { ForecastHero } from "@/components/forecast-hero";
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import { loadCouncilRaceCards, loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
+import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, formatSharePct } from "@/lib/format";
 import { viableField } from "@/lib/mayoral-forecast";
-import { indexCounts } from "@/lib/council";
 import { latestFieldShares } from "@/lib/polling";
 
 export default async function Home() {
-  const [forecast, polling, council] = await Promise.all([
+  const [forecast, polling] = await Promise.all([
     loadMayoralForecast(),
     loadMayoralPolling(),
-    loadCouncilRaceCards(),
   ]);
 
   const field = viableField(forecast);
@@ -20,7 +18,6 @@ export default async function Home() {
     .filter((id) => id in shares)
     .sort((a, b) => shares[b] - shares[a]);
   const latest = polling.latest;
-  const counts = indexCounts(council);
 
   return (
     <main id="main-content" className="np-shell">
@@ -33,10 +30,6 @@ export default async function Home() {
             <h2 id="poll-snapshot-heading" className="section-title">
               Where the polls stand
             </h2>
-            <p>
-              Most recent reading — {latest.firm}, fieldwork {formatDate(latest.date_conducted)}.
-              The forecast above weighs the full polling record, not this one poll.
-            </p>
           </div>
           <div className="poll-snapshot" aria-label="Latest poll shares">
             {ranked.map((id) => {
@@ -60,6 +53,9 @@ export default async function Home() {
               );
             })}
           </div>
+          <p className="race-hero-meta font-mono">
+            {latest.firm} · {formatDate(latest.date_conducted)}
+          </p>
           <Link href="/polls" className="text-link">
             View every poll and the trend →
           </Link>
@@ -72,11 +68,6 @@ export default async function Home() {
           <h2 id="council-entry-heading" className="section-title">
             The 25 ward races
           </h2>
-          <p>
-            {counts.open} open {counts.open === 1 ? "seat" : "seats"} and{" "}
-            {counts.withTriggers} incumbents with elevated exposure. Council is
-            assessed on attention markers, not win probabilities.
-          </p>
         </div>
         <Link href="/wards" className="text-link">
           Browse the ward races →

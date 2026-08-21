@@ -1,7 +1,6 @@
 import { candidateMeta } from "@/lib/candidates";
 import {
   agnosticQuantities,
-  evidenceBasisLine,
   incumbentDefeat,
   leadForecast,
   publishedCandidateWins,
@@ -19,7 +18,6 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
   const lead = leadForecast(feed);
   const agnostic = agnosticQuantities(feed);
   const defeat = incumbentDefeat(feed);
-  const basis = evidenceBasisLine(feed.evidence_tier);
 
   if (!lead) {
     return (
@@ -41,11 +39,7 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
     <>
       <section className="forecast-lead" aria-labelledby="forecast-heading">
         <p className="np-kicker">Toronto mayor · 2026 forecast</p>
-        <h1 id="forecast-heading">
-          {lead.name} is favoured to win —{" "}
-          <span className="lead-freq">{lead.frequencyStatement}</span>
-        </h1>
-        <p className="evidence-basis">{basis}</p>
+        <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
       </section>
 
       <section aria-label="Chance of winning, by candidate">
@@ -61,7 +55,7 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
                   />
                   <h3 className="band-card__name">{win.name}</h3>
                 </div>
-                <div className="band-card__freq">{win.frequencyStatement}</div>
+                <div className="band-card__freq">Wins {win.frequencyStatement}</div>
                 {defeat && defeat.candidateId === win.candidateId && (
                   <p className="band-card__defeat">
                     <span className="band-card__defeat-label">{defeat.label}</span>

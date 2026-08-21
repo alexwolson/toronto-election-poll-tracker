@@ -80,13 +80,13 @@ export function loadMayoralPolling(): Promise<MayoralPollingFeed> {
 // ── council race cards ──────────────────────────────────────────────────────
 
 const COUNCIL_FALLBACK: CouncilRaceCardsFeed = {
-  schema_version: 3,
+  schema_version: 5,
   base_rate_note: "",
   wards: {},
 };
 
 function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 3) return null;
+  if (!isRecord(value) || value.schema_version !== 5) return null;
   if (!isRecord(value.wards)) return null;
   return value as unknown as CouncilRaceCardsFeed;
 }

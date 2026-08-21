@@ -10,8 +10,8 @@ import {
 } from "@/lib/council-history";
 import {
   incumbentExposureFacts,
-  notableChallengers,
   ownHistorySignals,
+  raceHistorySignals,
 } from "@/lib/council-signals";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { CouncilCandidate, CouncilRaceCard, PastElection } from "@/types/feeds";
@@ -132,8 +132,8 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
   const attention = wardAttentionLevel(card);
   const inc = card.incumbent;
   const prior = card.prior_result;
-  const challengers = notableChallengers(card);
   const exposureFacts = incumbentExposureFacts(card);
+  const raceSignals = raceHistorySignals(card);
 
   return (
     <main id="main-content" className="np-shell">
@@ -229,25 +229,18 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
         </section>
       )}
 
-      {challengers.length > 0 && (
-        <section className="ward-detail-section">
-          <h2>Notable challengers</h2>
-          <p className="derived-item__label">
-            Non-incumbent candidates who have previously won elected office.
-          </p>
-          <ul className="notable-list">
-            {challengers.map((c) => (
-              <li key={c.name}>
-                <span className="candidate-row__name">{c.name}</span> — former {c.office}{" "}
-                ({c.year})
+      <section className="ward-detail-section">
+        <h2>The 2026 field ({card.candidates.length})</h2>
+        {raceSignals.length > 0 && (
+          <ul className="signal-list" style={{ marginBottom: "0.75rem" }}>
+            {raceSignals.map((sig) => (
+              <li key={sig.key} className={`signal signal--${sig.direction}`}>
+                <DirectionIcon direction={sig.direction} />
+                <span>{sig.text}</span>
               </li>
             ))}
           </ul>
-        </section>
-      )}
-
-      <section className="ward-detail-section">
-        <h2>The 2026 field ({card.candidates.length})</h2>
+        )}
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {card.candidates.map((c) => (
             <CandidateItem

@@ -40,18 +40,21 @@ describe("methodology content", () => {
   });
 
   it("records both published and independently withheld evidence examples", () => {
-    expect(hintAuditSnapshot.tested).toBe(34);
-    expect(hintAuditSnapshot.published).toBe(2);
-    expect(hintAuditSnapshot.diagnosticTested).toBe(18);
-    expect(hintAuditSnapshot.diagnosticCleared).toBe(7);
-    expect(hintAuditSnapshot.contractVersion).toBe("2.0.0");
+    expect(hintAuditSnapshot.tested).toBe(35);
+    expect(hintAuditSnapshot.published).toBe(12);
+    expect(hintAuditSnapshot.diagnosticTested).toBe(21);
+    expect(hintAuditSnapshot.diagnosticCleared).toBe(10);
+    expect(hintAuditSnapshot.contractVersion).toBe("2.1.0");
     expect(hintAuditSnapshot.primaryYears).toEqual([2010, 2014, 2022]);
-    expect(hintEvidenceExamples.filter((item) => item.status === "published")).toHaveLength(2);
+    expect(hintEvidenceExamples.filter((item) => item.status === "published")).toHaveLength(5);
     expect(hintEvidenceExamples.filter((item) => item.status === "withheld")).toHaveLength(3);
     expect(hintEvidenceExamples.map((item) => item.title)).toEqual(
       expect.arrayContaining([
         "Previously elected trustee",
         "Won at least one previous race",
+        "Previous race experience",
+        "An unsuccessful council run",
+        "A former councillor in an open race",
         "Previously elected MP",
         "Each additional previous victory",
         "Two or more unsuccessful council runs",
@@ -106,9 +109,10 @@ describe("How It Works rendering", () => {
     expect(html).toContain("11%");
     expect(html).toContain("8,869");
     expect(html).toContain("123-vote winning margin");
-    expect(html).toContain("tested 34 candidate-facing flag definitions");
-    expect(html).toContain("<strong>2</strong><span>currently published</span>");
-    expect(html).toContain("contract 2.0.0");
+    expect(html).toContain("tested 35 candidate-facing flag definitions");
+    expect(html).toContain("<strong>12</strong><span>currently published</span>");
+    expect(html).toContain("contract 2.1.0");
+    expect(html).toContain("current 12-flag catalog");
     expect(html).toContain("Methodology reviewed");
     expect(html).not.toMatch(/ADR \d|M3|historical_hint_contract|feed schema/i);
   });

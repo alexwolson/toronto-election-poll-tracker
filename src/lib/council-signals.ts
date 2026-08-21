@@ -5,9 +5,9 @@
  * and non-predictive — no magnitude, probability, or causal claim.
  */
 
-import { officeLabel, ordinal } from "@/lib/council-history";
 import { formatSharePct } from "@/lib/format";
-import type { CouncilRaceCard, FiredHint, PastElection } from "@/types/feeds";
+import { ordinal } from "@/lib/council-history";
+import type { CouncilRaceCard, FiredHint, SignalSource } from "@/types/feeds";
 
 function withCommas(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -19,129 +19,155 @@ export interface HistorySignal {
   direction: "positive" | "negative";
 }
 
-function signalOfficeLabel(officeType: string | null): string {
-  switch (officeType) {
-    case "mp":
-      return "MP";
-    case "mpp":
-      return "MPP";
-    case "councillor":
-      return "councillor";
-    case "mayor":
-      return "mayor";
-    case "trustee":
-      return "school-board trustee";
-    default:
-      return "elected office";
-  }
-}
-
 function direction(hint: FiredHint): "positive" | "negative" {
   return hint.direction === "positive" ? "positive" : "negative";
 }
 
-function explainOwnHint(hint: FiredHint): HistorySignal | null {
-  const s = hint.source;
-  const key = hint.hint_id;
-  switch (hint.hint_id) {
-    // The "has held office before" fact is already visible in the "Former X"
-    // headline and the past-races list — omit it rather than restate it.
-    case "own_any_prior_elected_office__open_contest":
-      return null;
-
-    case "own_prior_win_type__trustee":
-      return { key, direction: "positive", text: "Previously elected as a school-board trustee." };
-
-    case "own_most_recent_prior_elected_margin": {
-      if (!s) return null;
-      const office = signalOfficeLabel(s.office_type);
-      const when = s.year ? ` — ${s.year} ${office}` : "";
-      if (s.result === "won") {
-        return { key, direction: "positive", text: `Won their most recent race${when}.` };
-      }
-      const place =
-        s.rank && s.field_size ? `${ordinal(s.rank)} of ${s.field_size}` : "a loss";
-      const behind =
-        s.margin != null && s.margin < 0
-          ? `, ~${Math.round(Math.abs(s.margin) * 100)} points behind`
-          : "";
-      return { key, direction: "negative", text: `Most recent race: ${place}${when}${behind}.` };
-    }
-
-    case "own_prior_elected_victory_count": {
-      const wins = s?.victory_count ?? 0;
-      if (wins >= 1) {
-        return {
-          key,
-          direction: "positive",
-          text: `Won elected office ${wins} ${wins === 1 ? "time" : "times"} before.`,
-        };
-      }
-      const races = s?.qualifying_candidacy_count ?? 0;
-      return {
-        key,
-        direction: "negative",
-        text: `No wins in ${races} prior elected ${races === 1 ? "race" : "races"}.`,
-      };
-    }
-
+function officeName(office: string | null): string {
+  switch (office) {
+    case "councillor":
+      return "council";
+    case "trustee":
+      return "school-board trustee";
+    case "mpp":
+      return "MPP";
+    case "mp":
+      return "MP";
+    case "mayor":
+      return "mayoral";
     default:
-      return null;
+      return office ?? "election";
   }
 }
 
-/** Own-history signals for a candidate, as specific explanations with a signed
- *  direction. Opponent signals (subject "opponent_history") are placed at race
- *  level by ticket 04, not here. */
-export function ownHistorySignals(hints: FiredHint[]): HistorySignal[] {
-  const out: HistorySignal[] = [];
-  for (const hint of hints) {
-    if (hint.subject !== "own_history") continue;
-    const signal = explainOwnHint(hint);
-    if (signal) out.push({ ...signal, direction: signal.direction ?? direction(hint) });
+function describeRace(source: SignalSource | null): string | null {
+  if (!source || source.year == null || source.office_type == null) return null;
+  const office = officeName(source.office_type);
+  const district = source.district_name ? ` in ${source.district_name}` : "";
+  const points = source.margin == null ? null : Math.round(Math.abs(source.margin) * 100);
+  if (source.result === "won") {
+    const margin = points != null ? ` by about ${points} points` : "";
+    return `won the ${source.year} ${office} race${district}${margin}`;
   }
+  const place =
+    source.rank != null && source.field_size != null
+      ? `${ordinal(source.rank)} of ${source.field_size} in `
+      : "ran in ";
+  const margin = points != null ? `, about ${points} points behind` : "";
+  return `${place}the ${source.year} ${office} race${district}${margin}`;
+}
+
+function historyCountSignal(hint: FiredHint): HistorySignal {
+  const races = hint.source?.qualifying_candidacy_count;
+  return {
+    key: hint.hint_id,
+    direction: direction(hint),
+    text:
+      races != null
+        ? `Has run in ${races} previous ${races === 1 ? "race" : "races"}.`
+        : "Has previous election experience.",
+  };
+}
+
+/** Own-history findings for one candidate. Overlapping catalog rows are composed
+ * into one reader-facing fact where they describe the same visible race history;
+ * both sides of the required prior-council-loss comparison remain separate. */
+export function ownHistorySignals(hints: FiredHint[]): HistorySignal[] {
+  const own = new Map(
+    hints.filter((hint) => hint.subject === "own_history").map((hint) => [hint.hint_id, hint]),
+  );
+  const out: HistorySignal[] = [];
+
+  const returning = own.get("own_returning_councillor__open_contest");
+  if (returning) {
+    out.push({
+      key: returning.hint_id,
+      direction: direction(returning),
+      text: "Previously served as a Toronto councillor.",
+    });
+  }
+
+  const trustee = own.get("own_prior_win_type__trustee");
+  if (trustee) {
+    out.push({
+      key: trustee.hint_id,
+      direction: direction(trustee),
+      text: "Previously elected as a school-board trustee.",
+    });
+  }
+
+  const priorWin = own.get(
+    "own_any_all_past_race_victory__non_incumbent_non_returning",
+  );
+  const multiple = own.get("own_multiple_all_past_races__non_incumbent_non_returning");
+  const anyRace = own.get("own_any_all_past_race__non_incumbent_non_returning");
+  const mpp = own.get("own_prior_mpp_race__non_incumbent_non_returning");
+  const historyHint = multiple ?? anyRace;
+  const raceCount =
+    priorWin?.source?.qualifying_candidacy_count ??
+    historyHint?.source?.qualifying_candidacy_count;
+  const soleNamedOfficeRace = raceCount === 1 && Boolean(trustee || mpp);
+
+  if (priorWin && !(raceCount === 1 && trustee)) {
+    const wins = priorWin.source?.victory_count;
+    const races = priorWin.source?.qualifying_candidacy_count;
+    out.push({
+      key: priorWin.hint_id,
+      direction: direction(priorWin),
+      text:
+        wins != null && races != null
+          ? `Won ${wins} of ${races} previous ${races === 1 ? "race" : "races"}.`
+          : "Won at least one previous race.",
+    });
+  }
+
+  // A win count already includes the total number of races. A sole MPP or
+  // trustee race is also better expressed through its more specific finding.
+  if (!priorWin && !soleNamedOfficeRace) {
+    if (multiple) out.push(historyCountSignal(multiple));
+    else if (anyRace) out.push(historyCountSignal(anyRace));
+  }
+
+  if (mpp) {
+    const race = describeRace(mpp.source);
+    out.push({
+      key: mpp.hint_id,
+      direction: direction(mpp),
+      text: race ? `Previously ${race}.` : "Previously ran for MPP.",
+    });
+  }
+
+  // Continuous recent-margin rows have no evidence-backed candidate-level
+  // positive/negative cutoff. Their underlying result is already visible in the
+  // history list, so do not manufacture an arrow. The paired unsuccessful-
+  // council-run comparison is retained in the feed but intentionally omitted
+  // from candidate cards at the editor's request.
+
   return out;
 }
 
-// ── race-level opponent history (ticket 04) ─────────────────────────────────
-
-const OFFICE_SENIORITY: Record<string, number> = {
-  mayor: 5,
-  mp: 4,
-  mpp: 3,
-  councillor: 2,
-  trustee: 1,
-};
-
-export interface NotableChallenger {
-  name: string;
-  /** e.g. "MP" — the most senior office they previously won */
-  office: string;
-  year: number;
-}
-
-/**
- * Notable challengers, surfaced once at race level rather than as per-candidate
- * opponent signals (ticket 04): each non-incumbent candidate who has previously
- * *won* elected office, identified by their most senior prior win. The sitting
- * incumbent is excluded — their record is already first-class in the incumbent
- * section, so an opponent signal about them would merely duplicate it. Derived
- * from each candidate's own linked history, so it is not gated by which other
- * candidates are identity-matched.
- */
-export function notableChallengers(card: CouncilRaceCard): NotableChallenger[] {
-  const incumbentName = card.is_open_seat ? null : card.incumbent.name;
-  const out: NotableChallenger[] = [];
+/** Opponent-history findings are ward facts. Deduplicate them across candidates
+ * and show each once instead of repeating the same opponent under every card. */
+export function raceHistorySignals(card: CouncilRaceCard): HistorySignal[] {
+  const out: HistorySignal[] = [];
+  const seen = new Set<string>();
   for (const candidate of card.candidates) {
-    if (incumbentName && candidate.display_name === incumbentName) continue;
-    const wins = candidate.past_elections.filter((e) => e.result === "won");
-    if (wins.length === 0) continue;
-    const top = wins.reduce((a: PastElection, b: PastElection) =>
-      (OFFICE_SENIORITY[b.office_type] ?? 0) > (OFFICE_SENIORITY[a.office_type] ?? 0)
-        ? b
-        : a,
-    );
-    out.push({ name: candidate.display_name, office: officeLabel(top), year: top.year });
+    for (const hint of candidate.historical_hints) {
+      if (hint.subject !== "opponent_history") continue;
+      const source = hint.source;
+      const key = `${hint.hint_id}:${source?.opponent_name ?? ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      if (hint.hint_id === "opponent_returning_councillor__open_contest") {
+        if (!source?.opponent_name) continue;
+        out.push({
+          key,
+          direction: direction(hint),
+          text: `${source.opponent_name} previously served as a councillor — a disadvantage for the rest of this open field.`,
+        });
+      }
+    }
   }
   return out;
 }

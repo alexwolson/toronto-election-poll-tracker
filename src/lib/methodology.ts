@@ -81,11 +81,11 @@ export const hintEvidenceFlow: MethodologyFlowStep[] = [
 ];
 
 export const hintAuditSnapshot = {
-  tested: 34,
-  published: 2,
-  diagnosticTested: 18,
-  diagnosticCleared: 7,
-  contractVersion: "2.0.0",
+  tested: 35,
+  published: 12,
+  diagnosticTested: 21,
+  diagnosticCleared: 10,
+  contractVersion: "2.1.0",
   primaryYears: [2010, 2014, 2022],
   reviewedOn: "2026-08-21",
 } as const;
@@ -102,6 +102,24 @@ export const hintEvidenceExamples: HintEvidenceExample[] = [
     title: "Won at least one previous race",
     evidence: "13 candidacies · 12 contests · 3 elections",
     reason: "For non-incumbent, non-returning candidates with prior races, having at least one win was associated with more council vote share in all three elections.",
+  },
+  {
+    status: "published",
+    title: "Previous race experience",
+    evidence: "107 candidacies · 68 contests · 3 elections",
+    reason: "Non-incumbent, non-returning candidates with any confirmed previous race received more council vote share than otherwise comparable first-time candidates in all three elections.",
+  },
+  {
+    status: "published",
+    title: "An unsuccessful council run",
+    evidence: "88 candidacies · 60 contests · 3 elections",
+    reason: "The audit retains this as a pair—stronger than having no previous race, but weaker than other prior experience—but the ward cards do not turn that awkward comparison into candidate copy.",
+  },
+  {
+    status: "published",
+    title: "A former councillor in an open race",
+    evidence: "4 candidacies · 4 contests · 3 elections",
+    reason: "The small sample was approved at an explicit limited-evidence tier after the direction repeated in all three elections and passed additional influence and permutation checks.",
   },
   {
     status: "withheld",

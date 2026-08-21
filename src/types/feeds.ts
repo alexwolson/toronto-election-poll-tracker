@@ -103,7 +103,7 @@ export interface Manifest {
   mayoral_publication_summary: MayoralPublicationSummary | null;
 }
 
-// ── 4. council race cards (schema_version 2) ────────────────────────────────
+// ── 4. council race cards (schema_version 5) ────────────────────────────────
 
 export interface Appearance {
   year: number;
@@ -157,7 +157,7 @@ export interface FiredHint {
   ci_high_pp: number;
   effect_unit: string;
   evidence_tier: string;
-  /** "positive" | "negative" — signed historical direction (ticket 02) */
+  /** Binary historical direction; blank for continuous findings without a cutoff. */
   direction: "positive" | "negative" | "";
   source: SignalSource | null;
 }
@@ -254,7 +254,7 @@ export interface CouncilRaceCard {
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 3;
+  schema_version: 5;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;

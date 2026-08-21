@@ -100,9 +100,10 @@ describe("primary pages keep their facts and controls", () => {
     expect(WARDS_INDEX).toContain("<WardsBrowser");
   });
 
-  it("ward detail keeps exposure facts and notable challengers", () => {
+  it("ward detail keeps exposure facts and candidate-level history hints", () => {
     expect(WARD_DETAIL).toContain("incumbentExposureFacts");
-    expect(WARD_DETAIL).toContain("notableChallengers");
+    expect(WARD_DETAIL).toContain("ownHistorySignals");
+    expect(WARD_DETAIL).not.toContain("notableChallengers");
   });
 });
 

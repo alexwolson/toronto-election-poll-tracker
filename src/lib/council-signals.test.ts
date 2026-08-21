@@ -8,8 +8,8 @@ import type {
 } from "@/types/feeds";
 import {
   incumbentExposureFacts,
-  notableChallengers,
   ownHistorySignals,
+  raceHistorySignals,
 } from "./council-signals";
 
 const council = councilFixture as unknown as CouncilRaceCardsFeed;
@@ -48,13 +48,47 @@ function hint(over: Partial<FiredHint>): FiredHint {
   };
 }
 
-const GENERIC = /qualifying elected-office|Returning councillor|received more council vote share/;
+const GENERIC = /qualifying elected-office|received more council vote share/;
 
 describe("ownHistorySignals", () => {
-  it("explains a most-recent loss with placement and margin (Kaid)", () => {
+  it("explains the binary all-past-races victory hint from complete history", () => {
     const [sig] = ownHistorySignals([
       hint({
-        hint_id: "own_most_recent_prior_elected_margin",
+        hint_id: "own_any_all_past_race_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({
+          office_type: "trustee",
+          year: 2022,
+          result: "won",
+          victory_count: 2,
+          qualifying_candidacy_count: 3,
+        }),
+      }),
+    ]);
+    expect(sig.direction).toBe("positive");
+    expect(sig.text).toBe("Won 2 of 3 previous races.");
+    expect(sig.text).not.toMatch(GENERIC);
+  });
+
+  it("combines the any-history and multiple-races flags into one count", () => {
+    const signals = ownHistorySignals([
+      hint({
+        hint_id: "own_any_all_past_race__non_incumbent_non_returning",
+        source: source({ qualifying_candidacy_count: 3 }),
+      }),
+      hint({
+        hint_id: "own_multiple_all_past_races__non_incumbent_non_returning",
+        source: source({ qualifying_candidacy_count: 3 }),
+      }),
+    ]);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].text).toBe("Has run in 3 previous races.");
+  });
+
+  it("does not invent a positive/negative cutoff for a continuous recent margin", () => {
+    const signals = ownHistorySignals([
+      hint({
+        hint_id: "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
         direction: "negative",
         source: source({
           office_type: "trustee",
@@ -66,47 +100,118 @@ describe("ownHistorySignals", () => {
         }),
       }),
     ]);
-    expect(sig.direction).toBe("negative");
-    expect(sig.text).toContain("7th of 8");
-    expect(sig.text).toContain("2022");
-    expect(sig.text).toContain("school-board trustee");
-    expect(sig.text).toContain("26 points behind");
-    expect(sig.text).not.toMatch(GENERIC);
+    expect(signals).toEqual([]);
   });
 
-  it("explains a measured-zero victory count plainly (Kaid)", () => {
-    const [sig] = ownHistorySignals([
+  it("does not render the paired prior-council-loss comparison on candidate cards", () => {
+    const signals = ownHistorySignals([
       hint({
-        hint_id: "own_prior_elected_victory_count",
+        hint_id:
+          "own_prior_council_run_without_victory_vs_no_history__non_incumbent_non_returning",
+        direction: "positive",
+      }),
+      hint({
+        hint_id:
+          "own_prior_council_run_without_victory_vs_other_history__non_incumbent_non_returning",
+        direction: "negative",
+      }),
+    ]);
+    expect(signals).toEqual([]);
+  });
+
+  it("collapses Neemuchwala's sole MPP race into one non-contradictory fact", () => {
+    const signals = ownHistorySignals([
+      hint({
+        hint_id: "own_any_all_past_race__non_incumbent_non_returning",
+        source: source({ qualifying_candidacy_count: 1 }),
+      }),
+      hint({
+        hint_id: "own_prior_mpp_race__non_incumbent_non_returning",
+        source: source({
+          office_type: "mpp",
+          year: 2022,
+          result: "lost",
+          rank: 3,
+          field_size: 6,
+          margin: -0.28,
+          qualifying_candidacy_count: 1,
+        }),
+      }),
+      hint({
+        hint_id: "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
         direction: "negative",
         source: source({
-          victory_count: 0,
-          qualifying_candidacy_count: 2,
-          coverage: "measured_zero",
+          office_type: "mpp",
+          year: 2022,
+          result: "lost",
+          rank: 3,
+          field_size: 6,
+          margin: -0.28,
+          qualifying_candidacy_count: 1,
         }),
       }),
     ]);
-    expect(sig.direction).toBe("negative");
-    expect(sig.text).toBe("No wins in 2 prior elected races.");
-  });
-
-  it("explains a most-recent win and a positive victory count", () => {
-    const sigs = ownHistorySignals([
-      hint({
-        hint_id: "own_most_recent_prior_elected_margin",
+    expect(signals).toEqual([
+      expect.objectContaining({
         direction: "positive",
-        source: source({ office_type: "mp", year: 2021, result: "won" }),
-      }),
-      hint({
-        hint_id: "own_prior_elected_victory_count",
-        direction: "positive",
-        source: source({ victory_count: 3 }),
+        text: "Previously 3rd of 6 in the 2022 MPP race, about 28 points behind.",
       }),
     ]);
-    expect(sigs[0].direction).toBe("positive");
-    expect(sigs[0].text).toContain("2021");
-    expect(sigs[0].text).toContain("MP");
-    expect(sigs[1].text).toBe("Won elected office 3 times before.");
+  });
+
+  it("treats Rupasinghe's close runner-up result as history, not a negative verdict", () => {
+    const signals = ownHistorySignals([
+      hint({
+        hint_id: "own_multiple_all_past_races__non_incumbent_non_returning",
+        source: source({ qualifying_candidacy_count: 2 }),
+      }),
+      hint({
+        hint_id: "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
+        direction: "negative",
+        source: source({
+          office_type: "councillor",
+          year: 2023,
+          result: "lost",
+          rank: 2,
+          field_size: 23,
+          margin: -0.05,
+        }),
+      }),
+    ]);
+    expect(signals).toEqual([
+      expect.objectContaining({
+        direction: "positive",
+        text: "Has run in 2 previous races.",
+      }),
+    ]);
+  });
+
+  it("renders the named-office and Returning-councillor flags plainly", () => {
+    const signals = ownHistorySignals([
+      hint({ hint_id: "own_returning_councillor__open_contest" }),
+      hint({ hint_id: "own_prior_win_type__trustee" }),
+      hint({
+        hint_id: "own_prior_mpp_race__non_incumbent_non_returning",
+        source: source({ office_type: "mpp", year: 2022, result: "lost" }),
+      }),
+    ]);
+    expect(signals.map((signal) => signal.text)).toEqual([
+      "Previously served as a Toronto councillor.",
+      "Previously elected as a school-board trustee.",
+      "Previously ran in the 2022 MPP race.",
+    ]);
+  });
+
+  it("ignores every retired all-but-council hint", () => {
+    const sigs = ownHistorySignals([
+      hint({
+        hint_id: "own_prior_elected_victory_count",
+        direction: "negative",
+      }),
+      hint({ hint_id: "own_most_recent_prior_elected_margin" }),
+      hint({ hint_id: "own_any_prior_elected_office__open_contest" }),
+    ]);
+    expect(sigs).toEqual([]);
   });
 
   it("names the trustee office and reads positive", () => {
@@ -117,9 +222,8 @@ describe("ownHistorySignals", () => {
     expect(sig.text).toContain("school-board trustee");
   });
 
-  it("dedups the generic 'has held office' hint and drops opponent + no-op hints", () => {
+  it("drops opponent and unknown hints from candidate cards", () => {
     const sigs = ownHistorySignals([
-      hint({ hint_id: "own_any_prior_elected_office__open_contest", direction: "positive" }),
       hint({
         hint_id: "opponent_strongest_prior_elected_margin",
         subject: "opponent_history",
@@ -130,35 +234,56 @@ describe("ownHistorySignals", () => {
     expect(sigs).toEqual([]);
   });
 
-  it("is empty when a candidate has no own-history signals (Ahmad)", () => {
+  it("is empty when a candidate has no own-history signals", () => {
     expect(ownHistorySignals([])).toEqual([]);
   });
 });
 
-describe("notableChallengers (race-level)", () => {
-  it("surfaces a non-incumbent former office-holder once, identified (Ward 23)", () => {
-    const dong = notableChallengers(council.wards["23"]).find(
-      (c) => c.name === "Han Dong",
-    );
-    expect(dong).toBeDefined();
-    expect(dong!.office).toBe("MP");
-    expect(dong!.year).toBeGreaterThan(2000);
+describe("raceHistorySignals", () => {
+  it("deduplicates a Returning councillor opponent across an open field", () => {
+    const opponentHint = hint({
+      hint_id: "opponent_returning_councillor__open_contest",
+      subject: "opponent_history",
+      direction: "negative",
+      source: source({ opponent_name: "Former Councillor" }),
+    });
+    const base = council.wards["4"];
+    const card = {
+      ...base,
+      candidates: base.candidates.slice(0, 2).map((candidate) => ({
+        ...candidate,
+        historical_hints: [opponentHint],
+      })),
+    } as CouncilRaceCard;
+    const signals = raceHistorySignals(card);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].text).toContain("Former Councillor");
+    expect(signals[0].text).toContain("rest of this open field");
   });
 
-  it("excludes the incumbent (first-class) and all-losses challengers (Ward 20)", () => {
-    const names = notableChallengers(council.wards["20"]).map((c) => c.name);
-    // Kandavel is the incumbent; Kaid only ever lost
-    expect(names).not.toContain("Parthi Kandavel");
-    expect(names).not.toContain("Naser Kaid");
-  });
-
-  it("never lists the sitting incumbent even when they are a former office-holder", () => {
-    for (const card of Object.values(council.wards)) {
-      if (card.is_open_seat) continue;
-      expect(notableChallengers(card).map((c) => c.name)).not.toContain(
-        card.incumbent.name,
-      );
-    }
+  it("does not turn an opponent's continuous margin into an incumbent verdict", () => {
+    const base = council.wards["11"];
+    const incumbentHint = hint({
+      hint_id: "opponent_strongest_most_recent_all_past_race_margin__incumbent",
+      subject: "opponent_history",
+      direction: "negative",
+      source: source({
+        opponent_name: "Strong Challenger",
+        office_type: "mpp",
+        year: 2022,
+        result: "won",
+        margin: 0.08,
+      }),
+    });
+    const card = {
+      ...base,
+      candidates: base.candidates.map((candidate) => ({
+        ...candidate,
+        historical_hints:
+          candidate.display_name === base.incumbent.name ? [incumbentHint] : [],
+      })),
+    } as CouncilRaceCard;
+    expect(raceHistorySignals(card)).toEqual([]);
   });
 });
 

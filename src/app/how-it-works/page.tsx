@@ -373,7 +373,10 @@ export default async function HowItWorksPage() {
               contests and two elections, plus an adequate comparison group. A
               numeric idea needs at least 20 observations in ten contests and all
               three elections. Coverage only opens the door: the plausible effect
-              must also stay entirely on one side of no relationship.
+              must also stay entirely on one side of no relationship. The two
+              Returning-councillor findings in open contests use an explicitly
+              labelled small-sample tier: four contests, the same direction in all
+              three elections, and additional influence and permutation checks.
             </p>
             <p>
               Repeating in the same direction in every election earns the stronger
@@ -429,11 +432,14 @@ export default async function HowItWorksPage() {
         <p className="how-footnote">
           “Withheld” does not mean disproven. It means the available coverage,
           identity evidence, or uncertainty cannot carry a public candidate-specific
-          statement. A separate screen tested {hintAuditSnapshot.diagnosticTested}
-          {" "}operational definitions and found {hintAuditSnapshot.diagnosticCleared}
-          {" "}that cleared the standalone evidence gate; those remain diagnostic
-          while overlap and publication are reviewed. A clear result does not
-          automatically become another public hint.
+          statement. The corrected reader-readable screen tested {hintAuditSnapshot.diagnosticTested}
+          {" "}definitions and approved all {hintAuditSnapshot.diagnosticCleared} that
+          cleared its evidence gate. Together with the two previously approved
+          findings, that produces the current 12-flag catalog. Overlapping findings
+          are combined into concise facts on ward pages. Continuous margin findings
+          are not given an up/down arrow because the audit supplies no candidate-level
+          cutoff, and the paired unsuccessful-council-run comparison stays in the
+          audit rather than appearing as awkward candidate-card copy.
         </p>
       </section>
 

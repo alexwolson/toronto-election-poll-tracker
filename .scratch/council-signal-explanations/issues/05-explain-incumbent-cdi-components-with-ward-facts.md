@@ -9,7 +9,7 @@ and non-predictive framing, and its attribution.
 
 **Blocked by:** None (independent CDI/incumbency data path; may run parallel to 02).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Incumbent exposure explanations use the ward's actual values. For Ward 11 the
   growth explanation reads equivalently to: "University–Rosedale has an estimated
@@ -34,3 +34,26 @@ and non-predictive framing, and its attribution.
   thresholds and attention logic are unchanged.
 - [ ] Regression covers Ward 11's growth sentence and high-index combination, every
   incumbent exposure-trigger type, and the attribution fallback.
+
+## Answer
+
+The incumbent's CDI component values now flow through the feed: `WardIncumbent`
+gains `electorate_share`, and `_incumbent_card` emits `vote_share`,
+`electorate_share`, and `new_voter_margin` (parsed from the CDI notes). The
+frontend `incumbentExposureFacts(card)` (`council-signals.ts`) composes concrete
+ward facts, gated on the same fired triggers (thresholds unchanged): the growth
+fact ("University-Rosedale has gained an estimated 8,869 more voters since 2022 —
+far more than Dianne Saxe's 123-vote winning margin", where 8,869 = new-voter
+margin 8,746 + the 123-vote margin) and the high-CDI fact covering the remaining
+components ("won with 35% of votes cast and support from 11% of eligible voters —
+both among the lowest for Toronto incumbents"), with a City-Hall-Watcher/CDI
+attribution and a component-missing fallback. No "combined index" / "structurally
+exposed" jargon. The ward-detail incumbent section and the council-index cards
+both render these facts instead of the catalog copy.
+
+**Coverage** (`council-signals.test.ts`): Ward 11 growth + high-index sentences
+with exact values and no jargon; the attribution fallback when components are
+missing; empty for an open seat. Verified in the built pages: Ward 11 renders all
+sentences + attribution; a jargon scan of every council page (detail **and**
+index) finds **zero** "combined index" / "structurally exposed". Data suite green;
+frontend suite 59 passing.

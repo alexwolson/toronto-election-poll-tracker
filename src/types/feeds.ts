@@ -125,6 +125,10 @@ export interface Incumbent {
   council_wins: number;
   most_recent_win: Appearance | null;
   exposure_triggers: ExposureTrigger[];
+  /** CDI components for concrete ward-fact explanations (ticket 05) */
+  vote_share: number | null;
+  electorate_share: number | null;
+  new_voter_margin: number | null;
 }
 
 /** Structured provenance behind a fired signal (ADR 0047 amendment / ticket 02). */

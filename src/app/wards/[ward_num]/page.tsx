@@ -8,7 +8,11 @@ import {
   partyLabel,
   resultLabel,
 } from "@/lib/council-history";
-import { notableChallengers, ownHistorySignals } from "@/lib/council-signals";
+import {
+  incumbentExposureFacts,
+  notableChallengers,
+  ownHistorySignals,
+} from "@/lib/council-signals";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { CouncilCandidate, CouncilRaceCard, PastElection } from "@/types/feeds";
 
@@ -130,6 +134,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
   const inc = card.incumbent;
   const prior = card.prior_result;
   const challengers = notableChallengers(card);
+  const exposureFacts = incumbentExposureFacts(card);
 
   return (
     <main id="main-content" className="np-shell">
@@ -178,16 +183,19 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
               </div>
             )}
           </dl>
-          {inc.exposure_triggers.length > 0 && (
+          {exposureFacts.length > 0 && (
             <>
               <p className="derived-item__label" style={{ marginTop: "1rem" }}>
-                Exposure triggers — attention, not a prediction
+                Why this race draws attention — historical context, not a forecast
               </p>
               <ul className="trigger-list">
-                {inc.exposure_triggers.map((t) => (
-                  <li key={t.key}>{t.copy}</li>
+                {exposureFacts.map((f) => (
+                  <li key={f.key}>{f.text}</li>
                 ))}
               </ul>
+              <p className="signal-group__note" style={{ marginTop: "0.45rem" }}>
+                Council Defeatability Index by Matt Elliott · City Hall Watcher
+              </p>
             </>
           )}
         </section>

@@ -6,7 +6,12 @@
  */
 
 import { officeLabel, ordinal } from "@/lib/council-history";
+import { formatSharePct } from "@/lib/format";
 import type { CouncilRaceCard, FiredHint, PastElection } from "@/types/feeds";
+
+function withCommas(n: number): string {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 export interface HistorySignal {
   key: string;
@@ -139,4 +144,60 @@ export function notableChallengers(card: CouncilRaceCard): NotableChallenger[] {
     out.push({ name: candidate.display_name, office: officeLabel(top), year: top.year });
   }
   return out;
+}
+
+// ── incumbent CDI exposure, as concrete ward facts (ticket 05) ──────────────
+
+export interface ExposureFact {
+  key: string;
+  text: string;
+}
+
+/**
+ * Translate the incumbent's fired CDI components into concrete ward facts using
+ * the ward's actual values (ticket 05) — no "combined index" / "structurally
+ * exposed" jargon. A high CDI is explained through its components (prior vote
+ * share, votes as a share of eligible electors); electorate growth is a separate
+ * fact so the index explanation covers the remaining meaning, not a repeat.
+ * Gated on the same fired triggers, so thresholds are unchanged.
+ */
+export function incumbentExposureFacts(card: CouncilRaceCard): ExposureFact[] {
+  if (card.is_open_seat) return [];
+  const inc = card.incumbent;
+  const prior = card.prior_result;
+  const triggers = new Set(inc.exposure_triggers.map((t) => t.key));
+  const ward = card.ward_name ?? `Ward ${card.ward}`;
+  const facts: ExposureFact[] = [];
+
+  if (
+    triggers.has("ward_growth_exceeds_cushion") &&
+    inc.new_voter_margin != null &&
+    prior?.margin_votes != null
+  ) {
+    const newElectors = inc.new_voter_margin + prior.margin_votes;
+    facts.push({
+      key: "growth",
+      text: `${ward} has gained an estimated ${withCommas(newElectors)} more voters since ${prior.year} — far more than ${inc.name}'s ${withCommas(prior.margin_votes)}-vote winning margin.`,
+    });
+  }
+
+  if (triggers.has("high_structural_exposure")) {
+    if (inc.vote_share != null && inc.electorate_share != null) {
+      facts.push({
+        key: "cdi",
+        text: `${inc.name} won with ${formatSharePct(inc.vote_share)} of votes cast and support from ${formatSharePct(inc.electorate_share)} of eligible voters — both among the lowest for Toronto incumbents.`,
+      });
+    } else {
+      facts.push({
+        key: "cdi",
+        text: `${inc.name} has a high Councillor Defeatability Index rating from City Hall Watcher.`,
+      });
+    }
+  } else if (triggers.has("narrow_prior_win") && inc.vote_share != null) {
+    facts.push({
+      key: "narrow",
+      text: `${inc.name} won with only ${formatSharePct(inc.vote_share)} of votes cast — below where incumbents typically feel safe.`,
+    });
+  }
+  return facts;
 }

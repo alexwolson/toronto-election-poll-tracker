@@ -4,6 +4,7 @@
  * most-exposed-first; open seats are classed separately and flagged in the UI.
  */
 
+import { incumbentExposureFacts } from "@/lib/council-signals";
 import type { CouncilRaceCard, CouncilRaceCardsFeed } from "@/types/feeds";
 
 export type AttentionLevel = "high" | "elevated" | "quiet" | "open";
@@ -88,7 +89,8 @@ export function wardIndexView(feed: CouncilRaceCardsFeed): WardIndexItem[] {
     isOpen: card.is_open_seat,
     attention: wardAttentionLevel(card),
     score: attentionScore(card),
-    triggers: card.incumbent.exposure_triggers.map((t) => t.copy),
+    // Concrete ward-fact explanations (ticket 05), not the generic catalog copy.
+    triggers: incumbentExposureFacts(card).map((f) => f.text),
   }));
 }
 

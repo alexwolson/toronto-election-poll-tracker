@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import councilFixture from "../../fixtures/council_race_cards.json";
 import type {
+  CouncilRaceCard,
   CouncilRaceCardsFeed,
   FiredHint,
   SignalSource,
 } from "@/types/feeds";
-import { notableChallengers, ownHistorySignals } from "./council-signals";
+import {
+  incumbentExposureFacts,
+  notableChallengers,
+  ownHistorySignals,
+} from "./council-signals";
 
 const council = councilFixture as unknown as CouncilRaceCardsFeed;
 
@@ -154,5 +159,38 @@ describe("notableChallengers (race-level)", () => {
         card.incumbent.name,
       );
     }
+  });
+});
+
+describe("incumbentExposureFacts (ticket 05)", () => {
+  it("explains Ward 11 with concrete ward values and no index jargon", () => {
+    const text = incumbentExposureFacts(council.wards["11"])
+      .map((f) => f.text)
+      .join(" ");
+    expect(text).toContain("8,869 more voters");
+    expect(text).toContain("123-vote winning margin");
+    expect(text).toContain("35% of votes cast");
+    expect(text).toContain("11% of eligible voters");
+    expect(text).toContain("among the lowest");
+    expect(text).not.toContain("combined index");
+    expect(text).not.toContain("structurally exposed");
+  });
+
+  it("falls back to attribution when the component values are missing", () => {
+    const card = {
+      ...council.wards["11"],
+      incumbent: {
+        ...council.wards["11"].incumbent,
+        vote_share: null,
+        electorate_share: null,
+      },
+    } as CouncilRaceCard;
+    const cdi = incumbentExposureFacts(card).find((f) => f.key === "cdi");
+    expect(cdi?.text).toContain("City Hall Watcher");
+    expect(cdi?.text).toContain("Councillor Defeatability Index");
+  });
+
+  it("is empty for an open seat", () => {
+    expect(incumbentExposureFacts(council.wards["4"])).toEqual([]);
   });
 });

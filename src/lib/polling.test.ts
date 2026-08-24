@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed } from "@/types/feeds";
-import { candidateTrends, latestFieldShares, pollsterRegistry } from "./polling";
+import {
+  candidateTrends,
+  latestFieldShares,
+  pollsterRegistry,
+  pollsterWebsite,
+} from "./polling";
 
 const feed = pollingFixture as unknown as MayoralPollingFeed;
 const FIELD = ["chow", "bradford", "alexander"];
@@ -60,5 +65,11 @@ describe("pollster registry", () => {
     const liaison = registry.find((r) => r.firm === "Liaison Strategies");
     expect(liaison).toBeDefined();
     expect(liaison!.count).toBeGreaterThan(1);
+    expect(liaison!.website).toBe("https://press.liaisonstrategies.ca/");
+  });
+
+  it("links known firms and leaves unknown firms unlinked", () => {
+    expect(pollsterWebsite("Forum Research")).toBe("https://forumresearch.com/");
+    expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

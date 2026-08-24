@@ -1,3 +1,4 @@
+import { PollsterLink } from "@/components/pollster-link";
 import { candidateName } from "@/lib/candidates";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { Poll } from "@/types/feeds";
@@ -25,7 +26,9 @@ export function PollArchive({ polls, field }: { polls: Poll[]; field: string[] }
           {polls.map((poll) => (
             <tr key={poll.poll_id} style={{ borderBottom: "1px solid var(--line-inner)" }}>
               <td className="py-2 pr-3 whitespace-nowrap">{formatDate(poll.date_conducted)}</td>
-              <td className="py-2 pr-3">{poll.firm}</td>
+              <td className="py-2 pr-3">
+                <PollsterLink firm={poll.firm} />
+              </td>
               <td className="py-2 pr-3 font-mono">{poll.sample_size ?? "—"}</td>
               {field.map((id) => (
                 <td key={id} className="py-2 pr-3 text-right font-mono">

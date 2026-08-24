@@ -7,6 +7,7 @@ import {
   officeLabel,
   partyLabel,
   resultLabel,
+  sameWardReturnSummary,
 } from "@/lib/council-history";
 import {
   incumbentExposureFacts,
@@ -78,18 +79,26 @@ function DirectionIcon({ direction }: { direction: "positive" | "negative" }) {
 function CandidateItem({
   candidate,
   isIncumbent,
+  ward,
+  prior,
 }: {
   candidate: CouncilCandidate;
   isIncumbent: boolean;
+  ward: string;
+  prior: CouncilRaceCard["prior_result"];
 }) {
   const history = candidate.past_elections;
   const signals = ownHistorySignals(candidate.historical_hints);
   const headline = historyHeadline(history, isIncumbent);
+  const sameWardReturn = sameWardReturnSummary(candidate, ward, prior, isIncumbent);
   const expandable = history.length > 0 || signals.length > 0;
 
   const label = (
     <>
       <span className="candidate-row__name">{candidate.display_name}</span>
+      {sameWardReturn && (
+        <span className="candidate-row__ward-return">{sameWardReturn.topline}</span>
+      )}
       {headline && <span className="candidate-row__headline">{headline}</span>}
     </>
   );
@@ -103,6 +112,9 @@ function CandidateItem({
       <details>
         <summary className="candidate-row__summary">{label}</summary>
         <div className="candidate-row__body">
+          {sameWardReturn && (
+            <p className="candidate-row__return-detail">{sameWardReturn.detail}</p>
+          )}
           {history.length > 0 && (
             <ul className="past-elections">
               {history.map((election, i) => (
@@ -247,6 +259,8 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
               key={c.display_name}
               candidate={c}
               isIncumbent={!card.is_open_seat && c.display_name === card.incumbent.name}
+              ward={card.ward}
+              prior={card.prior_result}
             />
           ))}
         </ul>

@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { PastElection } from "@/types/feeds";
-import { historyHeadline, officeLabel, ordinal, partyLabel, resultLabel } from "./council-history";
+import councilFixture from "../../fixtures/council_race_cards.json";
+import type { CouncilRaceCardsFeed, PastElection } from "@/types/feeds";
+import {
+  historyHeadline,
+  officeLabel,
+  ordinal,
+  partyLabel,
+  resultLabel,
+  sameWardReturnSummary,
+} from "./council-history";
+
+const council = councilFixture as unknown as CouncilRaceCardsFeed;
 
 function e(over: Partial<PastElection>): PastElection {
   return {
@@ -82,6 +92,62 @@ describe("resultLabel", () => {
     expect(resultLabel(e({ result: "won" }))).toBe("won");
     expect(resultLabel(e({ result: "lost", rank: 2, field_size: 7 }))).toBe("lost · 2nd of 7");
     expect(resultLabel(e({ result: "lost", rank: null, field_size: null }))).toBe("lost");
+  });
+});
+
+describe("sameWardReturnSummary", () => {
+  const ward5 = council.wards["5"];
+
+  it("flags a returning runner-up with the exact vote margin", () => {
+    const padovani = ward5.candidates.find((candidate) => candidate.display_name === "Chiara Padovani")!;
+    expect(sameWardReturnSummary(padovani, ward5.ward, ward5.prior_result)).toEqual({
+      topline: "Returning",
+      detail: "2022 runner-up in this ward · lost by 94 votes",
+    });
+  });
+
+  it("calls every second-place candidate in the latest ward election a runner-up", () => {
+    const ward13 = council.wards["13"];
+    const ward = ward13.candidates.find((candidate) => candidate.display_name === "Nicki Ward")!;
+    expect(sameWardReturnSummary(ward, ward13.ward, ward13.prior_result)).toEqual({
+      topline: "Returning",
+      detail: "2022 runner-up in this ward · lost by 6,517 votes",
+    });
+
+    const ward20 = council.wards["20"];
+    const rupasinghe = ward20.candidates.find(
+      (candidate) => candidate.display_name === "Kevin Rupasinghe",
+    )!;
+    expect(sameWardReturnSummary(rupasinghe, ward20.ward, ward20.prior_result)).toEqual({
+      topline: "Returning",
+      detail: "2023 runner-up in this ward · lost by 787 votes",
+    });
+  });
+
+  it("uses a by-election in place of 2022", () => {
+    const ward15 = council.wards["15"];
+    const sharp = ward15.candidates.find((candidate) => candidate.display_name === "Sheena Sharp")!;
+    expect(sameWardReturnSummary(sharp, ward15.ward, ward15.prior_result)).toEqual({
+      topline: "Returning",
+      detail: "Ran in this ward in 2024 · 4th of 16",
+    });
+  });
+
+  it("skips the prior winner and labels other same-ward candidates", () => {
+    const nunziata = ward5.candidates.find((candidate) => candidate.display_name === "Frances Nunziata")!;
+    expect(sameWardReturnSummary(nunziata, ward5.ward, ward5.prior_result, true)).toBeNull();
+
+    const ward1 = council.wards["1"];
+    const abbey = ward1.candidates.find((candidate) => candidate.display_name === "Abraham Abbey")!;
+    expect(sameWardReturnSummary(abbey, ward1.ward, ward1.prior_result)).toEqual({
+      topline: "Returning",
+      detail: "Ran in this ward in 2022 · 10th of 16",
+    });
+  });
+
+  it("does not flag a candidate against a different ward", () => {
+    const padovani = ward5.candidates.find((candidate) => candidate.display_name === "Chiara Padovani")!;
+    expect(sameWardReturnSummary(padovani, "6", ward5.prior_result)).toBeNull();
   });
 });
 

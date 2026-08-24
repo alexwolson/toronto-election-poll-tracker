@@ -1502,6 +1502,12 @@ body {
 .author-section a,
 .source-row a { color: var(--text-strong); text-underline-offset: 0.16rem; }
 
+.pollster-link {
+  color: var(--text-strong);
+  font-weight: 600;
+  text-underline-offset: 0.16rem;
+}
+
 .attribution-card {
   margin-top: 0.55rem;
   padding: 0.85rem;
@@ -2686,6 +2692,18 @@ body { line-height: 1.55; }
   text-transform: uppercase;
   letter-spacing: 0.02em;
   color: var(--text-soft);
+}
+.candidate-row__ward-return {
+  color: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.candidate-row__return-detail {
+  margin: 0 0 0.45rem;
+  color: var(--text-mid);
+  font-size: 0.75rem;
 }
 .candidate-row__body {
   padding: 0.5rem 0 0.35rem 1.05rem;

@@ -24,6 +24,23 @@ export function latestFieldShares(
 export interface PollsterCount {
   firm: string;
   count: number;
+  website: string | null;
+}
+
+/** Official pollster sites. Feed names are the stable lookup key; an unknown
+ * firm deliberately stays unlinked until its destination can be verified. */
+const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
+  "Abacus Data": "https://abacusdata.ca/",
+  "Canada Pulse Insights/CityNews": "https://canadapulseinsights.com/",
+  "Forum Research": "https://forumresearch.com/",
+  Ipsos: "https://www.ipsos.com/en-ca",
+  "Liaison Strategies": "https://press.liaisonstrategies.ca/",
+  "Mainstreet Research": "https://www.mainstreetresearch.ca/",
+  "Pallas Data": "https://pallas-data.ca/",
+};
+
+export function pollsterWebsite(firm: string): string | null {
+  return POLLSTER_WEBSITES[firm] ?? null;
 }
 
 /** Polls per firm, most frequent first (ties broken alphabetically). */
@@ -33,7 +50,7 @@ export function pollsterRegistry(feed: MayoralPollingFeed): PollsterCount[] {
     counts.set(poll.firm, (counts.get(poll.firm) ?? 0) + 1);
   }
   return [...counts.entries()]
-    .map(([firm, count]) => ({ firm, count }))
+    .map(([firm, count]) => ({ firm, count, website: pollsterWebsite(firm) }))
     .sort((a, b) => b.count - a.count || a.firm.localeCompare(b.firm));
 }
 

@@ -4,7 +4,7 @@
  * translate-in-the-frontend pattern).
  */
 
-import type { PastElection } from "@/types/feeds";
+import type { CouncilCandidate, PastElection, PriorResult } from "@/types/feeds";
 
 export function officeLabel(election: PastElection): string {
   switch (election.office_type) {
@@ -81,6 +81,66 @@ export function resultLabel(election: PastElection): string {
     return `lost · ${ordinal(election.rank)} of ${election.field_size}`;
   }
   return "lost";
+}
+
+export interface SameWardReturnSummary {
+  topline: "Returning";
+  detail: string;
+}
+
+/** Display context for a challenger who also contested this exact 25-ward
+ * council district in its most recent election. For wards with a by-election,
+ * that newer contest replaces 2022 entirely. */
+export function sameWardReturnSummary(
+  candidate: CouncilCandidate,
+  ward: string,
+  prior: PriorResult | null,
+  isIncumbent = false,
+): SameWardReturnSummary | null {
+  if (isIncumbent || !prior) return null;
+  const electionYear = prior.year;
+
+  const ranHere = candidate.biography?.appearances.some(
+    (appearance) =>
+      appearance.year === electionYear &&
+      appearance.boundary_era === "25-ward" &&
+      appearance.ward === ward,
+  );
+  if (!ranHere) return null;
+
+  const election = candidate.past_elections.find(
+    (race) =>
+      race.year === electionYear &&
+      race.office_type === "councillor" &&
+      race.represented_body === "toronto_city_council",
+  );
+
+  if (candidate.display_name === prior.winner_name) {
+    return null;
+  }
+
+  if (election?.rank === 2) {
+    if (
+      candidate.display_name === prior.runner_up_name &&
+      prior.margin_votes !== null
+    ) {
+      const votes = prior.margin_votes.toLocaleString("en-CA");
+      return {
+        topline: "Returning",
+        detail: `${electionYear} runner-up in this ward · lost by ${votes} ${prior.margin_votes === 1 ? "vote" : "votes"}`,
+      };
+    }
+    return { topline: "Returning", detail: `${electionYear} runner-up in this ward` };
+  }
+
+  if (election?.rank != null && election.field_size != null) {
+    return {
+      topline: "Returning",
+      detail: `Ran in this ward in ${electionYear} · ${ordinal(election.rank)} of ${election.field_size}`,
+    };
+  }
+
+  return { topline: "Returning", detail: `Ran in this ward in ${electionYear}` };
 }
 
 const OFFICE_SENIORITY: Record<string, number> = {

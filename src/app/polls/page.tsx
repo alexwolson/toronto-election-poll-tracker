@@ -1,5 +1,6 @@
 import { PollArchive } from "@/components/poll-archive";
 import { PollingChart, type ChartSeries } from "@/components/polling-chart";
+import { PollsterLink } from "@/components/pollster-link";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
@@ -77,7 +78,7 @@ export default async function PollsPage() {
         <ul className="font-mono" style={{ fontSize: "0.78rem", listStyle: "none", padding: 0 }}>
           {registry.map((r) => (
             <li key={r.firm} style={{ padding: "0.2rem 0" }}>
-              {r.firm} — {r.count} {r.count === 1 ? "poll" : "polls"}
+              <PollsterLink firm={r.firm} /> — {r.count} {r.count === 1 ? "poll" : "polls"}
             </li>
           ))}
         </ul>

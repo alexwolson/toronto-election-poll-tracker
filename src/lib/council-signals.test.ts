@@ -166,6 +166,75 @@ describe("ownHistorySignals", () => {
     ]);
   });
 
+  it("prefers 'won their most recent election' over the generic prior win", () => {
+    // A candidate whose most recent race was a win (e.g. a sitting MP) fires both
+    // the recency hint and the generic prior-win hint; surface only the more
+    // specific recency wording, never both.
+    const signals = ownHistorySignals([
+      hint({
+        hint_id:
+          "own_most_recent_all_past_race_was_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ office_type: "mp", year: 2025, result: "won" }),
+      }),
+      hint({
+        hint_id: "own_any_all_past_race_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ victory_count: 1, qualifying_candidacy_count: 2 }),
+      }),
+    ]);
+    expect(signals.map((signal) => signal.text)).toEqual([
+      "Won their most recent election, which helps.",
+    ]);
+  });
+
+  it("suppresses the recency win when a named prior office already states a win", () => {
+    // The trustee whose most recent win IS the trustee race: the named-office
+    // line already conveys the win, so the recency line is not stacked on top.
+    const signals = ownHistorySignals([
+      hint({ hint_id: "own_prior_win_type__trustee", direction: "positive" }),
+      hint({
+        hint_id:
+          "own_most_recent_all_past_race_was_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ office_type: "trustee", year: 2022, result: "won" }),
+      }),
+      hint({
+        hint_id: "own_any_all_past_race_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ victory_count: 1, qualifying_candidacy_count: 1 }),
+      }),
+    ]);
+    expect(signals.map((signal) => signal.text)).toEqual([
+      "Previously elected as a school-board trustee, which helps.",
+    ]);
+  });
+
+  it("keeps the MPP-run signal alongside a single win chip", () => {
+    const signals = ownHistorySignals([
+      hint({
+        hint_id:
+          "own_most_recent_all_past_race_was_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ office_type: "mp", year: 2025, result: "won" }),
+      }),
+      hint({
+        hint_id: "own_any_all_past_race_victory__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ victory_count: 1, qualifying_candidacy_count: 2 }),
+      }),
+      hint({
+        hint_id: "own_prior_mpp_race__non_incumbent_non_returning",
+        direction: "positive",
+        source: source({ office_type: "mpp", year: 2022, result: "lost" }),
+      }),
+    ]);
+    expect(signals.map((signal) => signal.text)).toEqual([
+      "Won their most recent election, which helps.",
+      "Previously ran for MPP, which helps.",
+    ]);
+  });
+
   it("carries a negative direction through the wording", () => {
     const [sig] = ownHistorySignals([
       hint({ hint_id: "own_prior_win_type__trustee", direction: "negative" }),

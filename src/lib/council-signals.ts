@@ -49,15 +49,30 @@ export function ownHistorySignals(hints: FiredHint[]): HistorySignal[] {
     });
   };
 
+  // Named prior offices are distinct facts — surface each that fired.
+  const returningCouncillor = own.get("own_returning_councillor__open_contest");
   const trustee = own.get("own_prior_win_type__trustee");
-  const priorWin = own.get("own_any_all_past_race_victory__non_incumbent_non_returning");
-  const raceCount = priorWin?.source?.qualifying_candidacy_count;
-
-  add(own.get("own_returning_councillor__open_contest"), "Previously served as a Toronto councillor");
+  add(returningCouncillor, "Previously served as a Toronto councillor");
   add(trustee, "Previously elected as a school-board trustee");
-  // A sole prior win that IS the trustee race is already stated by the trustee
-  // line; only surface the general "won a previous election" when it adds more.
-  if (!(raceCount === 1 && trustee)) add(priorWin, "Won a previous election");
+
+  // Generic "has won before" family: a candidate can fire several overlapping
+  // win hints. Surface only the single most specific one, and only when a named
+  // prior office hasn't already established a win, so the card never stacks
+  // redundant win chips. Winning the most recent race is more informative than
+  // the undated "won a previous election".
+  if (!returningCouncillor && !trustee) {
+    const mostRecentWin = own.get(
+      "own_most_recent_all_past_race_was_victory__non_incumbent_non_returning",
+    );
+    if (mostRecentWin) {
+      add(mostRecentWin, "Won their most recent election");
+    } else {
+      add(
+        own.get("own_any_all_past_race_victory__non_incumbent_non_returning"),
+        "Won a previous election",
+      );
+    }
+  }
   add(own.get("own_prior_mpp_race__non_incumbent_non_returning"), "Previously ran for MPP");
 
   return out;

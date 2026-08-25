@@ -91,15 +91,13 @@ function CandidateItem({
   const signals = ownHistorySignals(candidate.historical_hints);
   const headline = historyHeadline(history, isIncumbent);
   const sameWardReturn = sameWardReturnSummary(candidate, ward, prior, isIncumbent);
+  const historySummary = [sameWardReturn?.topline, headline].filter(Boolean).join(" · ");
   const expandable = history.length > 0 || signals.length > 0;
 
   const label = (
     <>
       <span className="candidate-row__name">{candidate.display_name}</span>
-      {sameWardReturn && (
-        <span className="candidate-row__ward-return">{sameWardReturn.topline}</span>
-      )}
-      {headline && <span className="candidate-row__headline">{headline}</span>}
+      {historySummary && <span className="candidate-row__headline">{historySummary}</span>}
     </>
   );
 

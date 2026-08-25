@@ -311,14 +311,14 @@ describe("raceHistorySignals", () => {
 });
 
 describe("incumbentExposureFacts (ticket 05)", () => {
-  it("explains Ward 11 with concrete ward values and no index jargon", () => {
-    const text = incumbentExposureFacts(council.wards["11"])
+  it("explains Ward 10 with concrete ward values and no index jargon", () => {
+    const text = incumbentExposureFacts(council.wards["10"])
       .map((f) => f.text)
       .join(" ");
-    expect(text).toContain("8,869 more voters");
-    expect(text).toContain("123-vote winning margin");
-    expect(text).toContain("35% of votes cast");
-    expect(text).toContain("11% of eligible voters");
+    expect(text).toContain("13,771 more voters");
+    expect(text).toContain("3,343-vote winning margin");
+    expect(text).toContain("37% of votes cast");
+    expect(text).toContain("8% of eligible voters");
     expect(text).toContain("among the lowest");
     expect(text).not.toContain("combined index");
     expect(text).not.toContain("structurally exposed");
@@ -326,9 +326,9 @@ describe("incumbentExposureFacts (ticket 05)", () => {
 
   it("falls back to attribution when the component values are missing", () => {
     const card = {
-      ...council.wards["11"],
+      ...council.wards["10"],
       incumbent: {
-        ...council.wards["11"].incumbent,
+        ...council.wards["10"].incumbent,
         vote_share: null,
         electorate_share: null,
       },

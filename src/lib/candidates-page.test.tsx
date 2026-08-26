@@ -25,7 +25,7 @@ describe("Candidates page", () => {
     expect(html).toContain("Chris Alexander");
     expect(html).toContain("Former MP · 8 past races");
     expect(html).not.toContain("Former Mayor");
-    expect(html.match(/<details>/g)).toHaveLength(23);
+    expect(html.match(/<details>/g)).toHaveLength(3);
     expect(html).toContain(
       '<li class="candidate-row candidate-row--plain"><span class="candidate-row__name">Chris Alexander</span>',
     );
@@ -33,8 +33,10 @@ describe("Candidates page", () => {
 
   it("shows an honest unavailable state instead of a partial field", async () => {
     mocks.loadMayoralCandidates.mockResolvedValue({
-      schema_version: 1,
-      election_cycle_id: "",
+      schema_version: 2,
+      event_id: "",
+      contest_id: "",
+      election_date: "",
       ballot_certified: false,
       candidates: [],
     } satisfies MayoralCandidatesFeed);

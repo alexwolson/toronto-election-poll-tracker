@@ -23,8 +23,23 @@ interface Known {
 
 const REGISTRY: Record<string, Known> = {
   chow: { name: "Olivia Chow", slug: "chow", hatch: false },
+  per_a4291ca7539b53e2acc1c4f108bc73e6: {
+    name: "Olivia Chow",
+    slug: "chow",
+    hatch: false,
+  },
   bradford: { name: "Brad Bradford", slug: "bradford", hatch: false },
+  per_d8dfddfb642358e299f4b428292666bf: {
+    name: "Brad Bradford",
+    slug: "bradford",
+    hatch: false,
+  },
   alexander: { name: "Chris Alexander", slug: "alexander", hatch: true },
+  per_345dd6a9ee645c0bb5a8ade615f91579: {
+    name: "Chris Alexander",
+    slug: "alexander",
+    hatch: true,
+  },
 };
 
 function titleCase(id: string): string {

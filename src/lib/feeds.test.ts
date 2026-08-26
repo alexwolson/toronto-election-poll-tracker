@@ -8,10 +8,9 @@ describe("validateMayoralCandidates", () => {
     expect(feed?.ballot_certified).toBe(true);
     expect(feed?.candidates).toHaveLength(53);
     expect(
-      feed?.candidates.find((candidate) => candidate.candidate_id === "chow"),
+      feed?.candidates.find((candidate) => candidate.display_name === "Olivia Chow"),
     ).toMatchObject({
       display_name: "Olivia Chow",
-      is_matched: true,
       is_incumbent: true,
     });
   });
@@ -19,8 +18,10 @@ describe("validateMayoralCandidates", () => {
   it("rejects malformed candidate rows", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 1,
-        election_cycle_id: "toronto-2026",
+        schema_version: 2,
+        event_id: "toronto-2026",
+        contest_id: "mayor-2026",
+        election_date: "2026-10-26",
         ballot_certified: true,
         candidates: [{ display_name: "Missing fields" }],
       }),
@@ -30,8 +31,10 @@ describe("validateMayoralCandidates", () => {
   it("rejects a provisional feed that exposes candidates", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 1,
-        election_cycle_id: "toronto-2026",
+        schema_version: 2,
+        event_id: "toronto-2026",
+        contest_id: "mayor-2026",
+        election_date: "2026-10-26",
         ballot_certified: false,
         candidates: candidatesFixture.candidates,
       }),

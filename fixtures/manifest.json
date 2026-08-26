@@ -1,1 +1,37 @@
-{"schema_version": 1, "generated_at": "2026-08-21", "election": {"cycle_id": "toronto-2026", "election_date": "2026-10-26", "nomination_close_date": "2026-08-21", "final_ballot_certified": true}, "feeds": {"mayoral_forecast": "mayoral_forecast.json", "mayoral_candidates": "mayoral_candidates.json", "mayoral_polling": "mayoral_polling.json", "council_race_cards": "council_race_cards.json", "manifest": "manifest.json"}, "feed_versions": {"mayoral_candidates": 1, "mayoral_forecast": 1, "mayoral_polling": 1, "council_race_cards": 5}, "mayoral_publication_summary": {"evidence_tier": "M3 \u2014 Replicated Final-Field Polling", "candidate_win": {"alexander": "Forecast Available", "bradford": "Forecast Available", "chow": "Forecast Available"}, "close_result": "Forecast Unavailable", "incumbent_defeat": "Forecast Available"}}
+{
+  "assets": [
+    {
+      "bytes": 731543,
+      "filename": "council_race_cards.json",
+      "sha256": "ca7ce7b11cc57d8f9f09ba245a74b8b765e274b65e47f643581c95e422149976"
+    },
+    {
+      "bytes": 6819,
+      "filename": "mayoral_forecast.json",
+      "sha256": "299bf34b109ba6c7bd35e02fbbb97e3fb9471507ed5226ec9572c829ddd6ee1d"
+    }
+  ],
+  "dependencies": {
+    "polling": {
+      "manifest_sha256": "a1164e4bee91f2668fe0cdbfb888ed19ef355a6446ee6531f33a9ae9bd7657cb",
+      "release": "local-polling-validation",
+      "repository": "alexwolson/toronto-election-poll-tracker-data",
+      "source_commit": "b408b76ee610de1666cd4ebdaaefb86ca52d3422"
+    },
+    "results": {
+      "manifest_sha256": "57dc7e411416138b523cfad0970ac908258d4ac35b2e9c307625addd0306ac15",
+      "release": "local-results-validation",
+      "repository": "alexwolson/toronto-election-results",
+      "source_commit": "970b407359846e728b5d44b4dcc8bce07cdaadae"
+    }
+  },
+  "feeds": {
+    "council_race_cards": "council_race_cards.json",
+    "mayoral_forecast": "mayoral_forecast.json"
+  },
+  "generated_at": "2026-08-26T18:26:31.571038Z",
+  "repository": "alexwolson/toronto-election-poll-tracker-backend",
+  "schema_version": 1,
+  "source_commit": "b408b76ee610de1666cd4ebdaaefb86ca52d3422",
+  "source_dirty": true
+}

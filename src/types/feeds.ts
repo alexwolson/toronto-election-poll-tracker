@@ -63,26 +63,26 @@ export interface MayoralForecastFeed {
   margin_distribution: MarginDistribution | null;
 }
 
-// ── 2. mayoral polling (schema_version 1) ───────────────────────────────────
+// ── 2. Results-owned certified mayoral field (schema_version 2) ─────────────
 
 export interface MayoralCandidate {
-  /** Current-cycle, poll-compatible id; distinct from canonical person identity. */
-  candidate_id: string;
+  candidacy_id: string;
   display_name: string;
-  status: string;
-  /** Persistent canonical identity; null when no unique match is available. */
   person_id: string | null;
-  is_matched: boolean;
   is_incumbent: boolean;
   past_elections: PastElection[];
 }
 
 export interface MayoralCandidatesFeed {
-  schema_version: 1;
-  election_cycle_id: string;
+  schema_version: 2;
+  event_id: string;
+  contest_id: string;
+  election_date: string;
   ballot_certified: boolean;
   candidates: MayoralCandidate[];
 }
+
+// ── 3. Polling-owned descriptive feed (schema_version 2) ────────────────────
 
 export interface Poll {
   poll_id: string;
@@ -103,7 +103,7 @@ export interface TrendPoint {
 }
 
 export interface MayoralPollingFeed {
-  schema_version: 1;
+  schema_version: 2;
   /** every candidate id appearing in any poll (wider than the current field) */
   candidates: string[];
   /** newest published first */
@@ -113,7 +113,7 @@ export interface MayoralPollingFeed {
   trend: Record<string, TrendPoint[]>;
 }
 
-// ── 3. manifest (schema_version 1) ──────────────────────────────────────────
+// ── 4. deployment source manifest (schema_version 1) ────────────────────────
 
 export interface MayoralPublicationSummary {
   evidence_tier: string;
@@ -125,19 +125,10 @@ export interface MayoralPublicationSummary {
 export interface Manifest {
   schema_version: 1;
   generated_at: string;
-  election: {
-    /** hyphen form, e.g. "toronto-2026" */
-    cycle_id: string;
-    election_date: string;
-    nomination_close_date: string;
-    final_ballot_certified: boolean;
-  };
-  feeds: Record<string, string>;
-  feed_versions: Record<string, number>;
-  mayoral_publication_summary: MayoralPublicationSummary | null;
+  releases?: Record<string, { repository: string; release: string; source_commit: string }>;
 }
 
-// ── 4. council race cards (schema_version 5) ────────────────────────────────
+// ── 5. council race cards (schema_version 5) ────────────────────────────────
 
 export interface Appearance {
   year: number;

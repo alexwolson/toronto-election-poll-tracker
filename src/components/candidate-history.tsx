@@ -29,6 +29,7 @@ export function CandidateHistoryItem({
   history,
   currentOfficeType,
   summaryPrefix,
+  leadDetail,
   hasAdditionalDetails = false,
   children,
 }: {
@@ -36,6 +37,7 @@ export function CandidateHistoryItem({
   history: PastElection[];
   currentOfficeType?: string;
   summaryPrefix?: string | null;
+  leadDetail?: ReactNode;
   hasAdditionalDetails?: boolean;
   children?: ReactNode;
 }) {
@@ -58,6 +60,7 @@ export function CandidateHistoryItem({
       <details>
         <summary className="candidate-row__summary">{label}</summary>
         <div className="candidate-row__body">
+          {leadDetail}
           {history.length > 0 && (
             <ul className="past-elections">
               {history.map((election) => (

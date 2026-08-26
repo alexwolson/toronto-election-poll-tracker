@@ -1,6 +1,34 @@
 import type { Metadata } from "next";
 import { CandidateHistoryItem } from "@/components/candidate-history";
+import { ordinal } from "@/lib/council-history";
 import { loadMayoralCandidates } from "@/lib/feeds";
+import type { PastElection } from "@/types/feeds";
+
+const MAYORAL_BYELECTION_DATE = "2023-06-26";
+
+function mayoralByelectionResult(history: PastElection[]): PastElection | undefined {
+  return history.find(
+    (election) =>
+      election.election_date === MAYORAL_BYELECTION_DATE &&
+      election.office_type === "mayor" &&
+      election.represented_body === "toronto_city_council",
+  );
+}
+
+function returningDetail(election: PastElection): string {
+  const parts = ["2023 mayoral by-election"];
+  if (election.rank !== null && election.field_size !== null) {
+    parts.push(`${ordinal(election.rank)} of ${election.field_size}`);
+  }
+  if (election.vote_share !== null) {
+    const share =
+      election.vote_share < 0.001
+        ? "<0.1%"
+        : `${(election.vote_share * 100).toFixed(1)}%`;
+    parts.push(`${share} of votes cast`);
+  }
+  return parts.join(" · ");
+}
 
 export const metadata: Metadata = {
   title: "Mayoral Candidates — Toronto 2026 Election",
@@ -32,14 +60,31 @@ export default async function CandidatesPage() {
         </h2>
         {available ? (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {feed.candidates.map((candidate) => (
-              <CandidateHistoryItem
-                key={candidate.candidate_id}
-                name={candidate.display_name}
-                history={candidate.past_elections}
-                currentOfficeType={candidate.is_incumbent ? "mayor" : undefined}
-              />
-            ))}
+            {feed.candidates.map((candidate) => {
+              const byelection = mayoralByelectionResult(candidate.past_elections);
+              const summaryPrefix = candidate.is_incumbent
+                ? "Incumbent Mayor"
+                : byelection
+                  ? "Returning"
+                  : undefined;
+
+              return (
+                <CandidateHistoryItem
+                  key={candidate.candidacy_id}
+                  name={candidate.display_name}
+                  history={candidate.past_elections}
+                  currentOfficeType={candidate.is_incumbent ? "mayor" : undefined}
+                  summaryPrefix={summaryPrefix}
+                  leadDetail={
+                    byelection ? (
+                      <p className="candidate-row__return-detail">
+                        {returningDetail(byelection)}
+                      </p>
+                    ) : undefined
+                  }
+                />
+              );
+            })}
           </ul>
         ) : (
           <p className="forecast-unavailable">

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node scripts/resolve-releases.mjs && FEED_LOCAL_DIR=.release-data next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run"

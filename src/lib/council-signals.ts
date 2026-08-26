@@ -135,7 +135,7 @@ export function incumbentExposureFacts(card: CouncilRaceCard): ExposureFact[] {
     const newElectors = inc.new_voter_margin + prior.margin_votes;
     facts.push({
       key: "growth",
-      text: `${ward} has gained an estimated ${withCommas(newElectors)} more voters since ${prior.year} — far more than ${inc.name}'s ${withCommas(prior.margin_votes)}-vote winning margin.`,
+      text: `${ward} has gained an estimated ${withCommas(newElectors)} more voters since ${prior.year} — more than ${inc.name}'s ${withCommas(prior.margin_votes)}-vote winning margin.`,
     });
   }
 

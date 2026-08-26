@@ -317,6 +317,8 @@ describe("incumbentExposureFacts (ticket 05)", () => {
       .join(" ");
     expect(text).toContain("13,771 more voters");
     expect(text).toContain("3,343-vote winning margin");
+    expect(text).toContain("— more than");
+    expect(text).not.toContain("far more than");
     expect(text).toContain("37% of votes cast");
     expect(text).toContain("8% of eligible voters");
     expect(text).toContain("among the lowest");

@@ -7,6 +7,7 @@ import {
   frequencyWithUnit,
   incumbentDefeat,
   leadForecast,
+  marginDistribution,
   publishedCandidateWins,
   viableField,
 } from "./mayoral-forecast";
@@ -130,6 +131,64 @@ describe("agnostic quantities", () => {
     const a = agnosticQuantities(published);
     expect(a.map((q) => q.key)).toEqual(["close_result"]);
     expect(a[0].frequencyStatement).toBe("about 1 time in 5");
+  });
+});
+
+describe("margin distribution", () => {
+  const published: MayoralForecastFeed = {
+    ...feed,
+    close_result: card({
+      quantity: "close_result",
+      band: "10–<30%",
+      frequency_statement: "about 1 in 5",
+      probability: 0.2,
+    }),
+    margin_distribution: {
+      unit: "share_gap",
+      x: [0, 0.05, 0.1, 0.2],
+      density: [1, 3, 2, 0.5],
+      close_threshold: 0.05,
+    },
+  };
+
+  it("is null when close_result is withheld (certified fixture)", () => {
+    expect(marginDistribution(feed)).toBeNull();
+  });
+
+  it("maps the feed to a pp-scaled, marker-annotated view when published", () => {
+    const view = marginDistribution(published)!;
+    expect(view.points[1].pp).toBeCloseTo(5);
+    expect(view.points[1].density).toBe(3);
+    expect(view.closeThresholdPp).toBeCloseTo(5);
+    // all seven past races, closest first (the reference scale)
+    expect(view.markers).toHaveLength(7);
+    expect(view.markers[0].year).toBe(2023);
+    const margins = view.markers.map((m) => m.marginPp);
+    expect(margins).toEqual([...margins].sort((a, b) => a - b));
+  });
+
+  it("re-checks the gate: no view if the shape rides on a withheld close_result", () => {
+    expect(marginDistribution({ ...published, close_result: feed.close_result })).toBeNull();
+  });
+
+  it("splits the density into weighted margin bands, Close cut at the feed threshold", () => {
+    const view = marginDistribution(published)!;
+    expect(view.bands.map((b) => b.name)).toEqual([
+      "Close",
+      "Clear win",
+      "Comfortable",
+      "Landslide",
+    ]);
+    // the Close band ends exactly at the model's published close threshold (5 pts)
+    expect(view.bands[0].loPp).toBe(0);
+    expect(view.bands[0].hiPp).toBeCloseTo(5);
+    expect(view.bands[1].loPp).toBeCloseTo(5);
+    // weight is ordinal: non-negative, normalized so the likeliest band is 1
+    expect(Math.max(...view.bands.map((b) => b.weight))).toBe(1);
+    view.bands.forEach((b) => expect(b.weight).toBeGreaterThanOrEqual(0));
+    // this density piles up just past the threshold -> Clear win carries the most
+    const top = view.bands.reduce((a, b) => (b.weight > a.weight ? b : a));
+    expect(top.name).toBe("Clear win");
   });
 });
 

@@ -36,7 +36,7 @@ function unavailableCard(quantity: QuantityKind): ForecastQuantityCard {
 }
 
 const FORECAST_FALLBACK: MayoralForecastFeed = {
-  schema_version: 1,
+  schema_version: 2,
   election_cycle_id: "",
   evidence_tier: "",
   final_field_samples: [],
@@ -44,10 +44,11 @@ const FORECAST_FALLBACK: MayoralForecastFeed = {
   candidate_win: {},
   close_result: unavailableCard("close_result"),
   incumbent_defeat: unavailableCard("incumbent_defeat"),
+  margin_distribution: null,
 };
 
 function validateForecast(value: unknown): MayoralForecastFeed | null {
-  if (!isRecord(value) || value.schema_version !== 1) return null;
+  if (!isRecord(value) || value.schema_version !== 2) return null;
   if (!isRecord(value.candidate_win)) return null;
   if (!isRecord(value.close_result) || !isRecord(value.incumbent_defeat)) return null;
   return value as unknown as MayoralForecastFeed;

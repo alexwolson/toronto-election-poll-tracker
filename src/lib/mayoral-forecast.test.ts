@@ -13,6 +13,9 @@ import {
 } from "./mayoral-forecast";
 
 const feed = forecastFixture as unknown as MayoralForecastFeed;
+const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
+const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";
+const ALEXANDER = "per_345dd6a9ee645c0bb5a8ade615f91579";
 
 function card(overrides: Partial<ForecastQuantityCard>): ForecastQuantityCard {
   return {
@@ -32,9 +35,9 @@ describe("published candidate wins", () => {
   it("returns every published candidate, ordered by probability descending", () => {
     const wins = publishedCandidateWins(feed);
     expect(wins.map((w) => w.candidateId)).toEqual([
-      "chow",
-      "bradford",
-      "alexander",
+      CHOW,
+      BRADFORD,
+      ALEXANDER,
     ]);
   });
 
@@ -63,7 +66,7 @@ describe("lead forecast", () => {
   it("is the favourite with a band and frequency phrase — never a raw number", () => {
     const lead = leadForecast(feed);
     expect(lead).not.toBeNull();
-    expect(lead!.candidateId).toBe("chow");
+    expect(lead!.candidateId).toBe(CHOW);
     expect(lead!.name).toBe("Olivia Chow");
     expect(lead!.band).toBe("70–<90%");
     expect(lead!.frequencyStatement).toBe("about 4 times in 5");
@@ -90,7 +93,7 @@ describe("incumbent defeat", () => {
   it("pairs the published incumbent-defeat with the incumbent, labelled by name", () => {
     const d = incumbentDefeat(feed);
     expect(d).not.toBeNull();
-    expect(d!.candidateId).toBe("chow");
+    expect(d!.candidateId).toBe(CHOW);
     expect(d!.name).toBe("Olivia Chow");
     expect(d!.label).toBe("Chance Olivia Chow loses to any candidate");
     expect(d!.frequencyStatement).toBe("about 1 time in 5");
@@ -113,9 +116,18 @@ describe("incumbent defeat", () => {
 });
 
 describe("agnostic quantities", () => {
-  it("excludes incumbent-defeat and hides the withheld close-result", () => {
-    // certified fixture: close_result is withheld -> nothing candidate-agnostic
-    expect(agnosticQuantities(feed)).toEqual([]);
+  it("excludes incumbent-defeat and hides a withheld close-result", () => {
+    const withheld = {
+      ...feed,
+      close_result: card({
+        quantity: "close_result",
+        availability: "Forecast Unavailable",
+        band: null,
+        frequency_statement: null,
+        probability: null,
+      }),
+    };
+    expect(agnosticQuantities(withheld)).toEqual([]);
   });
 
   it("shows close-result (only) when it publishes", () => {
@@ -151,8 +163,18 @@ describe("margin distribution", () => {
     },
   };
 
-  it("is null when close_result is withheld (certified fixture)", () => {
-    expect(marginDistribution(feed)).toBeNull();
+  it("is null when close_result is withheld", () => {
+    const withheld = {
+      ...feed,
+      close_result: card({
+        quantity: "close_result",
+        availability: "Forecast Unavailable",
+        band: null,
+        frequency_statement: null,
+        probability: null,
+      }),
+    };
+    expect(marginDistribution(withheld)).toBeNull();
   });
 
   it("maps the feed to a pp-scaled, marker-annotated view when published", () => {
@@ -168,7 +190,14 @@ describe("margin distribution", () => {
   });
 
   it("re-checks the gate: no view if the shape rides on a withheld close_result", () => {
-    expect(marginDistribution({ ...published, close_result: feed.close_result })).toBeNull();
+    const withheld = card({
+      quantity: "close_result",
+      availability: "Forecast Unavailable",
+      band: null,
+      frequency_statement: null,
+      probability: null,
+    });
+    expect(marginDistribution({ ...published, close_result: withheld })).toBeNull();
   });
 
   it("splits the density into weighted margin bands, Close cut at the feed threshold", () => {
@@ -213,7 +242,7 @@ describe("frequencyWithUnit (display wording, ADR 0006 bands stay canonical)", (
 describe("viable field", () => {
   it("is the candidate_win keys", () => {
     expect(new Set(viableField(feed))).toEqual(
-      new Set(["chow", "bradford", "alexander"]),
+      new Set([CHOW, BRADFORD, ALEXANDER]),
     );
   });
 });

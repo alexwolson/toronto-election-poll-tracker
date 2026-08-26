@@ -1,5 +1,5 @@
 /**
- * Typed loaders for the four feeds (spec §Data layer). Each validates the shape
+ * Typed loaders for the five feeds (spec §Data layer). Each validates the shape
  * and falls back to a safe, honest default so a missing or malformed feed
  * degrades gracefully instead of breaking the build.
  *
@@ -11,6 +11,7 @@ import type {
   CouncilRaceCardsFeed,
   ForecastQuantityCard,
   Manifest,
+  MayoralCandidatesFeed,
   MayoralForecastFeed,
   MayoralPollingFeed,
   QuantityKind,
@@ -60,8 +61,46 @@ export function loadMayoralForecast(): Promise<MayoralForecastFeed> {
 
 // ── mayoral polling ─────────────────────────────────────────────────────────
 
+const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
+  schema_version: 2,
+  event_id: "",
+  contest_id: "",
+  election_date: "",
+  ballot_certified: false,
+  candidates: [],
+};
+
+export function validateMayoralCandidates(
+  value: unknown,
+): MayoralCandidatesFeed | null {
+  if (!isRecord(value) || value.schema_version !== 2) return null;
+  if (typeof value.event_id !== "string" || typeof value.contest_id !== "string") return null;
+  if (typeof value.election_date !== "string") return null;
+  if (typeof value.ballot_certified !== "boolean") return null;
+  if (!Array.isArray(value.candidates)) return null;
+  if (!value.ballot_certified && value.candidates.length > 0) return null;
+  const validCandidates = value.candidates.every(
+    (candidate) =>
+      isRecord(candidate) &&
+      typeof candidate.candidacy_id === "string" &&
+      typeof candidate.display_name === "string" &&
+      (typeof candidate.person_id === "string" || candidate.person_id === null) &&
+      typeof candidate.is_incumbent === "boolean" &&
+      Array.isArray(candidate.past_elections),
+  );
+  return validCandidates ? (value as unknown as MayoralCandidatesFeed) : null;
+}
+
+export function loadMayoralCandidates(): Promise<MayoralCandidatesFeed> {
+  return loadFeed(
+    "mayoral_candidates.json",
+    validateMayoralCandidates,
+    MAYORAL_CANDIDATES_FALLBACK,
+  );
+}
+
 const POLLING_FALLBACK: MayoralPollingFeed = {
-  schema_version: 1,
+  schema_version: 2,
   candidates: [],
   polls: [],
   latest: null,
@@ -69,7 +108,7 @@ const POLLING_FALLBACK: MayoralPollingFeed = {
 };
 
 function validatePolling(value: unknown): MayoralPollingFeed | null {
-  if (!isRecord(value) || value.schema_version !== 1) return null;
+  if (!isRecord(value) || value.schema_version !== 2) return null;
   if (!Array.isArray(value.polls) || !isRecord(value.trend)) return null;
   return value as unknown as MayoralPollingFeed;
 }
@@ -101,20 +140,11 @@ export function loadCouncilRaceCards(): Promise<CouncilRaceCardsFeed> {
 const MANIFEST_FALLBACK: Manifest = {
   schema_version: 1,
   generated_at: "",
-  election: {
-    cycle_id: "toronto-2026",
-    election_date: "2026-10-26",
-    nomination_close_date: "2026-08-21",
-    final_ballot_certified: false,
-  },
-  feeds: {},
-  feed_versions: {},
-  mayoral_publication_summary: null,
 };
 
 function validateManifest(value: unknown): Manifest | null {
   if (!isRecord(value) || value.schema_version !== 1) return null;
-  if (!isRecord(value.election)) return null;
+  if (typeof value.generated_at !== "string") return null;
   return value as unknown as Manifest;
 }
 

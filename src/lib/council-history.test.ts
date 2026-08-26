@@ -179,10 +179,9 @@ describe("historyHeadline", () => {
       e({ office_type: "councillor", result: "won" }),
       e({ office_type: "councillor", result: "won" }),
     ];
-    // isIncumbent = true: councillor is their current seat, so just the count
-    expect(historyHeadline(incumbent, true)).toBe("2 past races");
+    expect(historyHeadline(incumbent, "councillor")).toBe("2 past races");
     // a non-incumbent returning councillor still reads as Former Councillor
-    expect(historyHeadline(incumbent, false)).toBe("Former Councillor · 2 past races");
+    expect(historyHeadline(incumbent)).toBe("Former Councillor · 2 past races");
   });
 
   it("keeps a higher former office for an incumbent who once held it", () => {
@@ -190,6 +189,14 @@ describe("historyHeadline", () => {
       e({ office_type: "councillor", result: "won" }),
       e({ office_type: "mp", result: "won" }),
     ];
-    expect(historyHeadline(incumbentExMp, true)).toBe("Former MP · 2 past races");
+    expect(historyHeadline(incumbentExMp, "councillor")).toBe("Former MP · 2 past races");
+  });
+
+  it("does not call the sitting mayor a 'Former Mayor'", () => {
+    const incumbentMayor = [
+      e({ office_type: "mayor", result: "won" }),
+      e({ office_type: "mayor", result: "lost" }),
+    ];
+    expect(historyHeadline(incumbentMayor, "mayor")).toBe("2 past races");
   });
 });

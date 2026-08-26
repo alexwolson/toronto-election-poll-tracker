@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CandidateHistoryItem } from "@/components/candidate-history";
 import { loadCouncilRaceCards } from "@/lib/feeds";
 import { wardAttentionLevel, type AttentionLevel } from "@/lib/council";
 import {
-  historyHeadline,
-  officeLabel,
-  partyLabel,
-  resultLabel,
   sameWardReturnSummary,
 } from "@/lib/council-history";
 import {
@@ -15,7 +12,7 @@ import {
   raceHistorySignals,
 } from "@/lib/council-signals";
 import { formatDate, formatSharePct } from "@/lib/format";
-import type { CouncilCandidate, CouncilRaceCard, PastElection } from "@/types/feeds";
+import type { CouncilCandidate, CouncilRaceCard } from "@/types/feeds";
 
 const ATTENTION_LABEL: Record<AttentionLevel, string> = {
   high: "High attention",
@@ -38,23 +35,6 @@ export async function generateMetadata({
   const card = council.wards[ward_num];
   const name = card?.ward_name ?? `Ward ${ward_num}`;
   return { title: `${name} — Toronto 2026 Council` };
-}
-
-function PastElectionRow({ election }: { election: PastElection }) {
-  const party = partyLabel(election.party_name);
-  return (
-    <li className="past-election">
-      <span className="past-election__year">{election.year}</span>
-      <span className="past-election__office">
-        {officeLabel(election)}
-        {election.district_name ? `, ${election.district_name}` : ""}
-      </span>
-      {party && <span className="past-election__party">{party}</span>}
-      <span className={`past-election__result past-election__result--${election.result}`}>
-        {resultLabel(election)}
-      </span>
-    </li>
-  );
 }
 
 function DirectionIcon({ direction }: { direction: "positive" | "negative" }) {
@@ -89,52 +69,32 @@ function CandidateItem({
 }) {
   const history = candidate.past_elections;
   const signals = ownHistorySignals(candidate.historical_hints);
-  const headline = historyHeadline(history, isIncumbent);
   const sameWardReturn = sameWardReturnSummary(candidate, ward, prior, isIncumbent);
-  const historySummary = [sameWardReturn?.topline, headline].filter(Boolean).join(" · ");
-  const expandable = history.length > 0 || signals.length > 0;
-
-  const label = (
-    <>
-      <span className="candidate-row__name">{candidate.display_name}</span>
-      {historySummary && <span className="candidate-row__headline">{historySummary}</span>}
-    </>
-  );
-
-  if (!expandable) {
-    return <li className="candidate-row candidate-row--plain">{label}</li>;
-  }
 
   return (
-    <li className="candidate-row">
-      <details>
-        <summary className="candidate-row__summary">{label}</summary>
-        <div className="candidate-row__body">
-          {sameWardReturn && (
-            <p className="candidate-row__return-detail">{sameWardReturn.detail}</p>
-          )}
-          {history.length > 0 && (
-            <ul className="past-elections">
-              {history.map((election, i) => (
-                <PastElectionRow key={i} election={election} />
-              ))}
-            </ul>
-          )}
-          {signals.length > 0 && (
-            <div className="signal-group">
-              <ul className="signal-list">
-                {signals.map((sig) => (
-                  <li key={sig.key} className={`signal signal--${sig.direction}`}>
-                    <DirectionIcon direction={sig.direction} />
-                    <span>{sig.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+    <CandidateHistoryItem
+      name={candidate.display_name}
+      history={history}
+      currentOfficeType={isIncumbent ? "councillor" : undefined}
+      summaryPrefix={sameWardReturn?.topline}
+      hasAdditionalDetails={Boolean(sameWardReturn) || signals.length > 0}
+    >
+      {sameWardReturn && (
+        <p className="candidate-row__return-detail">{sameWardReturn.detail}</p>
+      )}
+      {signals.length > 0 && (
+        <div className="signal-group">
+          <ul className="signal-list">
+            {signals.map((sig) => (
+              <li key={sig.key} className={`signal signal--${sig.direction}`}>
+                <DirectionIcon direction={sig.direction} />
+                <span>{sig.text}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      </details>
-    </li>
+      )}
+    </CandidateHistoryItem>
   );
 }
 

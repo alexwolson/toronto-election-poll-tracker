@@ -2377,7 +2377,7 @@ body { line-height: 1.55; }
   .site-brand { padding: 0.7rem 0.75rem 0.5rem; }
   .site-brand .font-heading { font-size: 1.35rem; }
   .site-brand .font-mono { font-size: 0.5rem; }
-  .site-nav { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .site-nav { display: grid; grid-template-columns: repeat(5, 1fr); }
   .nav-link { min-width: 0; padding: 0.6rem 0.2rem; border-right: 1px solid var(--line-inner); font-size: 0.58rem; }
   .race-hero { padding: 1.6rem 0 1.8rem; }
   .race-hero h1 { font-size: clamp(2.65rem, 15vw, 4rem); }

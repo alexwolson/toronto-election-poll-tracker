@@ -1,5 +1,5 @@
 /**
- * Typed loaders for the four feeds (spec §Data layer). Each validates the shape
+ * Typed loaders for the five feeds (spec §Data layer). Each validates the shape
  * and falls back to a safe, honest default so a missing or malformed feed
  * degrades gracefully instead of breaking the build.
  *
@@ -11,6 +11,7 @@ import type {
   CouncilRaceCardsFeed,
   ForecastQuantityCard,
   Manifest,
+  MayoralCandidatesFeed,
   MayoralForecastFeed,
   MayoralPollingFeed,
   QuantityKind,
@@ -59,6 +60,45 @@ export function loadMayoralForecast(): Promise<MayoralForecastFeed> {
 }
 
 // ── mayoral polling ─────────────────────────────────────────────────────────
+
+const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
+  schema_version: 1,
+  election_cycle_id: "",
+  ballot_certified: false,
+  candidates: [],
+};
+
+export function validateMayoralCandidates(
+  value: unknown,
+): MayoralCandidatesFeed | null {
+  if (!isRecord(value) || value.schema_version !== 1) return null;
+  if (typeof value.election_cycle_id !== "string") return null;
+  if (typeof value.ballot_certified !== "boolean") return null;
+  if (!Array.isArray(value.candidates)) return null;
+  if (!value.ballot_certified && value.candidates.length > 0) return null;
+  const validCandidates = value.candidates.every(
+    (candidate) =>
+      isRecord(candidate) &&
+      typeof candidate.candidate_id === "string" &&
+      typeof candidate.display_name === "string" &&
+      typeof candidate.status === "string" &&
+      (typeof candidate.person_id === "string" || candidate.person_id === null) &&
+      typeof candidate.is_matched === "boolean" &&
+      candidate.is_matched === (typeof candidate.person_id === "string") &&
+      typeof candidate.is_incumbent === "boolean" &&
+      Array.isArray(candidate.past_elections) &&
+      (candidate.is_matched || candidate.past_elections.length === 0),
+  );
+  return validCandidates ? (value as unknown as MayoralCandidatesFeed) : null;
+}
+
+export function loadMayoralCandidates(): Promise<MayoralCandidatesFeed> {
+  return loadFeed(
+    "mayoral_candidates.json",
+    validateMayoralCandidates,
+    MAYORAL_CANDIDATES_FALLBACK,
+  );
+}
 
 const POLLING_FALLBACK: MayoralPollingFeed = {
   schema_version: 1,

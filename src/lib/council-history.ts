@@ -156,11 +156,11 @@ const OFFICE_SENIORITY: Record<string, number> = {
  *  office, so they don't produce a "Former Councillor" label. Null for empty. */
 export function historyHeadline(
   history: PastElection[],
-  isIncumbent = false,
+  currentOfficeType?: string,
 ): string | null {
   if (history.length === 0) return null;
   const formerWins = history.filter(
-    (e) => e.result === "won" && !(isIncumbent && e.office_type === "councillor"),
+    (e) => e.result === "won" && e.office_type !== currentOfficeType,
   );
   const races = history.length;
   const racesLabel = `${races} past ${races === 1 ? "race" : "races"}`;

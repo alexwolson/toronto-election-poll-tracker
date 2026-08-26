@@ -1,7 +1,7 @@
 # Mayoral Candidates Page — Design Spec
 
 **Date:** 2026-08-26  
-**Status:** Awaiting written review  
+**Status:** Approved
 **Branches:** `codex/mayoral-candidates` in both `toronto-election-poll-tracker` and `toronto-election-poll-tracker-data`
 
 ---
@@ -186,4 +186,3 @@ The frontend's focused tests, full test suite, lint, and production build must p
 - Manual identity overrides introduced only in the frontend.
 - Name-only joins between frontend feeds.
 - Claims that an unresolved candidate has never sought elected office.
-

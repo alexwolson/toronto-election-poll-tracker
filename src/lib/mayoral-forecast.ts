@@ -86,6 +86,116 @@ export function agnosticQuantities(feed: MayoralForecastFeed): AgnosticQuantity[
   ];
 }
 
+export interface HistoricalMargin {
+  year: number;
+  label: string;
+  /** winner v. runner-up, by surname, e.g. "Chow v. Bailão" */
+  matchup: string;
+  /** winning margin in percentage points (winner minus runner-up share × 100) */
+  marginPp: number;
+}
+
+/** Past Toronto mayoral results — the winner-minus-runner-up margin and matchup,
+ *  from the canonical all-offices dataset (top-two share gap × 100). Seven races:
+ *  the six general elections plus the 2023 by-election. These are fixed
+ *  historical facts (not forecast output), so they live here as a constant and
+ *  become the reference scale for the margin-distribution panel. */
+export const HISTORICAL_MAYORAL_MARGINS: HistoricalMargin[] = [
+  { year: 2003, label: "2003", matchup: "Miller vs. Tory", marginPp: 5.2 },
+  { year: 2006, label: "2006", matchup: "Miller vs. Pitfield", marginPp: 24.6 },
+  { year: 2010, label: "2010", matchup: "Ford vs. Smitherman", marginPp: 11.5 },
+  { year: 2014, label: "2014", matchup: "Tory vs. Ford", marginPp: 6.5 },
+  { year: 2018, label: "2018", matchup: "Tory vs. Keesmaat", marginPp: 39.9 },
+  { year: 2022, label: "2022", matchup: "Tory vs. Penalosa", marginPp: 44.1 },
+  { year: 2023, label: "2023", matchup: "Chow vs. Bailão", marginPp: 4.7 },
+];
+
+/** One named margin band on the strip. `weight` is an ORDINAL cue only — the
+ *  share of forecast mass in [loPp, hiPp), normalized so the likeliest band is 1
+ *  — used to shade the band darker/lighter. It re-presents the ordering the
+ *  (already-gated) density curve shows; it is never rendered as a number. */
+export interface MarginBand {
+  name: string;
+  loPp: number;
+  hiPp: number;
+  weight: number;
+}
+
+/** Editorial band names and their upper cuts in points. The Close/Clear-win
+ *  boundary is NOT here — it is the model's own close threshold, read from the
+ *  feed — so the Close band always matches the published "close" definition.
+ *  The 15/30/50-pt cuts are editorial. */
+const BAND_NAMES = ["Close", "Clear win", "Comfortable", "Landslide"] as const;
+const BAND_UPPER_CUTS_PP = [15, 30, 50] as const;
+
+/** Trapezoidal mass of the density (points carried in pp) over [lo, hi), summing
+ *  only the clipped overlap of each segment so partial bands and bands past the
+ *  data both integrate correctly. Units are immaterial: the result is normalized
+ *  across bands, so only the ratios matter. */
+function densityMass(
+  points: { pp: number; density: number }[],
+  lo: number,
+  hi: number,
+): number {
+  let mass = 0;
+  for (let i = 1; i < points.length; i++) {
+    const x0 = points[i - 1].pp;
+    const x1 = points[i].pp;
+    const a = Math.max(x0, lo);
+    const b = Math.min(x1, hi);
+    if (b <= a || x1 === x0) continue;
+    const at = (x: number) =>
+      points[i - 1].density +
+      ((x - x0) / (x1 - x0)) * (points[i].density - points[i - 1].density);
+    mass += ((at(a) + at(b)) / 2) * (b - a);
+  }
+  return mass;
+}
+
+export interface MarginDistributionView {
+  /** density curve points, x carried in percentage points */
+  points: { pp: number; density: number }[];
+  /** the "close" cutoff in percentage points (e.g. 5) */
+  closeThresholdPp: number;
+  /** the four named margin bands, ascending, each with an ordinal shade weight */
+  bands: MarginBand[];
+  /** past elections to mark, ascending by margin (the reference scale) */
+  markers: HistoricalMargin[];
+}
+
+/** The published winning-margin distribution as a chart-ready view, or null when
+ *  the feed withholds it. Gate-linked twice over: the feed only sends the shape
+ *  when close_result publishes, and we re-check that gate here so the panel can
+ *  never outlive the summary it derives from (ADR 0006 / 0032). */
+export function marginDistribution(
+  feed: MayoralForecastFeed,
+): MarginDistributionView | null {
+  const dist = feed.margin_distribution;
+  if (!dist || !isPublished(feed.close_result)) return null;
+  if (dist.x.length === 0 || dist.x.length !== dist.density.length) return null;
+
+  const points = dist.x.map((x, i) => ({ pp: x * 100, density: dist.density[i] }));
+  const closeThresholdPp = dist.close_threshold * 100;
+
+  // Band boundaries: Close ends at the model's close threshold; then editorial cuts.
+  const cuts = [0, closeThresholdPp, ...BAND_UPPER_CUTS_PP];
+  const rawMass = BAND_NAMES.map((_, i) => densityMass(points, cuts[i], cuts[i + 1]));
+  const maxMass = Math.max(...rawMass, Number.EPSILON);
+  const bands = BAND_NAMES.map((name, i) => ({
+    name,
+    loPp: cuts[i],
+    hiPp: cuts[i + 1],
+    weight: rawMass[i] / maxMass,
+  }));
+
+  return {
+    points,
+    closeThresholdPp,
+    bands,
+    markers: [...HISTORICAL_MAYORAL_MARGINS].sort((a, b) => a.marginPp - b.marginPp),
+  };
+}
+
 export interface IncumbentDefeat {
   candidateId: string;
   name: string;

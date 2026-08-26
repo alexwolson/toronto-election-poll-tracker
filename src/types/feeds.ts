@@ -19,7 +19,7 @@ export type Availability =
 /** The three quantity kinds. Every `candidate_win` card carries `challenger_win`. */
 export type QuantityKind = "challenger_win" | "close_result" | "incumbent_defeat";
 
-// ── 1. mayoral forecast (schema_version 1) ──────────────────────────────────
+// ── 1. mayoral forecast (schema_version 2) ──────────────────────────────────
 
 /** One gated quantity: its tier, availability, published band, and (only when
  *  Available) the point estimate. `band`/`frequency_statement`/`probability` are
@@ -35,8 +35,21 @@ export interface ForecastQuantityCard {
   reason: string;
 }
 
+/** Smoothed density of the winning margin (winner minus runner-up share) across
+ *  the Dirichlet draws (schema v2). `x` and `close_threshold` are in share units
+ *  (0..1); `density` is the reflected-KDE value at each `x`. Rides on the
+ *  close-result gate: the feed sends `null` whenever close_result is withheld. */
+export interface MarginDistribution {
+  /** "share_gap" — winner minus runner-up, a fraction in [0, 1] */
+  unit: string;
+  x: number[];
+  density: number[];
+  /** the "close" cutoff, in the same share units as `x` (e.g. 0.05 = 5 points) */
+  close_threshold: number;
+}
+
 export interface MayoralForecastFeed {
-  schema_version: 1;
+  schema_version: 2;
   /** underscore form, e.g. "toronto_2026" */
   election_cycle_id: string;
   evidence_tier: string;
@@ -46,6 +59,8 @@ export interface MayoralForecastFeed {
   candidate_win: Record<string, ForecastQuantityCard>;
   close_result: ForecastQuantityCard;
   incumbent_defeat: ForecastQuantityCard;
+  /** null unless close_result publishes (gate-linked; ADR 0006 / 0032) */
+  margin_distribution: MarginDistribution | null;
 }
 
 // ── 2. mayoral polling (schema_version 1) ───────────────────────────────────

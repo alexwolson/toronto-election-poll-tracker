@@ -2526,6 +2526,96 @@ body { line-height: 1.55; }
   color: var(--text-strong);
 }
 
+/* ── Margin-distribution panel (prototype) ─────────── */
+.margin-panel {
+  margin-top: 2rem;
+}
+.margin-panel__lede {
+  max-width: 46rem;
+  margin: 0.5rem 0 1.25rem;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.margin-dist {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.margin-dist__bar {
+  fill: var(--accent);
+}
+.margin-dist__bar-name {
+  fill: var(--text-strong);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-anchor: middle;
+}
+.margin-dist__yaxis,
+.margin-dist__yaxis-arrow {
+  stroke: var(--text-soft);
+  fill: none;
+}
+.margin-dist__yaxis-label {
+  fill: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-anchor: middle;
+}
+.margin-dist__gridline {
+  stroke: var(--line-soft);
+  stroke-dasharray: 1 6;
+  opacity: 0.5;
+}
+.margin-dist__axis-caption {
+  fill: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 9px;
+  text-anchor: middle;
+}
+.margin-dist__baseline {
+  stroke: var(--line-soft);
+}
+.margin-dist__marker line {
+  stroke: var(--text-soft);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.65;
+}
+.margin-dist__marker-dot {
+  fill: var(--text-strong);
+  stroke: var(--bg-base);
+  stroke-width: 1.5;
+}
+.margin-dist__marker-matchup {
+  fill: var(--text-strong);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+.margin-dist__marker-year {
+  fill: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 9px;
+  text-anchor: middle;
+}
+.margin-dist__tick line {
+  stroke: var(--line-soft);
+}
+.margin-dist__tick-num {
+  fill: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 10px;
+  text-anchor: middle;
+}
+
 .forecast-unavailable {
   border: 1px solid var(--line-soft);
   border-left: 4px solid var(--vuln-open-line);

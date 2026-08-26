@@ -1,8 +1,9 @@
+import { MarginDistribution } from "@/components/margin-distribution";
 import { candidateMeta } from "@/lib/candidates";
 import {
-  agnosticQuantities,
   incumbentDefeat,
   leadForecast,
+  marginDistribution,
   publishedCandidateWins,
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
@@ -16,7 +17,7 @@ import type { MayoralForecastFeed } from "@/types/feeds";
 export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
   const wins = publishedCandidateWins(feed);
   const lead = leadForecast(feed);
-  const agnostic = agnosticQuantities(feed);
+  const margins = marginDistribution(feed);
   const defeat = incumbentDefeat(feed);
 
   if (!lead) {
@@ -70,16 +71,21 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
         </div>
       </section>
 
-      {agnostic.length > 0 && (
-        <section aria-label="Other forecast quantities">
-          <div className="derived-row">
-            {agnostic.map((item) => (
-              <div key={item.key} className="derived-item">
-                <p className="derived-item__label">{item.label}</p>
-                <span className="derived-item__freq">{item.frequencyStatement}</span>
-              </div>
-            ))}
+      {margins && (
+        <section className="margin-panel" aria-labelledby="margin-panel-heading">
+          <div className="simple-section-heading">
+            <p className="np-kicker">How close might it be?</p>
+            <h2 id="margin-panel-heading" className="section-title">
+              The margin between the top two
+            </h2>
           </div>
+          <p className="margin-panel__lede">
+            The gap between the leading two candidates, split into four outcomes
+            from a close result to a landslide. The taller and darker a bar, the
+            likelier the 2026 result lands there; the seven past Toronto mayoral
+            results sit underneath at the margins they finished with.
+          </p>
+          <MarginDistribution view={margins} />
         </section>
       )}
     </>

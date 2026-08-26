@@ -62,21 +62,40 @@ export function loadMayoralForecast(): Promise<MayoralForecastFeed> {
 // ── mayoral polling ─────────────────────────────────────────────────────────
 
 const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
-  schema_version: 2,
+  schema_version: 3,
   event_id: "",
   contest_id: "",
   election_date: "",
   ballot_certified: false,
+  coverage: {
+    policy: "full_verified_canadian_electoral_career",
+    jurisdiction: "Canada",
+    year_cutoff: null,
+    cohort_id: "",
+    source_release: "",
+    review_date: "",
+    methodology_note: "",
+  },
   candidates: [],
 };
 
 export function validateMayoralCandidates(
   value: unknown,
 ): MayoralCandidatesFeed | null {
-  if (!isRecord(value) || value.schema_version !== 2) return null;
+  if (!isRecord(value) || value.schema_version !== 3) return null;
   if (typeof value.event_id !== "string" || typeof value.contest_id !== "string") return null;
   if (typeof value.election_date !== "string") return null;
   if (typeof value.ballot_certified !== "boolean") return null;
+  if (!isRecord(value.coverage)) return null;
+  if (
+    value.coverage.policy !== "full_verified_canadian_electoral_career" ||
+    value.coverage.jurisdiction !== "Canada" ||
+    value.coverage.year_cutoff !== null ||
+    typeof value.coverage.cohort_id !== "string" ||
+    typeof value.coverage.source_release !== "string" ||
+    typeof value.coverage.review_date !== "string" ||
+    typeof value.coverage.methodology_note !== "string"
+  ) return null;
   if (!Array.isArray(value.candidates)) return null;
   if (!value.ballot_certified && value.candidates.length > 0) return null;
   const validCandidates = value.candidates.every(
@@ -86,6 +105,11 @@ export function validateMayoralCandidates(
       typeof candidate.display_name === "string" &&
       (typeof candidate.person_id === "string" || candidate.person_id === null) &&
       typeof candidate.is_incumbent === "boolean" &&
+      ["reviewed", "reviewed_with_limitations", "no_verified_prior_candidacy"].includes(
+        String(candidate.review_status),
+      ) &&
+      (typeof candidate.review_limitations === "string" ||
+        candidate.review_limitations === null) &&
       Array.isArray(candidate.past_elections),
   );
   return validCandidates ? (value as unknown as MayoralCandidatesFeed) : null;

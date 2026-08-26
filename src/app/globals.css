@@ -2795,6 +2795,19 @@ body { line-height: 1.55; }
   color: var(--text-mid);
   font-size: 0.75rem;
 }
+.candidate-coverage-note {
+  max-width: 51rem;
+  margin: 1rem 0 0;
+  color: var(--text-mid);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.candidate-row__coverage-detail {
+  margin: 0.75rem 0 0;
+  color: var(--text-mid);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
 .candidate-row__body {
   padding: 0.5rem 0 0.35rem 1.05rem;
 }

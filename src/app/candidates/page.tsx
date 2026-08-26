@@ -50,6 +50,9 @@ export default async function CandidatesPage() {
           see their confirmed history in municipal, provincial, federal, and
           school-board elections.
         </p>
+        {available && feed.coverage.methodology_note && (
+          <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
+        )}
       </section>
 
       <section className="ward-detail-section" aria-labelledby="field-heading">
@@ -66,7 +69,11 @@ export default async function CandidatesPage() {
                 ? "Incumbent Mayor"
                 : byelection
                   ? "Returning"
-                  : undefined;
+                  : candidate.review_status === "no_verified_prior_candidacy"
+                    ? "No verified prior candidacy"
+                    : candidate.past_elections.length === 0
+                      ? "No verified history"
+                      : undefined;
 
               return (
                 <CandidateHistoryItem
@@ -75,6 +82,7 @@ export default async function CandidatesPage() {
                   history={candidate.past_elections}
                   currentOfficeType={candidate.is_incumbent ? "mayor" : undefined}
                   summaryPrefix={summaryPrefix}
+                  hasAdditionalDetails={Boolean(candidate.review_limitations)}
                   leadDetail={
                     byelection ? (
                       <p className="candidate-row__return-detail">
@@ -82,7 +90,13 @@ export default async function CandidatesPage() {
                       </p>
                     ) : undefined
                   }
-                />
+                >
+                  {candidate.review_limitations && (
+                    <p className="candidate-row__coverage-detail">
+                      <strong>Coverage note:</strong> {candidate.review_limitations}
+                    </p>
+                  )}
+                </CandidateHistoryItem>
               );
             })}
           </ul>

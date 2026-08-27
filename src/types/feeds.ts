@@ -63,22 +63,40 @@ export interface MayoralForecastFeed {
   margin_distribution: MarginDistribution | null;
 }
 
-// ── 2. Results-owned certified mayoral field (schema_version 2) ─────────────
+// ── 2. Results-owned certified mayoral field (schema_version 3) ─────────────
+
+export type MayoralCareerReviewStatus =
+  | "reviewed"
+  | "reviewed_with_limitations"
+  | "no_verified_prior_candidacy";
+
+export interface MayoralCareerCoverage {
+  policy: "full_verified_canadian_electoral_career";
+  jurisdiction: "Canada";
+  year_cutoff: null;
+  cohort_id: string;
+  source_release: string;
+  review_date: string;
+  methodology_note: string;
+}
 
 export interface MayoralCandidate {
   candidacy_id: string;
   display_name: string;
   person_id: string | null;
   is_incumbent: boolean;
+  review_status: MayoralCareerReviewStatus;
+  review_limitations: string | null;
   past_elections: PastElection[];
 }
 
 export interface MayoralCandidatesFeed {
-  schema_version: 2;
+  schema_version: 3;
   event_id: string;
   contest_id: string;
   election_date: string;
   ballot_certified: boolean;
+  coverage: MayoralCareerCoverage;
   candidates: MayoralCandidate[];
 }
 

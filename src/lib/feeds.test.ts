@@ -5,6 +5,7 @@ import { validateMayoralCandidates } from "./feeds";
 describe("validateMayoralCandidates", () => {
   it("accepts the complete certified fixture", () => {
     const feed = validateMayoralCandidates(candidatesFixture);
+    expect(feed?.schema_version).toBe(3);
     expect(feed?.ballot_certified).toBe(true);
     expect(feed?.candidates).toHaveLength(53);
     expect(

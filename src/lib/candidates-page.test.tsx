@@ -29,6 +29,14 @@ describe("Candidates page", () => {
     expect(html).toContain("Identity evidence standards are the same");
     expect(html).toContain("1991");
     expect(html).toContain("Coverage note:");
+    expect(html).toContain(
+      "We identified a Toronto school trustee candidacy in 1985 but could not recover authoritative results.",
+    );
+    expect(html).toContain(
+      "We identified Toronto council by-election candidacies in 1998 and 2001 but could not recover authoritative results.",
+    );
+    expect(html).not.toContain("institutionally confirmed");
+    expect(html).not.toContain("no explicit bridge");
   });
 
   it("shows an honest unavailable state instead of a partial field", async () => {

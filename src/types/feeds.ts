@@ -110,7 +110,58 @@ export interface MayoralCandidatesFeed {
   candidates: MayoralCandidate[];
 }
 
-// ── Backend-owned trustee race cards (schema_version 2) ───────────────────
+// ── Shared presentation-ready race maps ───────────────────────────────────
+
+export type RaceMapSignalKey =
+  | "open"
+  | "high"
+  | "elevated"
+  | "quiet"
+  | "two_incumbents"
+  | "one_incumbent"
+  | "acclaimed"
+  | "prior_winner_share"
+  | "no_comparable_result";
+
+export interface RaceMapLegendEntry {
+  key: RaceMapSignalKey;
+  label: string;
+  description?: string;
+}
+
+export interface RaceMapPanel {
+  heading: string;
+  geography: string;
+  status: string;
+  candidate_count: number;
+  incumbent_summary: string;
+  href: string;
+}
+
+export interface RaceMapFeature {
+  ward_id: string;
+  accessible_name: string;
+  path: string;
+  label: {
+    x: number;
+    y: number;
+    text: string;
+    leader_line: null | { x1: number; y1: number; x2: number; y2: number };
+  };
+  signal_key: RaceMapSignalKey;
+  signal_value: number | null;
+  panel: RaceMapPanel;
+}
+
+export interface RaceMap {
+  view_box: "0 0 1000 720";
+  aria_label: string;
+  palette: "council_attention" | "tdsb_race_structure" | "prior_winner_share";
+  legend: RaceMapLegendEntry[];
+  features: RaceMapFeature[];
+}
+
+// ── Backend-owned trustee race cards (schema_version 3) ───────────────────
 
 export type TrusteeBoardId = "tdsb" | "tcdsb" | "viamonde" | "monavenir";
 
@@ -184,10 +235,11 @@ export interface TrusteeBoard {
   boundary_regime: string;
   candidate_count: number;
   wards: TrusteeWard[];
+  map: RaceMap | null;
 }
 
 export interface TrusteeRaceCardsFeed {
-  schema_version: 2;
+  schema_version: 3;
   event_id: string;
   election_date: string;
   ballot_certified: boolean;
@@ -393,11 +445,16 @@ export interface CouncilRaceCard {
   prior_result: PriorResult | null;
   competitiveness: Competitiveness;
   ward_polls: WardPoll[];
+  attention: {
+    level: "high" | "elevated" | "quiet" | "open";
+    score: number;
+  };
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 7;
+  schema_version: 8;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;
+  map: RaceMap | null;
 }

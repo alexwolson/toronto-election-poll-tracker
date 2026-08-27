@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import councilFixture from "../../fixtures/council_race_cards.json";
-import type { CouncilRaceCard, CouncilRaceCardsFeed } from "@/types/feeds";
+import type { CouncilRaceCardsFeed } from "@/types/feeds";
 import {
   attentionScore,
   indexCounts,
@@ -49,25 +49,12 @@ describe("ward attention level", () => {
     expect(wardAttentionLevel(feed.wards["5"])).toBe("elevated");
   });
 
-  it("classes an open seat as open regardless of defeatability", () => {
-    const open: CouncilRaceCard = {
-      ...feed.wards["5"],
-      is_open_seat: true,
-    };
-    expect(wardAttentionLevel(open)).toBe("open");
+  it("reads the backend's open-seat category", () => {
+    expect(wardAttentionLevel(feed.wards["4"])).toBe("open");
   });
 
-  it("classes a quiet incumbent (no triggers, low defeatability) as quiet", () => {
-    const quiet: CouncilRaceCard = {
-      ...feed.wards["5"],
-      is_open_seat: false,
-      incumbent: {
-        ...feed.wards["5"].incumbent,
-        defeatability_score: 20,
-        exposure_triggers: [],
-      },
-    };
-    expect(wardAttentionLevel(quiet)).toBe("quiet");
+  it("reads the backend's lower-attention category", () => {
+    expect(wardAttentionLevel(feed.wards["15"])).toBe("quiet");
   });
 });
 

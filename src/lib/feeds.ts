@@ -16,11 +16,105 @@ import type {
   MayoralPollingFeed,
   PastElection,
   QuantityKind,
+  RaceMap,
   TrusteeRaceCardsFeed,
 } from "@/types/feeds";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const SVG_PATH = /^M[-0-9. ]+(?: L[-0-9. ]+)+(?: Z(?: M[-0-9. ]+(?: L[-0-9. ]+)+ Z)*)$/;
+
+function validMapPoint(value: unknown, maximum: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= maximum;
+}
+
+function validLeaderLine(value: unknown): boolean {
+  return value === null || (
+    isRecord(value) &&
+    validMapPoint(value.x1, 1000) &&
+    validMapPoint(value.y1, 720) &&
+    validMapPoint(value.x2, 1000) &&
+    validMapPoint(value.y2, 720)
+  );
+}
+
+function validateRaceMap(
+  value: unknown,
+  expectedWardIds: string[],
+  allowedSignals: ReadonlySet<string>,
+  hrefPrefix: string,
+  palette: RaceMap["palette"],
+): RaceMap | null {
+  if (
+    !isRecord(value) ||
+    value.view_box !== "0 0 1000 720" ||
+    value.palette !== palette ||
+    typeof value.aria_label !== "string" ||
+    !value.aria_label ||
+    !Array.isArray(value.legend) ||
+    value.legend.length === 0 ||
+    !value.legend.every(
+      (entry) =>
+        isRecord(entry) &&
+        allowedSignals.has(String(entry.key)) &&
+        typeof entry.label === "string" &&
+        entry.label.length > 0 &&
+        (entry.description === undefined || typeof entry.description === "string"),
+    ) ||
+    !Array.isArray(value.features) ||
+    value.features.length !== expectedWardIds.length
+  ) return null;
+
+  const expected = new Set(expectedWardIds);
+  const seen = new Set<string>();
+  for (const feature of value.features) {
+    if (
+      !isRecord(feature) ||
+      typeof feature.ward_id !== "string" ||
+      !expected.has(feature.ward_id) ||
+      seen.has(feature.ward_id) ||
+      typeof feature.accessible_name !== "string" ||
+      !feature.accessible_name ||
+      typeof feature.path !== "string" ||
+      !SVG_PATH.test(feature.path) ||
+      !isRecord(feature.label) ||
+      !validMapPoint(feature.label.x, 1000) ||
+      !validMapPoint(feature.label.y, 720) ||
+      typeof feature.label.text !== "string" ||
+      !feature.label.text ||
+      !validLeaderLine(feature.label.leader_line) ||
+      !allowedSignals.has(String(feature.signal_key)) ||
+      (feature.signal_value !== null &&
+        (typeof feature.signal_value !== "number" ||
+          !Number.isFinite(feature.signal_value) ||
+          feature.signal_value < 0 ||
+          feature.signal_value > 1)) ||
+      !isRecord(feature.panel) ||
+      typeof feature.panel.heading !== "string" ||
+      !feature.panel.heading ||
+      typeof feature.panel.geography !== "string" ||
+      !feature.panel.geography ||
+      typeof feature.panel.status !== "string" ||
+      !feature.panel.status ||
+      !Number.isInteger(feature.panel.candidate_count) ||
+      Number(feature.panel.candidate_count) < 1 ||
+      typeof feature.panel.incumbent_summary !== "string" ||
+      !feature.panel.incumbent_summary ||
+      feature.panel.href !== `${hrefPrefix}/${feature.ward_id}`
+    ) return null;
+    if (
+      feature.signal_key === "prior_winner_share" &&
+      typeof feature.signal_value !== "number"
+    ) return null;
+    if (
+      feature.signal_key !== "prior_winner_share" &&
+      feature.signal_value !== null
+    ) return null;
+    seen.add(feature.ward_id);
+  }
+  return value as unknown as RaceMap;
 }
 
 // ── mayoral forecast ────────────────────────────────────────────────────────
@@ -268,7 +362,7 @@ function validPriorResult(value: unknown): boolean {
 }
 
 export function validateTrusteeRaceCards(value: unknown): TrusteeRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 2) return null;
+  if (!isRecord(value) || value.schema_version !== 3) return null;
   if (
     typeof value.event_id !== "string" ||
     value.election_date !== "2026-10-26" ||
@@ -396,7 +490,24 @@ export function validateTrusteeRaceCards(value: unknown): TrusteeRaceCardsFeed |
     candidateCount += boardCandidateCount;
   }
   if (contestIds.size !== 29 || candidateCount !== value.coverage.cohort_size) return null;
-  return value as unknown as TrusteeRaceCardsFeed;
+  const boards = (value.boards as Record<string, unknown>[]).map((board, index) => {
+    const boardId = TRUSTEE_BOARD_ORDER[index];
+    const signals =
+      boardId === "tdsb"
+        ? new Set(["open", "two_incumbents", "one_incumbent", "acclaimed"])
+        : new Set(["prior_winner_share", "no_comparable_result"]);
+    return {
+      ...board,
+      map: validateRaceMap(
+        board.map,
+        (board.wards as Array<{ ward_id: string }>).map((ward) => ward.ward_id),
+        signals,
+        `/trustees/${boardId}`,
+        boardId === "tdsb" ? "tdsb_race_structure" : "prior_winner_share",
+      ),
+    };
+  });
+  return { ...value, boards } as unknown as TrusteeRaceCardsFeed;
 }
 
 export function loadTrusteeRaceCards(): Promise<TrusteeRaceCardsFeed> {
@@ -424,19 +535,24 @@ export function loadMayoralPolling(): Promise<MayoralPollingFeed> {
 // ── council race cards ──────────────────────────────────────────────────────
 
 const COUNCIL_FALLBACK: CouncilRaceCardsFeed = {
-  schema_version: 7,
+  schema_version: 8,
   base_rate_note: "",
   wards: {},
+  map: null,
 };
 
-function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 7) return null;
+export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
+  if (!isRecord(value) || value.schema_version !== 8) return null;
   if (!isRecord(value.wards)) return null;
   for (const card of Object.values(value.wards)) {
     if (
       !isRecord(card) ||
       typeof card.ward !== "string" ||
       typeof card.ward_name !== "string" ||
+      !isRecord(card.attention) ||
+      !["open", "high", "elevated", "quiet"].includes(String(card.attention.level)) ||
+      typeof card.attention.score !== "number" ||
+      !Number.isFinite(card.attention.score) ||
       !Array.isArray(card.candidates) ||
       !card.candidates.every(
         (candidate) =>
@@ -446,7 +562,16 @@ function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
       )
     ) return null;
   }
-  return value as unknown as CouncilRaceCardsFeed;
+  return {
+    ...value,
+    map: validateRaceMap(
+      value.map,
+      Object.keys(value.wards),
+      new Set(["open", "high", "elevated", "quiet"]),
+      "/wards",
+      "council_attention",
+    ),
+  } as unknown as CouncilRaceCardsFeed;
 }
 
 export function loadCouncilRaceCards(): Promise<CouncilRaceCardsFeed> {

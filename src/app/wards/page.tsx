@@ -1,4 +1,5 @@
 import { WardsBrowser } from "@/components/wards-browser";
+import { RaceViewSwitcher } from "@/components/race-view-switcher";
 import { loadCouncilRaceCards } from "@/lib/feeds";
 import { wardIndexView } from "@/lib/council";
 
@@ -20,7 +21,9 @@ export default async function WardsPage() {
 
       <section aria-label="Ward races">
         {items.length > 0 ? (
-          <WardsBrowser items={items} />
+          <RaceViewSwitcher map={council.map}>
+            <WardsBrowser items={items} />
+          </RaceViewSwitcher>
         ) : (
           <p className="forecast-unavailable">Council data is currently unavailable.</p>
         )}

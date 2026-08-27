@@ -1,8 +1,9 @@
 import candidatesFixture from "../../fixtures/mayoral_candidates.json";
+import councilFixture from "../../fixtures/council_race_cards.json";
 import trusteeFixture from "../../fixtures/trustee_race_cards.json";
 import { describe, expect, it } from "vitest";
-import type { TrusteeRaceCardsFeed } from "@/types/feeds";
-import { validateMayoralCandidates, validateTrusteeRaceCards } from "./feeds";
+import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
+import { validateCouncil, validateMayoralCandidates, validateTrusteeRaceCards } from "./feeds";
 
 describe("validateMayoralCandidates", () => {
   it("accepts the complete certified fixture", () => {
@@ -155,5 +156,30 @@ describe("validateTrusteeRaceCards", () => {
     const wrongOrder = structuredClone(trusteeFixture) as unknown as TrusteeRaceCardsFeed;
     wrongOrder.boards[1].wards.reverse();
     expect(validateTrusteeRaceCards(wrongOrder)).toBeNull();
+  });
+
+  it("drops one malformed optional map without losing its valid race list", () => {
+    const malformed = structuredClone(trusteeFixture) as unknown as TrusteeRaceCardsFeed;
+    malformed.boards[0].map!.features[0].path = "not an svg path";
+
+    const validated = validateTrusteeRaceCards(malformed);
+
+    expect(validated).not.toBeNull();
+    expect(validated?.boards[0].map).toBeNull();
+    expect(validated?.boards[1].map?.features).toHaveLength(12);
+    expect(validated?.boards[0].wards).toHaveLength(12);
+  });
+});
+
+describe("validateCouncil", () => {
+  it("keeps a complete map and drops a malformed optional map", () => {
+    const valid = validateCouncil(councilFixture);
+    expect(valid?.map?.features).toHaveLength(25);
+
+    const malformed = structuredClone(councilFixture) as unknown as CouncilRaceCardsFeed;
+    malformed.map!.features.pop();
+    const validated = validateCouncil(malformed);
+    expect(validated?.map).toBeNull();
+    expect(Object.keys(validated?.wards ?? {})).toHaveLength(25);
   });
 });

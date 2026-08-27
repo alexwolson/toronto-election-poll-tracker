@@ -2429,6 +2429,245 @@ body { line-height: 1.55; }
   .about-disclosure.glossary dl { grid-template-columns: 1fr; }
 }
 
+/* ── Council and trustee race maps ──────────────────────── */
+
+.race-view__switch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(5rem, 1fr));
+  margin-bottom: 1rem;
+  border: 1px solid var(--line-strong);
+}
+
+.race-view__switch button {
+  padding: 0.42rem 0.9rem;
+  border: 0;
+  background: var(--bg-base);
+  color: var(--text-mid);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.race-view__switch button + button { border-left: 1px solid var(--line-strong); }
+.race-view__switch button[aria-pressed="true"] {
+  background: var(--text-strong);
+  color: var(--bg-base);
+}
+
+.race-map-layout {
+  --map-share-low: #dbeafe;
+  --map-share-high: #1e3a8a;
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(17rem, 0.75fr);
+  border-top: 3px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-raised);
+}
+
+.race-map-stage {
+  min-width: 0;
+  padding: 1rem;
+  border-right: 1px solid var(--line-soft);
+}
+
+.race-map-stage svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+}
+
+.race-map-feature {
+  vector-effect: non-scaling-stroke;
+  stroke: #fff;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: filter 100ms ease, stroke-width 100ms ease;
+}
+
+.race-map-feature:hover,
+.race-map-feature:focus,
+.race-map-feature.is-active { filter: brightness(0.92) saturate(1.12); }
+.race-map-feature:focus { outline: none; }
+.race-map-feature.is-held {
+  stroke: var(--text-strong);
+  stroke-width: 4;
+}
+.race-map-feature:focus-visible {
+  stroke: #fff;
+  stroke-width: 5;
+  filter: drop-shadow(0 0 2px var(--text-strong));
+}
+
+.race-map-labels {
+  fill: var(--text-strong);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 15px;
+  font-weight: 700;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgba(250, 249, 246, 0.9);
+  stroke-width: 4px;
+  text-anchor: middle;
+}
+.race-map-labels line {
+  stroke: var(--text-strong);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.race-map-layout--council_attention .race-map-feature--open { fill: #786fa6; background: #786fa6; }
+.race-map-layout--council_attention .race-map-feature--high { fill: #b53a3a; background: #b53a3a; }
+.race-map-layout--council_attention .race-map-feature--elevated { fill: #d89035; background: #d89035; }
+.race-map-layout--council_attention .race-map-feature--quiet { fill: #aeb8ad; background: #aeb8ad; }
+
+.race-map-layout--tdsb_race_structure .race-map-feature--open { fill: #8557c7; background: #8557c7; }
+.race-map-layout--tdsb_race_structure .race-map-feature--two_incumbents { fill: #3974bb; background: #3974bb; }
+.race-map-layout--tdsb_race_structure .race-map-feature--one_incumbent { fill: #48a096; background: #48a096; }
+.race-map-layout--tdsb_race_structure .race-map-feature--acclaimed { fill: #a2adb9; background: #a2adb9; }
+
+.race-map-layout--prior_winner_share .race-map-feature--prior_winner_share {
+  fill: color-mix(in srgb, var(--map-share-high) var(--race-map-share), var(--map-share-low));
+  background: linear-gradient(90deg, var(--map-share-low), var(--map-share-high));
+}
+.race-map-layout--prior_winner_share .race-map-feature--no_comparable_result {
+  fill: #dad7d1;
+  background: repeating-linear-gradient(135deg, #dad7d1 0 4px, #b9b5ae 4px 5px);
+}
+
+.race-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin-top: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line-soft);
+}
+.race-map-legend__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.42rem;
+  max-width: 20rem;
+  color: var(--text-mid);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+.race-map-legend__item strong,
+.race-map-legend__item small { display: block; }
+.race-map-legend__item strong { color: var(--text-strong); }
+.race-map-legend__item small { margin-top: 0.08rem; }
+.race-map-legend__swatch {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.08rem;
+  border: 1px solid rgba(26, 26, 26, 0.55);
+}
+.race-map-layout--prior_winner_share .race-map-legend__swatch.race-map-feature--prior_winner_share {
+  width: 2.5rem;
+}
+
+.race-map-panel { padding: 1.25rem; }
+.race-map-panel .np-kicker { margin: 0; }
+.race-map-panel h3 {
+  margin: 0.35rem 0 0.65rem;
+  font-family: var(--font-newsreader), serif;
+  font-size: clamp(1.45rem, 2.6vw, 2.1rem);
+  line-height: 1.05;
+}
+.race-map-panel__status {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid currentColor;
+  color: var(--text-strong);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.race-map-panel__share {
+  margin: 0.65rem 0 0;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.race-map-panel__areas {
+  margin-top: 1.2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line-soft);
+}
+.race-map-panel__areas > p,
+.race-map-panel__facts dt {
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.race-map-panel__areas ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.race-map-panel__areas li {
+  padding-bottom: 0.22rem;
+  border-bottom: 1px dotted var(--line-soft);
+  color: var(--text-mid);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+.race-map-panel__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 1rem 0 0;
+  border-top: 1px solid var(--line-soft);
+  border-left: 1px solid var(--line-soft);
+}
+.race-map-panel__facts > div {
+  padding: 0.6rem;
+  border-right: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.race-map-panel__facts dd {
+  margin: 0.3rem 0 0;
+  color: var(--text-strong);
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+.race-map-panel__link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding-bottom: 0.12rem;
+  border-bottom: 2px solid currentColor;
+  color: var(--text-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .race-map-layout { grid-template-columns: 1fr; }
+  .race-map-stage { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+  .race-map-stage svg { max-height: none; }
+}
+
+@media (max-width: 440px) {
+  .race-map-stage { padding: 0.5rem; }
+  .race-map-panel { padding: 1rem; }
+  .race-map-panel__areas ul { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .race-map-feature { transition: none; }
+}
+
 /* ══ Forecast rebuild (2026) ════════════════════════════════
    Band-based forecast presentation on the broadsheet system.
    Bands & frequency phrases only — never a raw probability number. */

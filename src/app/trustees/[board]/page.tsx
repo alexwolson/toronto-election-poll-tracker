@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
+import { RaceViewSwitcher } from "@/components/race-view-switcher";
 import { TrusteeRaceContextTag } from "@/components/trustee-race-context-tag";
 import { TrusteeWardCoverage } from "@/components/trustee-ward-coverage";
 import { loadCouncilRaceCards, loadTrusteeRaceCards } from "@/lib/feeds";
@@ -86,38 +87,40 @@ export default async function TrusteeBoardPage({
           </p>
         )}
         {board ? (
-          <ul className="trustee-ward-list">
-            {wards?.map((ward) => {
-              const incumbents = incumbentTrustees(ward);
-              const category = ward.race_context.category;
-              const showContext = showTrusteeRaceContextTag(category);
-              return (
-                <li key={ward.contest_id}>
-                  <Link
-                    href={`/trustees/${board.board_id}/${ward.ward_id}`}
-                    className={`trustee-ward-link${showContext ? ` trustee-ward-link--${trusteeRaceContextClass(category)}` : ""}`}
-                  >
-                    <span className="trustee-ward-link__heading">{ward.district_name}</span>
-                    <TrusteeRaceContextTag category={category} />
-                    <TrusteeWardCoverage
-                      cityWards={ward.city_wards}
-                      council={council}
-                      className="trustee-ward-link__area"
-                    />
-                    <span className="trustee-ward-link__facts">
-                      <span>{trusteeFieldStatus(ward)}</span>
-                      {incumbents.length === 1 && (
-                        <span>Incumbent: {incumbents[0].display_name}</span>
-                      )}
-                      {incumbents.length > 1 && (
-                        <span>{incumbents.length} incumbent trustees in the field</span>
-                      )}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <RaceViewSwitcher map={board.map}>
+            <ul className="trustee-ward-list">
+              {wards?.map((ward) => {
+                const incumbents = incumbentTrustees(ward);
+                const category = ward.race_context.category;
+                const showContext = showTrusteeRaceContextTag(category);
+                return (
+                  <li key={ward.contest_id}>
+                    <Link
+                      href={`/trustees/${board.board_id}/${ward.ward_id}`}
+                      className={`trustee-ward-link${showContext ? ` trustee-ward-link--${trusteeRaceContextClass(category)}` : ""}`}
+                    >
+                      <span className="trustee-ward-link__heading">{ward.district_name}</span>
+                      <TrusteeRaceContextTag category={category} />
+                      <TrusteeWardCoverage
+                        cityWards={ward.city_wards}
+                        council={council}
+                        className="trustee-ward-link__area"
+                      />
+                      <span className="trustee-ward-link__facts">
+                        <span>{trusteeFieldStatus(ward)}</span>
+                        {incumbents.length === 1 && (
+                          <span>Incumbent: {incumbents[0].display_name}</span>
+                        )}
+                        {incumbents.length > 1 && (
+                          <span>{incumbents.length} incumbent trustees in the field</span>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </RaceViewSwitcher>
         ) : (
           <p className="forecast-unavailable">Trustee data is currently unavailable.</p>
         )}

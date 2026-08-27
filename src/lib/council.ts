@@ -1,7 +1,7 @@
 /**
- * Pure council-index logic (spec §Q13). Attention markers only — the council
- * feed publishes no win probabilities, and neither do we. Sorting defaults to
- * most-exposed-first; open seats are classed separately and flagged in the UI.
+ * Council-index presentation helpers (spec §Q13). Backend publishes the
+ * attention category and ordering key; this layer only sorts and formats them.
+ * The feed publishes no win probabilities, and neither does the UI.
  */
 
 import { incumbentExposureFacts } from "@/lib/council-signals";
@@ -9,38 +9,13 @@ import type { CouncilRaceCard, CouncilRaceCardsFeed } from "@/types/feeds";
 
 export type AttentionLevel = "high" | "elevated" | "quiet" | "open";
 
-/** Editorial thresholds (judgment, not fitting). A fired trigger means attention,
- *  not a likely defeat — see the feed's base_rate_note. */
-const HIGH_DEFEATABILITY = 60;
-const ELEVATED_DEFEATABILITY = 45;
-
 export function wardAttentionLevel(card: CouncilRaceCard): AttentionLevel {
-  if (card.is_open_seat) return "open";
-  const triggers = card.incumbent.exposure_triggers.length;
-  const score = card.incumbent.defeatability_score ?? 0;
-  if (triggers >= 2 || score >= HIGH_DEFEATABILITY) return "high";
-  if (triggers >= 1 || score >= ELEVATED_DEFEATABILITY) return "elevated";
-  return "quiet";
+  return card.attention.level;
 }
 
-// Attention cohorts, higher = earlier. Open seats and high-attention incumbents
-// lead; the +intensity (capped < 1000) orders within a band without crossing it.
-const LEVEL_BASE: Record<AttentionLevel, number> = {
-  open: 4000,
-  high: 3000,
-  elevated: 2000,
-  quiet: 1000,
-};
-
-/** Ordering key for the default attention sort (higher = earlier). Open seats
- *  and high-attention incumbents form the leading cohort; within the incumbent
- *  bands, more fired triggers and higher defeatability sort first. */
+/** Backend-owned ordering key for the default attention sort (higher = earlier). */
 export function attentionScore(card: CouncilRaceCard): number {
-  const level = wardAttentionLevel(card);
-  if (level === "open") return LEVEL_BASE.open;
-  const triggers = card.incumbent.exposure_triggers.length;
-  const score = card.incumbent.defeatability_score ?? 0;
-  return LEVEL_BASE[level] + Math.min(triggers * 100 + score, 999);
+  return card.attention.score;
 }
 
 export type SortMode = "attention" | "ward";

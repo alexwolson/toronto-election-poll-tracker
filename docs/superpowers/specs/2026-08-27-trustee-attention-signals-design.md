@@ -1,7 +1,7 @@
 # Trustee Race Context and Vote-Share Signal
 
 **Date:** 2026-08-27  
-**Status:** Design approved; written specification pending review
+**Status:** Approved
 
 ## Purpose
 

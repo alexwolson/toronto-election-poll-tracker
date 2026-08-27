@@ -7,7 +7,7 @@ import { validateMayoralCandidates, validateTrusteeRaceCards } from "./feeds";
 describe("validateMayoralCandidates", () => {
   it("accepts the complete certified fixture", () => {
     const feed = validateMayoralCandidates(candidatesFixture);
-    expect(feed?.schema_version).toBe(4);
+    expect(feed?.schema_version).toBe(5);
     expect(feed?.ballot_certified).toBe(true);
     expect(feed?.candidates).toHaveLength(53);
     expect(
@@ -21,7 +21,7 @@ describe("validateMayoralCandidates", () => {
   it("rejects malformed candidate rows", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 4,
+        schema_version: 5,
         event_id: "toronto-2026",
         contest_id: "mayor-2026",
         election_date: "2026-10-26",
@@ -35,7 +35,7 @@ describe("validateMayoralCandidates", () => {
   it("rejects a provisional feed that exposes candidates", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 4,
+        schema_version: 5,
         event_id: "toronto-2026",
         contest_id: "mayor-2026",
         election_date: "2026-10-26",
@@ -44,6 +44,21 @@ describe("validateMayoralCandidates", () => {
         candidates: candidatesFixture.candidates,
       }),
     ).toBeNull();
+  });
+
+  it("requires Results-owned labels on 2003+ ward histories", () => {
+    const malformed = structuredClone(candidatesFixture);
+    const election = malformed.candidates
+      .flatMap((candidate) => candidate.past_elections)
+      .find(
+        (row) =>
+          row.election_date >= "2003-01-01" &&
+          (row.office_type === "councillor" || row.office_type === "trustee"),
+      );
+    if (!election) throw new Error("fixture must contain an in-scope ward history");
+    election.district_display_name = null;
+
+    expect(validateMayoralCandidates(malformed)).toBeNull();
   });
 });
 

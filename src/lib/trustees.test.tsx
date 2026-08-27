@@ -162,9 +162,14 @@ describe("Trustees pages", () => {
       }),
     );
 
+    expect(html).toContain("<h1>Ward 1</h1>");
+    expect(html).not.toContain("<h1>Ward 1 —");
     expect(html).toContain("Etobicoke North and Humber River-Black Creek");
     expect(html).toContain("Incumbent Trustee");
     expect(html).toContain("won · 27.8%");
+    expect(html).toContain("Ward 4 — Humber River-Black Creek");
+    expect(html).toContain("Ward 4 — York West");
+    expect(html).toContain("Ward 12 — Scarborough Southwest; Scarborough-Guildwood");
     expect(html).toContain("Amberley Ryan Henry");
     expect(html).toContain(">Two incumbents</span>");
     expect(html).not.toContain("Race type ·");

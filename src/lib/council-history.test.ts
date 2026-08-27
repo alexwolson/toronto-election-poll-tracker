@@ -19,6 +19,7 @@ function e(over: Partial<PastElection>): PastElection {
     office_type: "councillor",
     represented_body: "toronto_city_council",
     district_name: null,
+    district_display_name: null,
     party_name: null,
     result: "won",
     vote_share: null,

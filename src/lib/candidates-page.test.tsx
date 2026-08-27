@@ -32,6 +32,7 @@ describe("Candidates page", () => {
     expect(html).toContain('href="https://www.oliviachow.ca"');
     expect(html).toContain("Campaign links were supplied by candidates");
     expect(html).toContain("1991");
+    expect(html).toContain("Ward 20 — Trinity-Spadina");
     expect(html).toContain("Coverage note:");
     expect(html).toContain(
       "We identified a Toronto school trustee candidacy in 1985 but could not recover authoritative results.",
@@ -45,7 +46,7 @@ describe("Candidates page", () => {
 
   it("shows an honest unavailable state instead of a partial field", async () => {
     mocks.loadMayoralCandidates.mockResolvedValue({
-      schema_version: 4,
+      schema_version: 5,
       event_id: "",
       contest_id: "",
       election_date: "",

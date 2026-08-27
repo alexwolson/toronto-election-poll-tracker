@@ -29,13 +29,12 @@ function campaignLinkLabel(url: string) {
 
 function PastElectionRow({ election }: { election: PastElection }) {
   const party = partyLabel(election.party_name);
+  const district = election.district_display_name ?? election.district_name;
   return (
     <li className="past-election">
       <span className="past-election__year">{election.year}</span>
-      <span className="past-election__office">
-        {officeLabel(election)}
-        {election.district_name ? `, ${election.district_name}` : ""}
-      </span>
+      <span className="past-election__office">{officeLabel(election)}</span>
+      {district && <span className="past-election__district">{district}</span>}
       {party && <span className="past-election__party">{party}</span>}
       <span className={`past-election__result past-election__result--${election.result}`}>
         {resultLabel(election)}
@@ -105,7 +104,7 @@ export function CandidateHistoryItem({
               <ul className="past-elections">
                 {history.map((election) => (
                   <PastElectionRow
-                    key={`${election.election_date}:${election.office_type}:${election.district_name ?? ""}`}
+                    key={`${election.election_date}:${election.office_type}:${election.district_display_name ?? election.district_name ?? ""}`}
                     election={election}
                   />
                 ))}

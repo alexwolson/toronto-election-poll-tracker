@@ -81,7 +81,7 @@ export default async function TrusteeWardPage({
       <TrusteeBoardTabs activeBoard={boardId} />
 
       <section className="race-hero trustee-ward-hero">
-        <h1>{ward.district_name}</h1>
+        <h1>Ward {ward.ward_id}</h1>
         <TrusteeRaceContextTag category={ward.race_context.category} />
         <p className="race-hero-dek">{board.display_name}</p>
         <TrusteeWardCoverage

@@ -14,6 +14,7 @@ import type {
   MayoralCandidatesFeed,
   MayoralForecastFeed,
   MayoralPollingFeed,
+  PastElection,
   QuantityKind,
   TrusteeRaceCardsFeed,
 } from "@/types/feeds";
@@ -63,7 +64,7 @@ export function loadMayoralForecast(): Promise<MayoralForecastFeed> {
 // ── mayoral polling ─────────────────────────────────────────────────────────
 
 const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
-  schema_version: 4,
+  schema_version: 5,
   event_id: "",
   contest_id: "",
   election_date: "",
@@ -83,7 +84,7 @@ const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
 export function validateMayoralCandidates(
   value: unknown,
 ): MayoralCandidatesFeed | null {
-  if (!isRecord(value) || value.schema_version !== 4) return null;
+  if (!isRecord(value) || value.schema_version !== 5) return null;
   if (typeof value.event_id !== "string" || typeof value.contest_id !== "string") return null;
   if (typeof value.election_date !== "string") return null;
   if (typeof value.ballot_certified !== "boolean") return null;
@@ -112,7 +113,8 @@ export function validateMayoralCandidates(
       ) &&
       (typeof candidate.review_limitations === "string" ||
         candidate.review_limitations === null) &&
-      Array.isArray(candidate.past_elections),
+      Array.isArray(candidate.past_elections) &&
+      candidate.past_elections.every(validPastElection),
   );
   return validCandidates ? (value as unknown as MayoralCandidatesFeed) : null;
 }
@@ -152,18 +154,19 @@ const TRUSTEE_BOARD_CONTRACT = {
 
 const TRUSTEE_BOARD_ORDER = ["tdsb", "tcdsb", "viamonde", "monavenir"] as const;
 
-function validPastElection(value: unknown): boolean {
+function validPastElection(value: unknown): value is PastElection {
   if (
     !isRecord(value) ||
     typeof value.year !== "number" ||
     !Number.isInteger(value.year) ||
     typeof value.election_date !== "string" ||
-    value.election_date < "2003-01-01" ||
     value.election_date >= "2026-10-26" ||
     Number(value.election_date.slice(0, 4)) !== value.year ||
     typeof value.office_type !== "string" ||
     typeof value.represented_body !== "string" ||
     (typeof value.district_name !== "string" && value.district_name !== null) ||
+    (typeof value.district_display_name !== "string" &&
+      value.district_display_name !== null) ||
     (typeof value.party_name !== "string" && value.party_name !== null) ||
     (value.result !== "won" && value.result !== "lost") ||
     (value.vote_share !== null &&
@@ -175,6 +178,10 @@ function validPastElection(value: unknown): boolean {
         !Number.isInteger(value.field_size) ||
         value.field_size < 1))
   ) return false;
+  const inScopeWardHistory =
+    value.election_date >= "2003-01-01" &&
+    (value.office_type === "councillor" || value.office_type === "trustee");
+  if (inScopeWardHistory && typeof value.district_display_name !== "string") return false;
   return value.rank === null || value.field_size === null || value.rank <= value.field_size;
 }
 
@@ -261,7 +268,7 @@ function validPriorResult(value: unknown): boolean {
 }
 
 export function validateTrusteeRaceCards(value: unknown): TrusteeRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 1) return null;
+  if (!isRecord(value) || value.schema_version !== 2) return null;
   if (
     typeof value.event_id !== "string" ||
     value.election_date !== "2026-10-26" ||
@@ -359,7 +366,11 @@ export function validateTrusteeRaceCards(value: unknown): TrusteeRaceCardsFeed |
           (typeof candidate.person_id !== "string" && candidate.person_id !== null) ||
           (candidate.is_incumbent !== true && candidate.is_incumbent !== null) ||
           !Array.isArray(candidate.past_elections) ||
-          !candidate.past_elections.every(validPastElection) ||
+          !candidate.past_elections.every(
+            (election) =>
+              validPastElection(election) &&
+              election.election_date >= "2003-01-01",
+          ) ||
           (candidate.past_elections.length > 0 && candidate.person_id === null)
         ) return null;
         const pastElections = candidate.past_elections as Array<{ election_date: string }>;
@@ -413,14 +424,28 @@ export function loadMayoralPolling(): Promise<MayoralPollingFeed> {
 // ── council race cards ──────────────────────────────────────────────────────
 
 const COUNCIL_FALLBACK: CouncilRaceCardsFeed = {
-  schema_version: 6,
+  schema_version: 7,
   base_rate_note: "",
   wards: {},
 };
 
 function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 6) return null;
+  if (!isRecord(value) || value.schema_version !== 7) return null;
   if (!isRecord(value.wards)) return null;
+  for (const card of Object.values(value.wards)) {
+    if (
+      !isRecord(card) ||
+      typeof card.ward !== "string" ||
+      typeof card.ward_name !== "string" ||
+      !Array.isArray(card.candidates) ||
+      !card.candidates.every(
+        (candidate) =>
+          isRecord(candidate) &&
+          Array.isArray(candidate.past_elections) &&
+          candidate.past_elections.every(validPastElection),
+      )
+    ) return null;
+  }
   return value as unknown as CouncilRaceCardsFeed;
 }
 

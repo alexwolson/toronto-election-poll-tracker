@@ -3078,6 +3078,12 @@ body { line-height: 1.55; }
 .past-election__office {
   color: var(--text-mid);
 }
+.past-election__district {
+  min-width: min(100%, 12rem);
+  flex: 1 1 18rem;
+  color: var(--text-mid);
+  overflow-wrap: anywhere;
+}
 .past-election__party {
   font-family: var(--font-ibm-mono), monospace;
   font-size: 0.6rem;

@@ -72,7 +72,7 @@ export interface MayoralForecastFeed {
   margin_distribution: MarginDistribution | null;
 }
 
-// ── 2. Results-owned certified mayoral field (schema_version 3) ─────────────
+// ── 2. Results-owned certified mayoral field (schema_version 5) ─────────────
 
 export type MayoralCareerReviewStatus =
   | "reviewed"
@@ -101,7 +101,7 @@ export interface MayoralCandidate {
 }
 
 export interface MayoralCandidatesFeed {
-  schema_version: 4;
+  schema_version: 5;
   event_id: string;
   contest_id: string;
   election_date: string;
@@ -110,7 +110,7 @@ export interface MayoralCandidatesFeed {
   candidates: MayoralCandidate[];
 }
 
-// ── Backend-owned trustee race cards (schema_version 1) ───────────────────
+// ── Backend-owned trustee race cards (schema_version 2) ───────────────────
 
 export type TrusteeBoardId = "tdsb" | "tcdsb" | "viamonde" | "monavenir";
 
@@ -187,7 +187,7 @@ export interface TrusteeBoard {
 }
 
 export interface TrusteeRaceCardsFeed {
-  schema_version: 1;
+  schema_version: 2;
   event_id: string;
   election_date: string;
   ballot_certified: boolean;
@@ -315,6 +315,8 @@ export interface PastElection {
   office_type: string;
   represented_body: string;
   district_name: string | null;
+  /** Results-owned number-plus-geographic label for 2003+ council/trustee races. */
+  district_display_name: string | null;
   party_name: string | null;
   result: "won" | "lost";
   vote_share: number | null;
@@ -394,7 +396,7 @@ export interface CouncilRaceCard {
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 6;
+  schema_version: 7;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;

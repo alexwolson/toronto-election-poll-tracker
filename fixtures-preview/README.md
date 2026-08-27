@@ -16,5 +16,5 @@ Point the dev server at this directory to see it:
 FEED_LOCAL_DIR=./fixtures-preview npm run dev
 ```
 
-The other three feeds are copied unchanged from `../fixtures/`. **These are a
+All other feeds are copied unchanged from `../fixtures/`. **These are a
 preview of a publishing state, not production data.**

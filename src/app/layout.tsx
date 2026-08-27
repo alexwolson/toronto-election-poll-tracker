@@ -22,7 +22,8 @@ const ibmMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Toronto 2026 Elections",
-  description: "A mayoral forecast, the polls behind it, and the 25 council races.",
+  description:
+    "A mayoral forecast, the polls behind it, and Toronto's council and school-board races.",
 };
 
 export default function RootLayout({
@@ -47,7 +48,9 @@ export default function RootLayout({
         <header className="site-header">
           <div className="site-brand">
             <div className="font-heading">Toronto Election 2026</div>
-            <div className="font-mono">Mayoral forecast · Polls · Council · {monthYear}</div>
+            <div className="font-mono">
+              Mayoral forecast · Polls · Council · Trustees · {monthYear}
+            </div>
           </div>
           <MastheadNav />
         </header>

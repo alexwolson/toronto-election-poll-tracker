@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: "/candidates", label: "Candidates" },
   { href: "/polls", label: "Polls" },
   { href: "/wards", label: "Council" },
+  { href: "/trustees", label: "Trustees" },
   { href: "/how-it-works", label: "How it works" },
 ];
 

@@ -1,12 +1,12 @@
 /**
- * Typed loaders for the five feeds (spec §Data layer). Each validates the shape
- * and falls back to a safe, honest default so a missing or malformed feed
- * degrades gracefully instead of breaking the build.
+ * Typed loaders for the publication feeds (spec §Data layer). Each validates its
+ * shape. Model-availability feeds retain honest fallbacks; required certified-field
+ * contracts fail the build when malformed.
  *
  * Server-only (imports feed-source, which touches the filesystem).
  */
 
-import { loadFeed } from "@/lib/feed-source";
+import { loadFeed, loadRequiredFeed } from "@/lib/feed-source";
 import type {
   CouncilRaceCardsFeed,
   ForecastQuantityCard,
@@ -15,6 +15,7 @@ import type {
   MayoralForecastFeed,
   MayoralPollingFeed,
   QuantityKind,
+  TrusteeRaceCardsFeed,
 } from "@/types/feeds";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -121,6 +122,272 @@ export function loadMayoralCandidates(): Promise<MayoralCandidatesFeed> {
     validateMayoralCandidates,
     MAYORAL_CANDIDATES_FALLBACK,
   );
+}
+
+// ── trustee races ──────────────────────────────────────────────────────────
+
+const TRUSTEE_BOARD_CONTRACT = {
+  tdsb: {
+    representedBody: "toronto_district_school_board",
+    boundaryRegime: "tdsb-trustee-wards-2026",
+    wards: Array.from({ length: 12 }, (_, index) => String(index + 1)),
+  },
+  tcdsb: {
+    representedBody: "toronto_catholic_district_school_board",
+    boundaryRegime: "tcdsb-trustee-wards-2026",
+    wards: Array.from({ length: 12 }, (_, index) => String(index + 1)),
+  },
+  viamonde: {
+    representedBody: "conseil_scolaire_viamonde",
+    boundaryRegime: "viamonde-trustee-wards-2026",
+    wards: ["2", "3", "4"],
+  },
+  monavenir: {
+    representedBody: "conseil_scolaire_catholique_monavenir",
+    boundaryRegime: "monavenir-trustee-wards-2026",
+    wards: ["3", "4"],
+  },
+} as const;
+
+const TRUSTEE_BOARD_ORDER = ["tdsb", "tcdsb", "viamonde", "monavenir"] as const;
+
+function validPastElection(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    typeof value.year !== "number" ||
+    !Number.isInteger(value.year) ||
+    typeof value.election_date !== "string" ||
+    value.election_date < "2003-01-01" ||
+    value.election_date >= "2026-10-26" ||
+    Number(value.election_date.slice(0, 4)) !== value.year ||
+    typeof value.office_type !== "string" ||
+    typeof value.represented_body !== "string" ||
+    (typeof value.district_name !== "string" && value.district_name !== null) ||
+    (typeof value.party_name !== "string" && value.party_name !== null) ||
+    (value.result !== "won" && value.result !== "lost") ||
+    (value.vote_share !== null &&
+      (typeof value.vote_share !== "number" || value.vote_share < 0 || value.vote_share > 1)) ||
+    (value.rank !== null &&
+      (typeof value.rank !== "number" || !Number.isInteger(value.rank) || value.rank < 1)) ||
+    (value.field_size !== null &&
+      (typeof value.field_size !== "number" ||
+        !Number.isInteger(value.field_size) ||
+        value.field_size < 1))
+  ) return false;
+  return value.rank === null || value.field_size === null || value.rank <= value.field_size;
+}
+
+const TDSB_CONTEXT_PRIORITY = {
+  open: 0,
+  two_incumbents: 1,
+  one_incumbent: 2,
+  acclaimed: 3,
+} as const;
+
+const CONTINUOUS_CONTEXT_PRIORITY = {
+  open: 0,
+  won_without_majority: 1,
+  contested_incumbent: 2,
+  acclaimed: 3,
+} as const;
+
+function validTrusteeRaceContext(value: unknown, boardId: string): boolean {
+  if (!isRecord(value) || !Number.isInteger(value.sort_priority)) return false;
+  const priorities: Readonly<Record<string, number>> =
+    boardId === "tdsb" ? TDSB_CONTEXT_PRIORITY : CONTINUOUS_CONTEXT_PRIORITY;
+  const method =
+    boardId === "tdsb" ? "tdsb_field_structure" : "continuous_ward_vote_share";
+  const category = String(value.category);
+  if (
+    value.method !== method ||
+    !(category in priorities) ||
+    value.sort_priority !== priorities[category]
+  ) return false;
+  if (category !== "won_without_majority") return value.signal === null;
+  if (!isRecord(value.signal)) return false;
+  return (
+    value.signal.key === "prior_win_under_50" &&
+    typeof value.signal.subject_person_id === "string" &&
+    value.signal.subject_person_id.length > 0 &&
+    typeof value.signal.subject_name === "string" &&
+    value.signal.subject_name.length > 0 &&
+    Number.isInteger(value.signal.election_year) &&
+    Number(value.signal.election_year) >= 2003 &&
+    Number(value.signal.election_year) < 2026 &&
+    typeof value.signal.vote_share === "number" &&
+    Number.isFinite(value.signal.vote_share) &&
+    value.signal.vote_share >= 0 &&
+    value.signal.vote_share < 0.5
+  );
+}
+
+function validPriorResult(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    typeof value.year !== "number" ||
+    !Number.isInteger(value.year) ||
+    value.year < 2003 ||
+    value.year >= 2026 ||
+    typeof value.winner_name !== "string" ||
+    typeof value.winner_share !== "number" ||
+    value.winner_share < 0 ||
+    value.winner_share > 1 ||
+    typeof value.winner_votes !== "number" ||
+    !Number.isInteger(value.winner_votes) ||
+    value.winner_votes < 0 ||
+    (typeof value.runner_up_name !== "string" && value.runner_up_name !== null) ||
+    (value.runner_up_share !== null &&
+      (typeof value.runner_up_share !== "number" ||
+        value.runner_up_share < 0 ||
+        value.runner_up_share > 1)) ||
+    (value.margin_votes !== null &&
+      (typeof value.margin_votes !== "number" ||
+        !Number.isInteger(value.margin_votes) ||
+        value.margin_votes < 0)) ||
+    (value.margin_share !== null &&
+      (typeof value.margin_share !== "number" || value.margin_share < 0 || value.margin_share > 1)) ||
+    typeof value.field_size !== "number" ||
+    !Number.isInteger(value.field_size) ||
+    value.field_size < 1
+  ) return false;
+  const hasRunner = value.runner_up_name !== null;
+  return (
+    hasRunner === (value.runner_up_share !== null) &&
+    hasRunner === (value.margin_votes !== null) &&
+    hasRunner === (value.margin_share !== null) &&
+    (!hasRunner || value.field_size >= 2)
+  );
+}
+
+export function validateTrusteeRaceCards(value: unknown): TrusteeRaceCardsFeed | null {
+  if (!isRecord(value) || value.schema_version !== 1) return null;
+  if (
+    typeof value.event_id !== "string" ||
+    value.election_date !== "2026-10-26" ||
+    value.ballot_certified !== true ||
+    !isRecord(value.coverage) ||
+    value.coverage.policy !== "verified_toronto_electoral_history_since_2003" ||
+    value.coverage.jurisdiction !== "Toronto" ||
+    value.coverage.year_cutoff !== 2003 ||
+    typeof value.coverage.cohort_id !== "string" ||
+    !Number.isInteger(value.coverage.cohort_size) ||
+    typeof value.coverage.source_release !== "string" ||
+    typeof value.coverage.review_date !== "string" ||
+    typeof value.coverage.methodology_note !== "string" ||
+    !Array.isArray(value.boards) ||
+    value.boards.length !== TRUSTEE_BOARD_ORDER.length
+  ) return null;
+
+  const contestIds = new Set<string>();
+  const candidacyIds = new Set<string>();
+  let candidateCount = 0;
+  for (const [index, boardId] of TRUSTEE_BOARD_ORDER.entries()) {
+    const board = value.boards[index];
+    const contract = TRUSTEE_BOARD_CONTRACT[boardId];
+    if (
+      !isRecord(board) ||
+      board.board_id !== boardId ||
+      board.represented_body !== contract.representedBody ||
+      board.boundary_regime !== contract.boundaryRegime ||
+      typeof board.display_name !== "string" ||
+      typeof board.short_name !== "string" ||
+      !Number.isInteger(board.candidate_count) ||
+      !Array.isArray(board.wards) ||
+      board.wards.length !== contract.wards.length
+    ) return null;
+
+    let boardCandidateCount = 0;
+    const boardCityWards = new Set<number>();
+    const expectedWardIds = new Set<string>(contract.wards);
+    const boardWardIds = new Set<string>();
+    let previousOrder: [number, number] | null = null;
+    for (const ward of board.wards) {
+      if (
+        !isRecord(ward) ||
+        typeof ward.ward_id !== "string" ||
+        !expectedWardIds.has(ward.ward_id) ||
+        boardWardIds.has(ward.ward_id) ||
+        typeof ward.contest_id !== "string" ||
+        contestIds.has(ward.contest_id) ||
+        typeof ward.district_name !== "string" ||
+        !Array.isArray(ward.city_wards) ||
+        ward.city_wards.length === 0 ||
+        !ward.city_wards.every(
+          (cityWard) => Number.isInteger(cityWard) && cityWard >= 1 && cityWard <= 25,
+        ) ||
+        new Set(ward.city_wards).size !== ward.city_wards.length ||
+        !Array.isArray(ward.candidates) ||
+        ward.candidates.length === 0 ||
+        !validTrusteeRaceContext(ward.race_context, boardId)
+      ) return null;
+      boardWardIds.add(ward.ward_id);
+      contestIds.add(ward.contest_id);
+      for (const cityWard of ward.city_wards) {
+        if (boardCityWards.has(cityWard)) return null;
+        boardCityWards.add(cityWard);
+      }
+
+      const validStatus = ward.acclaimed
+        ? ward.result_status === "final" &&
+          ward.outcome_method === "acclamation" &&
+          ward.candidates.length === 1
+        : ward.result_status === "pending" && ward.outcome_method === "pending";
+      if (!validStatus) return null;
+      const context = ward.race_context as { category: string; sort_priority: number };
+      if ((context.category === "acclaimed") !== (ward.acclaimed === true)) return null;
+      const currentOrder: [number, number] = [context.sort_priority, Number(ward.ward_id)];
+      if (
+        previousOrder &&
+        (currentOrder[0] < previousOrder[0] ||
+          (currentOrder[0] === previousOrder[0] && currentOrder[1] <= previousOrder[1]))
+      ) return null;
+      previousOrder = currentOrder;
+      if (
+        ward.comparable_prior_result !== null &&
+        !validPriorResult(ward.comparable_prior_result)
+      ) return null;
+      if (boardId === "tdsb" && ward.comparable_prior_result !== null) return null;
+
+      for (const candidate of ward.candidates) {
+        if (
+          !isRecord(candidate) ||
+          typeof candidate.candidacy_id !== "string" ||
+          candidacyIds.has(candidate.candidacy_id) ||
+          typeof candidate.display_name !== "string" ||
+          (typeof candidate.person_id !== "string" && candidate.person_id !== null) ||
+          (candidate.is_incumbent !== true && candidate.is_incumbent !== null) ||
+          !Array.isArray(candidate.past_elections) ||
+          !candidate.past_elections.every(validPastElection) ||
+          (candidate.past_elections.length > 0 && candidate.person_id === null)
+        ) return null;
+        const pastElections = candidate.past_elections as Array<{ election_date: string }>;
+        if (
+          pastElections.some(
+            (election, electionIndex) =>
+              electionIndex > 0 &&
+              pastElections[electionIndex - 1].election_date < election.election_date,
+          )
+        ) return null;
+        candidacyIds.add(candidate.candidacy_id);
+      }
+      boardCandidateCount += ward.candidates.length;
+    }
+    if (contract.wards.some((wardId) => !boardWardIds.has(wardId))) return null;
+    if (
+      boardCityWards.size !== 25 ||
+      Array.from({ length: 25 }, (_, cityWard) => cityWard + 1).some(
+        (cityWard) => !boardCityWards.has(cityWard),
+      )
+    ) return null;
+    if (boardCandidateCount !== board.candidate_count) return null;
+    candidateCount += boardCandidateCount;
+  }
+  if (contestIds.size !== 29 || candidateCount !== value.coverage.cohort_size) return null;
+  return value as unknown as TrusteeRaceCardsFeed;
+}
+
+export function loadTrusteeRaceCards(): Promise<TrusteeRaceCardsFeed> {
+  return loadRequiredFeed("trustee_race_cards.json", validateTrusteeRaceCards);
 }
 
 const POLLING_FALLBACK: MayoralPollingFeed = {

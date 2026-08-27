@@ -53,3 +53,14 @@ export async function loadFeed<T>(
     return fallback;
   }
 }
+
+/** Load a release-required feed. Invalid or missing release data is a build error,
+ * because rendering a different contract would conceal a broken producer chain. */
+export async function loadRequiredFeed<T>(
+  file: string,
+  validate: (value: unknown) => T | null,
+): Promise<T> {
+  const value = validate(await readRaw(file));
+  if (value === null) throw new Error(`invalid required feed: ${file}`);
+  return value;
+}

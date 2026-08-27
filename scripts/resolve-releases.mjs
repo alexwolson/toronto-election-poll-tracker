@@ -83,6 +83,7 @@ await mkdir(output, { recursive: true });
 const feeds = [
   [backend, backend.manifest.feeds.mayoral_forecast],
   [backend, backend.manifest.feeds.council_race_cards],
+  [backend, backend.manifest.feeds.trustee_race_cards],
   [results, results.manifest.feeds.mayoral_candidates],
   [polling, polling.manifest.feeds.mayoral_polling],
 ];

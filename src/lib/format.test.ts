@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatSharePct, isoDayNumber } from "./format";
+import {
+  formatDate,
+  formatDetailedSharePct,
+  formatSharePct,
+  isoDayNumber,
+} from "./format";
 
 describe("formatDate", () => {
   it("renders an ISO date without a timezone shift", () => {
@@ -17,6 +22,13 @@ describe("formatSharePct", () => {
   it("rounds a share to a whole percent", () => {
     expect(formatSharePct(0.4851)).toBe("49%");
     expect(formatSharePct(0.1)).toBe("10%");
+  });
+});
+
+describe("formatDetailedSharePct", () => {
+  it("keeps one decimal place for election-result context", () => {
+    expect(formatDetailedSharePct(0.452114)).toBe("45.2%");
+    expect(formatDetailedSharePct(0.5)).toBe("50.0%");
   });
 });
 

@@ -74,13 +74,18 @@ export function ordinal(n: number): string {
   }
 }
 
-/** "won", or "lost · 2nd of 7" when the placement is known. */
+function electionShareLabel(share: number): string {
+  return share < 0.001 ? "<0.1%" : `${(share * 100).toFixed(1)}%`;
+}
+
+/** Result, placement when known, and vote share when available. */
 export function resultLabel(election: PastElection): string {
-  if (election.result === "won") return "won";
-  if (election.rank != null && election.field_size != null) {
-    return `lost · ${ordinal(election.rank)} of ${election.field_size}`;
+  const parts: string[] = [election.result];
+  if (election.result === "lost" && election.rank != null && election.field_size != null) {
+    parts.push(`${ordinal(election.rank)} of ${election.field_size}`);
   }
-  return "lost";
+  if (election.vote_share != null) parts.push(electionShareLabel(election.vote_share));
+  return parts.join(" · ");
 }
 
 export interface SameWardReturnSummary {

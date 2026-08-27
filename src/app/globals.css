@@ -127,6 +127,25 @@
   --vuln-open-bg-hover: #d4d4d4;
   --vuln-open-line-hover: #666;
 
+  /* ── TDSB race types (field structure, not vulnerability) ── */
+  --tdsb-open-fg: #6d28d9;
+  --tdsb-open-line: #8b5cf6;
+  --tdsb-open-bg: #ede9fe;
+  --tdsb-two-fg: #1e40af;
+  --tdsb-two-line: #3b82f6;
+  --tdsb-two-bg: #dbeafe;
+  --tdsb-one-fg: #0f766e;
+  --tdsb-one-line: #14b8a6;
+  --tdsb-one-bg: #ccfbf1;
+  --tdsb-acclaimed-fg: #475569;
+  --tdsb-acclaimed-line: #94a3b8;
+  --tdsb-acclaimed-bg: #e2e8f0;
+
+  /* ── Trustee prior-win context (descriptive, not vulnerability) ── */
+  --trustee-under-majority-fg: #92400e;
+  --trustee-under-majority-line: #d97706;
+  --trustee-under-majority-bg: #ffedd5;
+
   /* ── Win probability levels ── */
   --win-high-fg:   #166534;
   --win-high-line: #22c55e;
@@ -2377,7 +2396,7 @@ body { line-height: 1.55; }
   .site-brand { padding: 0.7rem 0.75rem 0.5rem; }
   .site-brand .font-heading { font-size: 1.35rem; }
   .site-brand .font-mono { font-size: 0.5rem; }
-  .site-nav { display: grid; grid-template-columns: repeat(5, 1fr); }
+  .site-nav { display: grid; grid-template-columns: repeat(3, 1fr); }
   .nav-link { min-width: 0; padding: 0.6rem 0.2rem; border-right: 1px solid var(--line-inner); font-size: 0.58rem; }
   .race-hero { padding: 1.6rem 0 1.8rem; }
   .race-hero h1 { font-size: clamp(2.65rem, 15vw, 4rem); }
@@ -2844,6 +2863,164 @@ body { line-height: 1.55; }
 }
 .candidate-row__body {
   padding: 0.5rem 0 0.35rem 1.05rem;
+}
+
+/* ── Trustee boards, race context, and ward indexes ───────────────────── */
+.trustee-hero { padding-bottom: 1.65rem; }
+.trustee-board-tabs {
+  display: flex;
+  overflow-x: auto;
+  border: 1px solid var(--line-soft);
+  border-left: 0;
+  scrollbar-width: thin;
+}
+.trustee-board-tab {
+  flex: 1 0 auto;
+  min-width: max-content;
+  padding: 0.65rem 1rem;
+  border-left: 1px solid var(--line-soft);
+  color: var(--text-mid);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.trustee-board-tab:hover,
+.trustee-board-tab:focus-visible { background: var(--bg-hover); color: var(--text-strong); }
+.trustee-board-tab--active {
+  box-shadow: inset 0 -3px 0 var(--text-strong);
+  color: var(--text-strong);
+}
+.trustee-ward-list,
+.trustee-candidate-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.trustee-ward-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 2px solid var(--line-strong);
+  border-left: 1px solid var(--line-soft);
+}
+.trustee-ward-list > li {
+  min-width: 0;
+  border-right: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.trustee-ward-link {
+  display: grid;
+  gap: 0.28rem;
+  height: 100%;
+  min-height: 7.5rem;
+  padding: 0.85rem;
+  color: inherit;
+  text-decoration: none;
+}
+.trustee-ward-link:hover,
+.trustee-ward-link:focus-visible { background: var(--bg-hover); }
+.trustee-ward-link--open { box-shadow: inset 4px 0 0 var(--tdsb-open-line); }
+.trustee-ward-link--two-incumbents { box-shadow: inset 4px 0 0 var(--tdsb-two-line); }
+.trustee-ward-link--one-incumbent { box-shadow: inset 4px 0 0 var(--tdsb-one-line); }
+.trustee-ward-link--won-without-majority {
+  box-shadow: inset 4px 0 0 var(--trustee-under-majority-line);
+}
+.trustee-ward-link--acclaimed { box-shadow: inset 4px 0 0 var(--tdsb-acclaimed-line); }
+.trustee-ward-link__heading {
+  color: var(--text-strong);
+  font-family: var(--font-newsreader), serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.trustee-ward-link__area { color: var(--text-mid); font-size: 0.7rem; line-height: 1.45; }
+.trustee-race-context {
+  justify-self: start;
+  padding: 0.15rem 0.4rem;
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.trustee-race-context--open { color: var(--tdsb-open-fg); background: var(--tdsb-open-bg); }
+.trustee-race-context--two-incumbents {
+  color: var(--tdsb-two-fg);
+  background: var(--tdsb-two-bg);
+}
+.trustee-race-context--one-incumbent {
+  color: var(--tdsb-one-fg);
+  background: var(--tdsb-one-bg);
+}
+.trustee-race-context--won-without-majority {
+  color: var(--trustee-under-majority-fg);
+  background: var(--trustee-under-majority-bg);
+}
+.trustee-race-context--acclaimed {
+  color: var(--tdsb-acclaimed-fg);
+  background: var(--tdsb-acclaimed-bg);
+}
+.trustee-race-context-note {
+  max-width: 49rem;
+  margin: 0 0 1rem;
+  color: var(--text-mid);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.trustee-prior-win-signal {
+  max-width: 49rem;
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--trustee-under-majority-line);
+  color: var(--text-mid);
+}
+.trustee-ward-coverage--expanded {
+  display: grid;
+  gap: 0.35rem;
+}
+.trustee-ward-coverage__label {
+  color: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.trustee-ward-coverage__areas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  gap: 0.18rem 0.8rem;
+}
+.trustee-ward-coverage__area {
+  position: relative;
+  padding-left: 0.65rem;
+}
+.trustee-ward-coverage__area::before {
+  position: absolute;
+  left: 0;
+  content: "·";
+}
+.trustee-ward-link__facts {
+  display: flex;
+  align-self: end;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  color: var(--text-soft);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+}
+.trustee-ward-hero { padding-bottom: 1.6rem; }
+.trustee-ward-area {
+  display: block;
+  margin: 0.75rem 0 0;
+  color: var(--text-mid);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.65rem;
+}
+@media (max-width: 620px) {
+  .trustee-ward-list { grid-template-columns: 1fr; }
+  .trustee-board-tab { padding-inline: 0.75rem; }
 }
 .past-elections {
   list-style: none;

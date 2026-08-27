@@ -18,6 +18,11 @@ export function formatSharePct(share: number): string {
   return `${Math.round(share * 100)}%`;
 }
 
+/** An election-result share where tenths distinguish close factual thresholds. */
+export function formatDetailedSharePct(share: number): string {
+  return `${(share * 100).toFixed(1)}%`;
+}
+
 /** An ISO date as a day number (days since the Unix epoch, UTC) — a numeric
  *  horizontal coordinate for time-series fitting. Pure (no clock access). */
 export function isoDayNumber(iso: string): number {

@@ -88,9 +88,12 @@ describe("ordinal", () => {
 });
 
 describe("resultLabel", () => {
-  it("states the placement for a loss", () => {
-    expect(resultLabel(e({ result: "won" }))).toBe("won");
-    expect(resultLabel(e({ result: "lost", rank: 2, field_size: 7 }))).toBe("lost · 2nd of 7");
+  it("states placement and vote share when available", () => {
+    expect(resultLabel(e({ result: "won", vote_share: 0.3717 }))).toBe("won · 37.2%");
+    expect(
+      resultLabel(e({ result: "lost", rank: 2, field_size: 7, vote_share: 0.0894 })),
+    ).toBe("lost · 2nd of 7 · 8.9%");
+    expect(resultLabel(e({ result: "lost", vote_share: 0.0004 }))).toBe("lost · <0.1%");
     expect(resultLabel(e({ result: "lost", rank: null, field_size: null }))).toBe("lost");
   });
 });

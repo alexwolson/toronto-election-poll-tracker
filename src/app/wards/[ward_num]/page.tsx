@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CandidateHistoryItem } from "@/components/candidate-history";
+import { CandidateHistoryItem, CandidateLinksNote } from "@/components/candidate-history";
 import { loadCouncilRaceCards } from "@/lib/feeds";
 import { wardAttentionLevel, type AttentionLevel } from "@/lib/council";
 import {
@@ -74,6 +74,7 @@ function CandidateItem({
   return (
     <CandidateHistoryItem
       name={candidate.display_name}
+      campaignUrl={candidate.campaign_url}
       history={history}
       currentOfficeType={isIncumbent ? "councillor" : undefined}
       summaryPrefix={sameWardReturn?.topline}
@@ -222,6 +223,9 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
             />
           ))}
         </ul>
+        {card.candidates.some((candidate) => candidate.campaign_url) && (
+          <CandidateLinksNote />
+        )}
       </section>
 
       {card.ward_polls.length > 0 && (

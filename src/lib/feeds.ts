@@ -63,7 +63,7 @@ export function loadMayoralForecast(): Promise<MayoralForecastFeed> {
 // ── mayoral polling ─────────────────────────────────────────────────────────
 
 const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
-  schema_version: 3,
+  schema_version: 4,
   event_id: "",
   contest_id: "",
   election_date: "",
@@ -83,7 +83,7 @@ const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
 export function validateMayoralCandidates(
   value: unknown,
 ): MayoralCandidatesFeed | null {
-  if (!isRecord(value) || value.schema_version !== 3) return null;
+  if (!isRecord(value) || value.schema_version !== 4) return null;
   if (typeof value.event_id !== "string" || typeof value.contest_id !== "string") return null;
   if (typeof value.election_date !== "string") return null;
   if (typeof value.ballot_certified !== "boolean") return null;
@@ -104,6 +104,7 @@ export function validateMayoralCandidates(
       isRecord(candidate) &&
       typeof candidate.candidacy_id === "string" &&
       typeof candidate.display_name === "string" &&
+      (typeof candidate.campaign_url === "string" || candidate.campaign_url === null) &&
       (typeof candidate.person_id === "string" || candidate.person_id === null) &&
       typeof candidate.is_incumbent === "boolean" &&
       ["reviewed", "reviewed_with_limitations", "no_verified_prior_candidacy"].includes(
@@ -354,6 +355,7 @@ export function validateTrusteeRaceCards(value: unknown): TrusteeRaceCardsFeed |
           typeof candidate.candidacy_id !== "string" ||
           candidacyIds.has(candidate.candidacy_id) ||
           typeof candidate.display_name !== "string" ||
+          (typeof candidate.campaign_url !== "string" && candidate.campaign_url !== null) ||
           (typeof candidate.person_id !== "string" && candidate.person_id !== null) ||
           (candidate.is_incumbent !== true && candidate.is_incumbent !== null) ||
           !Array.isArray(candidate.past_elections) ||
@@ -411,13 +413,13 @@ export function loadMayoralPolling(): Promise<MayoralPollingFeed> {
 // ── council race cards ──────────────────────────────────────────────────────
 
 const COUNCIL_FALLBACK: CouncilRaceCardsFeed = {
-  schema_version: 5,
+  schema_version: 6,
   base_rate_note: "",
   wards: {},
 };
 
 function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 5) return null;
+  if (!isRecord(value) || value.schema_version !== 6) return null;
   if (!isRecord(value.wards)) return null;
   return value as unknown as CouncilRaceCardsFeed;
 }

@@ -92,6 +92,7 @@ export interface MayoralCareerCoverage {
 export interface MayoralCandidate {
   candidacy_id: string;
   display_name: string;
+  campaign_url: string | null;
   person_id: string | null;
   is_incumbent: boolean;
   review_status: MayoralCareerReviewStatus;
@@ -100,7 +101,7 @@ export interface MayoralCandidate {
 }
 
 export interface MayoralCandidatesFeed {
-  schema_version: 3;
+  schema_version: 4;
   event_id: string;
   contest_id: string;
   election_date: string;
@@ -127,6 +128,7 @@ export interface TrusteeCareerCoverage {
 export interface TrusteeCandidate {
   candidacy_id: string;
   display_name: string;
+  campaign_url: string | null;
   person_id: string | null;
   /** True is evidence-backed; null means the feed makes no incumbency claim. */
   is_incumbent: true | null;
@@ -321,9 +323,11 @@ export interface PastElection {
 }
 
 export interface CouncilCandidate {
+  candidacy_id: string | null;
   display_name: string;
   status: string;
   candidate_id: string | null;
+  campaign_url: string | null;
   is_matched: boolean;
   is_former_councillor: boolean;
   council_wins: number;
@@ -390,7 +394,7 @@ export interface CouncilRaceCard {
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 5;
+  schema_version: 6;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;

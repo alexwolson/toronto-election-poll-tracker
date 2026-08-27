@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CandidateHistoryItem } from "@/components/candidate-history";
+import { CandidateHistoryItem, CandidateLinksNote } from "@/components/candidate-history";
 import { MayorTabs } from "@/components/mayor-tabs";
 import { ordinal } from "@/lib/council-history";
 import { loadMayoralCandidates } from "@/lib/feeds";
@@ -79,6 +79,7 @@ export default async function CandidatesPage() {
                 <CandidateHistoryItem
                   key={candidate.candidacy_id}
                   name={candidate.display_name}
+                  campaignUrl={candidate.campaign_url}
                   history={candidate.past_elections}
                   currentOfficeType={candidate.is_incumbent ? "mayor" : undefined}
                   summaryPrefix={summaryPrefix}
@@ -103,6 +104,9 @@ export default async function CandidatesPage() {
           <p className="forecast-unavailable">
             The certified mayoral candidate list is currently unavailable.
           </p>
+        )}
+        {available && feed.candidates.some((candidate) => candidate.campaign_url) && (
+          <CandidateLinksNote />
         )}
       </section>
     </main>

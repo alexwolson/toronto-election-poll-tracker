@@ -7,7 +7,7 @@ import { validateMayoralCandidates, validateTrusteeRaceCards } from "./feeds";
 describe("validateMayoralCandidates", () => {
   it("accepts the complete certified fixture", () => {
     const feed = validateMayoralCandidates(candidatesFixture);
-    expect(feed?.schema_version).toBe(3);
+    expect(feed?.schema_version).toBe(4);
     expect(feed?.ballot_certified).toBe(true);
     expect(feed?.candidates).toHaveLength(53);
     expect(
@@ -21,7 +21,7 @@ describe("validateMayoralCandidates", () => {
   it("rejects malformed candidate rows", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 3,
+        schema_version: 4,
         event_id: "toronto-2026",
         contest_id: "mayor-2026",
         election_date: "2026-10-26",
@@ -35,7 +35,7 @@ describe("validateMayoralCandidates", () => {
   it("rejects a provisional feed that exposes candidates", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 3,
+        schema_version: 4,
         event_id: "toronto-2026",
         contest_id: "mayor-2026",
         election_date: "2026-10-26",

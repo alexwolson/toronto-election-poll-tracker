@@ -2795,6 +2795,22 @@ body { line-height: 1.55; }
   border-bottom: 1px solid var(--line-inner);
 }
 .candidate-row__name { font-weight: 600; }
+.candidate-row__topline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+}
+.candidate-row__topline > details { min-width: 0; }
+.candidate-row__campaign-link {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.66rem;
+  color: var(--text-mid);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.candidate-row__campaign-link:hover { color: var(--text); }
 .candidate-row__tag {
   font-family: var(--font-ibm-mono), monospace;
   font-size: 0.6rem;
@@ -2828,6 +2844,17 @@ body { line-height: 1.55; }
 }
 .candidate-row--plain {
   padding-left: 1.05rem;
+}
+.candidate-links-note {
+  margin: 0.8rem 0 0;
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+.candidate-links-note a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 .candidate-row__headline {
   font-family: var(--font-ibm-mono), monospace;

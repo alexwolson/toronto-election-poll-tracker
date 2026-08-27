@@ -14,9 +14,11 @@ vi.mock("@/lib/feeds", () => ({
 
 describe("Candidates page", () => {
   it("renders the complete certified field with ward-style history rows", async () => {
-    mocks.loadMayoralCandidates.mockResolvedValue(
-      candidatesFixture as unknown as MayoralCandidatesFeed,
-    );
+    const feed = structuredClone(candidatesFixture) as unknown as MayoralCandidatesFeed;
+    const chow = feed.candidates.find((candidate) => candidate.display_name === "Olivia Chow");
+    if (!chow) throw new Error("fixture is missing Olivia Chow");
+    chow.campaign_url = "https://www.oliviachow.ca";
+    mocks.loadMayoralCandidates.mockResolvedValue(feed);
 
     const html = renderToStaticMarkup(await CandidatesPage());
 
@@ -27,6 +29,8 @@ describe("Candidates page", () => {
     expect(html).not.toContain("Former Mayor");
     expect(html).toContain("nationwide with no year cutoff");
     expect(html).toContain("Identity evidence standards are the same");
+    expect(html).toContain('href="https://www.oliviachow.ca"');
+    expect(html).toContain("Campaign links were supplied by candidates");
     expect(html).toContain("1991");
     expect(html).toContain("Coverage note:");
     expect(html).toContain(
@@ -41,7 +45,7 @@ describe("Candidates page", () => {
 
   it("shows an honest unavailable state instead of a partial field", async () => {
     mocks.loadMayoralCandidates.mockResolvedValue({
-      schema_version: 3,
+      schema_version: 4,
       event_id: "",
       contest_id: "",
       election_date: "",

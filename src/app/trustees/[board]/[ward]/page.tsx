@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CandidateHistoryItem } from "@/components/candidate-history";
+import { CandidateHistoryItem, CandidateLinksNote } from "@/components/candidate-history";
 import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
 import { TrusteeRaceContextTag } from "@/components/trustee-race-context-tag";
 import { TrusteeWardCoverage } from "@/components/trustee-ward-coverage";
@@ -154,12 +154,16 @@ export default async function TrusteeWardPage({
             <CandidateHistoryItem
               key={candidate.candidacy_id}
               name={candidate.display_name}
+              campaignUrl={candidate.campaign_url}
               history={candidate.past_elections}
               currentOfficeType={candidate.is_incumbent ? "trustee" : undefined}
               summaryPrefix={candidate.is_incumbent ? "Incumbent Trustee" : undefined}
             />
           ))}
         </ul>
+        {ward.candidates.some((candidate) => candidate.campaign_url) && (
+          <CandidateLinksNote />
+        )}
       </section>
     </main>
   );

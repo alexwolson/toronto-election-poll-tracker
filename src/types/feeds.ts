@@ -46,6 +46,15 @@ export interface MarginDistribution {
   density: number[];
   /** the "close" cutoff, in the same share units as `x` (e.g. 0.05 = 5 points) */
   close_threshold: number;
+  /** Joint winner-and-margin densities on the aggregate grid. Each integrates to
+   *  that winner's probability, and all entries sum to the aggregate density. */
+  by_winner?: Record<
+    string,
+    {
+      density: number[];
+      draw_weight: number;
+    }
+  >;
 }
 
 export interface MayoralForecastFeed {

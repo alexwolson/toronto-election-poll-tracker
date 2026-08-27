@@ -160,6 +160,10 @@ describe("margin distribution", () => {
       x: [0, 0.05, 0.1, 0.2],
       density: [1, 3, 2, 0.5],
       close_threshold: 0.05,
+      by_winner: {
+        [CHOW]: { density: [0.7, 2, 1.4, 0.3], draw_weight: 3 },
+        [BRADFORD]: { density: [0.3, 1, 0.6, 0.2], draw_weight: 1 },
+      },
     },
   };
 
@@ -182,6 +186,7 @@ describe("margin distribution", () => {
     expect(view.points[1].pp).toBeCloseTo(5);
     expect(view.points[1].density).toBe(3);
     expect(view.closeThresholdPp).toBeCloseTo(5);
+    expect(view.segments.map((segment) => segment.id)).toEqual([CHOW, BRADFORD]);
     // all seven past races, closest first (the reference scale)
     expect(view.markers).toHaveLength(7);
     expect(view.markers[0].year).toBe(2023);
@@ -218,6 +223,81 @@ describe("margin distribution", () => {
     // this density piles up just past the threshold -> Clear win carries the most
     const top = view.bands.reduce((a, b) => (b.weight > a.weight ? b : a));
     expect(top.name).toBe("Clear win");
+  });
+
+  it("keeps winner bands on the aggregate scale", () => {
+    const view = marginDistribution(published)!;
+    const chow = view.segments[0];
+    const bradford = view.segments[1];
+    expect(Math.max(...view.bands.map((band) => band.weight))).toBe(1);
+    chow.bands.forEach((band, index) => {
+      expect(band.weight).toBeLessThanOrEqual(view.bands[index].weight);
+    });
+    bradford.bands.forEach((band, index) => {
+      expect(band.weight).toBeLessThanOrEqual(view.bands[index].weight);
+      expect(chow.bands[index].weight + band.weight).toBeCloseTo(
+        view.bands[index].weight,
+      );
+    });
+  });
+
+  it("discovers Alexander and Other automatically when they have winning draws", () => {
+    const future: MayoralForecastFeed = {
+      ...published,
+      candidate_win: {
+        ...published.candidate_win,
+        [ALEXANDER]: card({ candidate_id: ALEXANDER, probability: 0.01 }),
+      },
+      margin_distribution: {
+        ...published.margin_distribution!,
+        by_winner: {
+          ...published.margin_distribution!.by_winner,
+          [ALEXANDER]: { density: [0.01, 0.01, 0.01, 0.01], draw_weight: 2 },
+          other: { density: [0.01, 0.01, 0.01, 0.01], draw_weight: 1 },
+        },
+      },
+    };
+    const view = marginDistribution(future)!;
+    expect(view.segments.map((segment) => segment.id)).toEqual([
+      CHOW,
+      BRADFORD,
+      ALEXANDER,
+      "other",
+    ]);
+    expect(view.segments.map((segment) => segment.label)).toEqual([
+      "Chow wins",
+      "Bradford wins",
+      "Alexander wins",
+      "Other candidate wins",
+    ]);
+    expect(view.segments.find((segment) => segment.id === ALEXANDER)?.hatch).toBe(true);
+  });
+
+  it("falls back to the aggregate when winner decomposition is absent or malformed", () => {
+    const legacy = {
+      ...published,
+      margin_distribution: {
+        ...published.margin_distribution!,
+        by_winner: undefined,
+      },
+    };
+    expect(marginDistribution(legacy)!.segments.map((segment) => segment.id)).toEqual([
+      "all",
+    ]);
+
+    const malformed = {
+      ...published,
+      margin_distribution: {
+        ...published.margin_distribution!,
+        by_winner: {
+          [CHOW]: { density: [1, 2], draw_weight: 3 },
+          [BRADFORD]: { density: [0.3, Number.NaN, 0.6, 0.2], draw_weight: 1 },
+        },
+      },
+    };
+    expect(marginDistribution(malformed)!.segments.map((segment) => segment.id)).toEqual([
+      "all",
+    ]);
   });
 });
 

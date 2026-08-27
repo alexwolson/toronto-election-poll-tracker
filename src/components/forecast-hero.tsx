@@ -81,9 +81,10 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
           </div>
           <p className="margin-panel__lede">
             The gap between the leading two candidates, split into four outcomes
-            from a close result to a landslide. The taller and darker a bar, the
-            likelier the 2026 result lands there; the seven past Toronto mayoral
-            results sit underneath at the margins they finished with.
+            from a close result to a landslide. The taller a bar, the likelier the
+            2026 result lands there; each colour shows who wins those simulations.
+            Past Toronto mayoral results sit underneath at the margins they
+            finished with.
           </p>
           <MarginDistribution view={margins} />
         </section>

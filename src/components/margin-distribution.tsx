@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type {
   HistoricalMargin,
   MarginDistributionView,
@@ -6,15 +7,15 @@ import type {
 /**
  * The winning-margin panel. The forecast margin (winner minus runner-up) is
  * split into four named outcomes — Close, Clear win, Comfortable, Landslide —
- * drawn as bars whose HEIGHT and SHADE both grow with how likely the 2026 result
- * lands there. They sit on a share-of-the-vote axis, and the seven past Toronto
- * mayoral results are marked on that same axis at the margins they finished with.
+ * drawn as bars whose height grows with how likely the 2026 result lands there.
+ * Each bar is stacked by the candidate who wins those draws. They sit on a
+ * share-of-the-vote axis, and the seven past Toronto mayoral results are marked
+ * on that same axis at the margins they finished with.
  *
- * ADR 0006 / 0003 / 0032: height and shade are ORDINAL cues (taller/darker = more
- * likely) — a binned re-presentation of the already-gated density, never a number
- * — so there is no numeric y-axis and no probability is printed. The panel renders
- * only when close_result publishes (enforced upstream in the selector). Pure
- * server-rendered SVG, themed through CSS tokens.
+ * ADR 0006 / 0003 / 0032: height is an ORDINAL cue (taller = more likely) — a
+ * binned re-presentation of the already-gated density, never a number — so there
+ * is no numeric y-axis and no probability is printed. The panel renders only when
+ * close_result publishes (enforced upstream in the selector).
  */
 
 const VIEW_W = 720;
@@ -55,7 +56,7 @@ function layoutMarkers(
 }
 
 export function MarginDistribution({ view }: { view: MarginDistributionView }) {
-  const { bands, markers } = view;
+  const { bands, markers, segments } = view;
 
   const xMax = Math.max(
     bands[bands.length - 1]?.hiPp ?? 50,
@@ -74,19 +75,48 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
   const yAxisX = M.left - 16;
 
   return (
-    <svg
-      className="margin-dist"
-      viewBox={`0 0 ${VIEW_W} ${viewH}`}
-      preserveAspectRatio="xMidYMid meet"
-      role="img"
-      aria-label={
-        "The forecast margin between the top two candidates, split into four " +
-        "outcomes — close result, clear win, comfortable, landslide — drawn as bars " +
-        "that are taller and darker where the 2026 result is more likely to land, on " +
-        "a share-of-the-vote scale, with the seven past Toronto mayoral results " +
-        "marked underneath at the margins they finished with."
-      }
-    >
+    <div className="margin-dist-shell">
+      <ul className="margin-dist-legend" aria-label="Forecast winner colours">
+        {segments.map((segment) => (
+          <li
+            key={segment.id}
+            style={{ "--segment-color": segment.colorVar } as CSSProperties}
+          >
+            <span
+              className={`margin-dist-legend__swatch${segment.hatch ? " margin-dist-legend__swatch--hatched" : ""}`}
+              aria-hidden="true"
+            />
+            {segment.label}
+          </li>
+        ))}
+      </ul>
+      <svg
+        className="margin-dist"
+        viewBox={`0 0 ${VIEW_W} ${viewH}`}
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={
+          "The forecast margin between the top two candidates, split into four " +
+          "outcomes — close result, clear win, comfortable, landslide — with each " +
+          `bar stacked by forecast winner: ${segments.map((segment) => segment.label).join(", ")}. ` +
+          "The seven past Toronto mayoral results are marked underneath."
+        }
+      >
+      <defs>
+        {segments.filter((segment) => segment.hatch).map((segment) => (
+          <pattern
+            key={segment.id}
+            id={`margin-dist-hatch-${segment.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`}
+            width="8"
+            height="8"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(135)"
+          >
+            <rect width="8" height="8" fill={segment.colorVar} />
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#3a2500" strokeWidth="2" opacity="0.4" />
+          </pattern>
+        ))}
+      </defs>
       {/* y-side: an ordinal likelihood cue — taller = more likely, no numbers */}
       <line
         className="margin-dist__yaxis"
@@ -120,23 +150,38 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
         />
       ))}
 
-      {/* the outcome bars: height AND shade grow with likelihood */}
-      {bands.map((b) => {
+      {/* Each outcome keeps the aggregate height, split by who wins those draws. */}
+      {bands.map((b, bandIndex) => {
         const x = xOf(b.loPp);
         const w = xOf(b.hiPp) - xOf(b.loPp);
-        const h = Math.max(b.weight * BAR_MAX, BAR_MIN);
+        const h = b.weight > 0 ? Math.max(b.weight * BAR_MAX, BAR_MIN) : 0;
         const y = BASE - h;
+        let stackBottom = BASE;
         return (
           <g key={b.name}>
-            <rect
-              className="margin-dist__bar"
-              x={x}
-              y={y}
-              width={w}
-              height={h}
-              style={{ opacity: 0.2 + b.weight * 0.55 }}
-            />
-            <text className="margin-dist__bar-name" x={x + w / 2} y={y - 6}>
+            {segments.map((segment) => {
+              const segmentHeight = segment.bands[bandIndex].weight * BAR_MAX;
+              stackBottom -= segmentHeight;
+              const patternId = `margin-dist-hatch-${segment.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+              return (
+                <rect
+                  key={segment.id}
+                  className="margin-dist__segment"
+                  x={x}
+                  y={stackBottom}
+                  width={w}
+                  height={segmentHeight}
+                  fill={segment.hatch ? `url(#${patternId})` : segment.colorVar}
+                >
+                  <title>{`${segment.label}: ${b.name}`}</title>
+                </rect>
+              );
+            })}
+            <text
+              className="margin-dist__bar-name"
+              x={x + w / 2}
+              y={y - 6}
+            >
               {b.name}
             </text>
           </g>
@@ -179,6 +224,7 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
           </g>
         );
       })}
-    </svg>
+      </svg>
+    </div>
   );
 }

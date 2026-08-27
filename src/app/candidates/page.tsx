@@ -65,15 +65,12 @@ export default async function CandidatesPage() {
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {feed.candidates.map((candidate) => {
               const byelection = mayoralByelectionResult(candidate.past_elections);
+              const hasHistory = candidate.past_elections.length > 0;
               const summaryPrefix = candidate.is_incumbent
                 ? "Incumbent Mayor"
                 : byelection
                   ? "Returning"
-                  : candidate.review_status === "no_verified_prior_candidacy"
-                    ? "No verified prior candidacy"
-                    : candidate.past_elections.length === 0
-                      ? "No verified history"
-                      : undefined;
+                  : undefined;
 
               return (
                 <CandidateHistoryItem
@@ -82,7 +79,6 @@ export default async function CandidatesPage() {
                   history={candidate.past_elections}
                   currentOfficeType={candidate.is_incumbent ? "mayor" : undefined}
                   summaryPrefix={summaryPrefix}
-                  hasAdditionalDetails={Boolean(candidate.review_limitations)}
                   leadDetail={
                     byelection ? (
                       <p className="candidate-row__return-detail">
@@ -91,7 +87,7 @@ export default async function CandidatesPage() {
                     ) : undefined
                   }
                 >
-                  {candidate.review_limitations && (
+                  {hasHistory && candidate.review_limitations && (
                     <p className="candidate-row__coverage-detail">
                       <strong>Coverage note:</strong> {candidate.review_limitations}
                     </p>

@@ -2537,14 +2537,48 @@ body { line-height: 1.55; }
   font-size: 0.95rem;
   line-height: 1.55;
 }
+.margin-dist-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  list-style: none;
+}
+.margin-dist-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-mid);
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.margin-dist-legend__swatch {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in oklch, var(--segment-color) 80%, #000);
+  background: var(--segment-color);
+}
+.margin-dist-legend__swatch--hatched {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 5px,
+    rgba(58, 37, 0, 0.4) 5px 7px
+  );
+}
 .margin-dist {
   display: block;
   width: 100%;
   height: auto;
   overflow: visible;
 }
-.margin-dist__bar {
-  fill: var(--accent);
+.margin-dist__segment {
+  stroke: var(--bg-base);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 .margin-dist__bar-name {
   fill: var(--text-strong);

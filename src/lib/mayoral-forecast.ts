@@ -7,7 +7,7 @@
  * probability number (ADR 0006).
  */
 
-import { candidateName } from "@/lib/candidates";
+import { candidateMeta, candidateName } from "@/lib/candidates";
 import type { ForecastQuantityCard, MayoralForecastFeed } from "@/types/feeds";
 
 export function isPublished(card: ForecastQuantityCard): boolean {
@@ -121,6 +121,14 @@ export interface MarginBand {
   weight: number;
 }
 
+export interface MarginDistributionSegment {
+  id: string;
+  label: string;
+  colorVar: string;
+  hatch: boolean;
+  bands: MarginBand[];
+}
+
 /** Editorial band names and their upper cuts in points. The Close/Clear-win
  *  boundary is NOT here — it is the model's own close threshold, read from the
  *  feed — so the Close band always matches the published "close" definition.
@@ -159,6 +167,8 @@ export interface MarginDistributionView {
   closeThresholdPp: number;
   /** the four named margin bands, ascending, each with an ordinal shade weight */
   bands: MarginBand[];
+  /** Non-zero winner components, stacked on the aggregate scale. */
+  segments: MarginDistributionSegment[];
   /** past elections to mark, ascending by margin (the reference scale) */
   markers: HistoricalMargin[];
 }
@@ -181,17 +191,69 @@ export function marginDistribution(
   const cuts = [0, closeThresholdPp, ...BAND_UPPER_CUTS_PP];
   const rawMass = BAND_NAMES.map((_, i) => densityMass(points, cuts[i], cuts[i + 1]));
   const maxMass = Math.max(...rawMass, Number.EPSILON);
-  const bands = BAND_NAMES.map((name, i) => ({
-    name,
-    loPp: cuts[i],
-    hiPp: cuts[i + 1],
-    weight: rawMass[i] / maxMass,
-  }));
+  const bandsFor = (densityPoints: { pp: number; density: number }[]) =>
+    BAND_NAMES.map((name, i) => ({
+      name,
+      loPp: cuts[i],
+      hiPp: cuts[i + 1],
+      weight: densityMass(densityPoints, cuts[i], cuts[i + 1]) / maxMass,
+    }));
+  const bands = bandsFor(points);
+  const winnerSegments = Object.entries(dist.by_winner ?? {})
+    .filter(([, component]) =>
+      Number.isFinite(component.draw_weight) &&
+      component.draw_weight > 0 &&
+      component.density.length === dist.x.length &&
+      component.density.every((value) => Number.isFinite(value) && value >= 0),
+    )
+    .map(([id, component]): MarginDistributionSegment => {
+      const winnerPoints = dist.x.map((x, i) => ({
+        pp: x * 100,
+        density: component.density[i],
+      }));
+      if (id === "other") {
+        return {
+          id,
+          label: "Other candidate wins",
+          colorVar: "var(--color-disengaged)",
+          hatch: false,
+          bands: bandsFor(winnerPoints),
+        };
+      }
+      const meta = candidateMeta(id);
+      const surname = meta.name.trim().split(/\s+/).at(-1) ?? meta.name;
+      return {
+        id,
+        label: `${surname} wins`,
+        colorVar: meta.colorVar,
+        hatch: meta.hatch,
+        bands: bandsFor(winnerPoints),
+      };
+    })
+    .sort((a, b) => {
+      if (a.id === "other") return 1;
+      if (b.id === "other") return -1;
+      const aProbability = feed.candidate_win[a.id]?.probability ?? 0;
+      const bProbability = feed.candidate_win[b.id]?.probability ?? 0;
+      return bProbability - aProbability;
+    });
 
   return {
     points,
     closeThresholdPp,
     bands,
+    segments:
+      winnerSegments.length > 0
+        ? winnerSegments
+        : [
+            {
+              id: "all",
+              label: "All results",
+              colorVar: "var(--accent)",
+              hatch: false,
+              bands,
+            },
+          ],
     markers: [...HISTORICAL_MAYORAL_MARGINS].sort((a, b) => a.marginPp - b.marginPp),
   };
 }

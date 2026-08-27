@@ -2867,14 +2867,16 @@ body { line-height: 1.55; }
 
 /* ── Trustee boards, race context, and ward indexes ───────────────────── */
 .trustee-hero { padding-bottom: 1.65rem; }
-.trustee-board-tabs {
+.trustee-board-tabs,
+.mayor-tabs {
   display: flex;
   overflow-x: auto;
   border: 1px solid var(--line-soft);
   border-left: 0;
   scrollbar-width: thin;
 }
-.trustee-board-tab {
+.trustee-board-tab,
+.mayor-tab {
   flex: 1 0 auto;
   min-width: max-content;
   padding: 0.65rem 1rem;
@@ -2889,8 +2891,11 @@ body { line-height: 1.55; }
   text-transform: uppercase;
 }
 .trustee-board-tab:hover,
-.trustee-board-tab:focus-visible { background: var(--bg-hover); color: var(--text-strong); }
-.trustee-board-tab--active {
+.trustee-board-tab:focus-visible,
+.mayor-tab:hover,
+.mayor-tab:focus-visible { background: var(--bg-hover); color: var(--text-strong); }
+.trustee-board-tab--active,
+.mayor-tab--active {
   box-shadow: inset 0 -3px 0 var(--text-strong);
   color: var(--text-strong);
 }
@@ -3020,7 +3025,8 @@ body { line-height: 1.55; }
 }
 @media (max-width: 620px) {
   .trustee-ward-list { grid-template-columns: 1fr; }
-  .trustee-board-tab { padding-inline: 0.75rem; }
+  .trustee-board-tab,
+  .mayor-tab { padding-inline: 0.75rem; }
 }
 .past-elections {
   list-style: none;

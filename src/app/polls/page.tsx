@@ -1,3 +1,4 @@
+import { MayorTabs } from "@/components/mayor-tabs";
 import { PollArchive } from "@/components/poll-archive";
 import { PollingChart, type ChartSeries } from "@/components/polling-chart";
 import { PollsterLink } from "@/components/pollster-link";
@@ -43,6 +44,8 @@ export default async function PollsPage() {
           </p>
         )}
       </section>
+
+      <MayorTabs activeTab="polls" />
 
       {polling.polls.length > 0 ? (
         <section aria-labelledby="trend-heading" style={{ margin: "1.5rem 0 2rem" }}>

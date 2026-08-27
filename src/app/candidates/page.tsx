@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CandidateHistoryItem } from "@/components/candidate-history";
+import { MayorTabs } from "@/components/mayor-tabs";
 import { ordinal } from "@/lib/council-history";
 import { loadMayoralCandidates } from "@/lib/feeds";
 import type { PastElection } from "@/types/feeds";
@@ -54,6 +55,8 @@ export default async function CandidatesPage() {
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
         )}
       </section>
+
+      <MayorTabs activeTab="candidates" />
 
       <section className="ward-detail-section" aria-labelledby="field-heading">
         <h2 id="field-heading">

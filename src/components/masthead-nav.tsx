@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
-  { href: "/", label: "Mayor" },
-  { href: "/candidates", label: "Candidates" },
-  { href: "/polls", label: "Polls" },
+  { href: "/", label: "Home", activePaths: ["/"] },
+  { href: "/candidates", label: "Mayor", activePaths: ["/candidates", "/polls"] },
   { href: "/wards", label: "Council" },
   { href: "/trustees", label: "Trustees" },
   { href: "/how-it-works", label: "How it works" },
@@ -18,10 +17,10 @@ export function MastheadNav() {
   return (
     <nav aria-label="Site navigation" className="site-nav">
       {NAV_LINKS.map((link) => {
-        const active =
-          link.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(link.href);
+        const activePaths = link.activePaths ?? [link.href];
+        const active = activePaths.some(
+          (path) => pathname === path || (path !== "/" && pathname.startsWith(`${path}/`)),
+        );
         return (
           <Link
             key={link.href}

@@ -21,6 +21,42 @@ export function latestFieldShares(
   return shares;
 }
 
+/** Sum responses a poll explicitly reports outside the forecast field. This
+ * never infers a residual from an incomplete total. */
+export function explicitOtherShare(poll: Poll, field: string[]): number | null {
+  const fieldIds = new Set(field);
+  const reportedOutsideField = Object.entries(poll.shares).filter(
+    ([id]) => !fieldIds.has(id),
+  );
+
+  if (reportedOutsideField.length === 0) return null;
+  return reportedOutsideField.reduce((sum, [, share]) => sum + share, 0);
+}
+
+/** Expand terse feed codes where a plain-language label is known. */
+export function pollMethodLabel(methodology: string): string {
+  const normalized = methodology.trim().toLowerCase();
+  if (normalized === "ivr") return "Interactive voice response (IVR)";
+  if (normalized === "online") return "Online survey";
+  if (normalized === "ivr/online" || normalized === "online/ivr") {
+    return "Interactive voice response and online";
+  }
+  return methodology;
+}
+
+/** Newest conducted date among polls the forecast identifies as evidence. */
+export function latestReferencedPollDate(
+  feed: MayoralPollingFeed,
+  pollIds: string[],
+): string | null {
+  const referenced = new Set(pollIds);
+  const dates = feed.polls
+    .filter((poll) => referenced.has(poll.poll_id))
+    .map((poll) => poll.date_conducted)
+    .sort();
+  return dates.at(-1) ?? null;
+}
+
 export interface PollsterCount {
   firm: string;
   count: number;

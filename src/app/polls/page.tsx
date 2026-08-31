@@ -1,7 +1,10 @@
 import { MayorTabs } from "@/components/mayor-tabs";
+import { PageHero } from "@/components/page-hero";
 import { PollArchive } from "@/components/poll-archive";
 import { PollingChart, type ChartSeries } from "@/components/polling-chart";
 import { PollsterLink } from "@/components/pollster-link";
+import { PollingScopeNote } from "@/components/polling-scope-note";
+import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
@@ -10,7 +13,7 @@ import { candidateTrends, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
-  description: "Every mayoral poll of the current field, and the raw trend.",
+  description: "Every public mayoral poll and the reported trend.",
 };
 
 export default async function PollsPage() {
@@ -31,56 +34,58 @@ export default async function PollsPage() {
 
   return (
     <main id="main-content" className="np-shell">
-      <section className="race-hero" aria-labelledby="polls-heading">
-        <p className="np-kicker">Toronto mayor · polling</p>
-        <h1 id="polls-heading">The polls</h1>
-        <p className="race-hero-dek">
-          Every public poll of the current field, shown as individual readings.
-        </p>
-        {latest && (
-          <p className="race-hero-meta font-mono">
-            {polling.polls.length} polls on file; latest {latest.firm}, fieldwork{" "}
-            {formatDate(latest.date_conducted)}.
-          </p>
-        )}
-      </section>
+      <PageHero
+        headingId="polls-heading"
+        kicker="Toronto mayor · polling"
+        title="The polls"
+        description="Public mayoral polls tracked by this site, preserving which candidates and responses each firm reported."
+        meta={
+          latest ? (
+            <>
+              {polling.polls.length} public polls; latest from {latest.firm}, conducted{" "}
+              {formatDate(latest.date_conducted)}.
+            </>
+          ) : undefined
+        }
+      />
 
       <MayorTabs activeTab="polls" />
 
       {polling.polls.length > 0 ? (
-        <section aria-labelledby="trend-heading" style={{ margin: "1.5rem 0 2rem" }}>
-          <div className="simple-section-heading">
-            <p className="np-kicker">Trend</p>
-            <h2 id="trend-heading" className="section-title">
-              Reported share over time
-            </h2>
-          </div>
+        <section className="page-section page-section--lead" aria-labelledby="trend-heading">
+          <SectionHeading
+            headingId="trend-heading"
+            kicker="Trend"
+            title="Polling support over time"
+          >
+            <PollingScopeNote />
+          </SectionHeading>
           <PollingChart trends={trends} series={series} />
         </section>
       ) : (
-        <p className="forecast-unavailable">Polling data is currently unavailable.</p>
+        <p className="forecast-unavailable">No public mayoral polls are available yet.</p>
       )}
 
-      <section aria-labelledby="archive-heading" style={{ margin: "2rem 0" }}>
-        <div className="simple-section-heading">
-          <p className="np-kicker">Archive</p>
-          <h2 id="archive-heading" className="section-title">
-            Every poll
-          </h2>
-        </div>
+      <section className="page-section" aria-labelledby="archive-heading">
+        <SectionHeading headingId="archive-heading" kicker="Archive" title="Poll archive">
+          <p>
+            Candidate columns follow the current forecast. “Other reported choices” totals only
+            responses the poll lists outside those columns; a dash means none is supplied. This
+            feed does not include question wording or respondent base.
+          </p>
+        </SectionHeading>
         <PollArchive polls={polling.polls} field={field} />
       </section>
 
-      <section aria-labelledby="firms-heading" style={{ margin: "2rem 0" }}>
-        <div className="simple-section-heading">
-          <p className="np-kicker">Sources</p>
-          <h2 id="firms-heading" className="section-title">
-            Polling firms
-          </h2>
-        </div>
-        <ul className="font-mono" style={{ fontSize: "0.78rem", listStyle: "none", padding: 0 }}>
+      <section className="page-section" aria-labelledby="firms-heading">
+        <SectionHeading
+          headingId="firms-heading"
+          kicker="Sources"
+          title="Pollsters in the archive"
+        />
+        <ul className="compact-source-list font-mono">
           {registry.map((r) => (
-            <li key={r.firm} style={{ padding: "0.2rem 0" }}>
+            <li key={r.firm}>
               <PollsterLink firm={r.firm} /> — {r.count} {r.count === 1 ? "poll" : "polls"}
             </li>
           ))}

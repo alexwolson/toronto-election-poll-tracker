@@ -93,7 +93,15 @@ describe("primary pages keep their facts and controls", () => {
   it("Polls page keeps the chart, archive, and actual poll metadata", () => {
     expect(POLLS).toContain("<PollingChart");
     expect(POLLS).toContain("<PollArchive");
-    expect(POLLS).toContain("polls on file");
+    expect(POLLS).toContain("public polls; latest from");
+    expect(POLLS).toContain("Other reported choices");
+    expect(POLLS).toContain("does not include question wording or respondent base");
+  });
+
+  it("homepage groups the latest poll context and dates the forecast evidence", () => {
+    expect(HOME).toContain("poll-context-grid");
+    expect(HOME).toContain("Other reported choices");
+    expect(HERO).toContain("Forecast evidence through");
   });
 
   it("council index keeps the ward browser", () => {

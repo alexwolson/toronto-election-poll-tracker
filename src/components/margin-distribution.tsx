@@ -57,6 +57,12 @@ function layoutMarkers(
 
 export function MarginDistribution({ view }: { view: MarginDistributionView }) {
   const { bands, markers, segments } = view;
+  const leadingBand = bands.reduce((leading, band) =>
+    band.weight > leading.weight ? band : leading,
+  );
+  const leadingRange = leadingBand.loPp === 0
+    ? `Within ${leadingBand.hiPp} points`
+    : `${leadingBand.loPp}–${leadingBand.hiPp} points`;
 
   const xMax = Math.max(
     bands[bands.length - 1]?.hiPp ?? 50,
@@ -76,32 +82,45 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
 
   return (
     <div className="margin-dist-shell">
-      <ul className="margin-dist-legend" aria-label="Forecast winner colours">
-        {segments.map((segment) => (
-          <li
-            key={segment.id}
-            style={{ "--segment-color": segment.colorVar } as CSSProperties}
-          >
-            <span
-              className={`margin-dist-legend__swatch${segment.hatch ? " margin-dist-legend__swatch--hatched" : ""}`}
-              aria-hidden="true"
-            />
-            {segment.label}
-          </li>
-        ))}
-      </ul>
-      <svg
-        className="margin-dist"
-        viewBox={`0 0 ${VIEW_W} ${viewH}`}
-        preserveAspectRatio="xMidYMid meet"
-        role="img"
-        aria-label={
-          "The forecast margin between the top two candidates, split into four " +
-          "outcomes — close result, clear win, comfortable, landslide — with each " +
-          `bar stacked by forecast winner: ${segments.map((segment) => segment.label).join(", ")}. ` +
-          "The seven past Toronto mayoral results are marked underneath."
-        }
-      >
+      <div className="margin-dist-mobile-summary">
+        <span className="margin-dist-mobile-summary__label">Most likely winning margin</span>
+        <strong>{leadingBand.name}</strong>
+        <span>{leadingRange}</span>
+      </div>
+
+      <details className="margin-dist-detail">
+        <summary>View the full margin chart and past elections</summary>
+        <div className="margin-dist-detail__content">
+          <ul className="margin-dist-legend" aria-label="Forecast winner colours">
+            {segments.map((segment) => (
+              <li
+                key={segment.id}
+                style={{ "--segment-color": segment.colorVar } as CSSProperties}
+              >
+                <span
+                  className={`margin-dist-legend__swatch${segment.hatch ? " margin-dist-legend__swatch--hatched" : ""}`}
+                  aria-hidden="true"
+                />
+                {segment.label}
+              </li>
+            ))}
+          </ul>
+          <p className="margin-dist-scroll-hint font-mono">
+            Scroll horizontally to read every historical comparison.
+          </p>
+          <div className="margin-dist-viewport">
+            <svg
+              className="margin-dist"
+              viewBox={`0 0 ${VIEW_W} ${viewH}`}
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label={
+                "The forecast margin between the top two candidates, split into four " +
+                "outcomes — close result, clear win, comfortable, landslide — with each " +
+                `bar stacked by forecast winner: ${segments.map((segment) => segment.label).join(", ")}. ` +
+                "The seven past Toronto mayoral results are marked underneath."
+              }
+            >
       <defs>
         {segments.filter((segment) => segment.hatch).map((segment) => (
           <pattern
@@ -224,7 +243,10 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
           </g>
         );
       })}
-      </svg>
+            </svg>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

@@ -22,7 +22,12 @@ describe("Candidates page", () => {
 
     const html = renderToStaticMarkup(await CandidatesPage());
 
-    expect(html).toContain("The certified field (53)");
+    expect(html).toContain("Candidates on the 2026 mayoral ballot");
+    expect(html).toContain("Browse the certified ballot");
+    expect(html).not.toContain("Search the certified ballot");
+    expect(html).toContain("53 candidates, listed alphabetically by surname");
+    expect(html).not.toContain("Search by candidate name");
+    expect(html).not.toContain("Jump by surname");
     expect(html).toContain("Olivia Chow");
     expect(html).toContain("Chris Alexander");
     expect(html).toContain("Former MP · 2 past races");
@@ -30,10 +35,10 @@ describe("Candidates page", () => {
     expect(html).toContain("nationwide with no year cutoff");
     expect(html).toContain("Identity evidence standards are the same");
     expect(html).toContain('href="https://www.oliviachow.ca"');
-    expect(html).toContain("Campaign links were supplied by candidates");
+    expect(html).toContain("Campaign links come from candidate submissions");
     expect(html).toContain("1991");
     expect(html).toContain("Ward 20 — Trinity-Spadina");
-    expect(html).toContain("Coverage note:");
+    expect(html).toContain("History note:");
     expect(html).toContain(
       "We identified a Toronto school trustee candidacy in 1985 but could not recover authoritative results.",
     );
@@ -65,7 +70,7 @@ describe("Candidates page", () => {
 
     const html = renderToStaticMarkup(await CandidatesPage());
 
-    expect(html).toContain("candidate list is currently unavailable");
+    expect(html).toContain("certified mayoral ballot is not available yet");
     expect(html).not.toContain("<details>");
   });
 });

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PageHero } from "@/components/page-hero";
 import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
 import { RaceViewSwitcher } from "@/components/race-view-switcher";
 import { TrusteeRaceContextTag } from "@/components/trustee-race-context-tag";
@@ -56,16 +57,17 @@ export default async function TrusteeBoardPage({
 
   return (
     <main id="main-content" className="np-shell">
-      <section className="race-hero trustee-hero" aria-labelledby="trustees-heading">
-        <p className="np-kicker">School board trustees · 2026</p>
-        <h1 id="trustees-heading">{board?.display_name ?? fallback.displayName}</h1>
-        <p className="race-hero-dek">
-          Every race and candidate on Toronto&apos;s certified 2026 trustee ballot.
-        </p>
-        {board && feed.coverage.methodology_note && (
+      <PageHero
+        headingId="trustees-heading"
+        kicker="School board trustees · 2026"
+        title={board?.display_name ?? fallback.displayName}
+        className="trustee-hero"
+        description="Every race and candidate on Toronto's certified 2026 trustee ballot."
+      >
+        {board && feed.coverage.methodology_note ? (
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
-        )}
-      </section>
+        ) : null}
+      </PageHero>
 
       <TrusteeBoardTabs activeBoard={boardId} />
 
@@ -75,15 +77,15 @@ export default async function TrusteeBoardPage({
         </h2>
         {board?.board_id === "tdsb" && (
           <p className="trustee-race-context-note">
-            TDSB wards were redrawn for 2026, so prior results cannot be compared
-            fairly. Race type simply shows whether a contest is open, includes one or
-            two sitting trustees, or was decided by acclamation.
+            TDSB wards were redrawn for 2026, so earlier results are not directly
+            comparable. The labels show whether a race is open, includes one or two
+            sitting trustees, or will be decided without a vote.
           </p>
         )}
         {board && board.board_id !== "tdsb" && (
           <p className="trustee-race-context-note">
-            Races are ordered using the prior winner&apos;s share of votes cast. This is
-            a factual comparison, not a forecast.
+            Races with the lowest previous winning share appear first. This order
+            describes the last comparable result; it is not a forecast.
           </p>
         )}
         {board ? (
@@ -112,7 +114,7 @@ export default async function TrusteeBoardPage({
                           <span>Incumbent: {incumbents[0].display_name}</span>
                         )}
                         {incumbents.length > 1 && (
-                          <span>{incumbents.length} incumbent trustees in the field</span>
+                          <span>{incumbents.length} incumbent trustees on the ballot</span>
                         )}
                       </span>
                     </Link>
@@ -122,7 +124,9 @@ export default async function TrusteeBoardPage({
             </ul>
           </RaceViewSwitcher>
         ) : (
-          <p className="forecast-unavailable">Trustee data is currently unavailable.</p>
+          <p className="forecast-unavailable">
+            Trustee race information is not available yet.
+          </p>
         )}
       </section>
     </main>

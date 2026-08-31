@@ -21,11 +21,8 @@ describe("methodology content", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual([
       "mayoral-forecast",
-      "polling-trends",
       "council-attention",
-      "candidate-history",
       "limitations",
-      "glossary",
       "sources",
     ]);
   });
@@ -94,13 +91,22 @@ describe("How It Works rendering", () => {
     expect(html).toContain('aria-hidden="true"');
   });
 
-  it("renders every deep-link target, worked example, and accessible figure", async () => {
+  it("renders question-led entry points, technical disclosures, and accessible figures", async () => {
     const html = renderToStaticMarkup(await HowItWorksPage());
 
     for (const item of methodologyNav) {
       expect(html).toContain(`href="#${item.id}"`);
       expect(html).toContain(`id="${item.id}"`);
     }
+
+    expect(html).toContain("Why should I trust the forecast?");
+    expect(html).toContain("Why is this ward marked for attention?");
+    expect(html).toContain("Why might a result be withheld?");
+    expect(html).toContain("Where does the data come from?");
+    expect(html).toContain('<details class="how-disclosure">');
+    expect(html).toContain('id="polling-trends"');
+    expect(html).toContain('id="candidate-history"');
+    expect(html).toContain('id="glossary"');
 
     expect(html).toContain("Six steps from eligible mayoral polls");
     expect(html).toContain("Example LOESS trend through individual polls");
@@ -109,7 +115,7 @@ describe("How It Works rendering", () => {
     expect(html).toContain("11%");
     expect(html).toContain("8,869");
     expect(html).toContain("123-vote winning margin");
-    expect(html).toContain("tested 35 candidate-facing flag definitions");
+    expect(html).toContain("<strong>35</strong><span>flag definitions tested</span>");
     expect(html).toContain("<strong>12</strong><span>currently published</span>");
     expect(html).toContain("contract 2.1.0");
     expect(html).toContain("current 12-flag catalog");

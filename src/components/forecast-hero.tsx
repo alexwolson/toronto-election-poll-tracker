@@ -1,4 +1,5 @@
 import { MarginDistribution } from "@/components/margin-distribution";
+import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta } from "@/lib/candidates";
 import {
   incumbentDefeat,
@@ -7,6 +8,7 @@ import {
   publishedCandidateWins,
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
+import { formatDate } from "@/lib/format";
 
 /**
  * The mayoral forecast hero (spec §Hero). Lead-first: the favourite and their
@@ -14,7 +16,13 @@ import type { MayoralForecastFeed } from "@/types/feeds";
  * quantities. Bands and frequency phrases only — never a raw number. Withheld
  * quantities never appear. When nothing publishes, an honest note stands in.
  */
-export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
+export function ForecastHero({
+  feed,
+  asOfDate,
+}: {
+  feed: MayoralForecastFeed;
+  asOfDate?: string | null;
+}) {
   const wins = publishedCandidateWins(feed);
   const lead = leadForecast(feed);
   const margins = marginDistribution(feed);
@@ -27,9 +35,9 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
         <h1 id="forecast-heading">The forecast isn&rsquo;t available yet</h1>
         <div className="forecast-unavailable">
           <p>
-            There isn&rsquo;t yet enough agreed-upon evidence to publish a
-            forecast for the mayor&rsquo;s race. This page will show the odds as
-            soon as the ballot is final and the polling supports it.
+            Toronto&rsquo;s mayoral ballot and the available polling do not yet meet
+            the requirements for a published forecast. The forecast will appear
+            once both do.
           </p>
         </div>
       </section>
@@ -41,6 +49,9 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
       <section className="forecast-lead" aria-labelledby="forecast-heading">
         <p className="np-kicker">Toronto mayor · 2026 forecast</p>
         <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
+        {asOfDate && (
+          <p className="forecast-as-of">Forecast evidence through {formatDate(asOfDate)}</p>
+        )}
       </section>
 
       <section aria-label="Chance of winning, by candidate">
@@ -73,18 +84,16 @@ export function ForecastHero({ feed }: { feed: MayoralForecastFeed }) {
 
       {margins && (
         <section className="margin-panel" aria-labelledby="margin-panel-heading">
-          <div className="simple-section-heading">
-            <p className="np-kicker">How close might it be?</p>
-            <h2 id="margin-panel-heading" className="section-title">
-              The margin between the top two
-            </h2>
-          </div>
+          <SectionHeading
+            headingId="margin-panel-heading"
+            kicker="How close might it be?"
+            title="The margin between the top two"
+          />
           <p className="margin-panel__lede">
-            The gap between the leading two candidates, split into four outcomes
-            from a close result to a landslide. The taller a bar, the likelier the
-            2026 result lands there; each colour shows who wins those simulations.
-            Past Toronto mayoral results sit underneath at the margins they
-            finished with.
+            The chart groups the gap between the top two candidates into four
+            outcomes, from a close result to a landslide. Taller bars mean a result
+            is more likely; each colour identifies the winner in those simulations.
+            Past Toronto mayoral results appear below for comparison.
           </p>
           <MarginDistribution view={margins} />
         </section>

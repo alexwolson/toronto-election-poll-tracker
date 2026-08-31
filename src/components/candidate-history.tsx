@@ -27,6 +27,12 @@ function campaignLinkLabel(url: string) {
   }
 }
 
+function campaignLinkAccessibleLabel(name: string, url: string) {
+  const destination =
+    campaignLinkLabel(url) === "Website" ? "campaign website" : "candidate link";
+  return `${name} ${destination} (opens in a new tab)`;
+}
+
 function PastElectionRow({ election }: { election: PastElection }) {
   const party = partyLabel(election.party_name);
   const district = election.district_display_name ?? election.district_name;
@@ -44,6 +50,7 @@ function PastElectionRow({ election }: { election: PastElection }) {
 }
 
 export function CandidateHistoryItem({
+  id,
   name,
   history,
   currentOfficeType,
@@ -51,8 +58,11 @@ export function CandidateHistoryItem({
   summaryPrefix,
   leadDetail,
   hasAdditionalDetails = false,
+  compact = false,
+  compactHint,
   children,
 }: {
+  id?: string;
   name: string;
   history: PastElection[];
   currentOfficeType?: string;
@@ -60,6 +70,8 @@ export function CandidateHistoryItem({
   summaryPrefix?: string | null;
   leadDetail?: ReactNode;
   hasAdditionalDetails?: boolean;
+  compact?: boolean;
+  compactHint?: string | null;
   children?: ReactNode;
 }) {
   const headline = historyHeadline(history, currentOfficeType);
@@ -71,34 +83,71 @@ export function CandidateHistoryItem({
       href={campaignUrl}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label={campaignLinkAccessibleLabel(name, campaignUrl)}
     >
       {campaignLinkLabel(campaignUrl)} <span aria-hidden="true">↗</span>
     </a>
   ) : null;
-  const label = (
+  const label = compact ? (
+    <span className="candidate-row__compact-label">
+      <span className="candidate-row__name">{name}</span>
+      {compactHint && <span className="candidate-row__hint">{compactHint}</span>}
+    </span>
+  ) : (
     <>
       <span className="candidate-row__name">{name}</span>
       {summary && <span className="candidate-row__headline">{summary}</span>}
     </>
   );
 
+  if (!expandable && compact && campaignUrl) {
+    return (
+      <li id={id} className="candidate-row candidate-row--plain candidate-row--compact">
+        <div className="candidate-row__topline">
+          <a
+            className="candidate-row__direct-link"
+            href={campaignUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={campaignLinkAccessibleLabel(name, campaignUrl)}
+          >
+            <span className="candidate-row__compact-label">
+              <span className="candidate-row__name">{name}</span>
+              <span className="candidate-row__hint">
+                {campaignLinkLabel(campaignUrl)} <span aria-hidden="true">↗</span>
+              </span>
+            </span>
+          </a>
+        </div>
+      </li>
+    );
+  }
+
   if (!expandable) {
     return (
-      <li className="candidate-row candidate-row--plain">
+      <li
+        id={id}
+        className={`candidate-row candidate-row--plain${
+          compact ? " candidate-row--compact" : ""
+        }`}
+      >
         <div className="candidate-row__topline">
           <div>{label}</div>
-          {campaignLink}
+          {!compact && campaignLink}
         </div>
       </li>
     );
   }
 
   return (
-    <li className="candidate-row">
+    <li id={id} className={`candidate-row${compact ? " candidate-row--compact" : ""}`}>
       <div className="candidate-row__topline">
         <details>
           <summary className="candidate-row__summary">{label}</summary>
           <div className="candidate-row__body">
+            {compact && summary && (
+              <p className="candidate-row__compact-summary">{summary}</p>
+            )}
             {leadDetail}
             {history.length > 0 && (
               <ul className="past-elections">
@@ -111,9 +160,12 @@ export function CandidateHistoryItem({
               </ul>
             )}
             {children}
+            {compact && campaignLink && (
+              <p className="candidate-row__compact-link">{campaignLink}</p>
+            )}
           </div>
         </details>
-        {campaignLink}
+        {!compact && campaignLink}
       </div>
     </li>
   );
@@ -122,8 +174,8 @@ export function CandidateHistoryItem({
 export function CandidateLinksNote() {
   return (
     <p className="candidate-links-note">
-      Campaign links were supplied by candidates to the City Clerk and are not
-      reviewed or endorsed by the City. {" "}
+      Campaign links come from candidate submissions to the City Clerk. The City
+      does not review or endorse them. {" "}
       <a
         href="https://www.toronto.ca/city-government/elections/candidate-list/"
         target="_blank"

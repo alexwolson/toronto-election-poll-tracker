@@ -53,7 +53,7 @@ export function RaceViewSwitcher({
 
   return (
     <div className="race-view">
-      <div className="race-view__switch" role="group" aria-label="Choose race view">
+      <div className="race-view__switch" role="group" aria-label="Display races as">
         <button
           type="button"
           aria-pressed={view === "list"}

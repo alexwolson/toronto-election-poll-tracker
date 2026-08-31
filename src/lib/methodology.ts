@@ -21,13 +21,10 @@ export interface GlossaryEntry {
 }
 
 export const methodologyNav: MethodologyNavItem[] = [
-  { id: "mayoral-forecast", label: "Mayoral forecast" },
-  { id: "polling-trends", label: "Polling trends" },
-  { id: "council-attention", label: "Council attention" },
-  { id: "candidate-history", label: "Candidate history" },
-  { id: "limitations", label: "Limits" },
-  { id: "glossary", label: "Glossary" },
-  { id: "sources", label: "Sources" },
+  { id: "mayoral-forecast", label: "Forecast trust" },
+  { id: "council-attention", label: "Ward attention" },
+  { id: "limitations", label: "Withheld results" },
+  { id: "sources", label: "Data sources" },
 ];
 
 export const forecastFlow: MethodologyFlowStep[] = [
@@ -160,7 +157,7 @@ export const glossary: GlossaryEntry[] = [
   },
   {
     term: "Open seat",
-    definition: "A council race with no incumbent candidate in the field.",
+    definition: "A council race with no incumbent on the ballot.",
   },
   {
     term: "Prior win",

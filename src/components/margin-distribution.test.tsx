@@ -44,6 +44,9 @@ describe("MarginDistribution", () => {
   it("renders one candidate-coloured stack with a legend", () => {
     const html = renderToStaticMarkup(<MarginDistribution view={view} />);
     expect(html).toContain('aria-label="Forecast winner colours"');
+    expect(html).toContain("Most likely winning margin");
+    expect(html).toContain("Within 5 points");
+    expect(html).toContain("View the full margin chart and past elections");
     expect(html).toContain("Chow wins");
     expect(html).toContain("Alexander wins");
     expect(html).toContain('fill="var(--color-chow)"');

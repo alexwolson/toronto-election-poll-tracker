@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import pollingFixture from "../../fixtures/mayoral_polling.json";
-import type { MayoralPollingFeed } from "@/types/feeds";
+import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 import {
   candidateTrends,
+  explicitOtherShare,
   latestFieldShares,
+  latestReferencedPollDate,
+  pollMethodLabel,
   pollsterRegistry,
   pollsterWebsite,
 } from "./polling";
@@ -20,6 +23,31 @@ describe("latest field shares", () => {
     expect(shares[CHOW]).toBeCloseTo(0.5, 4);
     expect(shares[ALEXANDER]).toBeCloseTo(0.08, 4);
     expect("other" in shares).toBe(false);
+  });
+});
+
+describe("poll context", () => {
+  it("shows only explicitly reported responses outside the forecast field", () => {
+    expect(explicitOtherShare(feed.latest!, FIELD)).toBeCloseTo(0.03, 4);
+
+    const incompleteWithoutResidual: Poll = {
+      ...feed.latest!,
+      shares: { [CHOW]: 0.5, [BRADFORD]: 0.35 },
+    };
+    expect(explicitOtherShare(incompleteWithoutResidual, FIELD)).toBeNull();
+  });
+
+  it("expands terse method codes without rewriting unfamiliar labels", () => {
+    expect(pollMethodLabel("IVR")).toBe("Interactive voice response (IVR)");
+    expect(pollMethodLabel("online")).toBe("Online survey");
+    expect(pollMethodLabel("Telephone interviews")).toBe("Telephone interviews");
+  });
+
+  it("dates the forecast from the newest poll it references", () => {
+    expect(
+      latestReferencedPollDate(feed, ["forum-2026-07-29", "pallas-2026-08-21"]),
+    ).toBe("2026-08-21");
+    expect(latestReferencedPollDate(feed, ["missing-poll"])).toBeNull();
   });
 });
 

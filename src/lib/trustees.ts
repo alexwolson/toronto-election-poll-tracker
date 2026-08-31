@@ -104,9 +104,9 @@ const TRUSTEE_RACE_CONTEXT_LABEL: Record<TrusteeRaceContextCategory, string> = {
   open: "Open race",
   two_incumbents: "Two incumbents",
   one_incumbent: "One incumbent",
-  won_without_majority: "Won without a majority",
+  won_without_majority: "Previous winner below 50%",
   contested_incumbent: "",
-  acclaimed: "Elected by acclamation",
+  acclaimed: "Acclaimed — no vote",
 };
 
 export function trusteeRaceContextLabel(category: TrusteeRaceContextCategory): string {
@@ -122,7 +122,7 @@ export function showTrusteeRaceContextTag(category: TrusteeRaceContextCategory):
 }
 
 export function trusteeFieldStatus(ward: TrusteeWard): string {
-  if (ward.acclaimed) return "Elected by acclamation";
+  if (ward.acclaimed) return "No vote will be held";
   const count = ward.candidates.length;
   return `${count} ${count === 1 ? "candidate" : "candidates"}`;
 }

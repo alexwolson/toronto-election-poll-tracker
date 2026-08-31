@@ -1,3 +1,4 @@
+import { PageHero } from "@/components/page-hero";
 import { WardsBrowser } from "@/components/wards-browser";
 import { RaceViewSwitcher } from "@/components/race-view-switcher";
 import { loadCouncilRaceCards } from "@/lib/feeds";
@@ -5,7 +6,7 @@ import { wardIndexView } from "@/lib/council";
 
 export const metadata = {
   title: "Council — Toronto 2026",
-  description: "The 25 ward council races, by attention.",
+  description: "The 25 ward council races, ordered by attention.",
 };
 
 export default async function WardsPage() {
@@ -14,10 +15,11 @@ export default async function WardsPage() {
 
   return (
     <main id="main-content" className="np-shell">
-      <section className="race-hero" aria-labelledby="council-heading">
-        <p className="np-kicker">Toronto council · 2026</p>
-        <h1 id="council-heading">The 25 ward races</h1>
-      </section>
+      <PageHero
+        headingId="council-heading"
+        kicker="Toronto council · 2026"
+        title="The 25 ward races"
+      />
 
       <section aria-label="Ward races">
         {items.length > 0 ? (
@@ -25,7 +27,9 @@ export default async function WardsPage() {
             <WardsBrowser items={items} />
           </RaceViewSwitcher>
         ) : (
-          <p className="forecast-unavailable">Council data is currently unavailable.</p>
+          <p className="forecast-unavailable">
+            Council race information is not available yet.
+          </p>
         )}
       </section>
     </main>

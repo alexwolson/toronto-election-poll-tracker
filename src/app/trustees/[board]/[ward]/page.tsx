@@ -60,7 +60,9 @@ export default async function TrusteeWardPage({
         <TrusteeBoardTabs activeBoard={boardId} />
         <section className="ward-detail-section">
           <h1>{fallback.shortName} Ward {wardId}</h1>
-          <p className="forecast-unavailable">Trustee data is currently unavailable.</p>
+          <p className="forecast-unavailable">
+            Trustee race information is not available yet.
+          </p>
         </section>
       </main>
     );
@@ -96,9 +98,8 @@ export default async function TrusteeWardPage({
         {acclaimedCandidate ? (
           <p>
             {acclaimedCandidate.is_incumbent
-              ? `${acclaimedCandidate.display_name}, the sitting trustee, has been re-elected by acclamation.`
-              : `${acclaimedCandidate.display_name} has been elected by acclamation.`} No
-            vote will be held in this trustee race.
+              ? `${acclaimedCandidate.display_name}, the sitting trustee, has been re-elected by acclamation, so no vote will be held.`
+              : `${acclaimedCandidate.display_name} has been elected by acclamation, so no vote will be held.`}
           </p>
         ) : (
           <>
@@ -140,7 +141,7 @@ export default async function TrusteeWardPage({
               </div>
             )}
             <div>
-              <dt>Field size</dt>
+              <dt>Candidates</dt>
               <dd>{prior.field_size}</dd>
             </div>
           </dl>
@@ -148,8 +149,8 @@ export default async function TrusteeWardPage({
       )}
 
       <section className="ward-detail-section">
-        <h2>The certified field ({ward.candidates.length})</h2>
-        <ul className="trustee-candidate-list">
+        <h2>Candidates on the certified ballot ({ward.candidates.length})</h2>
+        <ul className="candidate-list">
           {ward.candidates.map((candidate) => (
             <CandidateHistoryItem
               key={candidate.candidacy_id}

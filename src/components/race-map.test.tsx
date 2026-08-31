@@ -68,7 +68,7 @@ describe("RaceMapView", () => {
     fireEvent.click(east);
     fireEvent.mouseLeave(east);
     expect(east.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("link", { name: /View race/ }).getAttribute("href")).toBe("/wards/2");
+    expect(screen.getByRole("link", { name: /View race details/ }).getAttribute("href")).toBe("/wards/2");
 
     fireEvent.keyDown(west, { key: "Enter" });
     fireEvent.blur(west);
@@ -76,6 +76,28 @@ describe("RaceMapView", () => {
     fireEvent.keyDown(east, { key: " " });
     fireEvent.blur(east);
     expect(east.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("uses one tab stop and spatial arrow-key navigation", () => {
+    render(<RaceMapView map={MAP} />);
+    const west = screen.getByRole("button", { name: "Ward 1, West" });
+    const east = screen.getByRole("button", { name: "Ward 2, East" });
+
+    expect(west.getAttribute("tabindex")).toBe("0");
+    expect(east.getAttribute("tabindex")).toBe("-1");
+
+    west.focus();
+    fireEvent.keyDown(west, { key: "ArrowRight" });
+
+    expect(east.getAttribute("tabindex")).toBe("0");
+    expect(east.getAttribute("aria-pressed")).toBe("true");
+    expect(document.activeElement).toBe(east);
+  });
+
+  it("adds enlarged pointer geometry without adding accessible map controls", () => {
+    const { container } = render(<RaceMapView map={MAP} />);
+    expect(container.querySelectorAll(".race-map-hit-area")).toHaveLength(2);
+    expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 
   it("organizes long area coverage as a readable list", () => {

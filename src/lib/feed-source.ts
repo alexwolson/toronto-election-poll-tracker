@@ -24,7 +24,20 @@ async function readRaw(file: string): Promise<unknown> {
     // pull node:fs into the trace.
     const { readFile } = await import("node:fs/promises");
     const { resolve } = await import("node:path");
-    const abs = resolve(process.cwd(), LOCAL_DIR, file);
+    const normalizedDir = LOCAL_DIR.replace(/^\.\//, "").replace(/\/$/, "");
+    if (normalizedDir !== "fixtures" && normalizedDir !== ".release-data") {
+      throw new Error(`unsupported FEED_LOCAL_DIR: ${LOCAL_DIR}`);
+    }
+    if (!/^[a-z0-9_]+\.json$/.test(file)) {
+      throw new Error(`invalid feed filename: ${file}`);
+    }
+    // Local feeds are consumed only while producing the static export. Keeping
+    // them out of the runtime trace prevents Turbopack from globbing the repo.
+    const abs = resolve(
+      /* turbopackIgnore: true */ process.cwd(),
+      normalizedDir,
+      file,
+    );
     return JSON.parse(await readFile(abs, "utf8"));
   }
   const res = await fetch(

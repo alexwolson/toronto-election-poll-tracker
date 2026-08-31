@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MastheadNav } from "@/components/masthead-nav";
 import { MayorTabs } from "@/components/mayor-tabs";
+import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
 
 const mocks = vi.hoisted(() => ({
   pathname: vi.fn(),
@@ -50,5 +51,17 @@ describe("Mayor tabs", () => {
     expect(candidates).toContain('href="/polls"');
     expect(candidates).toContain('aria-current="page" href="/candidates">Candidates</a>');
     expect(polls).toContain('aria-current="page" href="/polls">Polls</a>');
+  });
+});
+
+describe("Trustee board tabs", () => {
+  it("uses the shared route navigation semantics for all four boards", () => {
+    const html = renderToStaticMarkup(<TrusteeBoardTabs activeBoard="tdsb" />);
+
+    expect(html).toContain('aria-label="School boards"');
+    expect(html).toContain('aria-current="page" href="/trustees/tdsb">TDSB</a>');
+    expect(html).toContain('href="/trustees/tcdsb"');
+    expect(html).toContain('href="/trustees/viamonde"');
+    expect(html).toContain('href="/trustees/monavenir"');
   });
 });

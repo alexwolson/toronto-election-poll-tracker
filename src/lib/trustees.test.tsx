@@ -61,7 +61,7 @@ describe("trustee view helpers", () => {
     const ward6 = trusteeWard(tcdsb, "6");
     if (!ward6) throw new Error("fixture must contain TCDSB Ward 6");
 
-    expect(trusteeFieldStatus(ward6)).toBe("Elected by acclamation");
+    expect(trusteeFieldStatus(ward6)).toBe("No vote will be held");
     expect(ward6.comparable_prior_result).toMatchObject({
       year: 2022,
       winner_name: "Frank D'Amico",
@@ -89,7 +89,7 @@ describe("trustee view helpers", () => {
     ]);
     expect(trusteeRaceContextLabel("two_incumbents")).toBe("Two incumbents");
     expect(trusteeRaceContextLabel("won_without_majority")).toBe(
-      "Won without a majority",
+      "Previous winner below 50%",
     );
     expect(showTrusteeRaceContextTag("contested_incumbent")).toBe(false);
   });
@@ -117,7 +117,7 @@ describe("Trustees pages", () => {
     expect(html).toContain('href="/trustees/tcdsb"');
     expect(html).toContain('href="/trustees/viamonde"');
     expect(html).toContain('href="/trustees/monavenir"');
-    expect(html).toContain("2 incumbent trustees in the field");
+    expect(html).toContain("2 incumbent trustees on the ballot");
     expect(html).toContain(">Open race</span>");
     expect(html).toContain(">Two incumbents</span>");
     expect(html).toContain(">One incumbent</span>");
@@ -138,8 +138,8 @@ describe("Trustees pages", () => {
       await TrusteeBoardPage({ params: Promise.resolve({ board: "tcdsb" }) }),
     );
 
-    expect(html).toContain("Won without a majority");
-    expect(html).toContain("prior winner&#x27;s share of votes cast");
+    expect(html).toContain("Previous winner below 50%");
+    expect(html).toContain("lowest previous winning share appear first");
     expect(html).toContain("not a forecast");
     expect(html).not.toContain("TDSB wards were redrawn for 2026");
     expect(html.indexOf('href="/trustees/tcdsb/1"')).toBeLessThan(
@@ -220,7 +220,7 @@ describe("Trustees pages", () => {
       }),
     );
 
-    expect(html).toContain("Won without a majority");
+    expect(html).toContain("Previous winner below 50%");
     expect(html).toContain(
       "Maria Rizzo won this ward in 2022 with 45.2% of votes cast.",
     );
@@ -239,6 +239,6 @@ describe("Trustees pages", () => {
 
     expect(html).toContain("Markus de Domenico is a sitting trustee");
     expect(html).not.toContain("trustee-race-context");
-    expect(html).not.toContain("Won without a majority");
+    expect(html).not.toContain("Previous winner below 50%");
   });
 });

@@ -135,7 +135,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
               <dd>{inc.name}</dd>
             </div>
             <div>
-              <dt>Council wins</dt>
+              <dt>Council victories</dt>
               <dd>{inc.council_wins}</dd>
             </div>
             {inc.defeatability_score !== null && (
@@ -146,7 +146,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
             )}
             {inc.most_recent_win && (
               <div>
-                <dt>Last won</dt>
+              <dt>Most recent win</dt>
                 <dd>
                   {inc.most_recent_win.year} · {formatSharePct(inc.most_recent_win.vote_share)}
                 </dd>
@@ -193,7 +193,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
               </div>
             )}
             <div>
-              <dt>Field size</dt>
+              <dt>Candidates</dt>
               <dd>{prior.field_size}</dd>
             </div>
           </dl>
@@ -201,7 +201,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
       )}
 
       <section className="ward-detail-section">
-        <h2>The 2026 field ({card.candidates.length})</h2>
+        <h2>Candidates in 2026 ({card.candidates.length})</h2>
         {raceSignals.length > 0 && (
           <ul className="signal-list" style={{ marginBottom: "0.75rem" }}>
             {raceSignals.map((sig) => (
@@ -212,7 +212,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
             ))}
           </ul>
         )}
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <ul className="candidate-list">
           {card.candidates.map((c) => (
             <CandidateItem
               key={c.display_name}
@@ -234,7 +234,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
           {card.ward_polls.map((poll) => (
             <div key={poll.poll_id} style={{ marginBottom: "1rem" }}>
               <p className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-faint)" }}>
-                {poll.firm} · {formatDate(poll.date_conducted)} · n={poll.sample_size ?? "—"}
+                {poll.firm} · {formatDate(poll.date_conducted)} · sample {poll.sample_size ?? "—"}
                 {poll.undecided_share !== null && (
                   <> · {formatSharePct(poll.undecided_share)} undecided</>
                 )}

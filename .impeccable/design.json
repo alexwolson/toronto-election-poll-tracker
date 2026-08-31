@@ -1,0 +1,605 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-28T18:33:02.372Z",
+  "title": "Design System: Toronto Election 2026",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Warm Newsprint",
+        "canonical": "#faf9f6",
+        "tonalRamp": [
+          "oklch(0.15 0.004 91.4)",
+          "oklch(0.27 0.004 91.4)",
+          "oklch(0.39 0.004 91.4)",
+          "oklch(0.51 0.004 91.4)",
+          "oklch(0.63 0.004 91.4)",
+          "oklch(0.75 0.004 91.4)",
+          "oklch(0.87 0.004 91.4)",
+          "oklch(0.95 0.004 91.4)"
+        ]
+      },
+      "paper-raised": {
+        "role": "neutral",
+        "displayName": "Raised Paper",
+        "canonical": "#f5f2ed",
+        "tonalRamp": [
+          "oklch(0.15 0.007 80.7)",
+          "oklch(0.27 0.007 80.7)",
+          "oklch(0.39 0.007 80.7)",
+          "oklch(0.51 0.007 80.7)",
+          "oklch(0.63 0.007 80.7)",
+          "oklch(0.75 0.007 80.7)",
+          "oklch(0.87 0.007 80.7)",
+          "oklch(0.95 0.007 80.7)"
+        ]
+      },
+      "paper-hover": {
+        "role": "neutral",
+        "displayName": "Hover Paper",
+        "canonical": "#f0ede8",
+        "tonalRamp": [
+          "oklch(0.15 0.007 80.7)",
+          "oklch(0.27 0.007 80.7)",
+          "oklch(0.39 0.007 80.7)",
+          "oklch(0.51 0.007 80.7)",
+          "oklch(0.63 0.007 80.7)",
+          "oklch(0.75 0.007 80.7)",
+          "oklch(0.87 0.007 80.7)",
+          "oklch(0.95 0.007 80.7)"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Editorial Ink",
+        "canonical": "#1a1a1a",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      },
+      "text-mid": {
+        "role": "neutral",
+        "displayName": "Carbon Midtone",
+        "canonical": "#555555",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      },
+      "text-soft": {
+        "role": "neutral",
+        "displayName": "Soft Graphite",
+        "canonical": "#666666",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      },
+      "text-faint": {
+        "role": "neutral",
+        "displayName": "Faint Graphite",
+        "canonical": "#707070",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      },
+      "rule-soft": {
+        "role": "neutral",
+        "displayName": "Weathered Rule",
+        "canonical": "#cccccc",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      },
+      "rule-inner": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "#e0ddd8",
+        "tonalRamp": [
+          "oklch(0.15 0.008 80.7)",
+          "oklch(0.27 0.008 80.7)",
+          "oklch(0.39 0.008 80.7)",
+          "oklch(0.51 0.008 80.7)",
+          "oklch(0.63 0.008 80.7)",
+          "oklch(0.75 0.008 80.7)",
+          "oklch(0.87 0.008 80.7)",
+          "oklch(0.95 0.008 80.7)"
+        ]
+      },
+      "focus-blue": {
+        "role": "primary",
+        "displayName": "Civic Focus Blue",
+        "canonical": "#1f5f99",
+        "tonalRamp": [
+          "oklch(0.15 0.113 249.8)",
+          "oklch(0.27 0.113 249.8)",
+          "oklch(0.39 0.113 249.8)",
+          "oklch(0.51 0.113 249.8)",
+          "oklch(0.63 0.113 249.8)",
+          "oklch(0.75 0.113 249.8)",
+          "oklch(0.87 0.113 249.8)",
+          "oklch(0.95 0.113 249.8)"
+        ]
+      },
+      "chow-plum": {
+        "role": "secondary",
+        "displayName": "Chow Plum",
+        "canonical": "#854a90",
+        "tonalRamp": [
+          "oklch(0.15 0.125 321.1)",
+          "oklch(0.27 0.125 321.1)",
+          "oklch(0.39 0.125 321.1)",
+          "oklch(0.51 0.125 321.1)",
+          "oklch(0.63 0.125 321.1)",
+          "oklch(0.75 0.125 321.1)",
+          "oklch(0.87 0.125 321.1)",
+          "oklch(0.95 0.125 321.1)"
+        ]
+      },
+      "chow-plum-mid": {
+        "role": "secondary",
+        "displayName": "Chow Plum Midtone",
+        "canonical": "#aa78ba",
+        "tonalRamp": [
+          "oklch(0.15 0.110 317.8)",
+          "oklch(0.27 0.110 317.8)",
+          "oklch(0.39 0.110 317.8)",
+          "oklch(0.51 0.110 317.8)",
+          "oklch(0.63 0.110 317.8)",
+          "oklch(0.75 0.110 317.8)",
+          "oklch(0.87 0.110 317.8)",
+          "oklch(0.95 0.110 317.8)"
+        ]
+      },
+      "chow-plum-soft": {
+        "role": "secondary",
+        "displayName": "Chow Plum Wash",
+        "canonical": "#c4a0cc",
+        "tonalRamp": [
+          "oklch(0.15 0.074 320.1)",
+          "oklch(0.27 0.074 320.1)",
+          "oklch(0.39 0.074 320.1)",
+          "oklch(0.51 0.074 320.1)",
+          "oklch(0.63 0.074 320.1)",
+          "oklch(0.75 0.074 320.1)",
+          "oklch(0.87 0.074 320.1)",
+          "oklch(0.95 0.074 320.1)"
+        ]
+      },
+      "bradford-green": {
+        "role": "secondary",
+        "displayName": "Bradford Civic Green",
+        "canonical": "#2e8b57",
+        "tonalRamp": [
+          "oklch(0.15 0.119 154.9)",
+          "oklch(0.27 0.119 154.9)",
+          "oklch(0.39 0.119 154.9)",
+          "oklch(0.51 0.119 154.9)",
+          "oklch(0.63 0.119 154.9)",
+          "oklch(0.75 0.119 154.9)",
+          "oklch(0.87 0.119 154.9)",
+          "oklch(0.95 0.119 154.9)"
+        ]
+      },
+      "bradford-green-soft": {
+        "role": "secondary",
+        "displayName": "Bradford Green Wash",
+        "canonical": "#b7d9c5",
+        "tonalRamp": [
+          "oklch(0.15 0.045 159.5)",
+          "oklch(0.27 0.045 159.5)",
+          "oklch(0.39 0.045 159.5)",
+          "oklch(0.51 0.045 159.5)",
+          "oklch(0.63 0.045 159.5)",
+          "oklch(0.75 0.045 159.5)",
+          "oklch(0.87 0.045 159.5)",
+          "oklch(0.95 0.045 159.5)"
+        ]
+      },
+      "alexander-gold": {
+        "role": "secondary",
+        "displayName": "Alexander Ballot Gold",
+        "canonical": "#f8c466",
+        "tonalRamp": [
+          "oklch(0.15 0.126 80.5)",
+          "oklch(0.27 0.126 80.5)",
+          "oklch(0.39 0.126 80.5)",
+          "oklch(0.51 0.126 80.5)",
+          "oklch(0.63 0.126 80.5)",
+          "oklch(0.75 0.126 80.5)",
+          "oklch(0.87 0.126 80.5)",
+          "oklch(0.95 0.126 80.5)"
+        ]
+      },
+      "uncommitted-grey": {
+        "role": "secondary",
+        "displayName": "Uncommitted Grey",
+        "canonical": "#c8c4be",
+        "tonalRamp": [
+          "oklch(0.15 0.009 78.3)",
+          "oklch(0.27 0.009 78.3)",
+          "oklch(0.39 0.009 78.3)",
+          "oklch(0.51 0.009 78.3)",
+          "oklch(0.63 0.009 78.3)",
+          "oklch(0.75 0.009 78.3)",
+          "oklch(0.87 0.009 78.3)",
+          "oklch(0.95 0.009 78.3)"
+        ]
+      },
+      "high-attention-red": {
+        "role": "tertiary",
+        "displayName": "Attention Red",
+        "canonical": "#ef4444",
+        "tonalRamp": [
+          "oklch(0.15 0.190 25.3)",
+          "oklch(0.27 0.190 25.3)",
+          "oklch(0.39 0.190 25.3)",
+          "oklch(0.51 0.190 25.3)",
+          "oklch(0.63 0.190 25.3)",
+          "oklch(0.75 0.190 25.3)",
+          "oklch(0.87 0.190 25.3)",
+          "oklch(0.95 0.190 25.3)"
+        ]
+      },
+      "high-attention-wash": {
+        "role": "tertiary",
+        "displayName": "High-Attention Wash",
+        "canonical": "#fee2e2",
+        "tonalRamp": [
+          "oklch(0.15 0.031 17.7)",
+          "oklch(0.27 0.031 17.7)",
+          "oklch(0.39 0.031 17.7)",
+          "oklch(0.51 0.031 17.7)",
+          "oklch(0.63 0.031 17.7)",
+          "oklch(0.75 0.031 17.7)",
+          "oklch(0.87 0.031 17.7)",
+          "oklch(0.95 0.031 17.7)"
+        ]
+      },
+      "elevated-amber": {
+        "role": "tertiary",
+        "displayName": "Evidence Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": [
+          "oklch(0.15 0.165 70.1)",
+          "oklch(0.27 0.165 70.1)",
+          "oklch(0.39 0.165 70.1)",
+          "oklch(0.51 0.165 70.1)",
+          "oklch(0.63 0.165 70.1)",
+          "oklch(0.75 0.165 70.1)",
+          "oklch(0.87 0.165 70.1)",
+          "oklch(0.95 0.165 70.1)"
+        ]
+      },
+      "elevated-wash": {
+        "role": "tertiary",
+        "displayName": "Elevated-Attention Wash",
+        "canonical": "#fef3c7",
+        "tonalRamp": [
+          "oklch(0.15 0.058 95.6)",
+          "oklch(0.27 0.058 95.6)",
+          "oklch(0.39 0.058 95.6)",
+          "oklch(0.51 0.058 95.6)",
+          "oklch(0.63 0.058 95.6)",
+          "oklch(0.75 0.058 95.6)",
+          "oklch(0.87 0.058 95.6)",
+          "oklch(0.95 0.058 95.6)"
+        ]
+      },
+      "quiet-green": {
+        "role": "tertiary",
+        "displayName": "Quiet Green",
+        "canonical": "#22c55e",
+        "tonalRamp": [
+          "oklch(0.15 0.190 149.6)",
+          "oklch(0.27 0.190 149.6)",
+          "oklch(0.39 0.190 149.6)",
+          "oklch(0.51 0.190 149.6)",
+          "oklch(0.63 0.190 149.6)",
+          "oklch(0.75 0.190 149.6)",
+          "oklch(0.87 0.190 149.6)",
+          "oklch(0.95 0.190 149.6)"
+        ]
+      },
+      "quiet-wash": {
+        "role": "tertiary",
+        "displayName": "Quiet-Race Wash",
+        "canonical": "#dcfce7",
+        "tonalRamp": [
+          "oklch(0.15 0.043 156.7)",
+          "oklch(0.27 0.043 156.7)",
+          "oklch(0.39 0.043 156.7)",
+          "oklch(0.51 0.043 156.7)",
+          "oklch(0.63 0.043 156.7)",
+          "oklch(0.75 0.043 156.7)",
+          "oklch(0.87 0.043 156.7)",
+          "oklch(0.95 0.043 156.7)"
+        ]
+      },
+      "open-grey": {
+        "role": "tertiary",
+        "displayName": "Open Grey",
+        "canonical": "#999999",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      },
+      "open-wash": {
+        "role": "tertiary",
+        "displayName": "Open-Seat Wash",
+        "canonical": "#e5e5e5",
+        "tonalRamp": [
+          "oklch(0.15 0.000 89.9)",
+          "oklch(0.27 0.000 89.9)",
+          "oklch(0.39 0.000 89.9)",
+          "oklch(0.51 0.000 89.9)",
+          "oklch(0.63 0.000 89.9)",
+          "oklch(0.75 0.000 89.9)",
+          "oklch(0.87 0.000 89.9)",
+          "oklch(0.95 0.000 89.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Editorial Display",
+        "purpose": "Major race titles."
+      },
+      "pageTitle": {
+        "displayName": "Page Title",
+        "purpose": "Index, candidate, and methodology page titles."
+      },
+      "featureHeading": {
+        "displayName": "Feature Heading",
+        "purpose": "Major question-led sections within long reading pages."
+      },
+      "headline": {
+        "displayName": "Section Headline",
+        "purpose": "Primary analytical takeaways and section openings."
+      },
+      "heading": {
+        "displayName": "Disclosure Heading",
+        "purpose": "Disclosure and subsection headings."
+      },
+      "metric": {
+        "displayName": "Editorial Metric",
+        "purpose": "Prominent measured values in summary modules."
+      },
+      "title": {
+        "displayName": "Record Title",
+        "purpose": "Candidate, ward, panel, and compact summary titles."
+      },
+      "lead": {
+        "displayName": "Editorial Lead",
+        "purpose": "Race and page introductions."
+      },
+      "body": {
+        "displayName": "Reading Copy",
+        "purpose": "Explanations and public-facing methodology."
+      },
+      "bodySmall": {
+        "displayName": "Supporting Copy",
+        "purpose": "Secondary explanations that still require comfortable reading."
+      },
+      "compact": {
+        "displayName": "Compact Copy",
+        "purpose": "Genuinely secondary prose at the 14px production floor."
+      },
+      "data": {
+        "displayName": "Evidence Data",
+        "purpose": "Measured values and essential metadata."
+      },
+      "label": {
+        "displayName": "Evidence Label",
+        "purpose": "Short metadata, controls, dates, and sources."
+      },
+      "diagram": {
+        "displayName": "Diagram Annotation",
+        "purpose": "Embedded chart and map annotations only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "active-baseline",
+        "value": "inset 0 -3px 0 var(--text-strong)",
+        "purpose": "Marks the current route or active tab without lifting it."
+      },
+      {
+        "name": "status-edge",
+        "value": "inset 4px 0 0 var(--status-line)",
+        "purpose": "Encodes trustee race context as a structural edge."
+      }
+    ],
+    "motion": [
+      {
+        "name": "surface-state",
+        "value": "background 0.12s ease",
+        "purpose": "Brief paper-tone feedback on interactive cards and controls."
+      },
+      {
+        "name": "map-state",
+        "value": "filter 100ms ease, stroke-width 100ms ease",
+        "purpose": "Quick map hover and focus feedback; disabled for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "420px"
+      },
+      {
+        "name": "mobile",
+        "value": "680px"
+      },
+      {
+        "name": "map-stack",
+        "value": "760px"
+      },
+      {
+        "name": "method-grid",
+        "value": "850px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Masthead Navigation",
+      "kind": "nav",
+      "refersTo": "segmented-control",
+      "description": "Centred publication navigation with ruled cells and an inset active baseline.",
+      "html": "<nav class=\"ds-masthead\" aria-label=\"Primary\"><a class=\"ds-masthead__link ds-masthead__link--active\" href=\"#\">Home</a><a class=\"ds-masthead__link\" href=\"#\">Mayor</a><a class=\"ds-masthead__link\" href=\"#\">Council</a></nav>",
+      "css": ".ds-masthead{display:flex;justify-content:center;border-top:1px solid var(--line-strong,#1a1a1a);border-bottom:1px solid var(--line-soft,#ccc);background:var(--bg-base,#faf9f6)}.ds-masthead__link{min-width:6.5rem;padding:.62rem 1rem;border-right:1px solid var(--line-inner,#e0ddd8);color:var(--text-mid,#555);font:600 .62rem/1.55 var(--font-ibm-mono,monospace);letter-spacing:.06em;text-align:center;text-decoration:none;text-transform:uppercase}.ds-masthead__link:last-child{border-right:0}.ds-masthead__link:hover{background:var(--bg-hover,#f0ede8);color:var(--text-strong,#1a1a1a)}.ds-masthead__link--active{box-shadow:inset 0 -3px 0 var(--text-strong,#1a1a1a);color:var(--text-strong,#1a1a1a)}.ds-masthead__link:focus-visible{outline:3px solid #1f5f99;outline-offset:3px}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "button",
+      "refersTo": "segmented-control",
+      "description": "Compact mono controls with a black selected state.",
+      "html": "<div class=\"ds-segmented\" role=\"group\" aria-label=\"Sort\"><button class=\"ds-segmented__button\" aria-pressed=\"true\">Most watched</button><button class=\"ds-segmented__button\" aria-pressed=\"false\">By ward</button></div>",
+      "css": ".ds-segmented{display:inline-flex;border:1px solid var(--line-strong,#1a1a1a);background:var(--bg-base,#faf9f6)}.ds-segmented__button{padding:.4rem .7rem;border:0;border-right:1px solid var(--line-soft,#ccc);border-radius:0;background:var(--bg-base,#faf9f6);color:var(--text-mid,#555);font:400 .64rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:.03em;text-transform:uppercase}.ds-segmented__button:last-child{border-right:0}.ds-segmented__button:hover{background:var(--bg-hover,#f0ede8)}.ds-segmented__button[aria-pressed=\"true\"]{background:var(--text-strong,#1a1a1a);color:#fff}.ds-segmented__button:focus-visible{outline:3px solid #1f5f99;outline-offset:3px}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Square mono search field for narrowing civic records.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Find a race</span><input class=\"ds-field__input\" type=\"search\" placeholder=\"Search ward or councillor…\"></label>",
+      "css": ".ds-field{display:grid;gap:.3rem;color:var(--text-mid,#555);font:600 .58rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:.08em;text-transform:uppercase}.ds-field__input{min-width:16rem;padding:.4rem .6rem;border:1px solid var(--line-strong,#1a1a1a);border-radius:0;background:var(--bg-base,#faf9f6);color:var(--text-strong,#1a1a1a);font:400 .72rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:normal;text-transform:none}.ds-field__input::placeholder{color:var(--text-faint,#707070)}.ds-field__input:focus-visible{outline:3px solid #1f5f99;outline-offset:3px}"
+    },
+    {
+      "name": "Evidence Tag",
+      "kind": "chip",
+      "refersTo": "evidence-tag",
+      "description": "Square status label whose colour always maps to evidence meaning.",
+      "html": "<span class=\"ds-tag ds-tag--elevated\">Elevated</span>",
+      "css": ".ds-tag{display:inline-block;padding:.15rem .4rem;border-radius:0;font:600 .58rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:.04em;text-transform:uppercase}.ds-tag--elevated{background:var(--vuln-med-bg,#fef3c7);color:var(--vuln-med-fg,#92400e)}"
+    },
+    {
+      "name": "Ward Race Card",
+      "kind": "card",
+      "refersTo": "ward-card",
+      "description": "Flat civic record with an attention edge, evidence tag, and restrained hover.",
+      "html": "<a class=\"ds-ward-card\" href=\"#\"><span class=\"ds-ward-card__kicker\">Ward 20</span><strong class=\"ds-ward-card__title\">Scarborough Southwest</strong><span class=\"ds-ward-card__person\">Parthi Kandavel</span><span class=\"ds-tag ds-tag--high\">High attention</span><small>Electorate growth exceeded the prior winning margin.</small></a>",
+      "css": ".ds-ward-card{display:grid;gap:.4rem;padding:.85rem .95rem 1rem;border:1px solid var(--line-soft,#ccc);border-left:4px solid var(--vuln-high-line,#ef4444);border-radius:0;background:var(--bg-base,#faf9f6);color:var(--text-strong,#1a1a1a);text-decoration:none}.ds-ward-card:hover{background:var(--bg-hover,#f0ede8)}.ds-ward-card:focus-visible{outline:3px solid #1f5f99;outline-offset:3px}.ds-ward-card__kicker{color:var(--text-faint,#707070);font:600 .62rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:.04em;text-transform:uppercase}.ds-ward-card__title{font:600 1.05rem/1.1 var(--font-newsreader,Georgia,serif)}.ds-ward-card__person{color:var(--text-mid,#555);font:.8rem/1.45 var(--font-source-sans,Arial,sans-serif)}.ds-tag{justify-self:start;padding:.15rem .4rem;border-radius:0;font:600 .58rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:.04em;text-transform:uppercase}.ds-tag--high{background:var(--vuln-high-bg,#fee2e2);color:var(--vuln-high-fg,#9b1c1c)}.ds-ward-card small{color:var(--text-soft,#666);font:.72rem/1.5 var(--font-source-sans,Arial,sans-serif)}"
+    },
+    {
+      "name": "Forecast Band Card",
+      "kind": "custom",
+      "refersTo": "forecast-card",
+      "description": "Signature neutral forecast cell with candidate marker and public frequency phrase.",
+      "html": "<article class=\"ds-band-card\"><div class=\"ds-band-card__head\"><span class=\"ds-band-card__marker\"></span><strong>Olivia Chow</strong></div><div class=\"ds-band-card__frequency\">Wins about 4 times in 5</div><div class=\"ds-band-card__derived\"><span>Chance Olivia Chow loses</span><strong>about 1 time in 5</strong></div></article>",
+      "css": ".ds-band-card{padding:1rem 1.1rem 1.15rem;border-top:2px solid var(--line-strong,#1a1a1a);border-right:1px solid var(--line-soft,#ccc);border-bottom:1px solid var(--line-soft,#ccc);border-left:1px solid var(--line-soft,#ccc);border-radius:0;background:var(--bg-base,#faf9f6);color:var(--text-strong,#1a1a1a)}.ds-band-card__head{display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem}.ds-band-card__head strong{font:600 1.05rem/1.1 var(--font-newsreader,Georgia,serif)}.ds-band-card__marker{width:.85rem;height:.85rem;border-radius:999px;background:var(--color-chow,#854a90)}.ds-band-card__frequency{font:600 1.5rem/1.1 var(--font-newsreader,Georgia,serif)}.ds-band-card__derived{display:grid;gap:.12rem;margin-top:.7rem;padding-top:.55rem;border-top:1px solid var(--line-soft,#ccc)}.ds-band-card__derived span{color:var(--text-soft,#666);font:400 .6rem/1.4 var(--font-ibm-mono,monospace);letter-spacing:.02em;text-transform:uppercase}.ds-band-card__derived strong{font:600 1rem/1.25 var(--font-newsreader,Georgia,serif)}"
+    },
+    {
+      "name": "Methodology Note",
+      "kind": "card",
+      "refersTo": "ward-card",
+      "description": "Raised explanatory aside with a firm structural top rule.",
+      "html": "<aside class=\"ds-note\"><span class=\"ds-note__kicker\">One model, several questions</span><strong>Read the outputs together</strong><p>Each published quantity summarizes the same simulated outcomes.</p></aside>",
+      "css": ".ds-note{display:grid;gap:.45rem;padding:.9rem 1rem;border:1px solid var(--line-soft,#ccc);border-top:4px solid var(--line-strong,#1a1a1a);border-radius:0;background:var(--bg-raised,#f5f2ed);color:var(--text-strong,#1a1a1a)}.ds-note__kicker{font:600 .54rem/1.5 var(--font-ibm-mono,monospace);letter-spacing:.12em;text-transform:uppercase}.ds-note strong{font:700 1.1rem/1.15 var(--font-newsreader,Georgia,serif)}.ds-note p{margin:0;color:var(--text-mid,#555);font:.78rem/1.55 var(--font-source-sans,Arial,sans-serif)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Civic Data Desk",
+    "overview": "The system feels like a public-service election desk working in full view: measured, editorial, and evidence-led. Warm paper, firm rules, disciplined typography, and dense but legible information create the authority of a municipal broadsheet without imitating print ornament. The interface should help a voter scan quickly, then reward closer reading.\n\nIts visual confidence comes from structure rather than spectacle. Large Newsreader headlines establish editorial hierarchy; Source Sans 3 carries explanation; IBM Plex Mono identifies metadata, controls, sources, and evidence categories. Candidate and status colours communicate identity or meaning inside data, while the surrounding interface remains quiet enough for those colours to stay useful.\n\nComponents are flat, square, and precise. Borders, paper tones, inset rules, hatching, and layout changes express grouping and state. Decoration never competes with the evidence, but the system should still feel authored rather than generic.",
+    "keyCharacteristics": [
+      "Warm off-white paper with a faint 44px evidence grid.",
+      "High-contrast serif hierarchy over highly legible sans-serif body copy.",
+      "Monospaced uppercase labels for metadata, controls, and methodological cues.",
+      "Square, ruled containers with no ambient shadows.",
+      "Candidate colour, shape, and hatching used together for data identity.",
+      "Responsive grids that collapse into a continuous reading order on narrow screens."
+    ],
+    "rules": [
+      {
+        "name": "Candidate Colour Is Evidence",
+        "body": "Candidate hues belong to marks, swatches, lines, bands, and names that identify a candidate. Do not use them as general decoration or page chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "Paper Before Panels",
+        "body": "Default to the shared newsprint surface. Use raised paper only when a note, example, or state needs separation that borders alone cannot provide.",
+        "section": "colors"
+      },
+      {
+        "name": "Three-Register",
+        "body": "Use serif for editorial hierarchy, sans-serif for explanation, and mono for evidence or interaction metadata. A component should not add a fourth typographic voice.",
+        "section": "typography"
+      },
+      {
+        "name": "Mono Means Precision",
+        "body": "Monospaced text should signal category, control, source, date, method, or measured value—not carry ordinary prose.",
+        "section": "typography"
+      },
+      {
+        "name": "Joined Grid",
+        "body": "When items form one analytical set, join them with shared rules and zero gap. Use open card gaps only for independently actionable records such as ward race cards.",
+        "section": "layout"
+      },
+      {
+        "name": "No Ambient Shadow",
+        "body": "Do not add drop shadows, glass blur, or floating-card elevation. Use rules, inset state marks, or a paper-tone change.",
+        "section": "elevation"
+      },
+      {
+        "name": "Shape Carries Meaning",
+        "body": "Preserve circle, square, diamond, and hatch distinctions wherever candidate data appears so colour is never the only identifier.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do begin major analytical modules with a firm top rule and keep internal dividers lighter.",
+      "Do use Newsreader for the claim, Source Sans 3 for the explanation, and IBM Plex Mono for the evidence label.",
+      "Do keep candidate and status colours attached to explicit data meaning and pair colour with shape, hatch, text, or position.",
+      "Do preserve wide reading measures, responsive collapse, keyboard focus, reduced-motion behaviour, and non-colour cues.",
+      "Do use warm paper and precise alignment to make dense civic information feel calm."
+    ],
+    "donts": [
+      "Don't add rounded cards, pill-shaped general controls, ambient shadows, glass effects, or floating dashboard surfaces.",
+      "Don't use candidate colours as decorative accents or to imply political endorsement.",
+      "Don't replace ruled information structures with isolated generic cards when the items form one analytical set.",
+      "Don't use monospaced type for long prose or serif type for dense metadata.",
+      "Don't animate charts, maps, or status changes merely to create activity."
+    ]
+  }
+}

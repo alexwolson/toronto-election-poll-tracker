@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { ForecastHero } from "@/components/forecast-hero";
+import { PollingScopeNote } from "@/components/polling-scope-note";
+import { PollsterLink } from "@/components/pollster-link";
+import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, formatSharePct } from "@/lib/format";
 import { viableField } from "@/lib/mayoral-forecast";
-import { latestFieldShares } from "@/lib/polling";
+import {
+  explicitOtherShare,
+  latestFieldShares,
+  latestReferencedPollDate,
+  pollMethodLabel,
+} from "@/lib/polling";
 
 export default async function Home() {
   const [forecast, polling] = await Promise.all([
@@ -18,19 +26,22 @@ export default async function Home() {
     .filter((id) => id in shares)
     .sort((a, b) => shares[b] - shares[a]);
   const latest = polling.latest;
+  const otherShare = latest ? explicitOtherShare(latest, field) : null;
+  const forecastAsOf = latestReferencedPollDate(polling, forecast.final_field_samples);
 
   return (
     <main id="main-content" className="np-shell">
-      <ForecastHero feed={forecast} />
+      <ForecastHero feed={forecast} asOfDate={forecastAsOf} />
 
       {ranked.length > 0 && latest && (
         <section className="polling-takeaway" aria-labelledby="poll-snapshot-heading">
-          <div className="simple-section-heading">
-            <p className="np-kicker">Latest polling</p>
-            <h2 id="poll-snapshot-heading" className="section-title">
-              Where the polls stand
-            </h2>
-          </div>
+          <SectionHeading
+            headingId="poll-snapshot-heading"
+            kicker="Latest mayoral poll"
+            title="What the latest poll found"
+          >
+            <PollingScopeNote />
+          </SectionHeading>
           <div className="poll-snapshot" aria-label="Latest poll shares">
             {ranked.map((id) => {
               const meta = candidateMeta(id);
@@ -52,32 +63,70 @@ export default async function Home() {
                 </div>
               );
             })}
+            {otherShare !== null && (
+              <div className="poll-snapshot__row poll-snapshot__row--other">
+                <span>
+                  <span
+                    className="candidate-marker candidate-marker--residual"
+                    aria-hidden="true"
+                  />
+                  Other reported choices
+                </span>
+                <span className="poll-snapshot__bar">
+                  <span
+                    style={{
+                      width: `${otherShare * 100}%`,
+                      background: "var(--text-faint)",
+                    }}
+                  />
+                </span>
+                <span className="poll-snapshot__value">{formatSharePct(otherShare)}</span>
+              </div>
+            )}
           </div>
-          <p className="race-hero-meta font-mono">
-            {latest.firm} · {formatDate(latest.date_conducted)}
-          </p>
+          <dl className="poll-context-grid" aria-label="Latest poll context">
+            <div>
+              <dt>Pollster</dt>
+              <dd><PollsterLink firm={latest.firm} /></dd>
+            </div>
+            <div>
+              <dt>Conducted</dt>
+              <dd>{formatDate(latest.date_conducted)}</dd>
+            </div>
+            <div>
+              <dt>Sample</dt>
+              <dd>{latest.sample_size?.toLocaleString() ?? "Not supplied"}</dd>
+            </div>
+            <div>
+              <dt>Survey method</dt>
+              <dd>{pollMethodLabel(latest.methodology)}</dd>
+            </div>
+            <div>
+              <dt>Question wording and respondent base</dt>
+              <dd>Not supplied in this feed</dd>
+            </div>
+          </dl>
           <Link href="/polls" className="text-link">
-            View every poll and the trend →
+            See all mayoral polls and the trend →
           </Link>
         </section>
       )}
 
       <section className="model-home" aria-labelledby="council-entry-heading">
-        <div className="simple-section-heading">
-          <p className="np-kicker">Council</p>
-          <h2 id="council-entry-heading" className="section-title">
-            The 25 ward races
-          </h2>
-        </div>
+        <SectionHeading
+          headingId="council-entry-heading"
+          kicker="Council"
+          title="The 25 ward races"
+        />
         <Link href="/wards" className="text-link">
           Browse the ward races →
         </Link>
       </section>
 
       <aside className="methodology-prompt" aria-label="Methodology">
-        <strong>How is this calculated?</strong>
-        <span>The mayoral forecast, the polling, and the council assessment are kept separate.</span>
-        <Link href="/how-it-works">Read how it works</Link>
+        <strong>How this site handles evidence</strong>
+        <span>The forecast, polling record, and council assessment each use a separate method.</span>
+        <Link href="/how-it-works">Read the methodology</Link>
       </aside>
     </main>
   );

@@ -88,7 +88,7 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
         <span>{leadingRange}</span>
       </div>
 
-      <details className="margin-dist-detail">
+      <details className="margin-dist-detail" open>
         <summary>View the full margin chart and past elections</summary>
         <div className="margin-dist-detail__content">
           <ul className="margin-dist-legend" aria-label="Forecast winner colours">

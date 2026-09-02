@@ -23,9 +23,10 @@ describe("Candidates page", () => {
     const html = renderToStaticMarkup(await CandidatesPage());
 
     expect(html).toContain("Candidates on the 2026 mayoral ballot");
-    expect(html).toContain("Browse the certified ballot");
+    expect(html).not.toContain("Open a name to see verified election history.");
+    expect(html).not.toContain("Browse the certified ballot");
     expect(html).not.toContain("Search the certified ballot");
-    expect(html).toContain("53 candidates, listed alphabetically by surname");
+    expect(html).toContain("53 candidates · alphabetical by surname");
     expect(html).not.toContain("Search by candidate name");
     expect(html).not.toContain("Jump by surname");
     expect(html).toContain("Olivia Chow");

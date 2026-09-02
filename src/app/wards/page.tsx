@@ -1,6 +1,6 @@
 import { PageHero } from "@/components/page-hero";
+import { RaceIndexSection } from "@/components/race-index-section";
 import { WardsBrowser } from "@/components/wards-browser";
-import { RaceViewSwitcher } from "@/components/race-view-switcher";
 import { loadCouncilRaceCards } from "@/lib/feeds";
 import { wardIndexView } from "@/lib/council";
 
@@ -17,21 +17,22 @@ export default async function WardsPage() {
     <main id="main-content" className="np-shell">
       <PageHero
         headingId="council-heading"
-        kicker="Toronto council · 2026"
-        title="The 25 ward races"
+        title="Toronto City Council"
       />
 
-      <section aria-label="Ward races">
+      <RaceIndexSection
+        headingId="council-wards-heading"
+        title="The 25 wards"
+        map={items.length > 0 ? council.map : null}
+      >
         {items.length > 0 ? (
-          <RaceViewSwitcher map={council.map}>
-            <WardsBrowser items={items} />
-          </RaceViewSwitcher>
+          <WardsBrowser items={items} />
         ) : (
           <p className="forecast-unavailable">
             Council race information is not available yet.
           </p>
         )}
-      </section>
+      </RaceIndexSection>
     </main>
   );
 }

@@ -56,12 +56,12 @@ describe("trustee view helpers", () => {
     ]);
   });
 
-  it("describes an acclamation without inventing vote facts", () => {
+  it("keeps the candidate count distinct from the acclamation tag", () => {
     const tcdsb = trusteeBoard(feed, "tcdsb");
     const ward6 = trusteeWard(tcdsb, "6");
     if (!ward6) throw new Error("fixture must contain TCDSB Ward 6");
 
-    expect(trusteeFieldStatus(ward6)).toBe("No vote will be held");
+    expect(trusteeFieldStatus(ward6)).toBe("1 candidate");
     expect(ward6.comparable_prior_result).toMatchObject({
       year: 2022,
       winner_name: "Frank D'Amico",
@@ -113,16 +113,26 @@ describe("Trustees pages", () => {
 
     expect(html).toContain("Toronto District School Board");
     expect(html).toContain("The 12 wards");
+    expect(html).toContain('class="race-index-section"');
+    expect(html).toContain('class="race-index-list trustee-ward-list"');
+    expect(html).toContain("race-index-card trustee-ward-link");
+    expect(html).toContain('<span class="race-index-card__eyebrow">Ward 2</span>');
+    expect(html).toContain(
+      '<h3 class="race-index-card__heading trustee-ward-link__heading">Etobicoke Centre; Etobicoke-Lakeshore</h3>',
+    );
     expect(html).toContain('href="/trustees/tdsb"');
     expect(html).toContain('href="/trustees/tcdsb"');
     expect(html).toContain('href="/trustees/viamonde"');
     expect(html).toContain('href="/trustees/monavenir"');
-    expect(html).toContain("2 incumbent trustees on the ballot");
+    expect(html).not.toContain("2 incumbent trustees on the ballot");
     expect(html).toContain(">Open race</span>");
     expect(html).toContain(">Two incumbents</span>");
     expect(html).toContain(">One incumbent</span>");
     expect(html).not.toContain("Race type ·");
+    expect(html).not.toContain("trustee-ward-link__area");
     expect(html).toContain("TDSB wards were redrawn for 2026");
+    expect(html).not.toContain("The labels show whether a race is open");
+    expect(html).not.toContain("Candidate histories cover verified Toronto");
     expect(html.indexOf('href="/trustees/tdsb/2"')).toBeLessThan(
       html.indexOf('href="/trustees/tdsb/1"'),
     );
@@ -162,9 +172,9 @@ describe("Trustees pages", () => {
       }),
     );
 
-    expect(html).toContain("<h1>Ward 1</h1>");
-    expect(html).not.toContain("<h1>Ward 1 —");
-    expect(html).toContain("Etobicoke North and Humber River-Black Creek");
+    expect(html).toContain("<h1>Ward 1 — Etobicoke North; Humber River-Black Creek</h1>");
+    expect(html).not.toContain("trustee-ward-area");
+    expect(html).toContain("Candidate histories cover verified Toronto");
     expect(html).toContain("Incumbent Trustee");
     expect(html).toContain("won · 27.8%");
     expect(html).toContain("Ward 4 — Humber River-Black Creek");
@@ -185,10 +195,26 @@ describe("Trustees pages", () => {
     );
 
     expect(html).toContain("Areas covered");
+    expect(html).toContain("trustee-ward-link__area");
     expect(html).toContain('class="trustee-ward-coverage__areas"');
     expect(html).toContain("Etobicoke North");
     expect(html).toContain("Scarborough-Rouge Park");
     expect(html).not.toContain("City Wards");
+  });
+
+  it("retains expanded area coverage when a French-board heading does not name it", async () => {
+    mocks.loadTrusteeRaceCards.mockResolvedValue(feed);
+
+    const html = renderToStaticMarkup(
+      await TrusteeWardPage({
+        params: Promise.resolve({ board: "viamonde", ward: "2" }),
+      }),
+    );
+
+    expect(html).toContain("<h1>Ward 2 — Est</h1>");
+    expect(html).toContain("trustee-ward-area");
+    expect(html).toContain("Areas covered");
+    expect(html).toContain("Scarborough-Rouge Park");
   });
 
   it("states the official acclamation and omits a made-up vote total", async () => {
@@ -201,9 +227,9 @@ describe("Trustees pages", () => {
     );
 
     expect(html).toContain("Frank D&#x27;Amico");
-    expect(html).toContain(
-      "Frank D&#x27;Amico, the sitting trustee, has been re-elected by acclamation",
-    );
+    expect(html).toContain("Re-elected · Incumbent Trustee · 5 past races");
+    expect(html).not.toContain("<h2>The 2026 election</h2>");
+    expect(html).not.toContain("No vote will be held");
     expect(html).not.toContain("seeking another term");
     expect(html).toContain("Last comparable election (2022)");
     expect(html).toContain("Frank D&#x27;Amico · 54%");
@@ -221,9 +247,8 @@ describe("Trustees pages", () => {
     );
 
     expect(html).toContain("Previous winner below 50%");
-    expect(html).toContain(
-      "Maria Rizzo won this ward in 2022 with 45.2% of votes cast.",
-    );
+    expect(html).not.toContain("Maria Rizzo won this ward in 2022 with 45.2% of votes cast.");
+    expect(html).toContain("Maria Rizzo · 45%");
     expect(html).not.toContain("vulnerable");
     expect(html).not.toContain("Defeatability");
   });
@@ -237,7 +262,9 @@ describe("Trustees pages", () => {
       }),
     );
 
-    expect(html).toContain("Markus de Domenico is a sitting trustee");
+    expect(html).toContain("Markus de Domenico");
+    expect(html).toContain("Incumbent Trustee");
+    expect(html).not.toContain("is a sitting trustee");
     expect(html).not.toContain("trustee-race-context");
     expect(html).not.toContain("Previous winner below 50%");
   });

@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
+import { RaceIndexSection } from "@/components/race-index-section";
 import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
-import { RaceViewSwitcher } from "@/components/race-view-switcher";
 import { TrusteeRaceContextTag } from "@/components/trustee-race-context-tag";
 import { TrusteeWardCoverage } from "@/components/trustee-ward-coverage";
 import { loadCouncilRaceCards, loadTrusteeRaceCards } from "@/lib/feeds";
 import {
+  cityWardAreaNames,
   incumbentTrustees,
   isTrusteeBoardId,
   showTrusteeRaceContextTag,
@@ -22,6 +23,10 @@ export const dynamicParams = false;
 
 export function generateStaticParams() {
   return TRUSTEE_BOARD_NAV.map((board) => ({ board: board.boardId }));
+}
+
+function districtTitle(districtName: string) {
+  return districtName.split(" — ", 2)[1] ?? districtName;
 }
 
 export async function generateMetadata({
@@ -59,76 +64,82 @@ export default async function TrusteeBoardPage({
     <main id="main-content" className="np-shell">
       <PageHero
         headingId="trustees-heading"
-        kicker="School board trustees · 2026"
         title={board?.display_name ?? fallback.displayName}
         className="trustee-hero"
-        description="Every race and candidate on Toronto's certified 2026 trustee ballot."
-      >
-        {board && feed.coverage.methodology_note ? (
-          <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
-        ) : null}
-      </PageHero>
+      />
 
       <TrusteeBoardTabs activeBoard={boardId} />
 
-      <section className="ward-detail-section" aria-labelledby="trustee-wards-heading">
-        <h2 id="trustee-wards-heading">
-          {board ? `The ${board.wards.length} wards` : "Trustee wards"}
-        </h2>
-        {board?.board_id === "tdsb" && (
-          <p className="trustee-race-context-note">
-            TDSB wards were redrawn for 2026, so earlier results are not directly
-            comparable. The labels show whether a race is open, includes one or two
-            sitting trustees, or will be decided without a vote.
-          </p>
-        )}
-        {board && board.board_id !== "tdsb" && (
-          <p className="trustee-race-context-note">
-            Races with the lowest previous winning share appear first. This order
-            describes the last comparable result; it is not a forecast.
-          </p>
-        )}
+      <RaceIndexSection
+        headingId="trustee-wards-heading"
+        title={board ? `The ${board.wards.length} wards` : "Trustee wards"}
+        map={board?.map ?? null}
+        note={
+          board?.board_id === "tdsb" ? (
+            <p className="trustee-race-context-note">
+              TDSB wards were redrawn for 2026, so earlier results are not directly
+              comparable.
+            </p>
+          ) : board ? (
+            <p className="trustee-race-context-note">
+              Races with the lowest previous winning share appear first. This order
+              describes the last comparable result; it is not a forecast.
+            </p>
+          ) : null
+        }
+      >
         {board ? (
-          <RaceViewSwitcher map={board.map}>
-            <ul className="trustee-ward-list">
-              {wards?.map((ward) => {
-                const incumbents = incumbentTrustees(ward);
-                const category = ward.race_context.category;
-                const showContext = showTrusteeRaceContextTag(category);
-                return (
-                  <li key={ward.contest_id}>
-                    <Link
-                      href={`/trustees/${board.board_id}/${ward.ward_id}`}
-                      className={`trustee-ward-link${showContext ? ` trustee-ward-link--${trusteeRaceContextClass(category)}` : ""}`}
-                    >
-                      <span className="trustee-ward-link__heading">{ward.district_name}</span>
-                      <TrusteeRaceContextTag category={category} />
+          <ul className="race-index-list trustee-ward-list">
+            {wards?.map((ward) => {
+              const incumbents = incumbentTrustees(ward);
+              const category = ward.race_context.category;
+              const showContext = showTrusteeRaceContextTag(category);
+              const areaNames = cityWardAreaNames(ward.city_wards, council);
+              const normalizedDistrictName = ward.district_name.toLocaleLowerCase();
+              const coverageRepeatsHeading =
+                areaNames.length === ward.city_wards.length &&
+                areaNames.every((area) =>
+                  normalizedDistrictName.includes(area.toLocaleLowerCase()),
+                );
+              return (
+                <li key={ward.contest_id}>
+                  <Link
+                    href={`/trustees/${board.board_id}/${ward.ward_id}`}
+                    className={`race-index-card trustee-ward-link${showContext ? ` trustee-ward-link--${trusteeRaceContextClass(category)}` : ""}`}
+                  >
+                    <span className="race-index-card__eyebrow">Ward {ward.ward_id}</span>
+                    <h3 className="race-index-card__heading trustee-ward-link__heading">
+                      {districtTitle(ward.district_name)}
+                    </h3>
+                    <TrusteeRaceContextTag category={category} className="race-index-tag" />
+                    {!coverageRepeatsHeading && (
                       <TrusteeWardCoverage
                         cityWards={ward.city_wards}
                         council={council}
                         className="trustee-ward-link__area"
                       />
-                      <span className="trustee-ward-link__facts">
-                        <span>{trusteeFieldStatus(ward)}</span>
-                        {incumbents.length === 1 && (
-                          <span>Incumbent: {incumbents[0].display_name}</span>
-                        )}
-                        {incumbents.length > 1 && (
-                          <span>{incumbents.length} incumbent trustees on the ballot</span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </RaceViewSwitcher>
+                    )}
+                    <span className="race-index-card__facts trustee-ward-link__facts">
+                      <span>{trusteeFieldStatus(ward)}</span>
+                      {incumbents.length === 1 && (
+                        <span>
+                          {category === "one_incumbent"
+                            ? incumbents[0].display_name
+                            : `Incumbent: ${incumbents[0].display_name}`}
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <p className="forecast-unavailable">
             Trustee race information is not available yet.
           </p>
         )}
-      </section>
+      </RaceIndexSection>
     </main>
   );
 }

@@ -107,6 +107,15 @@ describe("How It Works rendering", () => {
     expect(html).toContain('id="polling-trends"');
     expect(html).toContain('id="candidate-history"');
     expect(html).toContain('id="glossary"');
+    expect(html).not.toContain("Choose a question");
+    expect(html).not.toContain("Start with the question that matches what you saw");
+
+    const sourceRegisterStart = html.indexOf("Full source register");
+    const sourceRegisterEnd = html.indexOf("</details>", sourceRegisterStart);
+    const sourceRegister = html.slice(sourceRegisterStart, sourceRegisterEnd);
+    expect(sourceRegisterStart).toBeGreaterThan(-1);
+    expect(sourceRegister).toContain("Election and candidate records");
+    expect(sourceRegister).toContain("Candidate-history audit");
 
     expect(html).toContain("Six steps from eligible mayoral polls");
     expect(html).toContain("Example LOESS trend through individual polls");

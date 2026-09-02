@@ -20,7 +20,6 @@ export default async function CandidatesPage() {
       <PageHero
         headingId="candidates-heading"
         title="Candidates on the 2026 mayoral ballot"
-        description="Browse the certified ballot, then open a name to see verified election history."
       >
         {available && feed.coverage.methodology_note ? (
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>

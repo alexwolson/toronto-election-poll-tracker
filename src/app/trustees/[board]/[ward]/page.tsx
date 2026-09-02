@@ -6,9 +6,9 @@ import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
 import { TrusteeRaceContextTag } from "@/components/trustee-race-context-tag";
 import { TrusteeWardCoverage } from "@/components/trustee-ward-coverage";
 import { loadCouncilRaceCards, loadTrusteeRaceCards } from "@/lib/feeds";
-import { formatDetailedSharePct, formatSharePct } from "@/lib/format";
+import { formatSharePct } from "@/lib/format";
 import {
-  incumbentTrustees,
+  cityWardAreaNames,
   isExpectedTrusteeWard,
   isTrusteeBoardId,
   TRUSTEE_BOARD_NAV,
@@ -68,61 +68,31 @@ export default async function TrusteeWardPage({
     );
   }
 
-  const incumbents = incumbentTrustees(ward);
   const prior = ward.comparable_prior_result;
-  const acclaimedCandidate = ward.acclaimed ? ward.candidates[0] : null;
+  const areaNames = cityWardAreaNames(ward.city_wards, council);
+  const normalizedDistrictName = ward.district_name.toLocaleLowerCase();
+  const coverageRepeatsHeading =
+    areaNames.length === ward.city_wards.length &&
+    areaNames.every((area) => normalizedDistrictName.includes(area.toLocaleLowerCase()));
 
   return (
     <main id="main-content" className="np-shell ward-profile-shell">
       <p className="np-kicker">
         <Link href={`/trustees/${board.board_id}`} className="text-link">
-          {board.short_name}
-        </Link>{" "}
-        · School board trustees
+          {board.display_name}
+        </Link>
       </p>
       <TrusteeBoardTabs activeBoard={boardId} />
 
       <section className="race-hero trustee-ward-hero">
-        <h1>Ward {ward.ward_id}</h1>
+        <h1>{ward.district_name}</h1>
         <TrusteeRaceContextTag category={ward.race_context.category} />
-        <p className="race-hero-dek">{board.display_name}</p>
-        <TrusteeWardCoverage
-          cityWards={ward.city_wards}
-          council={council}
-          className="trustee-ward-area"
-        />
-      </section>
-
-      <section className="ward-detail-section">
-        <h2>The 2026 election</h2>
-        {acclaimedCandidate ? (
-          <p>
-            {acclaimedCandidate.is_incumbent
-              ? `${acclaimedCandidate.display_name}, the sitting trustee, has been re-elected by acclamation, so no vote will be held.`
-              : `${acclaimedCandidate.display_name} has been elected by acclamation, so no vote will be held.`}
-          </p>
-        ) : (
-          <>
-            <p>{ward.candidates.length} candidates are on the certified ballot.</p>
-            {incumbents.length === 1 && (
-              <p>
-                {incumbents[0].display_name} is a sitting trustee seeking another term.
-              </p>
-            )}
-            {incumbents.length > 1 && (
-              <p>
-                {incumbents.map((candidate) => candidate.display_name).join(" and ")} are
-                sitting trustees seeking another term.
-              </p>
-            )}
-            {ward.race_context.signal && (
-              <p className="trustee-prior-win-signal">
-                {ward.race_context.signal.subject_name} won this ward in{" "}
-                {ward.race_context.signal.election_year} with{" "}
-                {formatDetailedSharePct(ward.race_context.signal.vote_share)} of votes cast.
-              </p>
-            )}
-          </>
+        {!coverageRepeatsHeading && (
+          <TrusteeWardCoverage
+            cityWards={ward.city_wards}
+            council={council}
+            className="trustee-ward-area"
+          />
         )}
       </section>
 
@@ -150,6 +120,9 @@ export default async function TrusteeWardPage({
 
       <section className="ward-detail-section">
         <h2>Candidates on the certified ballot ({ward.candidates.length})</h2>
+        {feed.coverage.methodology_note && (
+          <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
+        )}
         <ul className="candidate-list">
           {ward.candidates.map((candidate) => (
             <CandidateHistoryItem
@@ -158,7 +131,15 @@ export default async function TrusteeWardPage({
               campaignUrl={candidate.campaign_url}
               history={candidate.past_elections}
               currentOfficeType={candidate.is_incumbent ? "trustee" : undefined}
-              summaryPrefix={candidate.is_incumbent ? "Incumbent Trustee" : undefined}
+              summaryPrefix={
+                ward.acclaimed
+                  ? candidate.is_incumbent
+                    ? "Re-elected · Incumbent Trustee"
+                    : "Elected"
+                  : candidate.is_incumbent
+                    ? "Incumbent Trustee"
+                    : undefined
+              }
             />
           ))}
         </ul>

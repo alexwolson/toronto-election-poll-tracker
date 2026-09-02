@@ -37,7 +37,6 @@ export default async function Home() {
         <section className="polling-takeaway" aria-labelledby="poll-snapshot-heading">
           <SectionHeading
             headingId="poll-snapshot-heading"
-            kicker="Latest mayoral poll"
             title="What the latest poll found"
           >
             <PollingScopeNote />
@@ -101,33 +100,20 @@ export default async function Home() {
               <dt>Survey method</dt>
               <dd>{pollMethodLabel(latest.methodology)}</dd>
             </div>
-            <div>
-              <dt>Question wording and respondent base</dt>
-              <dd>Not supplied in this feed</dd>
-            </div>
           </dl>
+          <p className="poll-context-note">
+            Question wording and respondent base are not supplied in this feed.
+          </p>
           <Link href="/polls" className="text-link">
             See all mayoral polls and the trend →
           </Link>
         </section>
       )}
 
-      <section className="model-home" aria-labelledby="council-entry-heading">
-        <SectionHeading
-          headingId="council-entry-heading"
-          kicker="Council"
-          title="The 25 ward races"
-        />
-        <Link href="/wards" className="text-link">
-          Browse the ward races →
-        </Link>
-      </section>
-
-      <aside className="methodology-prompt" aria-label="Methodology">
-        <strong>How this site handles evidence</strong>
-        <span>The forecast, polling record, and council assessment each use a separate method.</span>
-        <Link href="/how-it-works">Read the methodology</Link>
-      </aside>
+      <nav className="home-explore" aria-label="Explore more">
+        <Link href="/wards">Browse all 25 ward races →</Link>
+        <Link href="/how-it-works">How the evidence is handled →</Link>
+      </nav>
     </main>
   );
 }

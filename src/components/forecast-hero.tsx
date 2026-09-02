@@ -31,7 +31,6 @@ export function ForecastHero({
   if (!lead) {
     return (
       <section className="forecast-lead" aria-labelledby="forecast-heading">
-        <p className="np-kicker">Toronto mayor · 2026 forecast</p>
         <h1 id="forecast-heading">The forecast isn&rsquo;t available yet</h1>
         <div className="forecast-unavailable">
           <p>
@@ -47,7 +46,6 @@ export function ForecastHero({
   return (
     <>
       <section className="forecast-lead" aria-labelledby="forecast-heading">
-        <p className="np-kicker">Toronto mayor · 2026 forecast</p>
         <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
         {asOfDate && (
           <p className="forecast-as-of">Forecast evidence through {formatDate(asOfDate)}</p>
@@ -86,7 +84,6 @@ export function ForecastHero({
         <section className="margin-panel" aria-labelledby="margin-panel-heading">
           <SectionHeading
             headingId="margin-panel-heading"
-            kicker="How close might it be?"
             title="The margin between the top two"
           />
           <p className="margin-panel__lede">

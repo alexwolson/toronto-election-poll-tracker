@@ -36,7 +36,6 @@ export default async function PollsPage() {
     <main id="main-content" className="np-shell">
       <PageHero
         headingId="polls-heading"
-        kicker="Toronto mayor · polling"
         title="The polls"
         description="Public mayoral polls tracked by this site, preserving which candidates and responses each firm reported."
         meta={
@@ -52,45 +51,39 @@ export default async function PollsPage() {
       <MayorTabs activeTab="polls" />
 
       {polling.polls.length > 0 ? (
-        <section className="page-section page-section--lead" aria-labelledby="trend-heading">
-          <SectionHeading
-            headingId="trend-heading"
-            kicker="Trend"
-            title="Polling support over time"
-          >
-            <PollingScopeNote />
-          </SectionHeading>
-          <PollingChart trends={trends} series={series} />
-        </section>
+        <>
+          <section className="page-section page-section--lead" aria-labelledby="trend-heading">
+            <SectionHeading headingId="trend-heading" title="Polling support over time">
+              <PollingScopeNote />
+            </SectionHeading>
+            <PollingChart trends={trends} series={series} />
+          </section>
+
+          <section className="page-section" aria-labelledby="archive-heading">
+            <SectionHeading headingId="archive-heading" title="Poll archive">
+              <p>
+                “Other reported choices” totals only responses the poll lists outside the forecast
+                candidate columns; a dash means none is supplied. This feed does not include question
+                wording or respondent base.
+              </p>
+            </SectionHeading>
+            <PollArchive polls={polling.polls} field={field} />
+          </section>
+
+          <section className="page-section" aria-labelledby="firms-heading">
+            <SectionHeading headingId="firms-heading" title="Pollsters in the archive" />
+            <ul className="compact-source-list font-mono">
+              {registry.map((r) => (
+                <li key={r.firm}>
+                  <PollsterLink firm={r.firm} /> — {r.count} {r.count === 1 ? "poll" : "polls"}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       ) : (
         <p className="forecast-unavailable">No public mayoral polls are available yet.</p>
       )}
-
-      <section className="page-section" aria-labelledby="archive-heading">
-        <SectionHeading headingId="archive-heading" kicker="Archive" title="Poll archive">
-          <p>
-            Candidate columns follow the current forecast. “Other reported choices” totals only
-            responses the poll lists outside those columns; a dash means none is supplied. This
-            feed does not include question wording or respondent base.
-          </p>
-        </SectionHeading>
-        <PollArchive polls={polling.polls} field={field} />
-      </section>
-
-      <section className="page-section" aria-labelledby="firms-heading">
-        <SectionHeading
-          headingId="firms-heading"
-          kicker="Sources"
-          title="Pollsters in the archive"
-        />
-        <ul className="compact-source-list font-mono">
-          {registry.map((r) => (
-            <li key={r.firm}>
-              <PollsterLink firm={r.firm} /> — {r.count} {r.count === 1 ? "poll" : "polls"}
-            </li>
-          ))}
-        </ul>
-      </section>
     </main>
   );
 }

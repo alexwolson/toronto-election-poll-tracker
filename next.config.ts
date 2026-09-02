@@ -10,7 +10,16 @@ const nextConfig: NextConfig = {
   // HTML/CSS/JS. Server components render at build time, reading the feeds then.
   output: "export",
   // next/image's default loader needs a server; a static export must opt out.
-  images: { unoptimized: true },
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "www.toronto.ca",
+        pathname: "/wp-content/uploads/2026/**",
+      },
+    ],
+  },
   // Emit `/wards/index.html` etc. so any static host serves clean paths.
   trailingSlash: true,
 };

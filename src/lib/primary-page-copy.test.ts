@@ -25,6 +25,8 @@ const WARDS_INDEX = read("src/app/wards/page.tsx");
 const WARD_DETAIL = read("src/app/wards/[ward_num]/page.tsx");
 const HERO = read("src/components/forecast-hero.tsx");
 const MASTHEAD = read("src/components/masthead-nav.tsx");
+const LAYOUT = read("src/app/layout.tsx");
+const WARDS_BROWSER = read("src/components/wards-browser.tsx");
 
 // Methodology qualifications / internal vocabulary retired from every primary
 // route. Matched case-insensitively so "No win probabilities" and
@@ -83,6 +85,18 @@ describe("primary pages drop retired methodology copy", () => {
     expect(WARD_DETAIL).toContain("Why this race draws attention");
     expect(WARD_DETAIL).not.toContain("Why this race draws attention —");
   });
+
+  it("keeps route names and runtime dates out of the global masthead descriptor", () => {
+    expect(LAYOUT).toContain("Evidence-first municipal election guide");
+    expect(LAYOUT).not.toContain("Mayoral forecast · Polls · Council · Trustees");
+    expect(LAYOUT).not.toContain("monthYear");
+  });
+
+  it("states open-seat and incumbent status once on council routes", () => {
+    expect(WARDS_BROWSER).not.toContain("Open seat — no incumbent running");
+    expect(WARD_DETAIL).not.toContain("this is an open seat");
+    expect(WARD_DETAIL).not.toContain("is the incumbent, seeking another term");
+  });
 });
 
 describe("primary pages keep their facts and controls", () => {
@@ -91,16 +105,21 @@ describe("primary pages keep their facts and controls", () => {
   });
 
   it("Polls page keeps the chart, archive, and actual poll metadata", () => {
+    const normalized = POLLS.replace(/\s+/g, " ");
     expect(POLLS).toContain("<PollingChart");
     expect(POLLS).toContain("<PollArchive");
     expect(POLLS).toContain("public polls; latest from");
     expect(POLLS).toContain("Other reported choices");
-    expect(POLLS).toContain("does not include question wording or respondent base");
+    expect(normalized).toContain("does not include question wording or respondent base");
   });
 
   it("homepage groups the latest poll context and dates the forecast evidence", () => {
     expect(HOME).toContain("poll-context-grid");
+    expect(HOME).toContain("poll-context-note");
     expect(HOME).toContain("Other reported choices");
+    expect(HOME).toContain("Browse all 25 ward races");
+    expect(HOME).toContain("How the evidence is handled");
+    expect(HOME).not.toContain("methodology-prompt");
     expect(HERO).toContain("Forecast evidence through");
   });
 

@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 export interface PageHeroProps {
   /** The id applied to the heading and referenced by the section label. */
   headingId: string;
-  kicker?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   meta?: ReactNode;
@@ -18,7 +17,6 @@ export interface PageHeroProps {
  */
 export function PageHero({
   headingId,
-  kicker,
   title,
   description,
   meta,
@@ -26,8 +24,7 @@ export function PageHero({
   className,
 }: PageHeroProps) {
   return (
-    <section className={cn("race-hero", className)} aria-labelledby={headingId}>
-      {kicker && <p className="np-kicker">{kicker}</p>}
+    <section className={cn("race-hero page-hero", className)} aria-labelledby={headingId}>
       <h1 id={headingId}>{title}</h1>
       {description && <p className="race-hero-dek">{description}</p>}
       {meta && <p className="race-hero-meta font-mono">{meta}</p>}

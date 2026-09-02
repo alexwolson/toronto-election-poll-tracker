@@ -105,4 +105,22 @@ describe("RaceMapView", () => {
     expect(screen.getByText("West")).toBeTruthy();
     expect(screen.getByText("North West")).toBeTruthy();
   });
+
+  it("omits facts already stated by the selected race heading or status", () => {
+    const { container } = render(<RaceMapView map={MAP} />);
+    const panel = container.querySelector(".race-map-panel");
+    const east = screen.getByRole("button", { name: "Ward 2, East" });
+
+    expect(panel?.textContent?.match(/Open seat/g)).toHaveLength(1);
+    expect(panel?.textContent).not.toContain("No incumbent is running");
+    expect(panel?.textContent).not.toContain("Selected race");
+    expect(panel?.querySelectorAll(".race-map-panel__facts > div")).toHaveLength(1);
+    expect(panel?.querySelector(".race-map-panel__facts dd")?.textContent).toBe("3");
+
+    fireEvent.click(east);
+
+    expect(panel?.querySelector(".race-map-panel__areas")).toBeNull();
+    expect(panel?.textContent).toContain("Example Person");
+    expect(panel?.textContent).not.toContain("Incumbent: Example Person");
+  });
 });

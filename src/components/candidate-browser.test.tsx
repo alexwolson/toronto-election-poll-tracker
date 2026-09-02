@@ -22,7 +22,7 @@ describe("CandidateBrowser", () => {
   it("keeps every candidate visible in the preserved surname order", () => {
     const { container } = render(<CandidateBrowser candidates={candidates} />);
 
-    expect(screen.getByText("4 candidates, listed alphabetically by surname")).toBeTruthy();
+    expect(screen.getByText("4 candidates · alphabetical by surname")).toBeTruthy();
     expect(screen.queryByRole("searchbox")).toBeNull();
     expect(container.querySelectorAll(".candidate-wall > .candidate-row")).toHaveLength(4);
 
@@ -97,5 +97,17 @@ describe("CandidateBrowser", () => {
     expect(link?.getAttribute("aria-label")).toBe(
       "Brad Bradford campaign website (opens in a new tab)",
     );
+    expect(row?.querySelector(".candidate-row__return-detail")).toBeNull();
+    expect(row?.querySelectorAll(".past-election")).toHaveLength(3);
+  });
+
+  it("does not repeat an identical history hint inside its disclosure", () => {
+    const candidate = structuredClone(candidatesFixture.candidates).find(
+      (item) => item.display_name === "Darrell Brown",
+    ) as unknown as MayoralCandidate;
+
+    render(<CandidateBrowser candidates={[candidate]} />);
+
+    expect(screen.getAllByText("1 past race")).toHaveLength(1);
   });
 });

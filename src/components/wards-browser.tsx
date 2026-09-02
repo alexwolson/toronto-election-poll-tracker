@@ -16,6 +16,7 @@ type Sort = "attention" | "ward";
 export function WardsBrowser({ items }: { items: WardIndexItem[] }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("attention");
+  const isFiltering = query.trim().length > 0;
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -67,7 +68,7 @@ export function WardsBrowser({ items }: { items: WardIndexItem[] }) {
           </button>
         </div>
         <span
-          className="ward-index-count font-mono"
+          className={`ward-index-count font-mono${isFiltering ? "" : " sr-only"}`}
           aria-live="polite"
         >
           {shown.length} of {items.length} wards shown
@@ -75,31 +76,38 @@ export function WardsBrowser({ items }: { items: WardIndexItem[] }) {
       </div>
 
       {shown.length > 0 ? (
-        <div className="ward-index-grid">
+        <ul className="race-index-list ward-index-grid">
           {shown.map((w) => (
-            <Link
-              key={w.ward}
-              href={`/wards/${w.ward}`}
-              className={`ward-index-card ward-index-card--${w.attention}`}
-            >
-              <span className="ward-index-card__ward">Ward {w.ward}</span>
-              <h3 className="ward-index-card__name">{w.name}</h3>
-              <p className="ward-index-card__incumbent">
-                {w.isOpen ? "Open seat — no incumbent running" : w.incumbentName}
-              </p>
-              <span className={`ward-attn-tag ward-attn-tag--${w.attention}`}>
-                {ATTENTION_LABEL[w.attention]}
-              </span>
-              {w.triggers.length > 0 && (
-                <ul className="trigger-list">
-                  {w.triggers.map((t, i) => (
-                    <li key={i}>{t}</li>
-                  ))}
-                </ul>
-              )}
-            </Link>
+            <li key={w.ward}>
+              <Link
+                href={`/wards/${w.ward}`}
+                className={`race-index-card ward-index-card ward-index-card--${w.attention}`}
+              >
+                <span className="race-index-card__eyebrow ward-index-card__ward">
+                  Ward {w.ward}
+                </span>
+                <h3 className="race-index-card__heading ward-index-card__name">
+                  {w.name}
+                </h3>
+                {!w.isOpen && (
+                  <p className="ward-index-card__incumbent">{w.incumbentName}</p>
+                )}
+                <span
+                  className={`race-index-tag ward-attn-tag ward-attn-tag--${w.attention}`}
+                >
+                  {ATTENTION_LABEL[w.attention]}
+                </span>
+                {w.triggers.length > 0 && (
+                  <ul className="trigger-list">
+                    {w.triggers.map((t, i) => (
+                      <li key={i}>{t}</li>
+                    ))}
+                  </ul>
+                )}
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <p className="ward-search-empty" role="status">
           No wards match &ldquo;{query.trim()}&rdquo;. Try a ward number,

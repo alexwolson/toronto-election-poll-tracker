@@ -76,6 +76,10 @@ export function CandidateHistoryItem({
 }) {
   const headline = historyHeadline(history, currentOfficeType);
   const summary = [summaryPrefix, headline].filter(Boolean).join(" · ");
+  const compactSummaryRepeatsHint =
+    compact &&
+    Boolean(compactHint) &&
+    summary.localeCompare(compactHint ?? "", undefined, { sensitivity: "accent" }) === 0;
   const expandable = history.length > 0 || hasAdditionalDetails;
   const campaignLink = campaignUrl ? (
     <a
@@ -145,7 +149,7 @@ export function CandidateHistoryItem({
         <details>
           <summary className="candidate-row__summary">{label}</summary>
           <div className="candidate-row__body">
-            {compact && summary && (
+            {compact && summary && !compactSummaryRepeatsHint && (
               <p className="candidate-row__compact-summary">{summary}</p>
             )}
             {leadDetail}

@@ -39,6 +39,16 @@ describe("site navigation", () => {
       'class="font-mono nav-link nav-link--active" aria-current="page" href="/candidates">Mayor</a>',
     );
   });
+
+  it("does not mark a main-site section active on the hidden Kids Vote route", () => {
+    mocks.pathname.mockReturnValue("/kids-vote-weekend");
+
+    const html = renderToStaticMarkup(<MastheadNav />);
+
+    expect(html).toContain('class="font-mono nav-link" href="/">Home</a>');
+    expect(html).not.toContain('aria-current="page"');
+    expect(html).not.toContain('href="/kids-vote-weekend"');
+  });
 });
 
 describe("Mayor tabs", () => {

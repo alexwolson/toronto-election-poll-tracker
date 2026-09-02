@@ -17,6 +17,10 @@ function geographyParts(geography: string): string[] {
   return geography.split(";").map((part) => part.trim()).filter(Boolean);
 }
 
+function incumbentSummaryValue(summary: string): string {
+  return summary.replace(/^Incumbents?:\s*/i, "");
+}
+
 function navigatedFeature(
   features: RaceMapFeature[],
   current: RaceMapFeature,
@@ -56,6 +60,13 @@ export function RaceMapView({ map }: { map: RaceMap }) {
   const featureRefs = useRef<Record<string, SVGPathElement | null>>({});
   const activeWard = previewWard ?? heldWard;
   const active = map.features.find((feature) => feature.ward_id === activeWard) ?? map.features[0];
+  const areas = geographyParts(active.panel.geography);
+  const normalizedHeading = active.panel.heading.toLocaleLowerCase();
+  const showAreas =
+    areas.length > 0 &&
+    !areas.every((area) => normalizedHeading.includes(area.toLocaleLowerCase()));
+  const showStatus = active.panel.status !== "Contested race";
+  const showIncumbentFact = active.signal_key !== "open";
 
   const hold = (feature: RaceMapFeature) => {
     setHeldWard(feature.ward_id);
@@ -151,33 +162,38 @@ export function RaceMapView({ map }: { map: RaceMap }) {
       </div>
 
       <aside className="race-map-panel">
-        <p className="np-kicker">Selected race</p>
         <h3>{active.panel.heading}</h3>
-        <span className={`race-map-panel__status race-map-feature--${active.signal_key}`}>
-          {active.panel.status}
-        </span>
+        {showStatus && (
+          <span className={`race-map-panel__status race-map-feature--${active.signal_key}`}>
+            {active.panel.status}
+          </span>
+        )}
         {active.signal_key === "prior_winner_share" && active.signal_value !== null && (
           <p className="race-map-panel__share">
             Previous winner: {(active.signal_value * 100).toFixed(1)}% of votes cast
           </p>
         )}
-        <div className="race-map-panel__areas">
-          <p>Areas covered</p>
-          <ul>
-            {geographyParts(active.panel.geography).map((area) => (
-              <li key={area}>{area}</li>
-            ))}
-          </ul>
-        </div>
+        {showAreas && (
+          <div className="race-map-panel__areas">
+            <p>Areas covered</p>
+            <ul>
+              {areas.map((area) => (
+                <li key={area}>{area}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <dl className="race-map-panel__facts">
           <div>
             <dt>Candidates</dt>
-            <dd>{active.panel.candidate_count} candidate{active.panel.candidate_count === 1 ? "" : "s"}</dd>
+            <dd>{active.panel.candidate_count}</dd>
           </div>
-          <div>
-            <dt>Incumbent status</dt>
-            <dd>{active.panel.incumbent_summary}</dd>
-          </div>
+          {showIncumbentFact && (
+            <div>
+              <dt>Incumbent status</dt>
+              <dd>{incumbentSummaryValue(active.panel.incumbent_summary)}</dd>
+            </div>
+          )}
         </dl>
         <Link className="race-map-panel__link" href={active.panel.href}>
           View race details <span aria-hidden="true">→</span>

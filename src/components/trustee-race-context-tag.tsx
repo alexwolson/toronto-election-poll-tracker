@@ -4,16 +4,23 @@ import {
   trusteeRaceContextLabel,
   type TrusteeRaceContextCategory,
 } from "@/lib/trustees";
+import { cn } from "@/lib/utils";
 
 export function TrusteeRaceContextTag({
   category,
+  className,
 }: {
   category: TrusteeRaceContextCategory;
+  className?: string;
 }) {
   if (!showTrusteeRaceContextTag(category)) return null;
   return (
     <span
-      className={`trustee-race-context trustee-race-context--${trusteeRaceContextClass(category)}`}
+      className={cn(
+        "trustee-race-context",
+        `trustee-race-context--${trusteeRaceContextClass(category)}`,
+        className,
+      )}
     >
       {trusteeRaceContextLabel(category)}
     </span>

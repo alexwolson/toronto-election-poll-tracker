@@ -37,25 +37,6 @@ export async function generateMetadata({
   return { title: `${name} — Toronto 2026 Council` };
 }
 
-function DirectionIcon({ direction }: { direction: "positive" | "negative" }) {
-  const positive = direction === "positive";
-  const label = positive ? "positive historical signal" : "negative historical signal";
-  // a rising (positive) or falling (negative) zigzag — direction only, no magnitude
-  const points = positive ? "2,11 6,7 9,9 14,3" : "2,3 6,7 9,5 14,11";
-  return (
-    <svg
-      className={`signal-icon signal-icon--${direction}`}
-      width="16"
-      height="14"
-      viewBox="0 0 16 14"
-      role="img"
-      aria-label={label}
-    >
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
 function CandidateItem({
   candidate,
   isIncumbent,
@@ -87,10 +68,7 @@ function CandidateItem({
         <div className="signal-group">
           <ul className="signal-list">
             {signals.map((sig) => (
-              <li key={sig.key} className={`signal signal--${sig.direction}`}>
-                <DirectionIcon direction={sig.direction} />
-                <span>{sig.text}</span>
-              </li>
+              <li key={sig.key} className="signal">{sig.text}</li>
             ))}
           </ul>
         </div>
@@ -105,6 +83,12 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
   const prior = card.prior_result;
   const exposureFacts = incumbentExposureFacts(card);
   const raceSignals = raceHistorySignals(card);
+  const mostRecentWinRepeatsPrior = Boolean(
+    inc.most_recent_win &&
+    prior &&
+    prior.year === inc.most_recent_win.year &&
+    Math.abs(prior.winner_share - inc.most_recent_win.vote_share) < 1e-9,
+  );
 
   return (
     <main id="main-content" className="np-shell">
@@ -119,11 +103,6 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
         <span className={`ward-attn-tag ward-attn-tag--${attention}`}>
           {ATTENTION_LABEL[attention]}
         </span>
-        <p className="race-hero-dek" style={{ marginTop: "0.75rem" }}>
-          {card.is_open_seat
-            ? "No incumbent is running — this is an open seat."
-            : `${inc.name} is the incumbent, seeking another term.`}
-        </p>
       </section>
 
       {!card.is_open_seat && (
@@ -144,7 +123,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
                 <dd>{inc.defeatability_score}</dd>
               </div>
             )}
-            {inc.most_recent_win && (
+            {inc.most_recent_win && !mostRecentWinRepeatsPrior && (
               <div>
               <dt>Most recent win</dt>
                 <dd>
@@ -205,10 +184,7 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
         {raceSignals.length > 0 && (
           <ul className="signal-list" style={{ marginBottom: "0.75rem" }}>
             {raceSignals.map((sig) => (
-              <li key={sig.key} className={`signal signal--${sig.direction}`}>
-                <DirectionIcon direction={sig.direction} />
-                <span>{sig.text}</span>
-              </li>
+              <li key={sig.key} className="signal">{sig.text}</li>
             ))}
           </ul>
         )}
@@ -234,7 +210,8 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
           {card.ward_polls.map((poll) => (
             <div key={poll.poll_id} style={{ marginBottom: "1rem" }}>
               <p className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-faint)" }}>
-                {poll.firm} · {formatDate(poll.date_conducted)} · sample {poll.sample_size ?? "—"}
+                {poll.firm} · {formatDate(poll.date_conducted)}
+                {poll.sample_size !== null && <> · sample {poll.sample_size}</>}
                 {poll.undecided_share !== null && (
                   <> · {formatSharePct(poll.undecided_share)} undecided</>
                 )}

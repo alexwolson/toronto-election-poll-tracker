@@ -122,7 +122,6 @@ export function showTrusteeRaceContextTag(category: TrusteeRaceContextCategory):
 }
 
 export function trusteeFieldStatus(ward: TrusteeWard): string {
-  if (ward.acclaimed) return "No vote will be held";
   const count = ward.candidates.length;
   return `${count} ${count === 1 ? "candidate" : "candidates"}`;
 }

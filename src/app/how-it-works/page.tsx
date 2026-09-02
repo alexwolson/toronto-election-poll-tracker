@@ -72,16 +72,9 @@ export default async function HowItWorksPage() {
         headingId="how-heading"
         title="How Toronto 2026 works"
         className="how-hero"
-        description={
-          <>
-            Start with the question that matches what you saw. Each section gives
-            the concise answer first; open the technical method only when you need it.
-          </>
-        }
       />
 
       <nav id="methodology-questions" className="how-question-nav" aria-label="Methodology questions">
-        <span>Choose a question</span>
         <ol>
           {methodologyNav.map((item) => (
             <li key={item.id}>
@@ -522,30 +515,35 @@ export default async function HowItWorksPage() {
           </p>
         }
       >
-        <div className="source-list">
-          <article>
-            <h3>Election and candidate records</h3>
-            <p>Official City of Toronto election results and candidate-registration data provide council results, eligible electors, margins, and the current candidate slate.</p>
-          </article>
-          <article>
-            <h3>Mayoral polling</h3>
-            <p>Public releases from Liaison Strategies, Forum Research, Mainstreet Research, Pallas Data, Abacus Data, and Ipsos. The Polls page retains the firm and fieldwork date for every reading.</p>
-          </article>
-          <article>
-            <h3>Forecast history</h3>
-            <p>Previous Toronto mayoral elections provide the omitted-candidate and poll-to-election uncertainty used by the current forecast.</p>
-          </article>
-          <article>
-            <h3>Councillor Defeatability Index</h3>
-            <p>Matt Elliott&rsquo;s City Hall Watcher methodology supplies the three-component incumbent comparison reconstructed and backtested for this site.</p>
-          </article>
-          <article>
-            <h3>Candidate-history audit</h3>
-            <p>The upstream Council Defeatability Index project retains the tested hint catalog, evidence status, sample coverage, uncertainty, and identity audit. This page reviews contract {hintAuditSnapshot.contractVersion}.</p>
-          </article>
-        </div>
-
         <div className="how-disclosures">
+          <MethodDisclosure
+            title="Full source register"
+            description="Five source groups and the role each one plays."
+          >
+            <div className="source-list">
+              <article>
+                <h3>Election and candidate records</h3>
+                <p>Official City of Toronto election results and candidate-registration data provide council results, eligible electors, margins, and the current candidate slate.</p>
+              </article>
+              <article>
+                <h3>Mayoral polling</h3>
+                <p>Public releases from Liaison Strategies, Forum Research, Mainstreet Research, Pallas Data, Abacus Data, and Ipsos. The Polls page retains the firm and fieldwork date for every reading.</p>
+              </article>
+              <article>
+                <h3>Forecast history</h3>
+                <p>Previous Toronto mayoral elections provide the omitted-candidate and poll-to-election uncertainty used by the current forecast.</p>
+              </article>
+              <article>
+                <h3>Councillor Defeatability Index</h3>
+                <p>Matt Elliott&rsquo;s City Hall Watcher methodology supplies the three-component incumbent comparison reconstructed and backtested for this site.</p>
+              </article>
+              <article>
+                <h3>Candidate-history audit</h3>
+                <p>The upstream Council Defeatability Index project retains the tested hint catalog, evidence status, sample coverage, uncertainty, and identity audit. This page reviews contract {hintAuditSnapshot.contractVersion}.</p>
+              </article>
+            </div>
+          </MethodDisclosure>
+
           <MethodDisclosure
             id="glossary"
             title="Terms used on the site"

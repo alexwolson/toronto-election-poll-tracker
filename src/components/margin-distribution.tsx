@@ -1,4 +1,7 @@
+"use client";
+
 import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import type {
   HistoricalMargin,
   MarginDistributionView,
@@ -56,6 +59,7 @@ function layoutMarkers(
 }
 
 export function MarginDistribution({ view }: { view: MarginDistributionView }) {
+  const [chartOpen, setChartOpen] = useState(false);
   const { bands, markers, segments } = view;
   const leadingBand = bands.reduce((leading, band) =>
     band.weight > leading.weight ? band : leading,
@@ -80,6 +84,14 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
 
   const yAxisX = M.left - 16;
 
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 681px)");
+    const syncToViewport = () => setChartOpen(desktop.matches);
+    syncToViewport();
+    desktop.addEventListener("change", syncToViewport);
+    return () => desktop.removeEventListener("change", syncToViewport);
+  }, []);
+
   return (
     <div className="margin-dist-shell">
       <div className="margin-dist-mobile-summary">
@@ -88,7 +100,15 @@ export function MarginDistribution({ view }: { view: MarginDistributionView }) {
         <span>{leadingRange}</span>
       </div>
 
-      <details className="margin-dist-detail" open>
+      <details
+        className="margin-dist-detail"
+        open={chartOpen}
+        onToggle={(event) => {
+          if (!window.matchMedia("(min-width: 681px)").matches) {
+            setChartOpen(event.currentTarget.open);
+          }
+        }}
+      >
         <summary>View the full margin chart and past elections</summary>
         <div className="margin-dist-detail__content">
           <ul className="margin-dist-legend" aria-label="Forecast winner colours">

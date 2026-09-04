@@ -5,57 +5,23 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { treeCandidates, type TreeCandidate } from "./kids-vote-data";
 import { ArrowIcon } from "./kids-vote-icons";
+import {
+  buildPracticeGroup,
+  countChoices,
+  drawPoll,
+  emptyCounts,
+  type PollCounts,
+  type PollSample,
+} from "./kids-vote-poll";
 import styles from "./kids-vote.module.css";
-
-type PollCounts = Record<string, number>;
-
-type PollSample = {
-  indices: number[];
-  counts: PollCounts;
-  size: number;
-};
 
 const sampleSizes = [5, 20, 50] as const;
 const samplesBeforePrediction = 3;
-const fullGroupCounts: PollCounts = {
-  basswood: 30,
-  "paper-birch": 25,
-  "red-oak": 20,
-  "sugar-maple": 15,
-  "white-pine": 10,
-};
+const treeCandidateIds = treeCandidates.map((candidate) => candidate.id);
+const hiddenPracticeGroup = Array.from({ length: 100 }, () => null);
 
 function candidateStyle(candidate: TreeCandidate) {
   return { "--candidate": candidate.colour } as CSSProperties;
-}
-
-function emptyCounts(): PollCounts {
-  return Object.fromEntries(treeCandidates.map((candidate) => [candidate.id, 0]));
-}
-
-function buildPracticeGroup() {
-  return treeCandidates.flatMap((candidate) =>
-    Array.from({ length: fullGroupCounts[candidate.id] }, () => candidate.id),
-  );
-}
-
-const practiceGroup = buildPracticeGroup();
-
-function drawPoll(size: number): PollSample {
-  const indices = Array.from({ length: practiceGroup.length }, (_, index) => index);
-
-  for (let index = indices.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
-  }
-
-  const sampledIndices = indices.slice(0, size);
-  const counts = sampledIndices.reduce((result, index) => {
-    result[practiceGroup[index]] += 1;
-    return result;
-  }, emptyCounts());
-
-  return { indices: sampledIndices, counts, size };
 }
 
 function leaders(counts: PollCounts) {
@@ -91,7 +57,7 @@ function ResultTallies({
         const share = (count / total) * 100;
         const isSelected = selectedId === candidate.id;
         const contents = (
-          <>
+          <span className={styles.tallyContents}>
             <span className={styles.tallyMark} aria-hidden="true">
               <Image
                 src={candidate.image}
@@ -107,7 +73,7 @@ function ResultTallies({
               <span>{count === 1 ? "kid" : "kids"}</span>
               <small>{share.toFixed(0)}%</small>
             </span>
-          </>
+          </span>
         );
 
         if (onChoose) {
@@ -146,6 +112,7 @@ function ResultTallies({
 }
 
 export function PollLab() {
+  const [practiceGroup, setPracticeGroup] = useState<string[] | null>(null);
   const [sampleSize, setSampleSize] = useState<(typeof sampleSizes)[number]>(5);
   const [sample, setSample] = useState<PollSample | null>(null);
   const [previousLeaderIds, setPreviousLeaderIds] = useState<string[]>([]);
@@ -155,9 +122,15 @@ export function PollLab() {
   const [samplesRun, setSamplesRun] = useState(0);
 
   const sampledIndices = useMemo(() => new Set(sample?.indices ?? []), [sample]);
+  const fullGroupCounts = useMemo(
+    () => practiceGroup
+      ? countChoices(practiceGroup, treeCandidateIds)
+      : emptyCounts(treeCandidateIds),
+    [practiceGroup],
+  );
   const pollLeaders = sample ? leaders(sample.counts) : [];
   const previousLeaders = treeCandidates.filter((candidate) => previousLeaderIds.includes(candidate.id));
-  const fullGroupLeader = treeCandidates[0];
+  const fullGroupLeader = practiceGroup ? leaders(fullGroupCounts)[0] : null;
   const predictedCandidate = treeCandidates.find((candidate) => candidate.id === predictionId) ?? null;
   const completedSamples = Math.min(samplesRun, samplesBeforePrediction);
   const samplesRemaining = Math.max(samplesBeforePrediction - samplesRun, 0);
@@ -168,10 +141,14 @@ export function PollLab() {
   }
 
   function runPoll() {
+    const group = practiceGroup ?? buildPracticeGroup(treeCandidateIds);
+    if (!practiceGroup) {
+      setPracticeGroup(group);
+    }
     if (sample) {
       setPreviousLeaderIds(leaders(sample.counts).map((candidate) => candidate.id));
     }
-    setSample(drawPoll(sampleSize));
+    setSample(drawPoll(group, treeCandidateIds, sampleSize));
     setShowFullGroup(false);
     setPredictionId(null);
     setPredictionLocked(false);
@@ -218,13 +195,14 @@ export function PollLab() {
       : `New group, new result. Last time: ${previousBrief}. This time: ${currentBrief}.`
     : "";
   const comparisonMessage = sample
+    && fullGroupLeader
     ? pollLeaders.length === 1 && pollLeaders[0].id === fullGroupLeader.id
       ? "The kids you asked pointed to the same leader, but their numbers were different because they were only part of the group."
       : pollLeaders.some((candidate) => candidate.id === fullGroupLeader.id)
         ? `${fullGroupLeader.name} was one of the leaders in your small group. In all 100, it is ahead on its own.`
         : "The kids you asked pointed to a different leader. That can happen when a poll asks only part of a group."
     : "";
-  const predictionMessage = predictedCandidate
+  const predictionMessage = predictedCandidate && fullGroupLeader
     ? predictedCandidate.id === fullGroupLeader.id
       ? `You picked ${predictedCandidate.name}. It is ahead in all 100.`
       : `You picked ${predictedCandidate.name}. ${fullGroupLeader.name} is ahead in all 100.`
@@ -343,14 +321,16 @@ export function PollLab() {
                     : "100 hidden tree choices."
               }
             >
-              {practiceGroup.map((candidateId, index) => {
-                const candidate = treeCandidates.find((item) => item.id === candidateId) ?? treeCandidates[0];
+              {(practiceGroup ?? hiddenPracticeGroup).map((candidateId, index) => {
+                const candidate = treeCandidates.find((item) => item.id === candidateId) ?? null;
                 const isSampled = sampledIndices.has(index);
-                const isRevealed = showFullGroup || isSampled;
-                const crowdStyle = {
-                  ...candidateStyle(candidate),
-                  "--reveal-delay": `${Math.floor(index / 10) * 24}ms`,
-                } as CSSProperties;
+                const isRevealed = candidate !== null && (showFullGroup || isSampled);
+                const crowdStyle = candidate
+                  ? {
+                      ...candidateStyle(candidate),
+                      "--reveal-delay": `${Math.floor(index / 10) * 24}ms`,
+                    } as CSSProperties
+                  : undefined;
 
                 return (
                   <span
@@ -359,7 +339,7 @@ export function PollLab() {
                     style={isRevealed ? crowdStyle : undefined}
                     aria-hidden="true"
                   >
-                    {isRevealed ? (
+                    {isRevealed && candidate ? (
                       <Image
                         className={styles.crowdLeaf}
                         src={candidate.image}
@@ -461,14 +441,6 @@ export function PollLab() {
               </>
             ) : (
               <div className={styles.emptyClue}>
-                <Image
-                  src={treeCandidates[0].image}
-                  alt=""
-                  width={treeCandidates[0].imageWidth}
-                  height={treeCandidates[0].imageHeight}
-                  sizes="84px"
-                  aria-hidden="true"
-                />
                 <span aria-hidden="true">?</span>
                 <h3>Your result will appear here</h3>
                 <p>Choose a group size, then ask them at random.</p>
@@ -477,7 +449,7 @@ export function PollLab() {
           </aside>
         </div>
 
-        {sample && showFullGroup && (
+        {sample && showFullGroup && fullGroupLeader && (
           <div className={styles.fullGroupResult} id="full-group-result">
             <div className={styles.fullGroupHeader}>
               <div>

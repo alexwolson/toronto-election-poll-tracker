@@ -569,36 +569,26 @@
 
 .emptyClue {
   display: grid;
-  grid-template-columns: 5rem 2.8rem;
   grid-template-rows: auto auto auto;
   align-content: center;
   justify-content: center;
+  justify-items: center;
   min-height: 23rem;
   text-align: center;
 }
 
-.emptyClue img {
-  grid-column: 1;
-  grid-row: 1;
-  width: auto;
-  max-width: 4.6rem;
-  max-height: 5.5rem;
-  object-fit: contain;
-}
-
 .emptyClue > span {
   display: grid;
-  grid-column: 2;
   grid-row: 1;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 4rem;
+  height: 4rem;
   place-items: center;
-  align-self: start;
   border-radius: 50%;
-  background: var(--kids-blue);
-  color: #fff;
+  border: 2px solid var(--kids-blue);
+  background: var(--kids-sky);
+  color: var(--kids-blue-deep);
   font-family: var(--font-newsreader), serif;
-  font-size: var(--type-metric);
+  font-size: var(--type-headline);
   font-weight: 700;
 }
 
@@ -714,15 +704,23 @@
 }
 
 .tallyRow {
-  display: grid;
-  grid-template-columns: 2.65rem minmax(0, 1fr) auto;
-  gap: 0.65rem;
-  align-items: center;
-  min-height: 3.4rem;
+  min-width: 0;
+  min-height: 4rem;
   border-bottom: 1px solid var(--line-inner);
 }
 
+.tallyContents {
+  display: grid;
+  grid-template-columns: 2.85rem minmax(0, 1fr) minmax(5.25rem, max-content);
+  gap: 0.65rem;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 4rem;
+}
+
 .tallyChoice {
+  display: block;
   width: 100%;
   padding: 0 0.2rem;
   border: 0;
@@ -732,6 +730,7 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  appearance: none;
   transition: background-color 140ms ease-out;
 }
 
@@ -756,16 +755,16 @@
 
 .tallyMark {
   display: grid;
-  width: 2.5rem;
-  height: 2.8rem;
+  width: 2.75rem;
+  height: 3.4rem;
   place-items: center;
+  overflow: hidden;
 }
 
 .tallyMark img {
   display: block;
-  width: auto;
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -777,21 +776,28 @@
 
 .tallyCount {
   display: grid;
-  grid-template-columns: auto auto;
-  gap: 0 0.25rem;
+  grid-template-columns: minmax(2ch, max-content) max-content;
+  gap: 0 0.45rem;
   align-items: baseline;
+  justify-content: end;
+  min-width: 5.25rem;
   text-align: right;
 }
 
 .tallyCount strong {
+  display: block;
+  min-width: 2ch;
   font-family: var(--font-newsreader), serif;
   font-size: var(--type-metric);
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .tallyCount > span {
   font-size: var(--type-compact);
   font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .tallyCount small {
@@ -1928,6 +1934,20 @@
 }
 
 @media (max-width: 420px) {
+  .tallyContents {
+    grid-template-columns: 2.45rem minmax(0, 1fr) minmax(4.75rem, max-content);
+    gap: 0.45rem;
+  }
+
+  .tallyMark {
+    width: 2.35rem;
+    height: 3rem;
+  }
+
+  .tallyCount {
+    min-width: 4.75rem;
+  }
+
   .candidateParade img {
     max-width: 3.7rem;
   }

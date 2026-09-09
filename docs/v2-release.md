@@ -6,10 +6,11 @@ Production is a four-repository release chain:
 
 Results owns canonical people, contests, and election facts. Polling pins one
 Results release. Backend pins that Polling release and the same Results release.
-The frontend resolves the latest stable Backend release during
-`npm run vercel-build`, verifies both upstream pins and all downloaded feed
-checksums, and embeds the feeds in the static build. Never promote `fixtures/`,
-`fixtures-preview/`, a branch name, or a raw-GitHub URL to production.
+The frontend resolves the exact Backend release named by `BACKEND_RELEASE_TAG`
+during `npm run vercel-build`, verifies both upstream pins and all downloaded
+feed checksums, and embeds the feeds in the static build. Never promote
+`fixtures/`, `fixtures-preview/`, a branch name, or a raw-GitHub URL to
+production.
 
 For a new 2026 mayoral poll, follow the complete
 [poll ingestion and release runbook](https://github.com/alexwolson/toronto-election-poll-tracker-data/blob/main/docs/runbooks/add-2026-mayoral-poll.md).
@@ -19,6 +20,13 @@ For a new 2026 mayoral poll, follow the complete
 Use clean, up-to-date `main` checkouts. GitHub CLI must be authenticated with
 `gh auth login` or `GH_TOKEN`; Vercel CLI must be logged in and linked to the
 `toronto-election-poll-tracker` project, or use `VERCEL_TOKEN`.
+
+The release resolver accepts `GH_TOKEN` first and `GITHUB_TOKEN` as a fallback
+for authenticated GitHub API requests. Keep either token server-only: never use
+a `NEXT_PUBLIC_` name, commit it, print it, or pass it as a command-line value.
+For Vercel, store `GH_TOKEN` as a sensitive project environment variable for
+Preview and Production under Project Settings. Store `BACKEND_RELEASE_TAG` in
+the same environments and update it to the release being promoted.
 
 ```bash
 gh auth status
@@ -38,14 +46,26 @@ worktree at `origin/main`.
 ## Resolve and verify releases
 
 ```bash
+export BACKEND_RELEASE_TAG=backend-YYYY-MM-DD.N
+unset BACKEND_RELEASE_MODE
 npm run vercel-build
 jq . .release-data/source_manifest.json
 ```
 
-The build must print the intended Backend, Polling, and Results tags. Confirm the
-same tags and source commits in `source_manifest.json`. The resolver currently
-selects the latest stable Backend release, so abort if a concurrent release wins
-that lookup. Do not edit `.release-data/` or copy its contents into fixtures.
+The build fails unless an exact tag is supplied. It must print the intended
+Backend, Polling, and Results chain before downloading feeds. Confirm the same
+tags and source commits in `source_manifest.json`. Do not edit `.release-data/`
+or copy its contents into fixtures.
+
+Latest-stable discovery is retained only for deliberate inspection or recovery:
+
+```bash
+unset BACKEND_RELEASE_TAG
+BACKEND_RELEASE_MODE=latest npm run vercel-build
+```
+
+Do not configure `BACKEND_RELEASE_MODE=latest` for Production. A production
+deployment must use the exact Backend tag already verified during preflight.
 
 Before promotion, inspect the static build at `/`, `/polls/`, `/candidates/`,
 `/wards/`, and `/how-it-works/`. A poll release also requires checking the latest
@@ -79,8 +99,8 @@ the corrected pins, then run the frontend preflight and deployment again.
 ## Local feed options
 
 - `FEED_LOCAL_DIR=./fixtures npm run dev` uses committed development fixtures.
-- `npm run vercel-build` generates and consumes `.release-data/`, the only local
-  directory used for a production build.
+- `BACKEND_RELEASE_TAG=backend-YYYY-MM-DD.N npm run vercel-build` generates and
+  consumes `.release-data/`, the only local directory used for a production build.
 - `NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev` may target a local
   development feed server when `FEED_LOCAL_DIR` is unset.
 

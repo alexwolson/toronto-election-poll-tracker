@@ -26,7 +26,9 @@ for authenticated GitHub API requests. Keep either token server-only: never use
 a `NEXT_PUBLIC_` name, commit it, print it, or pass it as a command-line value.
 For Vercel, store `GH_TOKEN` as a sensitive project environment variable for
 Preview and Production under Project Settings. Store `BACKEND_RELEASE_TAG` in
-the same environments and update it to the release being promoted.
+the same environments and update it to the release being promoted. Never store
+`DEPLOY_BACKEND_RELEASE_TAG`: the supported deployment wrapper supplies that
+one-build intent only during a production promotion.
 
 ```bash
 gh auth status
@@ -74,8 +76,14 @@ poll metadata and shares, forecast evidence date, and any changed forecast band.
 ## Deploy and smoke test
 
 ```bash
-vercel --prod
+npm run deploy:production -- "$BACKEND_RELEASE_TAG"
 ```
+
+The wrapper requires a valid intended Backend tag and passes it to Vercel as
+`DEPLOY_BACKEND_RELEASE_TAG` for that build only. The Production resolver rejects
+a missing intent or a value that differs from the persistent
+`BACKEND_RELEASE_TAG`. Consequently, running `vercel --prod` directly fails
+closed instead of silently rebuilding an old configured release.
 
 After Vercel reports `READY`, verify the production alias at:
 

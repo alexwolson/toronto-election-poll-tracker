@@ -10,11 +10,10 @@ fixtures flip `close_result` to `Forecast Available` and attach a representative
 `margin_distribution` (a reflected-KDE block sampled through the real pipeline
 from plausible current shares) so the panel is visible in dev.
 
-Point the dev server at this directory to see it:
-
-```bash
-FEED_LOCAL_DIR=./fixtures-preview npm run dev
-```
+This directory is a reference fixture variant for component development and
+tests. The server feed loader currently accepts `fixtures/` and generated
+`.release-data/`; it does not accept this directory as a production or deployment
+input.
 
 All other feeds are copied unchanged from `../fixtures/`. **These are a
-preview of a publishing state, not production data.**
+preview of a publishing state, not production data or a promotion input.**

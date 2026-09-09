@@ -1,8 +1,10 @@
 /**
  * Server-only feed source resolution (spec §Data layer). Runs at build time in
  * the static export. Reads a local fixtures dir when FEED_LOCAL_DIR is set
- * (dev, against the certified fixture), else fetches the GitHub-raw base with
- * the NEXT_PUBLIC_API_URL override (production), mirroring the old app.
+ * (development fixtures or release-resolution output). The API and legacy
+ * GitHub-raw paths are compatibility fallbacks for development only. Production
+ * runs `npm run vercel-build`, which resolves verified releases into
+ * `.release-data` and sets FEED_LOCAL_DIR for the static build.
  *
  * Only import this from server components — it touches the filesystem.
  */

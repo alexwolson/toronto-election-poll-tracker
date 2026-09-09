@@ -8,6 +8,17 @@ const producers = {
   results: "alexwolson/toronto-election-results",
   polling: "alexwolson/toronto-election-poll-tracker-data",
 };
+const backendTagPattern = /^backend-\d{4}-\d{2}-\d{2}\.\d+$/;
+
+function requireBackendTag(tag, variableName) {
+  if (!backendTagPattern.test(tag)) {
+    throw new Error(
+      `${variableName} must match backend-YYYY-MM-DD.N; received ${JSON.stringify(tag)}`,
+    );
+  }
+  return tag;
+}
+
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
 }
@@ -18,13 +29,34 @@ export function backendSelection(env) {
   if (tag && mode) {
     throw new Error("Set BACKEND_RELEASE_TAG or BACKEND_RELEASE_MODE, not both");
   }
-  if (tag) return { tag };
+  if (tag) return { tag: requireBackendTag(tag, "BACKEND_RELEASE_TAG") };
   if (mode === "latest") return { tag: null };
   if (mode) throw new Error("BACKEND_RELEASE_MODE must be 'latest'");
   throw new Error(
     "Set BACKEND_RELEASE_TAG to an exact release, or deliberately set " +
       "BACKEND_RELEASE_MODE=latest",
   );
+}
+
+export function validateProductionIntent(env, selection) {
+  if (env.VERCEL_ENV !== "production") return;
+  if (!selection.tag) {
+    throw new Error("Vercel Production builds require an exact BACKEND_RELEASE_TAG");
+  }
+  const intent = env.DEPLOY_BACKEND_RELEASE_TAG?.trim();
+  if (!intent) {
+    throw new Error(
+      "Vercel Production build is missing DEPLOY_BACKEND_RELEASE_TAG; " +
+        "use npm run deploy:production -- backend-YYYY-MM-DD.N",
+    );
+  }
+  requireBackendTag(intent, "DEPLOY_BACKEND_RELEASE_TAG");
+  if (intent !== selection.tag) {
+    throw new Error(
+      `Production release intent ${intent} does not match configured ` +
+        `BACKEND_RELEASE_TAG ${selection.tag}`,
+    );
+  }
 }
 
 export async function resolveReleases({
@@ -101,6 +133,7 @@ export async function resolveReleases({
   }
 
   const selection = backendSelection(env);
+  validateProductionIntent(env, selection);
   const backend = await release(producers.backend, selection.tag);
   const pins = backend.manifest.dependencies;
   if (

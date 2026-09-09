@@ -5,7 +5,11 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { backendSelection, resolveReleases } from "./resolve-releases.mjs";
+import {
+  backendSelection,
+  resolveReleases,
+  validateProductionIntent,
+} from "./resolve-releases.mjs";
 
 const repositories = {
   backend: "alexwolson/toronto-election-poll-tracker-backend",
@@ -178,6 +182,53 @@ describe("backend release selection", () => {
     expect(() => backendSelection({ BACKEND_RELEASE_MODE: "stable" })).toThrow(
       /must be 'latest'/,
     );
+  });
+
+  it("rejects malformed exact tags", () => {
+    expect(() => backendSelection({ BACKEND_RELEASE_TAG: "backend-latest" })).toThrow(
+      /must match backend-YYYY-MM-DD.N/,
+    );
+  });
+});
+
+describe("production release intent", () => {
+  const selection = { tag: tags.backend };
+
+  it("requires one-time intent for Vercel Production", () => {
+    expect(() =>
+      validateProductionIntent(
+        { VERCEL_ENV: "production", BACKEND_RELEASE_TAG: tags.backend },
+        selection,
+      ),
+    ).toThrow(/missing DEPLOY_BACKEND_RELEASE_TAG/);
+  });
+
+  it("rejects stale configured tags informatively", () => {
+    expect(() =>
+      validateProductionIntent(
+        {
+          VERCEL_ENV: "production",
+          BACKEND_RELEASE_TAG: tags.backend,
+          DEPLOY_BACKEND_RELEASE_TAG: "backend-2026-09-10.1",
+        },
+        selection,
+      ),
+    ).toThrow(/does not match configured BACKEND_RELEASE_TAG/);
+  });
+
+  it("accepts matching intent and leaves local or Preview builds unchanged", () => {
+    expect(
+      validateProductionIntent(
+        {
+          VERCEL_ENV: "production",
+          BACKEND_RELEASE_TAG: tags.backend,
+          DEPLOY_BACKEND_RELEASE_TAG: tags.backend,
+        },
+        selection,
+      ),
+    ).toBeUndefined();
+    expect(validateProductionIntent({ VERCEL_ENV: "preview" }, selection)).toBeUndefined();
+    expect(validateProductionIntent({}, selection)).toBeUndefined();
   });
 });
 

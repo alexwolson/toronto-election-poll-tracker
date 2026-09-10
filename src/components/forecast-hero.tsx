@@ -28,7 +28,7 @@ export function ForecastHero({
   const margins = marginDistribution(feed);
   const defeat = incumbentDefeat(feed);
 
-  if (!lead) {
+  if (wins.length === 0) {
     return (
       <section className="forecast-lead" aria-labelledby="forecast-heading">
         <h1 id="forecast-heading">The forecast isn&rsquo;t available yet</h1>
@@ -46,13 +46,23 @@ export function ForecastHero({
   return (
     <>
       <section className="forecast-lead" aria-labelledby="forecast-heading">
-        <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
+        <h1 id="forecast-heading">
+          {lead
+            ? `${lead.name} is favoured to win`
+            : "The forecast cannot name a favourite yet"}
+        </h1>
         {asOfDate && (
           <p className="forecast-as-of">Forecast evidence through {formatDate(asOfDate)}</p>
         )}
+        {!lead && (
+          <p className="forecast-unavailable">
+            Some candidate forecasts are unavailable, so the full field cannot be
+            compared yet.
+          </p>
+        )}
       </section>
 
-      <section aria-label="Chance of winning, by candidate">
+      <section aria-label="Published chance of winning, by candidate">
         <div className="band-board">
           {wins.map((win) => {
             const meta = candidateMeta(win.candidateId);

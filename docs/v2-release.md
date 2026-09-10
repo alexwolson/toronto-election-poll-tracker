@@ -12,6 +12,15 @@ feed checksums, and embeds the feeds in the static build. Never promote
 `fixtures/`, `fixtures-preview/`, a branch name, or a raw-GitHub URL to
 production.
 
+The resolver creates deployment source-manifest schema v2. For Backend,
+Results, and Polling it records the immutable tag, source commit, release
+manifest schema version, and SHA256 of the exact release-manifest bytes. For
+each of the five deployed feeds it records the logical feed name, filename,
+producer, feed schema version, and SHA256 of the exact downloaded bytes. The
+resolver validates that complete shape against
+`schemas/source-manifest.v2.schema.json` before the Next.js build starts, then
+applies the producer-to-feed mapping checks that JSON Schema cannot express.
+
 For a new 2026 mayoral poll, follow the complete
 [poll ingestion and release runbook](https://github.com/alexwolson/toronto-election-poll-tracker-data/blob/main/docs/runbooks/add-2026-mayoral-poll.md).
 
@@ -56,8 +65,12 @@ jq . .release-data/source_manifest.json
 
 The build fails unless an exact tag is supplied. It must print the intended
 Backend, Polling, and Results chain before downloading feeds. Confirm the same
-tags and source commits in `source_manifest.json`. Do not edit `.release-data/`
-or copy its contents into fixtures.
+tags, source commits, manifest hashes, and feed hashes in
+`source_manifest.json`. `resolved_at` is when the frontend build resolved and
+verified the chain; `backend_generated_at` is the generation time declared by
+the selected Backend release. These timestamps describe different events and
+must not be substituted for one another. Do not edit `.release-data/` or copy
+its contents into fixtures.
 
 Latest-stable discovery is retained only for deliberate inspection or recovery:
 
@@ -95,7 +108,19 @@ After Vercel reports `READY`, verify the production alias at:
 - `/data/source-manifest.json`
 
 The public source manifest must name the same three-release chain inspected
-before deployment. Record the Vercel deployment URL in the release notes or PR.
+before deployment. It is byte-for-byte identical to
+`.release-data/source_manifest.json` and `.release-data/manifest.json`. Record
+the Vercel deployment URL in the release notes or PR.
+
+## Source-manifest compatibility
+
+The frontend source-manifest reader and resolver move together. This version
+requires source-manifest schema v2 and fails the build on schema v1 or an
+incomplete v2 record. Existing deployments remain reproducible because their
+static assets and schema v1 manifests are immutable; they do not need to be
+rewritten. To roll back, promote the prior Vercel deployment. To move forward,
+build the current frontend from its resolver so it generates and validates a
+fresh schema v2 manifest from the pinned releases.
 
 ## Rollback
 

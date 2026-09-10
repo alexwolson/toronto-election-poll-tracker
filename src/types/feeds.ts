@@ -280,7 +280,7 @@ export interface MayoralPollingFeed {
   trend: Record<string, TrendPoint[]>;
 }
 
-// ── 4. deployment source manifest (schema_version 1) ────────────────────────
+// ── 4. deployment source manifest (schema_version 2) ────────────────────────
 
 export interface MayoralPublicationSummary {
   evidence_tier: string;
@@ -290,9 +290,28 @@ export interface MayoralPublicationSummary {
 }
 
 export interface Manifest {
-  schema_version: 1;
-  generated_at: string;
-  releases?: Record<string, { repository: string; release: string; source_commit: string }>;
+  schema_version: 2;
+  /** Time the frontend resolved and verified the immutable release chain. */
+  resolved_at: string;
+  /** Generation time declared by the selected Backend release. */
+  backend_generated_at: string;
+  releases: Record<
+    "backend" | "results" | "polling",
+    {
+      repository: string;
+      release: string;
+      source_commit: string;
+      manifest_schema_version: number;
+      manifest_sha256: string;
+    }
+  >;
+  feeds: Array<{
+    name: string;
+    filename: string;
+    producer: "backend" | "results" | "polling";
+    schema_version: number;
+    sha256: string;
+  }>;
 }
 
 // ── 5. council race cards (schema_version 5) ────────────────────────────────

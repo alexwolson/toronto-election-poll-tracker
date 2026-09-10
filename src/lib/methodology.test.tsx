@@ -12,7 +12,7 @@ import {
 } from "./methodology";
 
 vi.mock("@/lib/feeds", () => ({
-  loadManifest: async () => ({ generated_at: "2026-08-21T12:00:00Z" }),
+  loadManifest: async () => ({ backend_generated_at: "2026-08-21T12:00:00Z" }),
 }));
 
 describe("methodology content", () => {

@@ -567,7 +567,9 @@ export default async function HowItWorksPage() {
             Methodology reviewed{" "}
             <time dateTime={hintAuditSnapshot.reviewedOn}>Aug 21, 2026</time>
           </span>
-          {manifest.generated_at && <span>Site data as of {formatDate(manifest.generated_at)}</span>}
+          {manifest.backend_generated_at && (
+            <span>Site data as of {formatDate(manifest.backend_generated_at)}</span>
+          )}
         </div>
       </QuestionSection>
     </main>

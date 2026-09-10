@@ -747,27 +747,64 @@ export function loadCouncilRaceCards(): Promise<CouncilRaceCardsFeed> {
 // ── manifest ────────────────────────────────────────────────────────────────
 
 const MANIFEST_FALLBACK: Manifest = {
-  schema_version: 1,
-  generated_at: "",
+  schema_version: 2,
+  resolved_at: "",
+  backend_generated_at: "",
+  releases: {} as Manifest["releases"],
+  feeds: [],
 };
 
 export function validateManifest(value: unknown): Manifest | null {
   if (
     !isRecord(value) ||
-    value.schema_version !== 1 ||
-    !isNonEmptyString(value.generated_at) ||
-    Number.isNaN(Date.parse(value.generated_at)) ||
-    !isRecord(value.releases)
+    value.schema_version !== 2 ||
+    !isNonEmptyString(value.resolved_at) ||
+    Number.isNaN(Date.parse(value.resolved_at)) ||
+    !isNonEmptyString(value.backend_generated_at) ||
+    Number.isNaN(Date.parse(value.backend_generated_at)) ||
+    !isRecord(value.releases) ||
+    !Array.isArray(value.feeds) ||
+    value.feeds.length !== 5
   ) return null;
-  for (const producer of ["backend", "results", "polling"]) {
+  const repositories = {
+    backend: "alexwolson/toronto-election-poll-tracker-backend",
+    results: "alexwolson/toronto-election-results",
+    polling: "alexwolson/toronto-election-poll-tracker-data",
+  } as const;
+  for (const producer of Object.keys(repositories) as Array<keyof typeof repositories>) {
     const release = value.releases[producer];
     if (
       !isRecord(release) ||
-      !isNonEmptyString(release.repository) ||
+      release.repository !== repositories[producer] ||
       !isNonEmptyString(release.release) ||
-      !/^[0-9a-f]{40}$/.test(String(release.source_commit))
+      !/^[0-9a-f]{40}$/.test(String(release.source_commit)) ||
+      !Number.isInteger(release.manifest_schema_version) ||
+      Number(release.manifest_schema_version) < 1 ||
+      !/^[0-9a-f]{64}$/.test(String(release.manifest_sha256))
     ) return null;
   }
+  const expectedFeeds = new Map([
+    ["mayoral_forecast", "backend"],
+    ["council_race_cards", "backend"],
+    ["trustee_race_cards", "backend"],
+    ["mayoral_candidates", "results"],
+    ["mayoral_polling", "polling"],
+  ]);
+  const filenames = new Set<string>();
+  for (const feed of value.feeds) {
+    if (
+      !isRecord(feed) ||
+      expectedFeeds.get(String(feed.name)) !== feed.producer ||
+      !isNonEmptyString(feed.filename) ||
+      filenames.has(feed.filename) ||
+      !Number.isInteger(feed.schema_version) ||
+      Number(feed.schema_version) < 1 ||
+      !/^[0-9a-f]{64}$/.test(String(feed.sha256))
+    ) return null;
+    expectedFeeds.delete(String(feed.name));
+    filenames.add(feed.filename);
+  }
+  if (expectedFeeds.size > 0) return null;
   return value as unknown as Manifest;
 }
 

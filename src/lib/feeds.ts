@@ -1,7 +1,7 @@
 /**
  * Typed loaders for the publication feeds (spec §Data layer). Each validates its
- * shape. Model-availability feeds retain honest fallbacks; required certified-field
- * contracts fail the build when malformed.
+ * shape. Every production release feed fails the build when missing or malformed;
+ * honest fallbacks remain available only in explicit development and test modes.
  *
  * Server-only (imports feed-source, which touches the filesystem).
  */
@@ -22,6 +22,23 @@ import type {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function isUniqueStringArray(value: unknown, { allowEmpty = false } = {}): value is string[] {
+  return (
+    Array.isArray(value) &&
+    (allowEmpty || value.length > 0) &&
+    value.every(isNonEmptyString) &&
+    new Set(value).size === value.length
+  );
+}
+
+function isShare(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
 const SVG_PATH = /^M[-0-9. ]+(?: L[-0-9. ]+)+(?: Z(?: M[-0-9. ]+(?: L[-0-9. ]+)+ Z)*)$/;
@@ -144,10 +161,81 @@ const FORECAST_FALLBACK: MayoralForecastFeed = {
   margin_distribution: null,
 };
 
-function validateForecast(value: unknown): MayoralForecastFeed | null {
-  if (!isRecord(value) || value.schema_version !== 2) return null;
-  if (!isRecord(value.candidate_win)) return null;
-  if (!isRecord(value.close_result) || !isRecord(value.incumbent_defeat)) return null;
+const AVAILABILITIES = new Set(["Forecast Available", "Forecast Unavailable", "Not Applicable"]);
+
+function validForecastCard(
+  value: unknown,
+  quantity: QuantityKind,
+  candidateId: string | null,
+  tier: string,
+): boolean {
+  if (
+    !isRecord(value) ||
+    value.quantity !== quantity ||
+    value.candidate_id !== candidateId ||
+    value.tier !== tier ||
+    !AVAILABILITIES.has(String(value.availability)) ||
+    typeof value.reason !== "string"
+  ) return false;
+  if (value.availability === "Forecast Available") {
+    return (
+      isNonEmptyString(value.band) &&
+      isNonEmptyString(value.frequency_statement) &&
+      isShare(value.probability)
+    );
+  }
+  return value.band === null && value.frequency_statement === null && value.probability === null;
+}
+
+export function validateForecast(value: unknown): MayoralForecastFeed | null {
+  if (
+    !isRecord(value) ||
+    value.schema_version !== 2 ||
+    value.election_cycle_id !== "toronto_2026" ||
+    !isNonEmptyString(value.evidence_tier) ||
+    !isUniqueStringArray(value.final_field_samples, { allowEmpty: true }) ||
+    (value.final_field_readings !== undefined &&
+      (!isUniqueStringArray(value.final_field_readings, { allowEmpty: true }) ||
+        value.final_field_readings.length !== value.final_field_samples.length)) ||
+    (value.incumbent_candidate_id !== null && !isNonEmptyString(value.incumbent_candidate_id)) ||
+    !isRecord(value.candidate_win) ||
+    Object.keys(value.candidate_win).length === 0 ||
+    !isRecord(value.close_result) ||
+    !isRecord(value.incumbent_defeat)
+  ) return null;
+  for (const [candidateId, card] of Object.entries(value.candidate_win)) {
+    if (!isNonEmptyString(candidateId) || !validForecastCard(
+      card,
+      "challenger_win",
+      candidateId,
+      value.evidence_tier,
+    )) return null;
+  }
+  if (!validForecastCard(value.close_result, "close_result", null, value.evidence_tier)) {
+    return null;
+  }
+  if (!validForecastCard(
+    value.incumbent_defeat,
+    "incumbent_defeat",
+    null,
+    value.evidence_tier,
+  )) return null;
+  if (value.margin_distribution !== null) {
+    if (
+      !isRecord(value.margin_distribution) ||
+      value.margin_distribution.unit !== "share_gap" ||
+      !Array.isArray(value.margin_distribution.x) ||
+      !Array.isArray(value.margin_distribution.density) ||
+      value.margin_distribution.x.length < 2 ||
+      value.margin_distribution.x.length !== value.margin_distribution.density.length ||
+      !value.margin_distribution.x.every(isShare) ||
+      !value.margin_distribution.density.every(
+        (point) => typeof point === "number" && Number.isFinite(point) && point >= 0,
+      ) ||
+      !isShare(value.margin_distribution.close_threshold) ||
+      value.close_result.availability !== "Forecast Available"
+    ) return null;
+  }
   return value as unknown as MayoralForecastFeed;
 }
 
@@ -194,23 +282,38 @@ export function validateMayoralCandidates(
   ) return null;
   if (!Array.isArray(value.candidates)) return null;
   if (!value.ballot_certified && value.candidates.length > 0) return null;
-  const validCandidates = value.candidates.every(
-    (candidate) =>
-      isRecord(candidate) &&
-      typeof candidate.candidacy_id === "string" &&
-      typeof candidate.display_name === "string" &&
-      (typeof candidate.campaign_url === "string" || candidate.campaign_url === null) &&
-      (typeof candidate.person_id === "string" || candidate.person_id === null) &&
-      typeof candidate.is_incumbent === "boolean" &&
-      ["reviewed", "reviewed_with_limitations", "no_verified_prior_candidacy"].includes(
+  if (value.ballot_certified && value.candidates.length === 0) return null;
+  const candidacyIds = new Set<string>();
+  const validCandidates = value.candidates.every((candidate) => {
+    if (
+      !isRecord(candidate) ||
+      !isNonEmptyString(candidate.candidacy_id) ||
+      candidacyIds.has(candidate.candidacy_id) ||
+      !isNonEmptyString(candidate.display_name)
+    ) return false;
+    if (
+      (typeof candidate.campaign_url !== "string" && candidate.campaign_url !== null) ||
+      (typeof candidate.person_id !== "string" && candidate.person_id !== null) ||
+      typeof candidate.is_incumbent !== "boolean" ||
+      !["reviewed", "reviewed_with_limitations", "no_verified_prior_candidacy"].includes(
         String(candidate.review_status),
-      ) &&
-      (typeof candidate.review_limitations === "string" ||
-        candidate.review_limitations === null) &&
-      Array.isArray(candidate.past_elections) &&
-      candidate.past_elections.every(validPastElection),
-  );
-  return validCandidates ? (value as unknown as MayoralCandidatesFeed) : null;
+      ) ||
+      (typeof candidate.review_limitations !== "string" &&
+        candidate.review_limitations !== null) ||
+      !Array.isArray(candidate.past_elections) ||
+      !candidate.past_elections.every(validPastElection)
+    ) return false;
+    candidacyIds.add(candidate.candidacy_id);
+    return true;
+  });
+  if (!validCandidates) return null;
+  const incumbentCount = value.candidates.filter(
+    (candidate) => isRecord(candidate) && candidate.is_incumbent === true,
+  ).length;
+  const expectedIncumbents = value.ballot_certified ? 1 : 0;
+  return incumbentCount === expectedIncumbents
+    ? (value as unknown as MayoralCandidatesFeed)
+    : null;
 }
 
 export function loadMayoralCandidates(): Promise<MayoralCandidatesFeed> {
@@ -522,9 +625,66 @@ const POLLING_FALLBACK: MayoralPollingFeed = {
   trend: {},
 };
 
-function validatePolling(value: unknown): MayoralPollingFeed | null {
-  if (!isRecord(value) || value.schema_version !== 2) return null;
-  if (!Array.isArray(value.polls) || !isRecord(value.trend)) return null;
+function validPoll(value: unknown, candidates: Set<string>): boolean {
+  if (
+    !isRecord(value) ||
+    !isNonEmptyString(value.poll_id) ||
+    !isNonEmptyString(value.firm) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(String(value.date_conducted)) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(String(value.date_published)) ||
+    String(value.date_conducted) > String(value.date_published) ||
+    (value.sample_size !== null &&
+      (!Number.isInteger(value.sample_size) || Number(value.sample_size) <= 0)) ||
+    !isNonEmptyString(value.methodology) ||
+    !isUniqueStringArray(value.field_tested) ||
+    !isRecord(value.shares) ||
+    Object.keys(value.shares).length === 0 ||
+    typeof value.notes !== "string"
+  ) return false;
+  const shares = Object.entries(value.shares);
+  const total = shares.reduce((sum, [, share]) => sum + Number(share), 0);
+  return (
+    shares.every(([candidateId, share]) => candidates.has(candidateId) && isShare(share)) &&
+    total > 0 &&
+    total <= 1.01
+  );
+}
+
+export function validatePolling(value: unknown): MayoralPollingFeed | null {
+  if (
+    !isRecord(value) ||
+    value.schema_version !== 2 ||
+    !isUniqueStringArray(value.candidates) ||
+    !Array.isArray(value.polls) ||
+    value.polls.length === 0 ||
+    !isRecord(value.latest) ||
+    !isRecord(value.trend)
+  ) return null;
+  const candidates = new Set(value.candidates);
+  const pollIds = new Set<string>();
+  for (const poll of value.polls) {
+    if (!validPoll(poll, candidates) || !isRecord(poll) || pollIds.has(String(poll.poll_id))) {
+      return null;
+    }
+    pollIds.add(String(poll.poll_id));
+  }
+  if (!validPoll(value.latest, candidates) || value.latest.poll_id !== value.polls[0].poll_id) {
+    return null;
+  }
+  if (Object.keys(value.trend).length !== candidates.size) return null;
+  for (const [candidateId, points] of Object.entries(value.trend)) {
+    if (
+      !candidates.has(candidateId) ||
+      !Array.isArray(points) ||
+      points.some(
+        (point) =>
+          !isRecord(point) ||
+          !pollIds.has(String(point.poll_id)) ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(String(point.date_conducted)) ||
+          !isShare(point.share),
+      )
+    ) return null;
+  }
   return value as unknown as MayoralPollingFeed;
 }
 
@@ -543,12 +703,18 @@ const COUNCIL_FALLBACK: CouncilRaceCardsFeed = {
 
 export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
   if (!isRecord(value) || value.schema_version !== 8) return null;
-  if (!isRecord(value.wards)) return null;
-  for (const card of Object.values(value.wards)) {
+  if (!isNonEmptyString(value.base_rate_note) || !isRecord(value.wards)) return null;
+  const wards = value.wards;
+  const expectedWards = Array.from({ length: 25 }, (_, index) => String(index + 1));
+  if (
+    Object.keys(wards).length !== expectedWards.length ||
+    expectedWards.some((ward) => !(ward in wards))
+  ) return null;
+  for (const [ward, card] of Object.entries(wards)) {
     if (
       !isRecord(card) ||
-      typeof card.ward !== "string" ||
-      typeof card.ward_name !== "string" ||
+      card.ward !== ward ||
+      !isNonEmptyString(card.ward_name) ||
       !isRecord(card.attention) ||
       !["open", "high", "elevated", "quiet"].includes(String(card.attention.level)) ||
       typeof card.attention.score !== "number" ||
@@ -566,7 +732,7 @@ export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
     ...value,
     map: validateRaceMap(
       value.map,
-      Object.keys(value.wards),
+      Object.keys(wards),
       new Set(["open", "high", "elevated", "quiet"]),
       "/wards",
       "council_attention",
@@ -585,9 +751,23 @@ const MANIFEST_FALLBACK: Manifest = {
   generated_at: "",
 };
 
-function validateManifest(value: unknown): Manifest | null {
-  if (!isRecord(value) || value.schema_version !== 1) return null;
-  if (typeof value.generated_at !== "string") return null;
+export function validateManifest(value: unknown): Manifest | null {
+  if (
+    !isRecord(value) ||
+    value.schema_version !== 1 ||
+    !isNonEmptyString(value.generated_at) ||
+    Number.isNaN(Date.parse(value.generated_at)) ||
+    !isRecord(value.releases)
+  ) return null;
+  for (const producer of ["backend", "results", "polling"]) {
+    const release = value.releases[producer];
+    if (
+      !isRecord(release) ||
+      !isNonEmptyString(release.repository) ||
+      !isNonEmptyString(release.release) ||
+      !/^[0-9a-f]{40}$/.test(String(release.source_commit))
+    ) return null;
+  }
   return value as unknown as Manifest;
 }
 

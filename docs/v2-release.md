@@ -112,6 +112,12 @@ the corrected pins, then run the frontend preflight and deployment again.
 - `NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev` may target a local
   development feed server when `FEED_LOCAL_DIR` is unset.
 
+All feeds resolved from `.release-data` are required production inputs. A missing
+file, malformed JSON document, unsupported schema version, or failed semantic
+validation stops the static build and reports the feed name and resolved source.
+Fallback feeds are available only under `NODE_ENV=development`, `NODE_ENV=test`,
+or the explicit `FEED_LOCAL_DIR=fixtures` development fixture mode.
+
 `NEXT_PUBLIC_DATA_REVISION` and raw-GitHub commit/branch deployment are retired.
 Older documents under `docs/superpowers/` are historical design records, not
 current operator instructions.

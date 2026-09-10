@@ -63,6 +63,8 @@ export interface MayoralForecastFeed {
   election_cycle_id: string;
   evidence_tier: string;
   final_field_samples: string[];
+  /** Selected reading diagnostics, added compatibly to schema v2. */
+  final_field_readings?: string[];
   incumbent_candidate_id: string | null;
   /** keyed by candidate id; includes the incumbent */
   candidate_win: Record<string, ForecastQuantityCard>;

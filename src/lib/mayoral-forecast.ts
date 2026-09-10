@@ -61,8 +61,14 @@ export function publishedCandidateWins(feed: MayoralForecastFeed): CandidateWin[
     .sort((a, b) => b.probability - a.probability);
 }
 
-/** The favourite, or null when nothing publishes. */
+/**
+ * The favourite when every candidate can be compared, or null when any
+ * candidate's win forecast is withheld. A published subset cannot establish
+ * who leads the full field.
+ */
 export function leadForecast(feed: MayoralForecastFeed): CandidateWin | null {
+  const cards = Object.values(feed.candidate_win);
+  if (cards.length === 0 || cards.some((card) => !isPublished(card))) return null;
   return publishedCandidateWins(feed)[0] ?? null;
 }
 

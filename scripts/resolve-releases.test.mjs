@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   backendSelection,
   resolveReleases,
+  validateSourceManifest,
   validateProductionIntent,
 } from "./resolve-releases.mjs";
 
@@ -21,6 +22,11 @@ const tags = {
   results: "results-2026-09-09.1",
   polling: "polling-2026-09-09.2",
 };
+const commits = {
+  backend: "a".repeat(40),
+  results: "b".repeat(40),
+  polling: "c".repeat(40),
+};
 
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
@@ -30,17 +36,24 @@ function jsonBytes(value) {
   return Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-function createFixture({ backendPrerelease = false, mismatchedResultsPin = false } = {}) {
+function createFixture({
+  backendPrerelease = false,
+  mismatchedResultsPin = false,
+  missingFeedSchema = false,
+} = {}) {
   const feeds = {
-    mayoral_forecast: Buffer.from('{"forecast":true}\n'),
-    council_race_cards: Buffer.from('{"council":true}\n'),
-    trustee_race_cards: Buffer.from('{"trustees":true}\n'),
-    mayoral_candidates: Buffer.from('{"candidates":true}\n'),
-    mayoral_polling: Buffer.from('{"polling":true}\n'),
+    mayoral_forecast: Buffer.from(
+      missingFeedSchema ? '{"forecast":true}\n' : '{"schema_version":2,"forecast":true}\n',
+    ),
+    council_race_cards: Buffer.from('{"schema_version":5,"council":true}\n'),
+    trustee_race_cards: Buffer.from('{"schema_version":3,"trustees":true}\n'),
+    mayoral_candidates: Buffer.from('{"schema_version":5,"candidates":true}\n'),
+    mayoral_polling: Buffer.from('{"schema_version":2,"polling":true}\n'),
   };
   const resultsManifest = {
+    schema_version: 1,
     repository: repositories.results,
-    source_commit: "results-commit",
+    source_commit: commits.results,
     feeds: { mayoral_candidates: "mayoral_candidates.json" },
     assets: [
       {
@@ -51,8 +64,9 @@ function createFixture({ backendPrerelease = false, mismatchedResultsPin = false
   };
   const resultsManifestBytes = jsonBytes(resultsManifest);
   const pollingManifest = {
+    schema_version: 1,
     repository: repositories.polling,
-    source_commit: "polling-commit",
+    source_commit: commits.polling,
     dependencies: {
       results: {
         repository: repositories.results,
@@ -71,20 +85,21 @@ function createFixture({ backendPrerelease = false, mismatchedResultsPin = false
   };
   const pollingManifestBytes = jsonBytes(pollingManifest);
   const backendManifest = {
+    schema_version: 1,
     repository: repositories.backend,
-    source_commit: "backend-commit",
+    source_commit: commits.backend,
     generated_at: "2026-09-09T13:33:26Z",
     dependencies: {
       results: {
         repository: repositories.results,
         release: tags.results,
-        source_commit: mismatchedResultsPin ? "wrong-results-commit" : "results-commit",
+        source_commit: mismatchedResultsPin ? "d".repeat(40) : commits.results,
         manifest_sha256: sha256(resultsManifestBytes),
       },
       polling: {
         repository: repositories.polling,
         release: tags.polling,
-        source_commit: "polling-commit",
+        source_commit: commits.polling,
         manifest_sha256: sha256(pollingManifestBytes),
       },
     },
@@ -158,7 +173,7 @@ function createFixture({ backendPrerelease = false, mismatchedResultsPin = false
       headers: entry.headers,
     });
   }
-  return { events, fetchImpl };
+  return { events, feeds, fetchImpl, manifests };
 }
 
 async function withTempDirectory(callback) {
@@ -233,7 +248,7 @@ describe("production release intent", () => {
 });
 
 describe("release resolution", () => {
-  it("resolves an explicit Backend tag and prints the chain before feed downloads", async () => {
+  it("records complete provenance for the exact downloaded bytes", async () => {
     await withTempDirectory(async (cwd) => {
       const fixture = createFixture();
       const events = fixture.events;
@@ -257,10 +272,56 @@ describe("release resolution", () => {
         `${tags.backend} with Results ${tags.results} and Polling ${tags.polling}`,
       );
       expect(sources.releases.backend.release).toBe(tags.backend);
-      const deployedManifest = JSON.parse(
-        await readFile(join(cwd, "public/data/source-manifest.json"), "utf8"),
+      expect(sources).toMatchObject({
+        schema_version: 2,
+        resolved_at: "2026-09-09T14:00:00.000Z",
+        backend_generated_at: "2026-09-09T13:33:26Z",
+        releases: {
+          backend: {
+            source_commit: commits.backend,
+            manifest_schema_version: 1,
+            manifest_sha256: sha256(fixture.manifests.backend),
+          },
+          results: {
+            source_commit: commits.results,
+            manifest_schema_version: 1,
+            manifest_sha256: sha256(fixture.manifests.results),
+          },
+          polling: {
+            source_commit: commits.polling,
+            manifest_schema_version: 1,
+            manifest_sha256: sha256(fixture.manifests.polling),
+          },
+        },
+      });
+      expect(sources.feeds).toEqual([
+        ["mayoral_forecast", "mayoral_forecast.json", "backend", 2],
+        ["council_race_cards", "council_race_cards.json", "backend", 5],
+        ["trustee_race_cards", "trustee_race_cards.json", "backend", 3],
+        ["mayoral_candidates", "mayoral_candidates.json", "results", 5],
+        ["mayoral_polling", "mayoral_polling.json", "polling", 2],
+      ].map(([name, filename, producer, schema_version]) => ({
+        name,
+        filename,
+        producer,
+        schema_version,
+        sha256: sha256(fixture.feeds[name]),
+      })));
+
+      for (const feed of sources.feeds) {
+        const deployedBytes = await readFile(join(cwd, ".release-data", feed.filename));
+        expect(deployedBytes).toEqual(fixture.feeds[feed.name]);
+        expect(sha256(deployedBytes)).toBe(feed.sha256);
+      }
+      const internalSource = await readFile(
+        join(cwd, ".release-data/source_manifest.json"),
       );
-      expect(deployedManifest.releases).toEqual(sources.releases);
+      expect(await readFile(join(cwd, ".release-data/manifest.json"))).toEqual(
+        internalSource,
+      );
+      expect(await readFile(join(cwd, "public/data/source-manifest.json"))).toEqual(
+        internalSource,
+      );
     });
   });
 
@@ -352,5 +413,61 @@ describe("release resolution", () => {
         }),
       ).rejects.toThrow(/results source commit does not match backend pin/);
     });
+  });
+
+  it("rejects a feed that does not declare its schema version", async () => {
+    await withTempDirectory(async (cwd) => {
+      const fixture = createFixture({ missingFeedSchema: true });
+      await expect(
+        resolveReleases({
+          cwd,
+          env: { BACKEND_RELEASE_TAG: tags.backend },
+          fetchImpl: fixture.fetchImpl,
+          logger: () => {},
+        }),
+      ).rejects.toThrow(/mayoral_forecast.json has no supported schema version/);
+    });
+  });
+});
+
+describe("deployment source manifest validation", () => {
+  it("rejects incomplete release and feed provenance", () => {
+    const complete = {
+      schema_version: 2,
+      resolved_at: "2026-09-09T14:00:00Z",
+      backend_generated_at: "2026-09-09T13:33:26Z",
+      releases: Object.fromEntries(
+        Object.entries(repositories).map(([name, repository]) => [
+          name,
+          {
+            repository,
+            release: tags[name],
+            source_commit: commits[name],
+            manifest_schema_version: 1,
+            manifest_sha256: "e".repeat(64),
+          },
+        ]),
+      ),
+      feeds: [
+        ["mayoral_forecast", "backend"],
+        ["council_race_cards", "backend"],
+        ["trustee_race_cards", "backend"],
+        ["mayoral_candidates", "results"],
+        ["mayoral_polling", "polling"],
+      ].map(([name, producer]) => ({
+        name,
+        filename: `${name}.json`,
+        producer,
+        schema_version: 1,
+        sha256: "f".repeat(64),
+      })),
+    };
+
+    expect(validateSourceManifest(complete)).toBe(complete);
+    const malformed = structuredClone(complete);
+    delete malformed.feeds[0].sha256;
+    expect(() => validateSourceManifest(malformed)).toThrow(
+      /feeds\[0\].*required property 'sha256'/,
+    );
   });
 });

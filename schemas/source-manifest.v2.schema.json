@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://torontoelection.com/schemas/source-manifest.v2.schema.json",
+  "title": "Toronto Election deployment source manifest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "resolved_at",
+    "backend_generated_at",
+    "releases",
+    "feeds"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "resolved_at": { "type": "string", "format": "date-time" },
+    "backend_generated_at": { "type": "string", "format": "date-time" },
+    "releases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "results", "polling"],
+      "properties": {
+        "backend": {
+          "$ref": "#/definitions/backendRelease"
+        },
+        "results": {
+          "$ref": "#/definitions/resultsRelease"
+        },
+        "polling": {
+          "$ref": "#/definitions/pollingRelease"
+        }
+      }
+    },
+    "feeds": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/definitions/feed" }
+    }
+  },
+  "definitions": {
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "release",
+        "source_commit",
+        "manifest_schema_version",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "release": { "type": "string", "minLength": 1 },
+        "source_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "manifest_schema_version": { "type": "integer", "minimum": 1 },
+        "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "backendRelease": {
+      "allOf": [
+        { "$ref": "#/definitions/release" },
+        {
+          "properties": {
+            "repository": {
+              "const": "alexwolson/toronto-election-poll-tracker-backend"
+            }
+          }
+        }
+      ]
+    },
+    "resultsRelease": {
+      "allOf": [
+        { "$ref": "#/definitions/release" },
+        {
+          "properties": {
+            "repository": { "const": "alexwolson/toronto-election-results" }
+          }
+        }
+      ]
+    },
+    "pollingRelease": {
+      "allOf": [
+        { "$ref": "#/definitions/release" },
+        {
+          "properties": {
+            "repository": {
+              "const": "alexwolson/toronto-election-poll-tracker-data"
+            }
+          }
+        }
+      ]
+    },
+    "feed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "filename", "producer", "schema_version", "sha256"],
+      "properties": {
+        "name": {
+          "enum": [
+            "mayoral_forecast",
+            "council_race_cards",
+            "trustee_race_cards",
+            "mayoral_candidates",
+            "mayoral_polling"
+          ]
+        },
+        "filename": { "type": "string", "minLength": 1 },
+        "producer": { "enum": ["backend", "results", "polling"] },
+        "schema_version": { "type": "integer", "minimum": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

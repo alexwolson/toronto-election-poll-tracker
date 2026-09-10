@@ -40,24 +40,53 @@ describe("validatePolling", () => {
 
 describe("validateManifest", () => {
   const manifest = {
-    schema_version: 1,
-    generated_at: "2026-09-10T12:00:00Z",
+    schema_version: 2,
+    resolved_at: "2026-09-10T12:01:00Z",
+    backend_generated_at: "2026-09-10T12:00:00Z",
     releases: Object.fromEntries(
-      ["backend", "results", "polling"].map((producer) => [
+      [
+        ["backend", "alexwolson/toronto-election-poll-tracker-backend"],
+        ["results", "alexwolson/toronto-election-results"],
+        ["polling", "alexwolson/toronto-election-poll-tracker-data"],
+      ].map(([producer, repository]) => [
         producer,
         {
-          repository: `alexwolson/${producer}`,
+          repository,
           release: `${producer}-2026-09-10.1`,
           source_commit: "a".repeat(40),
+          manifest_schema_version: 1,
+          manifest_sha256: "b".repeat(64),
         },
       ]),
     ),
+    feeds: [
+      ["mayoral_forecast", "backend"],
+      ["council_race_cards", "backend"],
+      ["trustee_race_cards", "backend"],
+      ["mayoral_candidates", "results"],
+      ["mayoral_polling", "polling"],
+    ].map(([name, producer]) => ({
+      name,
+      filename: `${name}.json`,
+      producer,
+      schema_version: 1,
+      sha256: "c".repeat(64),
+    })),
   };
 
   it("accepts complete release provenance and rejects a missing producer", () => {
-    expect(validateManifest(manifest)?.generated_at).toBe(manifest.generated_at);
+    expect(validateManifest(manifest)?.backend_generated_at).toBe(
+      manifest.backend_generated_at,
+    );
     const malformed = structuredClone(manifest);
     delete malformed.releases.polling;
+
+    expect(validateManifest(malformed)).toBeNull();
+  });
+
+  it("rejects incomplete feed provenance", () => {
+    const malformed = structuredClone(manifest);
+    malformed.feeds[0].sha256 = "unknown";
 
     expect(validateManifest(malformed)).toBeNull();
   });

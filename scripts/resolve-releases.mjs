@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import Ajv from "ajv";
 
 const producers = {
   backend: "alexwolson/toronto-election-poll-tracker-backend",
@@ -9,6 +11,20 @@ const producers = {
   polling: "alexwolson/toronto-election-poll-tracker-data",
 };
 const backendTagPattern = /^backend-\d{4}-\d{2}-\d{2}\.\d+$/;
+const commitPattern = /^[0-9a-f]{40}$/;
+const sha256Pattern = /^[0-9a-f]{64}$/;
+const feedSpecs = [
+  { name: "mayoral_forecast", producer: "backend" },
+  { name: "council_race_cards", producer: "backend" },
+  { name: "trustee_race_cards", producer: "backend" },
+  { name: "mayoral_candidates", producer: "results" },
+  { name: "mayoral_polling", producer: "polling" },
+];
+const sourceManifestSchema = JSON.parse(
+  readFileSync(new URL("../schemas/source-manifest.v2.schema.json", import.meta.url), "utf8"),
+);
+const schemaCompiler = new Ajv({ allErrors: true });
+const schemaValidator = schemaCompiler.compile(sourceManifestSchema);
 
 function requireBackendTag(tag, variableName) {
   if (!backendTagPattern.test(tag)) {
@@ -21,6 +37,72 @@ function requireBackendTag(tag, variableName) {
 
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
+}
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPositiveInteger(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function isTimestamp(value) {
+  return typeof value === "string" && value.length > 0 && !Number.isNaN(Date.parse(value));
+}
+
+export function validateSourceManifest(value) {
+  function invalid(detail) {
+    throw new Error(`invalid deployment source manifest: ${detail}`);
+  }
+
+  if (!schemaValidator(value)) {
+    invalid(schemaCompiler.errorsText(schemaValidator.errors));
+  }
+  if (!isRecord(value) || value.schema_version !== 2) invalid("unsupported schema version");
+  if (!isTimestamp(value.resolved_at)) invalid("resolved_at must be a timestamp");
+  if (!isTimestamp(value.backend_generated_at)) {
+    invalid("backend_generated_at must be a timestamp");
+  }
+  if (!isRecord(value.releases)) invalid("releases must be an object");
+  for (const [name, repository] of Object.entries(producers)) {
+    const release = value.releases[name];
+    if (
+      !isRecord(release) ||
+      release.repository !== repository ||
+      typeof release.release !== "string" ||
+      release.release.length === 0 ||
+      !commitPattern.test(String(release.source_commit)) ||
+      !isPositiveInteger(release.manifest_schema_version) ||
+      !sha256Pattern.test(String(release.manifest_sha256))
+    ) {
+      invalid(`release provenance is incomplete for ${name}`);
+    }
+  }
+  if (!Array.isArray(value.feeds) || value.feeds.length !== feedSpecs.length) {
+    invalid(`feeds must contain ${feedSpecs.length} records`);
+  }
+  const feedNames = new Set();
+  const filenames = new Set();
+  for (const spec of feedSpecs) {
+    const feed = value.feeds.find((candidate) => candidate?.name === spec.name);
+    if (
+      !isRecord(feed) ||
+      feed.producer !== spec.producer ||
+      typeof feed.filename !== "string" ||
+      feed.filename.length === 0 ||
+      !isPositiveInteger(feed.schema_version) ||
+      !sha256Pattern.test(String(feed.sha256))
+    ) {
+      invalid(`feed provenance is incomplete for ${spec.name}`);
+    }
+    if (feedNames.has(feed.name) || filenames.has(feed.filename)) {
+      invalid(`duplicate feed provenance for ${feed.name}`);
+    }
+    feedNames.add(feed.name);
+    filenames.add(feed.filename);
+  }
+  return value;
 }
 
 export function backendSelection(env) {
@@ -118,6 +200,9 @@ export async function resolveReleases({
     if (manifest.repository !== repo) {
       throw new Error(`${repo} manifest repository mismatch`);
     }
+    if (!isPositiveInteger(manifest.schema_version)) {
+      throw new Error(`${repo} manifest has no supported schema version`);
+    }
     return { metadata, manifest, manifestBytes };
   }
 
@@ -174,38 +259,60 @@ export async function resolveReleases({
 
   await rm(output, { recursive: true, force: true });
   await mkdir(output, { recursive: true });
-  const feeds = [
-    [backend, backend.manifest.feeds.mayoral_forecast],
-    [backend, backend.manifest.feeds.council_race_cards],
-    [backend, backend.manifest.feeds.trustee_race_cards],
-    [results, results.manifest.feeds.mayoral_candidates],
-    [polling, polling.manifest.feeds.mayoral_polling],
-  ];
-  for (const [producer, filename] of feeds) {
-    await writeFile(resolve(output, filename), await asset(producer, filename));
+  const releases = { backend, results, polling };
+  const feedProvenance = [];
+  for (const spec of feedSpecs) {
+    const producer = releases[spec.producer];
+    const filename = producer.manifest.feeds[spec.name];
+    const bytes = await asset(producer, filename);
+    let feed;
+    try {
+      feed = JSON.parse(bytes.toString("utf8"));
+    } catch {
+      throw new Error(`${filename} is not valid JSON`);
+    }
+    if (!isRecord(feed) || !isPositiveInteger(feed.schema_version)) {
+      throw new Error(`${filename} has no supported schema version`);
+    }
+    await writeFile(resolve(output, filename), bytes);
+    feedProvenance.push({
+      name: spec.name,
+      filename,
+      producer: spec.producer,
+      schema_version: feed.schema_version,
+      sha256: sha256(bytes),
+    });
   }
   const sources = {
-    schema_version: 1,
+    schema_version: 2,
     resolved_at: now().toISOString(),
-    generated_at: backend.manifest.generated_at,
+    backend_generated_at: backend.manifest.generated_at,
     releases: {
       backend: {
         repository: producers.backend,
         release: backend.metadata.tag_name,
         source_commit: backend.manifest.source_commit,
+        manifest_schema_version: backend.manifest.schema_version,
+        manifest_sha256: sha256(backend.manifestBytes),
       },
       results: {
         repository: producers.results,
         release: results.metadata.tag_name,
         source_commit: results.manifest.source_commit,
+        manifest_schema_version: results.manifest.schema_version,
+        manifest_sha256: sha256(results.manifestBytes),
       },
       polling: {
         repository: producers.polling,
         release: polling.metadata.tag_name,
         source_commit: polling.manifest.source_commit,
+        manifest_schema_version: polling.manifest.schema_version,
+        manifest_sha256: sha256(polling.manifestBytes),
       },
     },
+    feeds: feedProvenance,
   };
+  validateSourceManifest(sources);
   const sourceJson = `${JSON.stringify(sources, null, 2)}\n`;
   await writeFile(resolve(output, "source_manifest.json"), sourceJson);
   await writeFile(resolve(output, "manifest.json"), sourceJson);

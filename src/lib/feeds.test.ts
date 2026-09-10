@@ -1,9 +1,67 @@
 import candidatesFixture from "../../fixtures/mayoral_candidates.json";
 import councilFixture from "../../fixtures/council_race_cards.json";
+import forecastFixture from "../../fixtures/mayoral_forecast.json";
+import pollingFixture from "../../fixtures/mayoral_polling.json";
 import trusteeFixture from "../../fixtures/trustee_race_cards.json";
 import { describe, expect, it } from "vitest";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
-import { validateCouncil, validateMayoralCandidates, validateTrusteeRaceCards } from "./feeds";
+import {
+  validateCouncil,
+  validateForecast,
+  validateManifest,
+  validateMayoralCandidates,
+  validatePolling,
+  validateTrusteeRaceCards,
+} from "./feeds";
+
+describe("validateForecast", () => {
+  it("accepts the complete forecast and rejects contradictory availability", () => {
+    expect(validateForecast(forecastFixture)?.candidate_win).not.toEqual({});
+    const malformed = structuredClone(forecastFixture);
+    malformed.close_result.availability = "Forecast Unavailable";
+
+    expect(validateForecast(malformed)).toBeNull();
+  });
+
+  it("rejects an unsupported schema", () => {
+    expect(validateForecast({ ...forecastFixture, schema_version: 999 })).toBeNull();
+  });
+});
+
+describe("validatePolling", () => {
+  it("accepts the audited archive and rejects share drift", () => {
+    expect(validatePolling(pollingFixture)?.polls.length).toBeGreaterThan(0);
+    const malformed = structuredClone(pollingFixture);
+    malformed.polls[0].shares.per_345dd6a9ee645c0bb5a8ade615f91579 = 1.1;
+
+    expect(validatePolling(malformed)).toBeNull();
+  });
+});
+
+describe("validateManifest", () => {
+  const manifest = {
+    schema_version: 1,
+    generated_at: "2026-09-10T12:00:00Z",
+    releases: Object.fromEntries(
+      ["backend", "results", "polling"].map((producer) => [
+        producer,
+        {
+          repository: `alexwolson/${producer}`,
+          release: `${producer}-2026-09-10.1`,
+          source_commit: "a".repeat(40),
+        },
+      ]),
+    ),
+  };
+
+  it("accepts complete release provenance and rejects a missing producer", () => {
+    expect(validateManifest(manifest)?.generated_at).toBe(manifest.generated_at);
+    const malformed = structuredClone(manifest);
+    delete malformed.releases.polling;
+
+    expect(validateManifest(malformed)).toBeNull();
+  });
+});
 
 describe("validateMayoralCandidates", () => {
   it("accepts the complete certified fixture", () => {
@@ -43,6 +101,25 @@ describe("validateMayoralCandidates", () => {
         ballot_certified: false,
         coverage: candidatesFixture.coverage,
         candidates: candidatesFixture.candidates,
+      }),
+    ).toBeNull();
+  });
+
+  it("accepts an intentionally unavailable provisional field", () => {
+    expect(
+      validateMayoralCandidates({
+        ...candidatesFixture,
+        ballot_certified: false,
+        candidates: [],
+      }),
+    ).not.toBeNull();
+  });
+
+  it("rejects a certified feed with no candidates", () => {
+    expect(
+      validateMayoralCandidates({
+        ...candidatesFixture,
+        candidates: [],
       }),
     ).toBeNull();
   });
@@ -181,5 +258,12 @@ describe("validateCouncil", () => {
     const validated = validateCouncil(malformed);
     expect(validated?.map).toBeNull();
     expect(Object.keys(validated?.wards ?? {})).toHaveLength(25);
+  });
+
+  it("rejects a missing ward instead of publishing an incomplete city", () => {
+    const malformed = structuredClone(councilFixture) as unknown as CouncilRaceCardsFeed;
+    delete malformed.wards["25"];
+
+    expect(validateCouncil(malformed)).toBeNull();
   });
 });

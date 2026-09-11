@@ -91,7 +91,8 @@ export default async function HowItWorksPage() {
           <p>
             The forecast uses a defined set of eligible polls, gives each represented
             pollster equal weight, accounts for candidates a poll did not measure, and
-            publishes only a plain-language range that survives required stress tests.
+            summarizes the main forecast in plain language. We check how the forecast
+            changes under other assumptions before publishing it.
             Toronto election history sets the uncertainty; it does not choose the winner.
           </p>
         }

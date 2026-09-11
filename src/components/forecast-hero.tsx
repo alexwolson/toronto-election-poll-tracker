@@ -9,7 +9,6 @@ import {
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
 import { formatDate } from "@/lib/format";
-
 /**
  * The mayoral forecast hero (spec §Hero). Lead-first: the favourite and their
  * frequency phrase, then the full band board, then the published derived
@@ -28,7 +27,7 @@ export function ForecastHero({
   const margins = marginDistribution(feed);
   const defeat = incumbentDefeat(feed);
 
-  if (wins.length === 0) {
+  if (!lead && wins.length === 0) {
     return (
       <section className="forecast-lead" aria-labelledby="forecast-heading">
         <h1 id="forecast-heading">The forecast isn&rsquo;t available yet</h1>
@@ -49,46 +48,50 @@ export function ForecastHero({
         <h1 id="forecast-heading">
           {lead
             ? `${lead.name} is favoured to win`
-            : "The forecast cannot name a favourite yet"}
+            : feed.schema_version === 3 ? "The race has no clear favourite"
+              : "The forecast cannot name a favourite yet"}
         </h1>
         {asOfDate && (
           <p className="forecast-as-of">Forecast evidence through {formatDate(asOfDate)}</p>
         )}
         {!lead && (
           <p className="forecast-unavailable">
-            Some candidate forecasts are unavailable, so the full field cannot be
-            compared yet.
+            {feed.schema_version === 3
+              ? "The available evidence does not point to one clear favourite. The estimates below show each candidate’s chance."
+              : "Some candidate forecasts are unavailable, so the full field cannot be compared yet."}
           </p>
         )}
       </section>
 
-      <section aria-label="Published chance of winning, by candidate">
-        <div className="band-board">
-          {wins.map((win) => {
-            const meta = candidateMeta(win.candidateId);
-            return (
-              <div key={win.candidateId} className="band-card">
-                <div className="band-card__head">
-                  <span
-                    className={`band-swatch band-swatch--${meta.slug}`}
-                    aria-hidden="true"
-                  />
-                  <h3 className="band-card__name">{win.name}</h3>
+      {wins.length > 0 && (
+        <section aria-label="Published chance of winning, by candidate">
+          <div className="band-board">
+            {wins.map((win) => {
+              const meta = candidateMeta(win.candidateId);
+              return (
+                <div key={win.candidateId} className="band-card">
+                  <div className="band-card__head">
+                    <span
+                      className={`band-swatch band-swatch--${meta.slug}`}
+                      aria-hidden="true"
+                    />
+                    <h3 className="band-card__name">{win.name}</h3>
+                  </div>
+                  <div className="band-card__freq">Wins {win.frequencyStatement}</div>
+                  {defeat && defeat.candidateId === win.candidateId && (
+                    <p className="band-card__defeat">
+                      <span className="band-card__defeat-label">{defeat.label}</span>
+                      <span className="band-card__defeat-freq">
+                        {defeat.frequencyStatement}
+                      </span>
+                    </p>
+                  )}
                 </div>
-                <div className="band-card__freq">Wins {win.frequencyStatement}</div>
-                {defeat && defeat.candidateId === win.candidateId && (
-                  <p className="band-card__defeat">
-                    <span className="band-card__defeat-label">{defeat.label}</span>
-                    <span className="band-card__defeat-freq">
-                      {defeat.frequencyStatement}
-                    </span>
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {margins && (
         <section className="margin-panel" aria-labelledby="margin-panel-heading">

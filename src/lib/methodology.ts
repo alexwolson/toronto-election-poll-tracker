@@ -49,8 +49,8 @@ export const forecastFlow: MethodologyFlowStep[] = [
     body: "Repeat the forecast under other reasonable choices and after leaving out individual samples or pollsters.",
   },
   {
-    title: "Publish a stable band",
-    body: "Show the narrowest plain-language range that survives the required checks; otherwise broaden it or withhold it.",
+    title: "Publish a clear estimate",
+    body: "Summarize the main forecast with a familiar odds band. Small rounding differences between checks do not remove the estimate.",
   },
 ];
 

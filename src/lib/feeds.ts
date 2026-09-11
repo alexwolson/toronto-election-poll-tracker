@@ -168,6 +168,7 @@ function validForecastCard(
   quantity: QuantityKind,
   candidateId: string | null,
   tier: string,
+  sensitivityLabels?: string[],
 ): boolean {
   if (
     !isRecord(value) ||
@@ -177,6 +178,29 @@ function validForecastCard(
     !AVAILABILITIES.has(String(value.availability)) ||
     typeof value.reason !== "string"
   ) return false;
+  if (sensitivityLabels !== undefined) {
+    if (value.availability !== "Forecast Available") {
+      if (value.sensitivity !== null) return false;
+    } else {
+      const range = value.sensitivity;
+      if (
+        !isRecord(range) || range.kind !== "model_assumptions" ||
+        !isShare(range.lower) || !isShare(range.upper) || range.lower > range.upper ||
+        range.includes_monte_carlo_error !== true || !Array.isArray(range.scenarios) ||
+        range.scenarios.length !== sensitivityLabels.length ||
+        !isUniqueStringArray(range.scenarios.map((s) => isRecord(s) ? s.label : null))
+      ) return false;
+      for (const scenario of range.scenarios) {
+        if (!isRecord(scenario) || !sensitivityLabels.includes(String(scenario.label)) ||
+          !isShare(scenario.probability) || scenario.probability < range.lower ||
+          scenario.probability > range.upper ||
+          scenario.role !== (scenario.label === "bridge-base" ? "authoritative" : "stress_test") ||
+          (scenario.label === "bridge-base" && scenario.probability !== value.probability)
+        ) return false;
+      }
+      if (!sensitivityLabels.includes("bridge-base")) return false;
+    }
+  }
   if (value.availability === "Forecast Available") {
     return (
       isNonEmptyString(value.band) &&
@@ -190,7 +214,7 @@ function validForecastCard(
 export function validateForecast(value: unknown): MayoralForecastFeed | null {
   if (
     !isRecord(value) ||
-    value.schema_version !== 2 ||
+    (value.schema_version !== 2 && value.schema_version !== 3) ||
     value.election_cycle_id !== "toronto_2026" ||
     !isNonEmptyString(value.evidence_tier) ||
     !isUniqueStringArray(value.final_field_samples, { allowEmpty: true }) ||
@@ -203,15 +227,42 @@ export function validateForecast(value: unknown): MayoralForecastFeed | null {
     !isRecord(value.close_result) ||
     !isRecord(value.incumbent_defeat)
   ) return null;
+  let sensitivityLabels: string[] | undefined;
+  if (value.schema_version === 3) {
+    if (value.publication_policy !== "central-band-with-sensitivity-v1" ||
+      !isUniqueStringArray(value.sensitivity_variant_labels, { allowEmpty: true }) ||
+      typeof value.analysis_cutoff !== "string" ||
+      !/(Z|[+-]\d{2}:\d{2})$/.test(value.analysis_cutoff) ||
+      !Number.isFinite(Date.parse(value.analysis_cutoff)) ||
+      value.forecast_favourite === undefined
+    ) return null;
+    sensitivityLabels = value.sensitivity_variant_labels;
+  }
   for (const [candidateId, card] of Object.entries(value.candidate_win)) {
     if (!isNonEmptyString(candidateId) || !validForecastCard(
       card,
       "challenger_win",
       candidateId,
       value.evidence_tier,
+      sensitivityLabels,
     )) return null;
   }
-  if (!validForecastCard(value.close_result, "close_result", null, value.evidence_tier)) {
+  if (value.forecast_favourite !== undefined) {
+    const favourite = value.forecast_favourite;
+    if (
+      !isRecord(favourite) ||
+      favourite.tier !== value.evidence_tier ||
+      !["Forecast Available", "Forecast Unavailable"].includes(
+        String(favourite.availability),
+      ) ||
+      typeof favourite.reason !== "string" ||
+      (favourite.availability === "Forecast Available"
+        ? !isNonEmptyString(favourite.candidate_id) ||
+          !(favourite.candidate_id in value.candidate_win)
+        : favourite.candidate_id !== null)
+    ) return null;
+  }
+  if (!validForecastCard(value.close_result, "close_result", null, value.evidence_tier, sensitivityLabels)) {
     return null;
   }
   if (!validForecastCard(
@@ -219,6 +270,7 @@ export function validateForecast(value: unknown): MayoralForecastFeed | null {
     "incumbent_defeat",
     null,
     value.evidence_tier,
+    sensitivityLabels,
   )) return null;
   if (value.margin_distribution !== null) {
     if (

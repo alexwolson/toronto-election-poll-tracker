@@ -33,6 +33,23 @@ export interface ForecastQuantityCard {
   frequency_statement: string | null;
   probability: number | null;
   reason: string;
+  /** Schema 3: variation across assumptions, not a confidence interval. */
+  sensitivity?: ForecastSensitivity | null;
+}
+
+export interface ForecastSensitivity {
+  kind: "model_assumptions";
+  lower: number;
+  upper: number;
+  includes_monte_carlo_error: true;
+  scenarios: { label: string; role: "authoritative" | "stress_test"; probability: number }[];
+}
+
+export interface ForecastFavouriteCard {
+  tier: string;
+  availability: "Forecast Available" | "Forecast Unavailable";
+  candidate_id: string | null;
+  reason: string;
 }
 
 /** Smoothed density of the winning margin (winner minus runner-up share) across
@@ -58,7 +75,10 @@ export interface MarginDistribution {
 }
 
 export interface MayoralForecastFeed {
-  schema_version: 2;
+  schema_version: 2 | 3;
+  publication_policy?: "central-band-with-sensitivity-v1";
+  analysis_cutoff?: string;
+  sensitivity_variant_labels?: string[];
   /** underscore form, e.g. "toronto_2026" */
   election_cycle_id: string;
   evidence_tier: string;
@@ -66,6 +86,8 @@ export interface MayoralForecastFeed {
   /** Selected reading diagnostics, added compatibly to schema v2. */
   final_field_readings?: string[];
   incumbent_candidate_id: string | null;
+  /** Added compatibly to schema v2; absent only on older immutable releases. */
+  forecast_favourite?: ForecastFavouriteCard;
   /** keyed by candidate id; includes the incumbent */
   candidate_win: Record<string, ForecastQuantityCard>;
   close_result: ForecastQuantityCard;

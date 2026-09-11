@@ -33,7 +33,8 @@ describe("methodology content", () => {
     expect(text).toContain("each represented pollster equal weight");
     expect(text).toContain("Missing never means zero");
     expect(text).toContain("Stress-test");
-    expect(text).toContain("Publish a stable band");
+    expect(text).toContain("Publish a clear estimate");
+    expect(text).toContain("rounding differences between checks do not remove the estimate");
   });
 
   it("records both published and independently withheld evidence examples", () => {

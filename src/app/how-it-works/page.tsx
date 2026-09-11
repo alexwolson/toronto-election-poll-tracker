@@ -153,7 +153,7 @@ export default async function HowItWorksPage() {
                 </p>
               </div>
 
-              <article className="worked-example" aria-labelledby="band-example-heading">
+              <article id="forecast-sensitivity" className="worked-example" aria-labelledby="band-example-heading">
                 <h3 id="band-example-heading">How a result becomes a public band</h3>
                 <div className="worked-example__path" aria-label="Illustrative publication path">
                   <div>
@@ -163,7 +163,7 @@ export default async function HowItWorksPage() {
                   <div aria-hidden="true">→</div>
                   <div>
                     <strong>Stress tests</strong>
-                    <span>Required variants stay inside the same public range.</span>
+                    <span>Check how the forecast changes under other assumptions.</span>
                   </div>
                   <div aria-hidden="true">→</div>
                   <div>
@@ -172,9 +172,9 @@ export default async function HowItWorksPage() {
                   </div>
                 </div>
                 <p>
-                  This is an illustration, not a current result. If reasonable variants
-                  land in different ranges, the site uses a broader out-of-five band or
-                  withholds the quantity.
+                  This is an illustration, not a current result. The phrase summarizes
+                  the main forecast in everyday terms. We test other assumptions behind
+                  the scenes; a small difference in rounding does not make an estimate disappear.
                 </p>
               </article>
             </div>
@@ -367,22 +367,21 @@ export default async function HowItWorksPage() {
         answer={
           <p>
             An absent number or label is not zero. It means the evidence is too thin,
-            required checks disagree, or a candidate identity cannot be confirmed.
-            The site broadens a claim or stays silent rather than display precision the
-            available evidence cannot support.
+            a required calculation cannot run, or a candidate identity cannot be confirmed.
+            Small differences between model checks do not make the estimate disappear.
           </p>
         }
       >
         <div className="how-disclosures">
           <MethodDisclosure
             title="When a forecast number is withheld"
-            description="Thin polling, unstable sensitivity checks, and limits of historical calibration."
+            description="Thin polling, incomplete calculations, and limits of historical calibration."
           >
             <div className="how-prose">
               <p>
                 If the current polling evidence is too thin, the forecast remains
-                unavailable. If required sensitivity checks disagree, a quantity moves
-                to a broader public band or is withheld. Public polls can still miss
+                unavailable. Missing required calculations also withhold a quantity;
+                we assess differences between completed checks behind the scenes. Public polls can still miss
                 late movement, turnout differences, or a systematic error shared across
                 firms, and the current election can behave differently from the past.
               </p>

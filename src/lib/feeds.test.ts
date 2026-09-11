@@ -15,6 +15,41 @@ import {
 } from "./feeds";
 
 describe("validateForecast", () => {
+  it("requires complete sensitivity metadata for schema 3 while keeping schema 2 readable", () => {
+    function ranged(card: Omit<typeof forecastFixture.close_result, "candidate_id" | "probability" | "band" | "frequency_statement"> & {
+      candidate_id: string | null; probability: number | null; band: string | null; frequency_statement: string | null;
+    }) {
+      return { ...card, sensitivity: card.availability === "Forecast Available" ? {
+        kind: "model_assumptions", lower: 0, upper: 1, includes_monte_carlo_error: true,
+        scenarios: [
+          { label: "bridge-base", role: "authoritative", probability: card.probability },
+          { label: "stress", role: "stress_test", probability: .5 },
+        ],
+      } : null };
+    }
+    const feed = {
+      ...forecastFixture, schema_version: 3,
+      publication_policy: "central-band-with-sensitivity-v1",
+      analysis_cutoff: "2026-09-11T12:00:00-04:00",
+      sensitivity_variant_labels: ["bridge-base", "stress"],
+      forecast_favourite: { tier: forecastFixture.evidence_tier,
+        availability: "Forecast Unavailable", candidate_id: null, reason: "model disagreement" },
+      candidate_win: Object.fromEntries(Object.entries(forecastFixture.candidate_win)
+        .map(([id, card]) => [id, ranged(card)])),
+      close_result: ranged(forecastFixture.close_result),
+      incumbent_defeat: ranged(forecastFixture.incumbent_defeat),
+    };
+    expect(validateForecast(feed)?.schema_version).toBe(3);
+    const missingRange = { ...feed, close_result: { ...feed.close_result, sensitivity: null } };
+    expect(validateForecast(missingRange)).toBeNull();
+    const missingScenario = structuredClone(feed);
+    missingScenario.close_result.sensitivity!.scenarios.pop();
+    expect(validateForecast(missingScenario)).toBeNull();
+    const inverted = structuredClone(feed);
+    inverted.close_result.sensitivity!.lower = .8;
+    inverted.close_result.sensitivity!.upper = .2;
+    expect(validateForecast(inverted)).toBeNull();
+  });
   it("accepts the complete forecast and rejects contradictory availability", () => {
     expect(validateForecast(forecastFixture)?.candidate_win).not.toEqual({});
     const malformed = structuredClone(forecastFixture);

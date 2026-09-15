@@ -3,8 +3,9 @@
 **Throwaway branch:** `prototype/mayoral-presentation-2026-09-14`.
 **Implementation brief:** backend repository
 `docs/research/mayoral-public-presentation-design-2026-09-14.md`.
-The user now prefers B plus A’s vote-share section (see the update below). No variant is approved for production. This document is the local
-implementation/design record; no external issue or message was created.
+The user approved B plus A’s vote-share section as the presentation design.
+Implementation will use the real model output contract; this synthetic prototype
+is not a production forecast. This document records the design locally.
 
 Question: which information hierarchy best explains a consistent polling lead and
 the remaining possibility of an upset, without inheriting the old publication bands?
@@ -119,3 +120,16 @@ This is the preferred direction for further refinement, not final approval of
 wording, interval levels, rounding, numerical qualification or production rollout.
 The shared joint example draws and all calculations are unchanged. A and C remain
 available for comparison; the original B is preserved in commit `5ceeb7d`.
+
+## Design approved — September 14
+
+The user approved the combined B layout after reviewing the revised prototype
+(frontend commit `8c5262d`). Its margin-first hierarchy, candidate vote-share chart
+and full-race probabilities are the selected design for implementation. Further
+layout selection is not a prerequisite for connecting the real model.
+
+The examples remain synthetic. The previously identified numerical display choices
+need checking against the fitted distributions; design approval does not validate
+the illustrative probabilities. The next delivery milestone is a complete research
+fit and coherent backend summaries for this layout, followed by production
+implementation and release verification.

@@ -11,7 +11,7 @@ import styles from "./prototype.module.css";
 
 const variants = ["odds", "margin", "timeline"] as const;
 type Variant = typeof variants[number];
-const titles = ["A · Who wins?", "B · How could the lead change?", "C · Now → election day"];
+const titles = ["A · Who wins?", "B · Margin + possible vote", "C · Now → election day"];
 
 function IntervalChart({ data, now = false }: { data: Example; now?: boolean }) {
   return <div className={styles.intervalChart}>
@@ -77,6 +77,7 @@ function VariantB({ data }: { data: Example }) {
     <h1 className={styles.headline}>A lead is a range<br />of possible results.</h1>
     <p className={styles.lead}>The middle outcome puts Chow {Math.abs(data.medianMargin).toFixed(0)} points {data.medianMargin >= 0 ? "ahead of" : "behind"} Bradford. The whole distribution tells us how often that order could reverse.</p>
     <div className={styles.marginLayout}><MarginChart data={data} /><aside><span className={styles.kicker}>Bradford finishes ahead of Chow</span><strong className={styles.largeChance} style={{ color: colors[1] }}>{chance(data.bradfordAhead)}</strong><p>of simulated outcomes</p><p className={styles.caption}>This compares two candidates. Winning also requires finishing ahead of everyone else.</p></aside></div>
+    <section className={styles.section}><h2>What the vote could look like</h2><IntervalChart data={data} /></section>
     <section className={styles.section}><div className={styles.sectionIntro}><h2>Who wins the full race?</h2><p>All candidates compete in the same simulated elections.</p></div><ProbabilityList data={data} /></section>
   </>;
 }

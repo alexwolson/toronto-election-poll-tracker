@@ -3,7 +3,7 @@
 **Throwaway branch:** `prototype/mayoral-presentation-2026-09-14`.
 **Implementation brief:** backend repository
 `docs/research/mayoral-public-presentation-design-2026-09-14.md`.
-No variant has been selected or approved for production. This document is the local
+The user now prefers B plus A’s vote-share section (see the update below). No variant is approved for production. This document is the local
 implementation/design record; no external issue or message was created.
 
 Question: which information hierarchy best explains a consistent polling lead and
@@ -105,3 +105,17 @@ against the real forecast output contract. Keep rejected experiments on this bra
 Verdict: ready for design comparison. No winner chosen and no statistical display
 threshold adopted. The real-model current-versus-election denominator issue is
 recorded in the backend public-output contract draft before any integration.
+
+## User-selected direction: B plus A's vote-share section
+
+The user prefers the margin-led B presentation combined with A's “What the vote
+could look like” section. Variant B now follows this order:
+
+1. The Chow–Bradford margin distribution and chance of Bradford finishing ahead.
+2. Candidate election-day vote-share estimates and their ranges, using A's chart.
+3. Each candidate's probability of winning the full race.
+
+This is the preferred direction for further refinement, not final approval of
+wording, interval levels, rounding, numerical qualification or production rollout.
+The shared joint example draws and all calculations are unchanged. A and C remain
+available for comparison; the original B is preserved in commit `5ceeb7d`.

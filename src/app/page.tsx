@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { PrototypeHost } from "@/components/forecast-prototype/presentation-prototype";
 import { ForecastHero } from "@/components/forecast-hero";
 import { PollingScopeNote } from "@/components/polling-scope-note";
 import { PollsterLink } from "@/components/pollster-link";
@@ -29,7 +31,7 @@ export default async function Home() {
   const otherShare = latest ? explicitOtherShare(latest, field) : null;
   const forecastAsOf = latestReferencedPollDate(polling, forecast.final_field_samples);
 
-  return (
+  const normal = (
     <main id="main-content" className="np-shell">
       <ForecastHero feed={forecast} asOfDate={forecastAsOf} />
 
@@ -115,5 +117,8 @@ export default async function Home() {
         <Link href="/how-it-works">How the evidence is handled →</Link>
       </nav>
     </main>
+  );
+  return process.env.NODE_ENV === "production" ? normal : (
+    <Suspense fallback={normal}><PrototypeHost>{normal}</PrototypeHost></Suspense>
   );
 }

@@ -435,9 +435,9 @@ Use the page hero once at the start of a primary route when the page needs the s
 
 Use the section heading for recurring analytical modules inside a route. It pairs one serif title with only directly supporting copy. Kicker-style mono text is reserved for true breadcrumbs and detail-page navigation, not as routine decoration above headings.
 
-### Forecast Band Board
+### Forecast Views
 
-The signature forecast component is a joined ruled grid introduced by one heavy top rule on the board. Each neutral cell pairs a semantic candidate marker with a serif frequency phrase and may include one separated derived outcome. Candidate identity lives in the marker and data, while the card remains neutral. Exact raw probabilities do not belong in this presentation pattern.
+The signature forecast module is three stacked views of one set of simulated elections, in a fixed order: the margin between the two poll leaders (a histogram coloured by which of the pair is ahead, with the challenger's chance of finishing ahead set beside it in serif metric type), each candidate's election-day vote range (a dot at the middle estimate on a line spanning the central 80% of outcomes), and whole-percent chances of winning the full race on a ruled list. Candidate identity lives in the marker and colour; chances are rounded to whole percentages with "<1%" and ">99%" guarding the tails. Bands and frequency phrases are retired.
 
 ### Charts and Maps
 

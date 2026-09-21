@@ -100,8 +100,11 @@ describe("primary pages drop retired methodology copy", () => {
 });
 
 describe("primary pages keep their facts and controls", () => {
-  it("forecast hero keeps the band board", () => {
-    expect(HERO).toContain("band-board");
+  it("forecast hero keeps the three margin-first views", () => {
+    expect(HERO).toContain("forecast-margin");
+    expect(HERO).toContain("forecast-shares");
+    expect(HERO).toContain("forecast-odds");
+    expect(HERO).not.toContain("band-board");
   });
 
   it("Polls page keeps the chart, archive, and actual poll metadata", () => {

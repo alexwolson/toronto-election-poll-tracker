@@ -1,11 +1,10 @@
 # Certified dev fixtures
 
 These publication feeds are the **certified-state** package — the same
-feeds the data pipeline emits, but built with `field_certified: true` so the
-mayoral forecast publishes (4 of 5 quantities). We develop and preview against
-them because the site launches in the certified state (spec §Q8b), while the
-committed `data/processed` feeds stay dark until the maintainer flips the real
-flag.
+feeds the data pipeline emits with `field_certified: true`, so the mayoral
+forecast publishes. `mayoral_forecast.json` is a real schema-4 build of the
+compact joint model (2026-09-21 inputs), used to develop and preview the
+margin-first presentation.
 
 Used only when `FEED_LOCAL_DIR` points here (see `.env.local.example`). Production
 builds resolve immutable GitHub Releases into the gitignored `.release-data/`

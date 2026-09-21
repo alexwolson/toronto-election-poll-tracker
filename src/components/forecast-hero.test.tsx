@@ -4,55 +4,56 @@ import { describe, expect, it } from "vitest";
 import type { MayoralForecastFeed } from "@/types/feeds";
 import { ForecastHero } from "./forecast-hero";
 
+function feed(): MayoralForecastFeed {
+  return structuredClone(forecastFixture) as unknown as MayoralForecastFeed;
+}
+
 describe("ForecastHero", () => {
-  it("shows the simple band without exposing internal model diagnostics", () => {
-    const feed = structuredClone(forecastFixture) as MayoralForecastFeed;
-    const cid = "per_a4291ca7539b53e2acc1c4f108bc73e6";
-    feed.candidate_win[cid] = {
-      ...feed.candidate_win[cid], availability: "Forecast Available",
-      band: "70–<90%", frequency_statement: "about 4 in 5", probability: .869,
-      sensitivity: { kind: "model_assumptions", lower: .74, upper: .91,
-        includes_monte_carlo_error: true,
-        scenarios: [{ label: "bridge-base", role: "authoritative", probability: .869 }],
-      },
-    };
-    const html = renderToStaticMarkup(<ForecastHero feed={feed} />);
-    expect(html).toContain("Wins about 4 times in 5");
-    expect(html).not.toContain("Across model assumptions");
-    expect(html).not.toContain("74–91%");
-    expect(html).not.toContain("Compare the model checks");
-    expect(html).not.toContain("simulation noise");
-  });
-  it("names a stable favourite when candidate probability bands are partly unavailable", () => {
-    const feed = structuredClone(forecastFixture) as MayoralForecastFeed;
-    Object.assign(feed, {
-      forecast_favourite: {
-        tier: feed.evidence_tier,
-        availability: "Forecast Available",
-        candidate_id: "per_a4291ca7539b53e2acc1c4f108bc73e6",
-        reason: "",
-      },
-    });
-    for (const candidateId of [
-      "per_a4291ca7539b53e2acc1c4f108bc73e6",
-      "per_d8dfddfb642358e299f4b428292666bf",
-    ]) {
-      feed.candidate_win[candidateId] = {
-        ...feed.candidate_win[candidateId],
-        availability: "Forecast Unavailable",
-        band: null,
-        frequency_statement: null,
-        probability: null,
-        reason: "Sensitivity variants do not agree on the published band.",
-      };
-    }
-
-    const html = renderToStaticMarkup(<ForecastHero feed={feed} />);
-
+  it("renders the margin-first hierarchy from the joint draws, names driven by the feed", () => {
+    const html = renderToStaticMarkup(<ForecastHero feed={feed()} asOfDate="2026-09-17" />);
+    // 1. margin first, with the compared pair named from the feed
+    expect(html).toContain('class="forecast-margin"');
+    expect(html).toContain("Bradford finishes ahead of Chow");
     expect(html).toContain("Olivia Chow is favoured to win");
-    expect(html).not.toContain("The forecast cannot name a favourite yet");
-    expect(html).not.toContain("Chris Alexander is favoured to win");
-    expect(html).toContain("Chris Alexander");
-    expect(html).toContain("Wins less than 1 time in 10");
+    expect(html).toContain("Forecast evidence through");
+    expect(html.indexOf('class="forecast-margin"')).toBeLessThan(html.indexOf('class="forecast-shares"'));
+    expect(html.indexOf('class="forecast-shares"')).toBeLessThan(html.indexOf('class="forecast-odds"'));
+    // 2. vote ranges for the three named candidates and the pool
+    expect(html).toContain("What the vote could look like");
+    expect(html).toContain("Other candidates");
+    expect(html).toContain("Sarah McVie");
+    expect(html).toContain("central 80%");
+    // 3. full-race win probabilities as whole percentages, pool guarded
+    expect(html).toContain("Who wins the full race?");
+    expect(html).toMatch(/Olivia Chow<\/span><strong>\d{2}%/);
+    expect(html).toContain("&lt;1%");
+    // the margin chart is an accessible SVG with forty bins
+    expect(html).toContain("<svg");
+    expect((html.match(/forecast-margin__bin/g) ?? []).length).toBe(40);
+    // retired vocabulary
+    for (const retired of [
+      "band-board",
+      "times in",
+      "Across model assumptions",
+      "Close result",
+      "Landslide",
+      "R-hat",
+      "divergen",
+    ]) {
+      expect(html).not.toContain(retired);
+    }
+  });
+
+  it("falls back to an honest note when the favourite is withheld or the block is missing", () => {
+    const dark = feed();
+    dark.forecast_favourite = {
+      ...dark.forecast_favourite,
+      availability: "Forecast Unavailable",
+      candidate_id: null,
+    };
+    dark.election_day = null;
+    const html = renderToStaticMarkup(<ForecastHero feed={dark} />);
+    expect(html).toContain("The forecast isn’t available yet");
+    expect(html).not.toContain('class="forecast-margin"');
   });
 });

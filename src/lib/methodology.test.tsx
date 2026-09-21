@@ -29,12 +29,13 @@ describe("methodology content", () => {
 
   it("protects the model-defining forecast claims", () => {
     const text = forecastFlow.map((step) => `${step.title} ${step.body}`).join(" ");
-    expect(text).toContain("newest eligible reading from each pollster");
-    expect(text).toContain("each represented pollster equal weight");
-    expect(text).toContain("Missing never means zero");
-    expect(text).toContain("Stress-test");
-    expect(text).toContain("Publish a clear estimate");
-    expect(text).toContain("rounding differences between checks do not remove the estimate");
+    expect(forecastFlow).toHaveLength(6);
+    expect(text).toContain("every published poll of the certified candidate field");
+    expect(text).toContain("Seven past Toronto mayoral races");
+    expect(text).toContain("sixteen thousand plausible full-ballot results");
+    expect(text).toContain("numerical checks pass");
+    expect(text).toContain("same simulated elections");
+    expect(text).not.toMatch(/band|times in/i);
   });
 
   it("records both published and independently withheld evidence examples", () => {
@@ -71,7 +72,8 @@ describe("methodology content", () => {
     expect(glossary.map((entry) => entry.term)).toEqual(
       expect.arrayContaining([
         "LOESS trend",
-        "Win-chance band",
+        "Win probability",
+        "Margin distribution",
         "Prior win",
         "Councillor Defeatability Index",
         "Historical hint",
@@ -88,7 +90,7 @@ describe("How It Works rendering", () => {
     expect(html).toContain('<figure class="method-flow" aria-label="Forecast publication flow">');
     expect(html).toContain("<ol>");
     expect(html).toContain("Choose eligible polls");
-    expect(html).toContain("Balance the pollsters");
+    expect(html).toContain("Track the race");
     expect(html).toContain('aria-hidden="true"');
   });
 

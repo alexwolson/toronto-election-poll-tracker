@@ -15,51 +15,50 @@ import {
 } from "./feeds";
 
 describe("validateForecast", () => {
-  it("requires complete sensitivity metadata for schema 3 while keeping schema 2 readable", () => {
-    function ranged(card: Omit<typeof forecastFixture.close_result, "candidate_id" | "probability" | "band" | "frequency_statement"> & {
-      candidate_id: string | null; probability: number | null; band: string | null; frequency_statement: string | null;
-    }) {
-      return { ...card, sensitivity: card.availability === "Forecast Available" ? {
-        kind: "model_assumptions", lower: 0, upper: 1, includes_monte_carlo_error: true,
-        scenarios: [
-          { label: "bridge-base", role: "authoritative", probability: card.probability },
-          { label: "stress", role: "stress_test", probability: .5 },
-        ],
-      } : null };
-    }
-    const feed = {
-      ...forecastFixture, schema_version: 3,
-      publication_policy: "central-band-with-sensitivity-v1",
-      analysis_cutoff: "2026-09-11T12:00:00-04:00",
-      sensitivity_variant_labels: ["bridge-base", "stress"],
-      forecast_favourite: { tier: forecastFixture.evidence_tier,
-        availability: "Forecast Unavailable", candidate_id: null, reason: "model disagreement" },
-      candidate_win: Object.fromEntries(Object.entries(forecastFixture.candidate_win)
-        .map(([id, card]) => [id, ranged(card)])),
-      close_result: ranged(forecastFixture.close_result),
-      incumbent_defeat: ranged(forecastFixture.incumbent_defeat),
-    };
-    expect(validateForecast(feed)?.schema_version).toBe(3);
-    const missingRange = { ...feed, close_result: { ...feed.close_result, sensitivity: null } };
-    expect(validateForecast(missingRange)).toBeNull();
-    const missingScenario = structuredClone(feed);
-    missingScenario.close_result.sensitivity!.scenarios.pop();
-    expect(validateForecast(missingScenario)).toBeNull();
-    const inverted = structuredClone(feed);
-    inverted.close_result.sensitivity!.lower = .8;
-    inverted.close_result.sensitivity!.upper = .2;
-    expect(validateForecast(inverted)).toBeNull();
-  });
-  it("accepts the complete forecast and rejects contradictory availability", () => {
-    expect(validateForecast(forecastFixture)?.candidate_win).not.toEqual({});
-    const malformed = structuredClone(forecastFixture);
-    malformed.close_result.availability = "Forecast Unavailable";
-
-    expect(validateForecast(malformed)).toBeNull();
+  const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
+  it("accepts the schema-4 margin-first feed", () => {
+    const feed = validateForecast(forecastFixture);
+    expect(feed?.schema_version).toBe(4);
+    expect(feed?.publication_policy).toBe("margin-first-joint-draws-v1");
+    expect(feed?.election_day?.pairwise_margin.bins).toHaveLength(40);
+    expect(feed?.election_day?.candidates.map((c) => c.candidate_id)).toEqual(
+      Object.keys(forecastFixture.candidate_win),
+    );
   });
 
-  it("rejects an unsupported schema", () => {
+  it("rejects earlier schemas and the retired band contract", () => {
+    expect(validateForecast({ ...forecastFixture, schema_version: 3 })).toBeNull();
+    expect(validateForecast({ ...forecastFixture, schema_version: 2 })).toBeNull();
     expect(validateForecast({ ...forecastFixture, schema_version: 999 })).toBeNull();
+    expect(validateForecast({ ...forecastFixture, publication_policy: "central-band-with-sensitivity-v1" })).toBeNull();
+  });
+
+  it("fails closed on every incoherent election-day block", () => {
+    const cases: Array<(feed: typeof forecastFixture) => void> = [
+      (f) => { f.election_day.pairwise_margin.bins.pop(); },
+      (f) => { f.election_day.pairwise_margin.bins[0].probability += 0.1; },
+      (f) => { f.election_day.pairwise_margin.leader_candidate_id = "per_nobody"; },
+      (f) => { f.election_day.pairwise_margin.challenger_candidate_id = f.election_day.pairwise_margin.leader_candidate_id; },
+      (f) => { f.election_day.pairwise_margin.lower = f.election_day.pairwise_margin.upper + 1; },
+      (f) => { f.election_day.candidates[0].lower = f.election_day.candidates[0].upper + 0.01; },
+      (f) => { f.election_day.candidates[0].win_probability = 0.99; },
+      (f) => { f.election_day.candidates.pop(); },
+      (f) => { f.election_day.residual_pool.win_probability = 0.01; },
+      (f) => { f.election_day.residual_pool.candidate_count = -1; },
+      (f) => { f.election_day.interval_mass = 1.2; },
+      (f) => { f.election_day.denominator = "named_only"; },
+      (f) => { f.candidate_win[CHOW].probability = 2; },
+      (f) => { f.forecast_favourite.candidate_id = "per_nobody"; },
+      (f) => { f.model.qualification_passed = false; },
+      (f) => { f.analysis_cutoff = "2026-09-21T12:00:00"; },
+      (f) => { f.election_cycle_id = "toronto-2026"; },
+      (f) => { f.election_date = "October 26, 2026"; },
+    ];
+    for (const mutate of cases) {
+      const malformed = structuredClone(forecastFixture);
+      mutate(malformed);
+      expect(validateForecast(malformed), mutate.toString()).toBeNull();
+    }
   });
 });
 

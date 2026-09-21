@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MarginChart } from "@/components/forecast/margin-chart";
+import { MarginOutcomes } from "@/components/forecast/margin-outcomes";
 import { VoteShareRanges } from "@/components/forecast/vote-share-ranges";
 import { WinProbabilities } from "@/components/forecast/win-probabilities";
 import { SectionHeading } from "@/components/section-heading";
@@ -9,18 +9,18 @@ import {
   electionDayShares,
   forecastAvailable,
   leadForecast,
-  pairwiseMargin,
+  marginOutcomes,
   residualPoolNote,
   winProbabilities,
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
 
 /**
- * The mayoral forecast hero (ADR 0054; presentation approved 2026-09-14).
- * Margin first: how far apart the two poll leaders are likely to finish and how
- * often that order reverses; then each candidate's election-day vote range; then
- * full-race win chances. Every number is a summary of the same joint draws.
- * When the forecast is withheld, an honest note stands in.
+ * The mayoral forecast hero (ADR 0054; presentation approved 2026-09-14, margin
+ * view revised 2026-09-21). Margin first, as three named outcomes with their
+ * exact shares of the simulated elections; then each candidate's election-day
+ * vote range; then full-race win chances. Every number is a summary of the same
+ * joint draws. When the forecast is withheld, an honest note stands in.
  */
 export function ForecastHero({
   feed,
@@ -30,7 +30,7 @@ export function ForecastHero({
   asOfDate?: string | null;
 }) {
   const lead = leadForecast(feed);
-  const margin = pairwiseMargin(feed);
+  const margin = marginOutcomes(feed);
   const shares = electionDayShares(feed);
   const odds = winProbabilities(feed);
 
@@ -49,8 +49,7 @@ export function ForecastHero({
     );
   }
 
-  const ahead = margin.medianPp >= 0;
-  const gap = Math.abs(margin.medianPp).toFixed(0);
+  const draws = feed.model.draws.toLocaleString();
   return (
     <>
       <section className="forecast-lead" aria-labelledby="forecast-heading">
@@ -59,9 +58,9 @@ export function ForecastHero({
         </p>
         <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
         <p className="forecast-lede">
-          The middle outcome puts {margin.leader.surname} {gap} points{" "}
-          {ahead ? "ahead of" : "behind"} {margin.challenger.surname}. The whole range of
-          outcomes shows how often that order could reverse.
+          {margin.leader.surname} finishes ahead of {margin.challenger.surname} in{" "}
+          {chance(margin.leaderAhead)} of simulated elections. The bars show how big the gap is
+          likely to be.
         </p>
         {asOfDate && (
           <p className="forecast-as-of">Forecast evidence through {formatDate(asOfDate)}</p>
@@ -71,24 +70,15 @@ export function ForecastHero({
       <section className="forecast-margin" aria-labelledby="forecast-margin-heading">
         <SectionHeading
           headingId="forecast-margin-heading"
-          title={`The margin between ${margin.leader.surname} and ${margin.challenger.surname}`}
+          title={`How far apart ${margin.leader.surname} and ${margin.challenger.surname} are likely to finish`}
         />
-        <div className="forecast-margin__layout">
-          <MarginChart view={margin} />
-          <aside className="forecast-margin__aside">
-            <span className="forecast-kicker">
-              {margin.challenger.surname} finishes ahead of {margin.leader.surname}
-            </span>
-            <strong className="forecast-margin__chance" style={{ color: margin.challenger.colorVar }}>
-              {chance(margin.challengerAhead)}
-            </strong>
-            <p>of simulated outcomes</p>
-            <p className="forecast-caption">
-              This compares two candidates. Winning also requires finishing ahead of everyone
-              else.
-            </p>
-          </aside>
-        </div>
+        <MarginOutcomes view={margin} />
+        <p className="forecast-caption">
+          Percentages are the share of {draws} simulated elections. Counting the close outcomes by
+          who is ahead, {margin.leader.surname} finishes ahead in {chance(margin.leaderAhead)} and{" "}
+          {margin.challenger.surname} in {chance(margin.challengerAhead)}. Finishing ahead of one
+          rival is not the same as winning the whole race; that chance is shown below.
+        </p>
       </section>
 
       <section className="forecast-shares" aria-labelledby="forecast-shares-heading">
@@ -107,9 +97,9 @@ export function ForecastHero({
         <summary>What is behind these numbers</summary>
         <p>
           One statistical model, fitted to the {feed.final_field_samples.length} published polls of
-          the certified field and to seven past Toronto mayoral campaigns, produces{" "}
-          {feed.model.draws.toLocaleString()} simulated elections. The margin, the vote ranges and
-          the win chances all summarize those same simulations.
+          the certified field and to seven past Toronto mayoral campaigns, produces {draws}{" "}
+          simulated elections. The margin outcomes, the vote ranges and the win chances all
+          summarize those same simulations.
         </p>
         <p>Other candidates: {residualPoolNote(feed)}</p>
         <p>

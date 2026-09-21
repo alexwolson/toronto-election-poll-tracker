@@ -41,48 +41,26 @@ export default async function Home() {
           >
             <PollingScopeNote />
           </SectionHeading>
-          <div className="poll-snapshot" aria-label="Latest poll shares">
-            {ranked.map((id) => {
+          <p className="poll-snapshot-line" aria-label="Latest poll shares">
+            {latest.firm}, {formatDate(latest.date_conducted)}:{" "}
+            {ranked.map((id, index) => {
               const meta = candidateMeta(id);
               return (
-                <div key={id} className="poll-snapshot__row">
-                  <span>
-                    <span
-                      className={`candidate-marker candidate-marker--${meta.slug}`}
-                      aria-hidden="true"
-                    />
-                    {candidateName(id)}
-                  </span>
-                  <span className="poll-snapshot__bar">
-                    <span
-                      style={{ width: `${shares[id] * 100}%`, background: meta.colorVar }}
-                    />
-                  </span>
-                  <span className="poll-snapshot__value">{formatSharePct(shares[id])}</span>
-                </div>
+                <span key={id}>
+                  {index > 0 && ", "}
+                  <strong style={{ color: meta.colorVar }}>
+                    {candidateName(id)} {formatSharePct(shares[id])}
+                  </strong>
+                </span>
               );
             })}
             {otherShare !== null && (
-              <div className="poll-snapshot__row poll-snapshot__row--other">
-                <span>
-                  <span
-                    className="candidate-marker candidate-marker--residual"
-                    aria-hidden="true"
-                  />
-                  Other reported choices
-                </span>
-                <span className="poll-snapshot__bar">
-                  <span
-                    style={{
-                      width: `${otherShare * 100}%`,
-                      background: "var(--text-faint)",
-                    }}
-                  />
-                </span>
-                <span className="poll-snapshot__value">{formatSharePct(otherShare)}</span>
-              </div>
+              <span>
+                , Other reported choices {formatSharePct(otherShare)}
+              </span>
             )}
-          </div>
+            .
+          </p>
           <dl className="poll-context-grid" aria-label="Latest poll context">
             <div>
               <dt>Pollster</dt>

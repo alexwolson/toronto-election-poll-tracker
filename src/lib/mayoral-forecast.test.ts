@@ -6,7 +6,7 @@ import {
   electionDayShares,
   forecastAvailable,
   leadForecast,
-  pairwiseMargin,
+  marginOutcomes,
   residualPoolNote,
   viableField,
   winProbabilities,
@@ -85,29 +85,6 @@ describe("electionDayShares", () => {
   });
 });
 
-describe("pairwiseMargin", () => {
-  it("names the compared pair from the feed and carries signed bins", () => {
-    const view = pairwiseMargin(feed())!;
-    const source = feed().election_day!.pairwise_margin;
-    expect(view.leader.candidateId).toBe(CHOW);
-    expect(view.leader.surname).toBe("Chow");
-    expect(view.challenger.candidateId).toBe(BRADFORD);
-    expect(view.challenger.surname).toBe("Bradford");
-    expect(view.medianPp).toBe(source.median);
-    expect(view.lowerPp).toBe(source.lower);
-    expect(view.upperPp).toBe(source.upper);
-    expect(view.challengerAhead).toBe(source.probability_challenger_ahead);
-    expect(view.bins).toHaveLength(40);
-    expect(view.bins[0]).toMatchObject({ left: -100, right: -95 });
-    expect(view.bins[39]).toMatchObject({ left: 95, right: 100 });
-    const total = view.bins.reduce((sum, bin) => sum + bin.probability, 0);
-    expect(total).toBeCloseTo(1, 3);
-    // The challenger-ahead share is the mass left of the tie, to bin resolution.
-    const left = view.bins.filter((b) => b.right <= 0).reduce((s, b) => s + b.probability, 0);
-    expect(Math.abs(left - view.challengerAhead)).toBeLessThan(0.02);
-  });
-});
-
 describe("winProbabilities", () => {
   it("orders named candidates by probability and keeps the pool at zero", () => {
     const view = winProbabilities(feed());
@@ -131,5 +108,32 @@ describe("residualPoolNote", () => {
     const unnamed = feed();
     unnamed.election_day!.residual_pool.named_in_polls = [];
     expect(residualPoolNote(unnamed)).toBe("50 certified candidates, modelled together.");
+  });
+});
+
+describe("marginOutcomes", () => {
+  it("returns the three named outcomes, leader first, with feed-driven labels", () => {
+    const view = marginOutcomes(feed())!;
+    const source = feed().election_day!.pairwise_margin.outcomes;
+    expect(view.thresholdPoints).toBe(2);
+    expect(view.rows.map((r) => r.key)).toEqual(["leader_ahead", "close", "challenger_ahead"]);
+    expect(view.rows.map((r) => r.label)).toEqual([
+      "Chow ahead by 2 or more",
+      "Within 2 points either way",
+      "Bradford ahead by 2 or more",
+    ]);
+    expect(view.rows[0].probability).toBe(source.leader_ahead);
+    expect(view.rows[1].probability).toBe(source.close);
+    expect(view.rows[2].probability).toBe(source.challenger_ahead);
+    expect(view.rows[0].colorVar).toBe("var(--color-chow)");
+    expect(view.rows[2].colorVar).toBe("var(--color-bradford)");
+    // The caption's pairwise split counts every draw by who is ahead, from the feed.
+    expect(view.challengerAhead).toBe(feed().election_day!.pairwise_margin.probability_challenger_ahead);
+    expect(view.leaderAhead).toBeCloseTo(1 - view.challengerAhead, 6);
+  });
+  it("is null when the election-day block is absent", () => {
+    const dark = feed();
+    dark.election_day = null;
+    expect(marginOutcomes(dark)).toBeNull();
   });
 });

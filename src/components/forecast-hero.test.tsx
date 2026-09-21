@@ -11,9 +11,14 @@ function feed(): MayoralForecastFeed {
 describe("ForecastHero", () => {
   it("renders the margin-first hierarchy from the joint draws, names driven by the feed", () => {
     const html = renderToStaticMarkup(<ForecastHero feed={feed()} asOfDate="2026-09-17" />);
-    // 1. margin first, with the compared pair named from the feed
+    // 1. margin first: three named outcomes with their percentages, the pair named from the feed
     expect(html).toContain('class="forecast-margin"');
-    expect(html).toContain("Bradford finishes ahead of Chow");
+    expect(html).toContain("How far apart Chow and Bradford are likely to finish");
+    expect(html).toContain("Chow ahead by 2 or more");
+    expect(html).toContain("Within 2 points either way");
+    expect(html).toContain("Bradford ahead by 2 or more");
+    expect((html.match(/forecast-outcomes__row/g) ?? []).length).toBe(3);
+    expect(html).toMatch(/Chow finishes ahead in \d{2}% and Bradford in \d{2}%/);
     expect(html).toContain("Olivia Chow is favoured to win");
     expect(html).toContain("Forecast evidence through");
     expect(html.indexOf('class="forecast-margin"')).toBeLessThan(html.indexOf('class="forecast-shares"'));
@@ -27,12 +32,12 @@ describe("ForecastHero", () => {
     expect(html).toContain("Who wins the full race?");
     expect(html).toMatch(/Olivia Chow<\/span><strong>\d{2}%/);
     expect(html).toContain("&lt;1%");
-    // the margin chart is an accessible SVG with forty bins
-    expect(html).toContain("<svg");
-    expect((html.match(/forecast-margin__bin/g) ?? []).length).toBe(40);
+    // no histogram any more
+    expect(html).not.toContain("forecast-margin__bin");
     // retired vocabulary
     for (const retired of [
       "band-board",
+      "← Bradford ahead",
       "times in",
       "Across model assumptions",
       "Close result",

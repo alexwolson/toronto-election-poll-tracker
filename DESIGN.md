@@ -437,7 +437,7 @@ Use the section heading for recurring analytical modules inside a route. It pair
 
 ### Forecast Views
 
-The signature forecast module is three stacked views of one set of simulated elections, in a fixed order: the margin between the two poll leaders (a histogram coloured by which of the pair is ahead, with the challenger's chance of finishing ahead set beside it in serif metric type), each candidate's election-day vote range (a dot at the middle estimate on a line spanning the central 80% of outcomes), and whole-percent chances of winning the full race on a ruled list. Candidate identity lives in the marker and colour; chances are rounded to whole percentages with "<1%" and ">99%" guarding the tails. Bands and frequency phrases are retired.
+The signature forecast module is three stacked views of one set of simulated elections, in a fixed order: the margin between the two poll leaders as three named outcomes (leader ahead by two or more points, within two points either way, challenger ahead by two or more), each a ruled row with a plain-language label, a bar scaled to the largest outcome and its exact share in serif metric type; each candidate's election-day vote range (a dot at the middle estimate on a line spanning the central 80% of outcomes); and whole-percent chances of winning the full race on a ruled list. Candidate identity lives in the marker and colour; chances are rounded to whole percentages with "<1%" and ">99%" guarding the tails. Bands and frequency phrases are retired.
 
 ### Charts and Maps
 

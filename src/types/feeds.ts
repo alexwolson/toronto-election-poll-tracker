@@ -81,6 +81,16 @@ export interface MarginBin {
   probability: number;
 }
 
+/** The published three-way summary of the margin, exact from the draws:
+ *  leader ahead by at least the threshold, within the threshold either way,
+ *  challenger ahead by at least the threshold. The three sum to one. */
+export interface MarginOutcomes {
+  close_threshold_points: number;
+  leader_ahead: number;
+  close: number;
+  challenger_ahead: number;
+}
+
 export interface PairwiseMargin {
   leader_candidate_id: string;
   challenger_candidate_id: string;
@@ -90,6 +100,8 @@ export interface PairwiseMargin {
   upper: number;
   /** P(challenger's share exceeds the leader's), pairwise — not a win probability */
   probability_challenger_ahead: number;
+  outcomes: MarginOutcomes;
+  /** audit metadata; the page renders `outcomes`, not the bins */
   bin_width: number;
   range: [number, number];
   bins: MarginBin[];

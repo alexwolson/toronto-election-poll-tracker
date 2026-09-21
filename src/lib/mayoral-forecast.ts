@@ -10,7 +10,7 @@
  */
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import type { MarginBin, MayoralForecastFeed } from "@/types/feeds";
+import type { MayoralForecastFeed } from "@/types/feeds";
 
 /** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
 export function chance(value: number): string {
@@ -104,39 +104,66 @@ export interface ComparedCandidate {
   colorVar: string;
 }
 
-export interface PairwiseMarginView {
-  leader: ComparedCandidate;
-  challenger: ComparedCandidate;
-  /** vote-share points, signed: positive means the leader is ahead */
-  medianPp: number;
-  lowerPp: number;
-  upperPp: number;
-  /** pairwise: the challenger finishes ahead of the leader (not a win probability) */
-  challengerAhead: number;
-  binWidth: number;
-  range: [number, number];
-  bins: MarginBin[];
-}
-
 function compared(id: string): ComparedCandidate {
   const meta = candidateMeta(id);
   return { candidateId: id, name: meta.name, surname: surnameOf(meta.name), colorVar: meta.colorVar };
 }
 
-/** The leader-minus-challenger margin, with the pair named by the feed. */
-export function pairwiseMargin(feed: MayoralForecastFeed): PairwiseMarginView | null {
+export interface MarginOutcomeRow {
+  key: "leader_ahead" | "close" | "challenger_ahead";
+  label: string;
+  probability: number;
+  colorVar: string;
+}
+
+export interface MarginOutcomesView {
+  thresholdPoints: number;
+  leader: ComparedCandidate;
+  challenger: ComparedCandidate;
+  /** leader first, then the close band, then the challenger */
+  rows: MarginOutcomeRow[];
+  /** pairwise split counting every draw by who is ahead (from the feed) */
+  leaderAhead: number;
+  challengerAhead: number;
+}
+
+function points(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+/** The published three-outcome view of the margin, labels built from the feed's pair. */
+export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | null {
   const margin = feed.election_day?.pairwise_margin;
   if (!margin) return null;
+  const leader = compared(margin.leader_candidate_id);
+  const challenger = compared(margin.challenger_candidate_id);
+  const t = points(margin.outcomes.close_threshold_points);
   return {
-    leader: compared(margin.leader_candidate_id),
-    challenger: compared(margin.challenger_candidate_id),
-    medianPp: margin.median,
-    lowerPp: margin.lower,
-    upperPp: margin.upper,
+    thresholdPoints: margin.outcomes.close_threshold_points,
+    leader,
+    challenger,
+    rows: [
+      {
+        key: "leader_ahead",
+        label: `${leader.surname} ahead by ${t} or more`,
+        probability: margin.outcomes.leader_ahead,
+        colorVar: leader.colorVar,
+      },
+      {
+        key: "close",
+        label: `Within ${t} points either way`,
+        probability: margin.outcomes.close,
+        colorVar: "var(--text-soft)",
+      },
+      {
+        key: "challenger_ahead",
+        label: `${challenger.surname} ahead by ${t} or more`,
+        probability: margin.outcomes.challenger_ahead,
+        colorVar: challenger.colorVar,
+      },
+    ],
+    leaderAhead: 1 - margin.probability_challenger_ahead,
     challengerAhead: margin.probability_challenger_ahead,
-    binWidth: margin.bin_width,
-    range: margin.range,
-    bins: margin.bins,
   };
 }
 

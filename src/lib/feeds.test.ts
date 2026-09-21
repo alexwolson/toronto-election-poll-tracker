@@ -21,6 +21,11 @@ describe("validateForecast", () => {
     expect(feed?.schema_version).toBe(4);
     expect(feed?.publication_policy).toBe("margin-first-joint-draws-v1");
     expect(feed?.election_day?.pairwise_margin.bins).toHaveLength(40);
+    const outcomes = feed?.election_day?.pairwise_margin.outcomes;
+    expect(outcomes?.close_threshold_points).toBe(2);
+    expect(
+      (outcomes?.leader_ahead ?? 0) + (outcomes?.close ?? 0) + (outcomes?.challenger_ahead ?? 0),
+    ).toBeCloseTo(1, 4);
     expect(feed?.election_day?.candidates.map((c) => c.candidate_id)).toEqual(
       Object.keys(forecastFixture.candidate_win),
     );
@@ -53,6 +58,9 @@ describe("validateForecast", () => {
       (f) => { f.analysis_cutoff = "2026-09-21T12:00:00"; },
       (f) => { f.election_cycle_id = "toronto-2026"; },
       (f) => { f.election_date = "October 26, 2026"; },
+      (f) => { f.election_day.pairwise_margin.outcomes.close += 0.2; },
+      (f) => { f.election_day.pairwise_margin.outcomes.close_threshold_points = 0; },
+      (f) => { delete (f.election_day.pairwise_margin as Record<string, unknown>).outcomes; },
     ];
     for (const mutate of cases) {
       const malformed = structuredClone(forecastFixture);

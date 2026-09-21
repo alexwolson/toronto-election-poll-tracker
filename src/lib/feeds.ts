@@ -186,6 +186,15 @@ function validWinCard(value: unknown, candidateId: string, tier: string): boolea
     : value.probability === null;
 }
 
+function validMarginOutcomes(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    !isFinitePoints(value.close_threshold_points) || value.close_threshold_points <= 0 ||
+    !isShare(value.leader_ahead) || !isShare(value.close) || !isShare(value.challenger_ahead)
+  ) return false;
+  return Math.abs(value.leader_ahead + value.close + value.challenger_ahead - 1) < 1e-4;
+}
+
 function validPairwiseMargin(value: unknown, candidateIds: Set<string>): boolean {
   if (
     !isRecord(value) ||
@@ -198,6 +207,7 @@ function validPairwiseMargin(value: unknown, candidateIds: Set<string>): boolean
     !isFinitePoints(value.lower) || !isFinitePoints(value.median) || !isFinitePoints(value.upper) ||
     value.lower > value.median || value.median > value.upper ||
     !isShare(value.probability_challenger_ahead) ||
+    !validMarginOutcomes(value.outcomes) ||
     !isFinitePoints(value.bin_width) || value.bin_width <= 0 ||
     !Array.isArray(value.range) || value.range.length !== 2 ||
     !isFinitePoints(value.range[0]) || !isFinitePoints(value.range[1]) ||

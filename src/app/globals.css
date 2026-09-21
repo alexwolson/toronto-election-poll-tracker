@@ -2848,69 +2848,51 @@ body {
   line-height: 1.5;
 }
 
-/* ── 1. Margin between the two poll leaders ─────────── */
+/* ── 1. Margin between the two poll leaders: three named outcomes ─ */
 .forecast-margin,
 .forecast-shares,
 .forecast-odds {
   margin-top: 2rem;
 }
-.forecast-margin__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 14rem;
-  gap: 1.5rem;
-  align-items: start;
-}
-.forecast-margin__chart {
-  min-width: 0;
-}
-.forecast-margin__direction {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 0 0.35rem;
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: var(--type-data);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-.forecast-margin__svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-.forecast-margin__bin {
-  stroke: var(--bg-base);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-.forecast-margin__tie {
-  stroke: var(--text-strong);
-  stroke-dasharray: 3 4;
-}
-.forecast-margin__baseline {
-  stroke: var(--line-soft);
-}
-.forecast-margin__tick {
-  fill: var(--text-soft);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 12px;
-}
-.forecast-margin__aside {
-  padding: 0.9rem 1rem 1rem;
+.forecast-outcomes {
+  margin-top: 0.75rem;
   border-top: 2px solid var(--line-strong);
+}
+.forecast-outcomes__row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 17rem) minmax(0, 1fr) 4rem;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 0;
   border-bottom: 1px solid var(--line-soft);
 }
-.forecast-margin__aside p {
-  margin: 0.1rem 0 0;
-  color: var(--text-soft);
+.forecast-outcomes__label {
+  font-size: var(--type-body);
+  color: var(--text-strong);
 }
-.forecast-margin__chance {
+.forecast-outcomes__track {
   display: block;
-  margin: 0.35rem 0 0;
+  height: 1.6rem;
+  min-width: 0;
+}
+.forecast-outcomes__bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+}
+.forecast-outcomes__value {
   font-family: var(--font-newsreader), serif;
   font-size: var(--type-metric);
   font-weight: 600;
   line-height: 1;
+  text-align: right;
+}
+.poll-snapshot-line {
+  margin: 0.75rem 0 0.5rem;
+  max-width: 46rem;
+  font-family: var(--font-newsreader), serif;
+  font-size: 1.15rem;
+  line-height: 1.45;
 }
 
 /* ── 2. Election-day vote ranges ─────────────────────── */
@@ -3021,9 +3003,6 @@ body {
 }
 
 @media (max-width: 760px) {
-  .forecast-margin__layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .forecast-shares__scale {
     grid-template-columns: 7rem 1fr 1fr 1fr;
     margin-right: 3rem;
@@ -3751,37 +3730,6 @@ body {
   text-underline-offset: 0.18em;
 }
 
-.poll-snapshot { margin: 0.75rem 0 1rem; }
-.poll-snapshot__row {
-  display: grid;
-  grid-template-columns: 11.5rem 1fr 3rem;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.3rem 0;
-}
-.poll-snapshot__row > span:first-child {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-}
-.poll-snapshot__bar {
-  height: 0.8rem;
-  background: var(--track-bg);
-  position: relative;
-}
-.poll-snapshot__bar span {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-}
-.poll-snapshot__value {
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 0.8rem;
-  text-align: right;
-  font-weight: 600;
-}
 .poll-context-grid {
   display: grid;
   grid-template-columns: 1.1fr 1fr 0.7fr 1.35fr;
@@ -4549,19 +4497,6 @@ body {
 @media (max-width: 480px) {
   .poll-archive__candidate-value {
     flex-basis: 50%;
-  }
-  .poll-snapshot__row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.35rem 0.75rem;
-    padding: 0.45rem 0;
-  }
-  .poll-snapshot__bar {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  .poll-snapshot__value {
-    grid-column: 2;
-    grid-row: 1;
   }
   .poll-context-grid {
     grid-template-columns: 1fr;

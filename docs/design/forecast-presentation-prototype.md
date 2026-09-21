@@ -133,3 +133,13 @@ need checking against the fitted distributions; design approval does not validat
 the illustrative probabilities. The next delivery milestone is a complete research
 fit and coherent backend summaries for this layout, followed by production
 implementation and release verification.
+
+## Implemented — September 21
+
+The approved layout is implemented against the real contract (Backend feed
+schema 4, `margin-first-joint-draws-v1`, ADR 0054) in `src/components/forecast/`
+and `src/components/forecast-hero.tsx`, with selectors in
+`src/lib/mayoral-forecast.ts`. Display choices adopted: central 80% intervals,
+medians, whole-percent chances with "<1%" and ">99%" at the tails, the compared
+pair named by the feed, bin geometry read from the feed. The prototype
+scaffolding was removed from `main`; the throwaway branch keeps it.

@@ -30,27 +30,27 @@ export const methodologyNav: MethodologyNavItem[] = [
 export const forecastFlow: MethodologyFlowStep[] = [
   {
     title: "Choose eligible polls",
-    body: "Use polls of the certified candidate field, keeping the newest eligible reading from each pollster.",
+    body: "Use every published poll of the certified candidate field, entered once each. Polls of earlier fields are not used.",
   },
   {
-    title: "Balance the pollsters",
-    body: "Give each represented pollster equal weight, so publishing more often does not create more influence.",
+    title: "Track the race",
+    body: "Estimate each candidate's support as a path through the campaign, allowing for the pollster behind each survey and how many people it asked.",
   },
   {
-    title: "Account for the full ballot",
-    body: "Use Toronto history to reserve support for certified candidates a poll did not measure. Missing never means zero.",
+    title: "Learn from past campaigns",
+    body: "Seven past Toronto mayoral races set how much support moves week to week, how far pollsters sit apart, and how far final polls have missed the result.",
   },
   {
-    title: "Model election-day uncertainty",
-    body: "Use past Toronto polling misses to create thousands of plausible full-ballot results.",
+    title: "Simulate election day",
+    body: "Carry each candidate's path to election day and add the historical polling miss, producing sixteen thousand plausible full-ballot results.",
   },
   {
-    title: "Stress-test the result",
-    body: "Repeat the forecast under other reasonable choices and after leaving out individual samples or pollsters.",
+    title: "Check the numbers",
+    body: "Publish only when the model's numerical checks pass. Otherwise the previous forecast stays up rather than a broken one going out.",
   },
   {
-    title: "Publish a clear estimate",
-    body: "Summarize the main forecast with a familiar odds band. Small rounding differences between checks do not remove the estimate.",
+    title: "Summarize the same outcomes three ways",
+    body: "The margin between the two poll leaders, each candidate's vote range, and each candidate's chance of winning all come from the same simulated elections.",
   },
 ];
 
@@ -148,12 +148,16 @@ export const glossary: GlossaryEntry[] = [
     definition: "A smooth curve fitted locally through one candidate's reported poll results.",
   },
   {
-    term: "Win-chance band",
-    definition: "A public range, expressed as a frequency such as “about 4 times in 5,” rather than a fragile exact percentage.",
+    term: "Win probability",
+    definition: "The share of simulated elections a candidate wins outright, shown as a whole percentage. It is not a share of the vote.",
+  },
+  {
+    term: "Margin distribution",
+    definition: "How often the simulated elections land at each gap between the two poll leaders. The part left of a tie is how often the challenger finishes ahead.",
   },
   {
     term: "Sensitivity check",
-    definition: "A rerun under another reasonable assumption to see whether the public conclusion changes.",
+    definition: "A rerun under another reasonable assumption to see whether the public conclusion changes. Kept as an audit record; the page shows one forecast.",
   },
   {
     term: "Open seat",

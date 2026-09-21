@@ -16,33 +16,21 @@ export type Availability =
   | "Forecast Unavailable"
   | "Not Applicable";
 
-/** The three quantity kinds. Every `candidate_win` card carries `challenger_win`. */
-export type QuantityKind = "challenger_win" | "close_result" | "incumbent_defeat";
+/** Every `candidate_win` card carries `challenger_win`. */
+export type QuantityKind = "challenger_win";
 
-// ── 1. mayoral forecast (schema_version 2) ──────────────────────────────────
+// ── 1. mayoral forecast (schema_version 4, margin-first-joint-draws-v1) ─────
 
-/** One gated quantity: its tier, availability, published band, and (only when
- *  Available) the point estimate. `band`/`frequency_statement`/`probability` are
- *  null unless `availability === "Forecast Available"`. */
+/** One candidate's full-race win probability: the fraction of joint election-day
+ *  draws that candidate wins outright. `probability` is null unless
+ *  `availability === "Forecast Available"`. No band, no scenarios (ADR 0054). */
 export interface ForecastQuantityCard {
   quantity: QuantityKind;
-  candidate_id: string | null;
+  candidate_id: string;
   tier: string;
   availability: Availability;
-  band: string | null;
-  frequency_statement: string | null;
   probability: number | null;
   reason: string;
-  /** Schema 3: variation across assumptions, not a confidence interval. */
-  sensitivity?: ForecastSensitivity | null;
-}
-
-export interface ForecastSensitivity {
-  kind: "model_assumptions";
-  lower: number;
-  upper: number;
-  includes_monte_carlo_error: true;
-  scenarios: { label: string; role: "authoritative" | "stress_test"; probability: number }[];
 }
 
 export interface ForecastFavouriteCard {
@@ -52,48 +40,104 @@ export interface ForecastFavouriteCard {
   reason: string;
 }
 
-/** Smoothed density of the winning margin (winner minus runner-up share) across
- *  the Dirichlet draws (schema v2). `x` and `close_threshold` are in share units
- *  (0..1); `density` is the reflected-KDE value at each `x`. Rides on the
- *  close-result gate: the feed sends `null` whenever close_result is withheld. */
-export interface MarginDistribution {
-  /** "share_gap" — winner minus runner-up, a fraction in [0, 1] */
-  unit: string;
-  x: number[];
-  density: number[];
-  /** the "close" cutoff, in the same share units as `x` (e.g. 0.05 = 5 points) */
-  close_threshold: number;
-  /** Joint winner-and-margin densities on the aggregate grid. Each integrates to
-   *  that winner's probability, and all entries sum to the aggregate density. */
-  by_winner?: Record<
-    string,
-    {
-      density: number[];
-      draw_weight: number;
-    }
-  >;
+/** Election-day full-ballot vote share for one named candidate: the median and
+ *  the central `interval_mass` interval of the joint draws, all fractions 0..1. */
+export interface ElectionDayCandidate {
+  candidate_id: string;
+  display_name: string;
+  median: number;
+  lower: number;
+  upper: number;
+  win_probability: number;
+}
+
+export interface ResidualPoolNamed {
+  candidate_id: string;
+  display_name: string;
+  /** as reported by that poll, a fraction 0..1 */
+  latest_polled_share: number;
+  poll_id: string;
+  date_conducted?: string;
+}
+
+/** Every certified candidate outside the modelled named field, as one pool.
+ *  It cannot win by construction (`win_probability` is always 0). */
+export interface ResidualPool {
+  label: string;
+  median: number;
+  lower: number;
+  upper: number;
+  win_probability: 0;
+  candidate_count: number;
+  named_in_polls: ResidualPoolNamed[];
+  note: string;
+}
+
+/** Probability mass of the signed leader-minus-challenger margin in [left, right)
+ *  vote-share points; the last bin's upper edge is closed. */
+export interface MarginBin {
+  left: number;
+  right: number;
+  probability: number;
+}
+
+export interface PairwiseMargin {
+  leader_candidate_id: string;
+  challenger_candidate_id: string;
+  unit: "vote_share_points";
+  median: number;
+  lower: number;
+  upper: number;
+  /** P(challenger's share exceeds the leader's), pairwise — not a win probability */
+  probability_challenger_ahead: number;
+  bin_width: number;
+  range: [number, number];
+  bins: MarginBin[];
+}
+
+export interface ElectionDay {
+  denominator: "full_ballot";
+  /** e.g. 0.8 — the central interval carried by every lower/upper pair */
+  interval_mass: number;
+  statistic: "median";
+  /** same order and ids as the `candidate_win` keys */
+  candidates: ElectionDayCandidate[];
+  residual_pool: ResidualPool;
+  pairwise_margin: PairwiseMargin;
+}
+
+export interface ForecastModelRecord {
+  name: string;
+  version: string;
+  specification: Record<string, string>;
+  draws: number;
+  chains: number;
+  seed: number;
+  /** true when the fail-closed numerical gate passed; a published feed always carries true */
+  qualification_passed: boolean | null;
+  [key: string]: unknown;
 }
 
 export interface MayoralForecastFeed {
-  schema_version: 2 | 3;
-  publication_policy?: "central-band-with-sensitivity-v1";
-  analysis_cutoff?: string;
-  sensitivity_variant_labels?: string[];
+  schema_version: 4;
+  publication_policy: "margin-first-joint-draws-v1";
   /** underscore form, e.g. "toronto_2026" */
   election_cycle_id: string;
+  /** ISO date of election day */
+  election_date: string;
+  analysis_cutoff: string;
   evidence_tier: string;
-  final_field_samples: string[];
-  /** Selected reading diagnostics, added compatibly to schema v2. */
-  final_field_readings?: string[];
   incumbent_candidate_id: string | null;
-  /** Added compatibly to schema v2; absent only on older immutable releases. */
-  forecast_favourite?: ForecastFavouriteCard;
-  /** keyed by candidate id; includes the incumbent */
+  /** the polls the fit used, chronological */
+  final_field_samples: string[];
+  forecast_favourite: ForecastFavouriteCard;
+  /** keyed by candidate id; the modelled named field */
   candidate_win: Record<string, ForecastQuantityCard>;
-  close_result: ForecastQuantityCard;
-  incumbent_defeat: ForecastQuantityCard;
-  /** null unless close_result publishes (gate-linked; ADR 0006 / 0032) */
-  margin_distribution: MarginDistribution | null;
+  /** null only on the development fallback; the validator requires it */
+  election_day: ElectionDay | null;
+  model: ForecastModelRecord;
+  /** prespecified alternative refits; audit metadata, never rendered */
+  sensitivity: unknown[];
 }
 
 // ── 2. Results-owned certified mayoral field (schema_version 5) ─────────────
@@ -306,9 +350,11 @@ export interface MayoralPollingFeed {
 
 export interface MayoralPublicationSummary {
   evidence_tier: string;
+  publication_policy?: string;
+  forecast_favourite?: Availability | string;
   candidate_win: Record<string, Availability | string>;
-  close_result: Availability | string;
-  incumbent_defeat: Availability | string;
+  pairwise_margin?: { leader_candidate_id: string; challenger_candidate_id: string };
+  qualification_passed?: boolean | null;
 }
 
 export interface Manifest {

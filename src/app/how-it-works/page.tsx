@@ -89,50 +89,51 @@ export default async function HowItWorksPage() {
         title="Why should I trust the forecast?"
         answer={
           <p>
-            The forecast uses a defined set of eligible polls, gives each represented
-            pollster equal weight, accounts for candidates a poll did not measure, and
-            summarizes the main forecast in plain language. We check how the forecast
-            changes under other assumptions before publishing it.
-            Toronto election history sets the uncertainty; it does not choose the winner.
+            The forecast fits one statistical model to every published poll of the
+            certified field and to seven past Toronto mayoral campaigns, then simulates
+            the election thousands of times. The margin between the two poll leaders,
+            each candidate&rsquo;s vote range and each candidate&rsquo;s chance of winning are
+            three summaries of the same simulations. Toronto election history sets the
+            uncertainty; it does not choose the winner.
           </p>
         }
       >
         <div className="how-disclosures">
           <MethodDisclosure
             title="How the forecast is built"
-            description="Poll selection, pollster balance, the full ballot, uncertainty, and publication bands."
+            description="Poll selection, the campaign model, uncertainty from past elections, and the three published views."
           >
             <div className="how-copy-grid">
               <div>
                 <h3>Which polling enters?</h3>
                 <p>
-                  Once the candidate field is certified, the model uses polls that
-                  measure that field. It keeps the newest eligible reading from each
-                  pollster and gives every represented pollster equal weight. A firm
-                  does not gain extra influence simply by publishing more releases.
+                  Once the candidate field is certified, the model uses every published
+                  poll that asked about that field, each entered once. Polls taken before
+                  certification, with other names on the ballot, are left out; a check
+                  showed they would move the answer by about a point.
                 </p>
                 <p>
-                  Polls do not always report every certified candidate. Reported
-                  candidates are compared within that poll, while Toronto&rsquo;s previous
-                  elections inform how much support to reserve for candidates the poll
-                  left unmeasured. An omitted candidate is never treated as having zero
-                  support.
+                  Each poll is read as a noisy measurement of where the race stands on
+                  its fieldwork dates, with an allowance for the firm that ran it and for
+                  how many people it asked. Three named candidates are modelled
+                  individually; the other certified candidates are one pool whose combined
+                  share is learned from past races.
                 </p>
               </div>
               <aside className="how-note">
-                <h3>One model, several questions</h3>
+                <h3>One model, three views</h3>
                 <p>Every simulated full-ballot result asks:</p>
                 <ul>
-                  <li>Did each candidate win?</li>
-                  <li>Did Olivia Chow lose to any candidate?</li>
-                  <li>Was the winning margin five points or less?</li>
+                  <li>How far apart did the two poll leaders finish?</li>
+                  <li>What share did each candidate receive?</li>
+                  <li>Who won the whole race?</li>
                 </ul>
                 <p>These are summaries of the same outcomes, not separate forecasts.</p>
               </aside>
             </div>
 
             <MethodFlow
-              label="Six steps from eligible mayoral polls to a published win-chance band"
+              label="Six steps from eligible mayoral polls to the published forecast"
               steps={forecastFlow}
             />
 
@@ -140,42 +141,45 @@ export default async function HowItWorksPage() {
               <div>
                 <h3>How uncertainty enters</h3>
                 <p>
-                  Historical Toronto elections supply two pieces the current polls
-                  cannot reveal by themselves: how much final-ballot support polls tend
-                  to leave unmeasured, and how far polling can land from the eventual
-                  result. The history calibrates uncertainty; it does not dictate who
-                  wins this election.
+                  Seven past Toronto mayoral campaigns supply what the current polls
+                  cannot reveal by themselves: how much support typically moves from
+                  week to week, how far pollsters typically sit from one another, and
+                  how far final polls have landed from the eventual result. That last
+                  gap has averaged about sixteen points on the margin between the two
+                  leaders, and it is the largest reason a clear polling lead is not a
+                  near-certain win. The history calibrates uncertainty; it does not
+                  dictate who wins this election.
                 </p>
                 <p>
-                  The model reruns the forecast with more emphasis on the newest sample,
-                  lower and higher unmeasured-candidate shares, one sample or pollster
-                  removed at a time, and an incumbency-prior sensitivity. The incumbency
-                  prior checks the result; it is not part of the main model.
+                  Before publishing, the model must pass its own numerical checks. If
+                  they fail, the previous forecast stays up. Alternative assumptions are
+                  refitted and kept as an audit record rather than shown as competing
+                  forecasts.
                 </p>
               </div>
 
-              <article id="forecast-sensitivity" className="worked-example" aria-labelledby="band-example-heading">
-                <h3 id="band-example-heading">How a result becomes a public band</h3>
+              <article id="forecast-sensitivity" className="worked-example" aria-labelledby="views-example-heading">
+                <h3 id="views-example-heading">How simulations become the three views</h3>
                 <div className="worked-example__path" aria-label="Illustrative publication path">
                   <div>
                     <strong>Simulation</strong>
-                    <span>A candidate wins roughly eight of every ten outcomes.</span>
+                    <span>Sixteen thousand full-ballot election results, every candidate in each.</span>
                   </div>
                   <div aria-hidden="true">→</div>
                   <div>
-                    <strong>Stress tests</strong>
-                    <span>Check how the forecast changes under other assumptions.</span>
+                    <strong>Summaries</strong>
+                    <span>The gap between the two leaders, each vote range, each chance of winning.</span>
                   </div>
                   <div aria-hidden="true">→</div>
                   <div>
                     <strong>Published</strong>
-                    <span>“About 4 times in 5”</span>
+                    <span>Rounded to whole percentages; the checks stay behind the scenes.</span>
                   </div>
                 </div>
                 <p>
-                  This is an illustration, not a current result. The phrase summarizes
-                  the main forecast in everyday terms. We test other assumptions behind
-                  the scenes; a small difference in rounding does not make an estimate disappear.
+                  Because the three views summarize the same simulations, they always agree
+                  with one another. A candidate can finish ahead of one rival in many
+                  outcomes without winning the whole race in as many.
                 </p>
               </article>
             </div>

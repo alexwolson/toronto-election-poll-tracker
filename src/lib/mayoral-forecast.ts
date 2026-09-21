@@ -1,304 +1,34 @@
 /**
- * Pure selectors over the mayoral forecast feed (spec §Hero, §Withheld).
+ * Pure selectors over the schema-4 mayoral forecast feed (ADR 0054, policy
+ * margin-first-joint-draws-v1).
  *
- * The publication rules are baked in here so the UI never has to reason about
- * them: only `Forecast Available` quantities are ever returned (withheld ones
- * are hidden, Q11), and we surface the band + frequency phrase, never a raw
- * probability number (ADR 0006).
+ * Every public number is a summary of the same joint election-day draws; these
+ * selectors only reshape the feed for the three views the approved presentation
+ * renders (the leader margin, candidate vote ranges, full-race win chances).
+ * Shares arrive as fractions and leave as percentage points; probabilities stay
+ * fractions and are formatted once, by `chance`.
  */
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import type { ForecastQuantityCard, MayoralForecastFeed } from "@/types/feeds";
+import type { MarginBin, MayoralForecastFeed } from "@/types/feeds";
 
-export function isPublished(card: ForecastQuantityCard): boolean {
-  return card.availability === "Forecast Available" && card.band !== null;
-}
-
-/**
- * Render a published frequency band as a sentence unit: "about 4 in 5" →
- * "about 4 times in 5", "less than 1 in 10" → "less than 1 time in 10"
- * (singular for a count of one). The ADR 0006 band vocabulary stays canonical
- * in the feed; this is display wording only, applied to every frequency line.
- * Statements without the "N in M" shape (including the empty withheld case)
- * pass through unchanged.
- */
-export function frequencyWithUnit(statement: string): string {
-  return statement.replace(
-    /(\d+) in (\d+)/,
-    (_match, count: string, denominator: string) =>
-      `${count} time${count === "1" ? "" : "s"} in ${denominator}`,
-  );
-}
-
-export interface CandidateWin {
-  candidateId: string;
-  name: string;
-  band: string;
-  frequencyStatement: string;
-  /** kept for ordering only; never rendered */
-  probability: number;
-}
-
-function toCandidateWin(
-  candidateId: string,
-  card: ForecastQuantityCard,
-): CandidateWin | null {
-  if (!isPublished(card)) return null;
-  return {
-    candidateId,
-    name: candidateName(candidateId),
-    band: card.band!,
-    frequencyStatement: frequencyWithUnit(card.frequency_statement ?? ""),
-    probability: card.probability ?? 0,
-  };
-}
-
-/** Published candidate wins, favourite first. Withheld candidates are omitted. */
-export function publishedCandidateWins(feed: MayoralForecastFeed): CandidateWin[] {
-  return Object.entries(feed.candidate_win)
-    .map(([id, card]) => toCandidateWin(id, card))
-    .filter((win): win is CandidateWin => win !== null)
-    .sort((a, b) => b.probability - a.probability);
+/** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
+export function chance(value: number): string {
+  if (value < 0.01) return "<1%";
+  if (value > 0.99) return ">99%";
+  return `${Math.round(value * 100)}%`;
 }
 
 export interface ForecastLead {
   candidateId: string;
   name: string;
-  band?: string;
-  frequencyStatement?: string;
-  probability?: number;
 }
 
-/** The separately gated favourite, with a complete-card fallback for old feeds. */
+/** The separately gated favourite (ADR 0051). */
 export function leadForecast(feed: MayoralForecastFeed): ForecastLead | null {
-  if (feed.forecast_favourite) {
-    const favourite = feed.forecast_favourite;
-    if (
-      favourite.availability !== "Forecast Available" ||
-      !favourite.candidate_id
-    ) return null;
-    return {
-      candidateId: favourite.candidate_id,
-      name: candidateName(favourite.candidate_id),
-    };
-  }
-  const cards = Object.values(feed.candidate_win);
-  if (cards.length === 0 || cards.some((card) => !isPublished(card))) return null;
-  return publishedCandidateWins(feed)[0] ?? null;
-}
-
-export interface AgnosticQuantity {
-  key: "close_result";
-  label: string;
-  frequencyStatement: string;
-}
-
-/** Published candidate-agnostic quantities — Close-Result is the only one, and it
- *  stays outside every candidate card. Withheld → omitted (so the section can be
- *  dropped entirely when nothing agnostic publishes). */
-export function agnosticQuantities(feed: MayoralForecastFeed): AgnosticQuantity[] {
-  if (!isPublished(feed.close_result)) return [];
-  return [
-    {
-      key: "close_result",
-      label: "Chance of a close result",
-      frequencyStatement: frequencyWithUnit(feed.close_result.frequency_statement ?? ""),
-    },
-  ];
-}
-
-export interface HistoricalMargin {
-  year: number;
-  label: string;
-  /** winner v. runner-up, by surname, e.g. "Chow v. Bailão" */
-  matchup: string;
-  /** winning margin in percentage points (winner minus runner-up share × 100) */
-  marginPp: number;
-}
-
-/** Past Toronto mayoral results — the winner-minus-runner-up margin and matchup,
- *  from the canonical all-offices dataset (top-two share gap × 100). Seven races:
- *  the six general elections plus the 2023 by-election. These are fixed
- *  historical facts (not forecast output), so they live here as a constant and
- *  become the reference scale for the margin-distribution panel. */
-export const HISTORICAL_MAYORAL_MARGINS: HistoricalMargin[] = [
-  { year: 2003, label: "2003", matchup: "Miller vs. Tory", marginPp: 5.2 },
-  { year: 2006, label: "2006", matchup: "Miller vs. Pitfield", marginPp: 24.6 },
-  { year: 2010, label: "2010", matchup: "Ford vs. Smitherman", marginPp: 11.5 },
-  { year: 2014, label: "2014", matchup: "Tory vs. Ford", marginPp: 6.5 },
-  { year: 2018, label: "2018", matchup: "Tory vs. Keesmaat", marginPp: 39.9 },
-  { year: 2022, label: "2022", matchup: "Tory vs. Penalosa", marginPp: 44.1 },
-  { year: 2023, label: "2023", matchup: "Chow vs. Bailão", marginPp: 4.7 },
-];
-
-/** One named margin band on the strip. `weight` is an ORDINAL cue only — the
- *  share of forecast mass in [loPp, hiPp), normalized so the likeliest band is 1
- *  — used to shade the band darker/lighter. It re-presents the ordering the
- *  (already-gated) density curve shows; it is never rendered as a number. */
-export interface MarginBand {
-  name: string;
-  loPp: number;
-  hiPp: number;
-  weight: number;
-}
-
-export interface MarginDistributionSegment {
-  id: string;
-  label: string;
-  colorVar: string;
-  hatch: boolean;
-  bands: MarginBand[];
-}
-
-/** Editorial band names and their upper cuts in points. The Close/Clear-win
- *  boundary is NOT here — it is the model's own close threshold, read from the
- *  feed — so the Close band always matches the published "close" definition.
- *  The 15/30/50-pt cuts are editorial. */
-const BAND_NAMES = ["Close", "Clear win", "Comfortable", "Landslide"] as const;
-const BAND_UPPER_CUTS_PP = [15, 30, 50] as const;
-
-/** Trapezoidal mass of the density (points carried in pp) over [lo, hi), summing
- *  only the clipped overlap of each segment so partial bands and bands past the
- *  data both integrate correctly. Units are immaterial: the result is normalized
- *  across bands, so only the ratios matter. */
-function densityMass(
-  points: { pp: number; density: number }[],
-  lo: number,
-  hi: number,
-): number {
-  let mass = 0;
-  for (let i = 1; i < points.length; i++) {
-    const x0 = points[i - 1].pp;
-    const x1 = points[i].pp;
-    const a = Math.max(x0, lo);
-    const b = Math.min(x1, hi);
-    if (b <= a || x1 === x0) continue;
-    const at = (x: number) =>
-      points[i - 1].density +
-      ((x - x0) / (x1 - x0)) * (points[i].density - points[i - 1].density);
-    mass += ((at(a) + at(b)) / 2) * (b - a);
-  }
-  return mass;
-}
-
-export interface MarginDistributionView {
-  /** density curve points, x carried in percentage points */
-  points: { pp: number; density: number }[];
-  /** the "close" cutoff in percentage points (e.g. 5) */
-  closeThresholdPp: number;
-  /** the four named margin bands, ascending, each with an ordinal shade weight */
-  bands: MarginBand[];
-  /** Non-zero winner components, stacked on the aggregate scale. */
-  segments: MarginDistributionSegment[];
-  /** past elections to mark, ascending by margin (the reference scale) */
-  markers: HistoricalMargin[];
-}
-
-/** The published winning-margin distribution as a chart-ready view, or null when
- *  the feed withholds it. Gate-linked twice over: the feed only sends the shape
- *  when close_result publishes, and we re-check that gate here so the panel can
- *  never outlive the summary it derives from (ADR 0006 / 0032). */
-export function marginDistribution(
-  feed: MayoralForecastFeed,
-): MarginDistributionView | null {
-  const dist = feed.margin_distribution;
-  if (!dist || !isPublished(feed.close_result)) return null;
-  if (dist.x.length === 0 || dist.x.length !== dist.density.length) return null;
-
-  const points = dist.x.map((x, i) => ({ pp: x * 100, density: dist.density[i] }));
-  const closeThresholdPp = dist.close_threshold * 100;
-
-  // Band boundaries: Close ends at the model's close threshold; then editorial cuts.
-  const cuts = [0, closeThresholdPp, ...BAND_UPPER_CUTS_PP];
-  const rawMass = BAND_NAMES.map((_, i) => densityMass(points, cuts[i], cuts[i + 1]));
-  const maxMass = Math.max(...rawMass, Number.EPSILON);
-  const bandsFor = (densityPoints: { pp: number; density: number }[]) =>
-    BAND_NAMES.map((name, i) => ({
-      name,
-      loPp: cuts[i],
-      hiPp: cuts[i + 1],
-      weight: densityMass(densityPoints, cuts[i], cuts[i + 1]) / maxMass,
-    }));
-  const bands = bandsFor(points);
-  const winnerSegments = Object.entries(dist.by_winner ?? {})
-    .filter(([, component]) =>
-      Number.isFinite(component.draw_weight) &&
-      component.draw_weight > 0 &&
-      component.density.length === dist.x.length &&
-      component.density.every((value) => Number.isFinite(value) && value >= 0),
-    )
-    .map(([id, component]): MarginDistributionSegment => {
-      const winnerPoints = dist.x.map((x, i) => ({
-        pp: x * 100,
-        density: component.density[i],
-      }));
-      if (id === "other") {
-        return {
-          id,
-          label: "Other candidate wins",
-          colorVar: "var(--color-disengaged)",
-          hatch: false,
-          bands: bandsFor(winnerPoints),
-        };
-      }
-      const meta = candidateMeta(id);
-      const surname = meta.name.trim().split(/\s+/).at(-1) ?? meta.name;
-      return {
-        id,
-        label: `${surname} wins`,
-        colorVar: meta.colorVar,
-        hatch: meta.hatch,
-        bands: bandsFor(winnerPoints),
-      };
-    })
-    .sort((a, b) => {
-      if (a.id === "other") return 1;
-      if (b.id === "other") return -1;
-      const aProbability = feed.candidate_win[a.id]?.probability ?? 0;
-      const bProbability = feed.candidate_win[b.id]?.probability ?? 0;
-      return bProbability - aProbability;
-    });
-
-  return {
-    points,
-    closeThresholdPp,
-    bands,
-    segments:
-      winnerSegments.length > 0
-        ? winnerSegments
-        : [
-            {
-              id: "all",
-              label: "All results",
-              colorVar: "var(--accent)",
-              hatch: false,
-              bands,
-            },
-          ],
-    markers: [...HISTORICAL_MAYORAL_MARGINS].sort((a, b) => a.marginPp - b.marginPp),
-  };
-}
-
-export interface IncumbentDefeat {
-  candidateId: string;
-  name: string;
-  label: string;
-  frequencyStatement: string;
-}
-
-/** The incumbent's published defeat chance, tied to the incumbent the feed
- *  identifies (name resolved from that id, never hardcoded). Null when the race
- *  is open or the quantity is withheld — so it is omitted everywhere then. */
-export function incumbentDefeat(feed: MayoralForecastFeed): IncumbentDefeat | null {
-  const id = feed.incumbent_candidate_id;
-  if (!id || !isPublished(feed.incumbent_defeat)) return null;
-  const name = candidateName(id);
-  return {
-    candidateId: id,
-    name,
-    label: `Chance ${name} loses to any candidate`,
-    frequencyStatement: frequencyWithUnit(feed.incumbent_defeat.frequency_statement ?? ""),
-  };
+  const favourite = feed.forecast_favourite;
+  if (favourite.availability !== "Forecast Available" || !favourite.candidate_id) return null;
+  return { candidateId: favourite.candidate_id, name: candidateName(favourite.candidate_id) };
 }
 
 /** The current viable field — the candidate_win keys (includes the incumbent). */
@@ -306,19 +36,157 @@ export function viableField(feed: MayoralForecastFeed): string[] {
   return Object.keys(feed.candidate_win);
 }
 
-/** Plain-language basis line for the tier (spec §Q12: no "M3" codes surfaced). */
-export function evidenceBasisLine(tierLabel: string): string {
-  const code = tierLabel.split("—")[0]?.trim().toUpperCase();
-  switch (code) {
-    case "M3":
-      return "Based on repeated final-ballot polling of the confirmed field.";
-    case "M2":
-      return "Based on final-ballot polling of the confirmed field.";
-    case "M1":
-      return "Based on early polling, before the ballot was final.";
-    case "M0":
-      return "Based on the historical record only — no current polling yet.";
-    default:
-      return "Based on the available polling evidence.";
-  }
+/** True only when the favourite publishes and the election-day block is present. */
+export function forecastAvailable(feed: MayoralForecastFeed): boolean {
+  return leadForecast(feed) !== null && feed.election_day !== null;
+}
+
+function surnameOf(name: string): string {
+  return name.trim().split(/\s+/).at(-1) ?? name;
+}
+
+export interface ShareRange {
+  /** null for the residual pool */
+  candidateId: string | null;
+  name: string;
+  slug: string;
+  colorVar: string;
+  hatch: boolean;
+  /** percentage points */
+  median: number;
+  lower: number;
+  upper: number;
+  winProbability: number;
+}
+
+export interface ElectionDaySharesView {
+  intervalMass: number;
+  rows: ShareRange[];
+}
+
+/** Election-day full-ballot ranges: the named candidates in feed order, then the pool. */
+export function electionDayShares(feed: MayoralForecastFeed): ElectionDaySharesView | null {
+  const day = feed.election_day;
+  if (!day) return null;
+  const rows: ShareRange[] = day.candidates.map((c) => {
+    const meta = candidateMeta(c.candidate_id);
+    return {
+      candidateId: c.candidate_id,
+      name: meta.name,
+      slug: meta.slug,
+      colorVar: meta.colorVar,
+      hatch: meta.hatch,
+      median: c.median * 100,
+      lower: c.lower * 100,
+      upper: c.upper * 100,
+      winProbability: c.win_probability,
+    };
+  });
+  const pool = day.residual_pool;
+  rows.push({
+    candidateId: null,
+    name: pool.label,
+    slug: "residual",
+    colorVar: "var(--color-disengaged)",
+    hatch: false,
+    median: pool.median * 100,
+    lower: pool.lower * 100,
+    upper: pool.upper * 100,
+    winProbability: pool.win_probability,
+  });
+  return { intervalMass: day.interval_mass, rows };
+}
+
+export interface ComparedCandidate {
+  candidateId: string;
+  name: string;
+  surname: string;
+  colorVar: string;
+}
+
+export interface PairwiseMarginView {
+  leader: ComparedCandidate;
+  challenger: ComparedCandidate;
+  /** vote-share points, signed: positive means the leader is ahead */
+  medianPp: number;
+  lowerPp: number;
+  upperPp: number;
+  /** pairwise: the challenger finishes ahead of the leader (not a win probability) */
+  challengerAhead: number;
+  binWidth: number;
+  range: [number, number];
+  bins: MarginBin[];
+}
+
+function compared(id: string): ComparedCandidate {
+  const meta = candidateMeta(id);
+  return { candidateId: id, name: meta.name, surname: surnameOf(meta.name), colorVar: meta.colorVar };
+}
+
+/** The leader-minus-challenger margin, with the pair named by the feed. */
+export function pairwiseMargin(feed: MayoralForecastFeed): PairwiseMarginView | null {
+  const margin = feed.election_day?.pairwise_margin;
+  if (!margin) return null;
+  return {
+    leader: compared(margin.leader_candidate_id),
+    challenger: compared(margin.challenger_candidate_id),
+    medianPp: margin.median,
+    lowerPp: margin.lower,
+    upperPp: margin.upper,
+    challengerAhead: margin.probability_challenger_ahead,
+    binWidth: margin.bin_width,
+    range: margin.range,
+    bins: margin.bins,
+  };
+}
+
+export interface WinProbability {
+  candidateId: string;
+  name: string;
+  slug: string;
+  colorVar: string;
+  hatch: boolean;
+  probability: number;
+}
+
+export interface WinProbabilitiesView {
+  /** named candidates, most likely first */
+  candidates: WinProbability[];
+  pool: { label: string; probability: 0 };
+}
+
+/** Full-race win probabilities from the candidate cards; the pool cannot win. */
+export function winProbabilities(feed: MayoralForecastFeed): WinProbabilitiesView {
+  const candidates = Object.entries(feed.candidate_win)
+    .filter(([, card]) => card.availability === "Forecast Available" && card.probability !== null)
+    .map(([id, card]): WinProbability => {
+      const meta = candidateMeta(id);
+      return {
+        candidateId: id,
+        name: meta.name,
+        slug: meta.slug,
+        colorVar: meta.colorVar,
+        hatch: meta.hatch,
+        probability: card.probability ?? 0,
+      };
+    })
+    .sort((a, b) => b.probability - a.probability);
+  return {
+    candidates,
+    pool: { label: feed.election_day?.residual_pool.label ?? "Other candidates", probability: 0 },
+  };
+}
+
+function listNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+/** Plain sentence for the pool: its size and any minor candidates polls reported. */
+export function residualPoolNote(feed: MayoralForecastFeed): string {
+  const pool = feed.election_day?.residual_pool;
+  if (!pool) return "";
+  const named = pool.named_in_polls.map((n) => n.display_name);
+  const including = named.length > 0 ? `, including ${listNames(named)}` : "";
+  return `${pool.candidate_count} certified candidates${including}, modelled together.`;
 }

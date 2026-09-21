@@ -15,7 +15,6 @@ import type {
   MayoralForecastFeed,
   MayoralPollingFeed,
   PastElection,
-  QuantityKind,
   RaceMap,
   TrusteeRaceCardsFeed,
 } from "@/types/feeds";
@@ -136,157 +135,178 @@ function validateRaceMap(
 
 // ── mayoral forecast ────────────────────────────────────────────────────────
 
-function unavailableCard(quantity: QuantityKind): ForecastQuantityCard {
-  return {
-    quantity,
-    candidate_id: null,
+const FORECAST_POLICY = "margin-first-joint-draws-v1";
+
+/** Development-only dark feed: the favourite is withheld and there is no
+ *  election-day block, so every selector reports the forecast as unavailable. */
+const FORECAST_FALLBACK: MayoralForecastFeed = {
+  schema_version: 4,
+  publication_policy: FORECAST_POLICY,
+  election_cycle_id: "",
+  election_date: "",
+  analysis_cutoff: "",
+  evidence_tier: "",
+  incumbent_candidate_id: null,
+  final_field_samples: [],
+  forecast_favourite: {
     tier: "",
     availability: "Forecast Unavailable",
-    band: null,
-    frequency_statement: null,
-    probability: null,
+    candidate_id: null,
     reason: "The forecast feed is unavailable.",
-  };
-}
-
-const FORECAST_FALLBACK: MayoralForecastFeed = {
-  schema_version: 2,
-  election_cycle_id: "",
-  evidence_tier: "",
-  final_field_samples: [],
-  incumbent_candidate_id: null,
+  },
   candidate_win: {},
-  close_result: unavailableCard("close_result"),
-  incumbent_defeat: unavailableCard("incumbent_defeat"),
-  margin_distribution: null,
+  election_day: null,
+  model: { name: "", version: "", specification: {}, draws: 0, chains: 0, seed: 0, qualification_passed: null },
+  sensitivity: [],
 };
 
 const AVAILABILITIES = new Set(["Forecast Available", "Forecast Unavailable", "Not Applicable"]);
+const TIMESTAMP = /(Z|[+-]\d{2}:\d{2})$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function validForecastCard(
-  value: unknown,
-  quantity: QuantityKind,
-  candidateId: string | null,
-  tier: string,
-  sensitivityLabels?: string[],
-): boolean {
+function isFinitePoints(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function orderedShares(lower: unknown, median: unknown, upper: unknown): boolean {
+  return isShare(lower) && isShare(median) && isShare(upper) && lower <= median && median <= upper;
+}
+
+function validWinCard(value: unknown, candidateId: string, tier: string): boolean {
   if (
     !isRecord(value) ||
-    value.quantity !== quantity ||
+    value.quantity !== "challenger_win" ||
     value.candidate_id !== candidateId ||
     value.tier !== tier ||
     !AVAILABILITIES.has(String(value.availability)) ||
     typeof value.reason !== "string"
   ) return false;
-  if (sensitivityLabels !== undefined) {
-    if (value.availability !== "Forecast Available") {
-      if (value.sensitivity !== null) return false;
-    } else {
-      const range = value.sensitivity;
-      if (
-        !isRecord(range) || range.kind !== "model_assumptions" ||
-        !isShare(range.lower) || !isShare(range.upper) || range.lower > range.upper ||
-        range.includes_monte_carlo_error !== true || !Array.isArray(range.scenarios) ||
-        range.scenarios.length !== sensitivityLabels.length ||
-        !isUniqueStringArray(range.scenarios.map((s) => isRecord(s) ? s.label : null))
-      ) return false;
-      for (const scenario of range.scenarios) {
-        if (!isRecord(scenario) || !sensitivityLabels.includes(String(scenario.label)) ||
-          !isShare(scenario.probability) || scenario.probability < range.lower ||
-          scenario.probability > range.upper ||
-          scenario.role !== (scenario.label === "bridge-base" ? "authoritative" : "stress_test") ||
-          (scenario.label === "bridge-base" && scenario.probability !== value.probability)
-        ) return false;
-      }
-      if (!sensitivityLabels.includes("bridge-base")) return false;
-    }
-  }
-  if (value.availability === "Forecast Available") {
-    return (
-      isNonEmptyString(value.band) &&
-      isNonEmptyString(value.frequency_statement) &&
-      isShare(value.probability)
-    );
-  }
-  return value.band === null && value.frequency_statement === null && value.probability === null;
+  return value.availability === "Forecast Available"
+    ? isShare(value.probability)
+    : value.probability === null;
 }
 
+function validPairwiseMargin(value: unknown, candidateIds: Set<string>): boolean {
+  if (
+    !isRecord(value) ||
+    !isNonEmptyString(value.leader_candidate_id) ||
+    !isNonEmptyString(value.challenger_candidate_id) ||
+    value.leader_candidate_id === value.challenger_candidate_id ||
+    !candidateIds.has(value.leader_candidate_id) ||
+    !candidateIds.has(value.challenger_candidate_id) ||
+    value.unit !== "vote_share_points" ||
+    !isFinitePoints(value.lower) || !isFinitePoints(value.median) || !isFinitePoints(value.upper) ||
+    value.lower > value.median || value.median > value.upper ||
+    !isShare(value.probability_challenger_ahead) ||
+    !isFinitePoints(value.bin_width) || value.bin_width <= 0 ||
+    !Array.isArray(value.range) || value.range.length !== 2 ||
+    !isFinitePoints(value.range[0]) || !isFinitePoints(value.range[1]) ||
+    value.range[0] >= value.range[1] ||
+    !Array.isArray(value.bins)
+  ) return false;
+  const [lo, hi] = value.range;
+  const width = value.bin_width;
+  const expected = Math.round((hi - lo) / width);
+  if (value.bins.length !== expected) return false;
+  let total = 0;
+  for (let i = 0; i < value.bins.length; i++) {
+    const bin = value.bins[i];
+    if (
+      !isRecord(bin) ||
+      bin.left !== lo + i * width ||
+      bin.right !== lo + (i + 1) * width ||
+      !isShare(bin.probability)
+    ) return false;
+    total += bin.probability;
+  }
+  return Math.abs(total - 1) < 1e-3;
+}
+
+function validElectionDay(
+  value: unknown,
+  candidateWin: Record<string, ForecastQuantityCard>,
+): boolean {
+  if (
+    !isRecord(value) ||
+    value.denominator !== "full_ballot" ||
+    !isShare(value.interval_mass) || value.interval_mass <= 0 || value.interval_mass >= 1 ||
+    value.statistic !== "median" ||
+    !Array.isArray(value.candidates) ||
+    !isRecord(value.residual_pool)
+  ) return false;
+  const ids = Object.keys(candidateWin);
+  if (value.candidates.length !== ids.length) return false;
+  for (let i = 0; i < ids.length; i++) {
+    const c = value.candidates[i];
+    if (
+      !isRecord(c) ||
+      c.candidate_id !== ids[i] ||
+      !isNonEmptyString(c.display_name) ||
+      !orderedShares(c.lower, c.median, c.upper) ||
+      !isShare(c.win_probability) ||
+      c.win_probability !== candidateWin[ids[i]].probability
+    ) return false;
+  }
+  const pool = value.residual_pool;
+  if (
+    !isNonEmptyString(pool.label) ||
+    !orderedShares(pool.lower, pool.median, pool.upper) ||
+    pool.win_probability !== 0 ||
+    !Number.isInteger(pool.candidate_count) || (pool.candidate_count as number) < 0 ||
+    !Array.isArray(pool.named_in_polls) ||
+    typeof pool.note !== "string"
+  ) return false;
+  for (const named of pool.named_in_polls) {
+    if (
+      !isRecord(named) ||
+      !isNonEmptyString(named.candidate_id) ||
+      !isNonEmptyString(named.display_name) ||
+      !isShare(named.latest_polled_share) ||
+      typeof named.poll_id !== "string"
+    ) return false;
+  }
+  return validPairwiseMargin(value.pairwise_margin, new Set(ids));
+}
+
+/** Schema 4 only; anything else fails closed (ADR 0054). */
 export function validateForecast(value: unknown): MayoralForecastFeed | null {
   if (
     !isRecord(value) ||
-    (value.schema_version !== 2 && value.schema_version !== 3) ||
+    value.schema_version !== 4 ||
+    value.publication_policy !== FORECAST_POLICY ||
     value.election_cycle_id !== "toronto_2026" ||
+    typeof value.election_date !== "string" || !ISO_DATE.test(value.election_date) ||
+    typeof value.analysis_cutoff !== "string" ||
+    !TIMESTAMP.test(value.analysis_cutoff) ||
+    !Number.isFinite(Date.parse(value.analysis_cutoff)) ||
     !isNonEmptyString(value.evidence_tier) ||
-    !isUniqueStringArray(value.final_field_samples, { allowEmpty: true }) ||
-    (value.final_field_readings !== undefined &&
-      (!isUniqueStringArray(value.final_field_readings, { allowEmpty: true }) ||
-        value.final_field_readings.length !== value.final_field_samples.length)) ||
     (value.incumbent_candidate_id !== null && !isNonEmptyString(value.incumbent_candidate_id)) ||
+    !isUniqueStringArray(value.final_field_samples, { allowEmpty: true }) ||
     !isRecord(value.candidate_win) ||
     Object.keys(value.candidate_win).length === 0 ||
-    !isRecord(value.close_result) ||
-    !isRecord(value.incumbent_defeat)
+    !isRecord(value.forecast_favourite) ||
+    !isRecord(value.model) ||
+    value.model.qualification_passed !== true ||
+    !isNonEmptyString(value.model.name) ||
+    !Array.isArray(value.sensitivity)
   ) return null;
-  let sensitivityLabels: string[] | undefined;
-  if (value.schema_version === 3) {
-    if (value.publication_policy !== "central-band-with-sensitivity-v1" ||
-      !isUniqueStringArray(value.sensitivity_variant_labels, { allowEmpty: true }) ||
-      typeof value.analysis_cutoff !== "string" ||
-      !/(Z|[+-]\d{2}:\d{2})$/.test(value.analysis_cutoff) ||
-      !Number.isFinite(Date.parse(value.analysis_cutoff)) ||
-      value.forecast_favourite === undefined
-    ) return null;
-    sensitivityLabels = value.sensitivity_variant_labels;
-  }
   for (const [candidateId, card] of Object.entries(value.candidate_win)) {
-    if (!isNonEmptyString(candidateId) || !validForecastCard(
-      card,
-      "challenger_win",
-      candidateId,
-      value.evidence_tier,
-      sensitivityLabels,
-    )) return null;
+    if (!isNonEmptyString(candidateId) || !validWinCard(card, candidateId, value.evidence_tier)) {
+      return null;
+    }
   }
-  if (value.forecast_favourite !== undefined) {
-    const favourite = value.forecast_favourite;
-    if (
-      !isRecord(favourite) ||
-      favourite.tier !== value.evidence_tier ||
-      !["Forecast Available", "Forecast Unavailable"].includes(
-        String(favourite.availability),
-      ) ||
-      typeof favourite.reason !== "string" ||
-      (favourite.availability === "Forecast Available"
-        ? !isNonEmptyString(favourite.candidate_id) ||
-          !(favourite.candidate_id in value.candidate_win)
-        : favourite.candidate_id !== null)
-    ) return null;
-  }
-  if (!validForecastCard(value.close_result, "close_result", null, value.evidence_tier, sensitivityLabels)) {
+  const favourite = value.forecast_favourite;
+  if (
+    favourite.tier !== value.evidence_tier ||
+    !["Forecast Available", "Forecast Unavailable"].includes(String(favourite.availability)) ||
+    typeof favourite.reason !== "string" ||
+    (favourite.availability === "Forecast Available"
+      ? !isNonEmptyString(favourite.candidate_id) ||
+        !(favourite.candidate_id in value.candidate_win)
+      : favourite.candidate_id !== null)
+  ) return null;
+  if (!validElectionDay(value.election_day, value.candidate_win as Record<string, ForecastQuantityCard>)) {
     return null;
-  }
-  if (!validForecastCard(
-    value.incumbent_defeat,
-    "incumbent_defeat",
-    null,
-    value.evidence_tier,
-    sensitivityLabels,
-  )) return null;
-  if (value.margin_distribution !== null) {
-    if (
-      !isRecord(value.margin_distribution) ||
-      value.margin_distribution.unit !== "share_gap" ||
-      !Array.isArray(value.margin_distribution.x) ||
-      !Array.isArray(value.margin_distribution.density) ||
-      value.margin_distribution.x.length < 2 ||
-      value.margin_distribution.x.length !== value.margin_distribution.density.length ||
-      !value.margin_distribution.x.every(isShare) ||
-      !value.margin_distribution.density.every(
-        (point) => typeof point === "number" && Number.isFinite(point) && point >= 0,
-      ) ||
-      !isShare(value.margin_distribution.close_threshold) ||
-      value.close_result.availability !== "Forecast Available"
-    ) return null;
   }
   return value as unknown as MayoralForecastFeed;
 }

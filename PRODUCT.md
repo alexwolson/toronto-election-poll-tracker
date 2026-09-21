@@ -30,7 +30,7 @@ The frontend presents coherent, versioned artifacts produced by the repositories
 
 ## Capabilities and Constraints
 
-- Presents the mayoral forecast as probability bands and plain-language frequency phrases rather than fragile exact percentages.
+- Presents the mayoral forecast as three views of one set of simulated elections: the margin between the two poll leaders, each candidate's election-day vote range, and whole-percent chances of winning the full race.
 - Preserves the public polling record and descriptive trends separately from the election forecast.
 - Covers the certified mayoral field and confirmed election histories where available.
 - Covers Toronto's 25 council wards with attention signals and factual race context, not candidate win probabilities.
@@ -52,13 +52,13 @@ The product name is **Toronto Election 2026**. Its voice is plain-language, civi
 - The frontend's feed contracts and defensive validation live in `src/lib/feeds.ts` and `src/types/feeds.ts`.
 - Public methodology content and evidence-threshold explanations live in `src/app/how-it-works/page.tsx` and `src/lib/methodology.ts`.
 - The release architecture and publication boundaries are recorded in `docs/superpowers/specs/2026-08-26-three-repo-data-architecture-design.md`.
-- The forecast's band-based publication rules are recorded in `docs/superpowers/specs/2026-08-21-frontend-rebuild-design.md`.
+- The forecast's margin-first contract (feed schema 4) is recorded in the Backend's ADR 0054 and `docs/design/forecast-presentation-prototype.md`; the earlier band-based rules in `docs/superpowers/specs/2026-08-21-frontend-rebuild-design.md` are superseded.
 - The site has no testimonials, customer claims, endorsements, or case studies on hand. Future work must not fabricate them.
 
 ## Product Principles
 
 1. **Keep different kinds of evidence distinct.** A forecast, a poll, a historical association, and a confirmed candidacy answer different questions.
-2. **Publish only defensible precision.** Prefer a stable band, a careful description, or a withheld result to an exact number the evidence cannot support.
+2. **Publish only defensible precision.** Show whole percentages and central ranges from the model's own simulations, guard the tails, and prefer a withheld result to a number the evidence cannot support.
 3. **Let voters inspect the reasoning.** Explain methods, sources, limitations, and terminology in language a non-specialist can use.
 4. **Protect data integrity at the product boundary.** Render coherent validated releases and fail visibly when production inputs are not trustworthy.
 5. **Cover the whole civic choice.** Treat mayoral, council, and trustee contests as meaningful parts of the same municipal election while respecting the evidence available for each.

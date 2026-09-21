@@ -84,7 +84,8 @@ deployment must use the exact Backend tag already verified during preflight.
 
 Before promotion, inspect the static build at `/`, `/polls/`, `/candidates/`,
 `/wards/`, and `/how-it-works/`. A poll release also requires checking the latest
-poll metadata and shares, forecast evidence date, and any changed forecast band.
+poll metadata and shares, forecast evidence date, and the three forecast views
+(leader margin, vote ranges, win chances) against the feed's numbers.
 
 ## Deploy and smoke test
 

@@ -221,43 +221,6 @@ export function uncertaintyLadder(feed: MayoralForecastFeed): UncertaintyLadderV
   };
 }
 
-export interface WinProbability {
-  candidateId: string;
-  name: string;
-  slug: string;
-  colorVar: string;
-  hatch: boolean;
-  probability: number;
-}
-
-export interface WinProbabilitiesView {
-  /** named candidates, most likely first */
-  candidates: WinProbability[];
-  pool: { label: string; probability: 0 };
-}
-
-/** Full-race win probabilities from the candidate cards; the pool cannot win. */
-export function winProbabilities(feed: MayoralForecastFeed): WinProbabilitiesView {
-  const candidates = Object.entries(feed.candidate_win)
-    .filter(([, card]) => card.availability === "Forecast Available" && card.probability !== null)
-    .map(([id, card]): WinProbability => {
-      const meta = candidateMeta(id);
-      return {
-        candidateId: id,
-        name: meta.name,
-        slug: meta.slug,
-        colorVar: meta.colorVar,
-        hatch: meta.hatch,
-        probability: card.probability ?? 0,
-      };
-    })
-    .sort((a, b) => b.probability - a.probability);
-  return {
-    candidates,
-    pool: { label: feed.election_day?.residual_pool.label ?? "Other candidates", probability: 0 },
-  };
-}
-
 function listNames(names: string[]): string {
   if (names.length <= 1) return names.join("");
   return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;

@@ -100,10 +100,13 @@ describe("primary pages drop retired methodology copy", () => {
 });
 
 describe("primary pages keep their facts and controls", () => {
-  it("forecast hero keeps the three margin-first views", () => {
+  it("forecast hero keeps the margin view first and the two tabbed views beneath it", () => {
     expect(HERO).toContain("forecast-margin");
-    expect(HERO).toContain("forecast-shares");
-    expect(HERO).toContain("forecast-odds");
+    expect(HERO).toContain("ForecastTabs");
+    expect(HERO).toContain("What the vote could look like");
+    expect(HERO).toContain("Where the uncertainty comes from");
+    expect(HERO).not.toContain("forecast-odds");
+    expect(HERO).not.toContain("Who wins the full race");
     expect(HERO).not.toContain("band-board");
   });
 

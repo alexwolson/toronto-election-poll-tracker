@@ -11,7 +11,6 @@ import {
   residualPoolNote,
   uncertaintyLadder,
   viableField,
-  winProbabilities,
 } from "./mayoral-forecast";
 
 const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
@@ -84,21 +83,6 @@ describe("electionDayShares", () => {
     const dark = feed();
     dark.election_day = null;
     expect(electionDayShares(dark)).toBeNull();
-  });
-});
-
-describe("winProbabilities", () => {
-  it("orders named candidates by probability and keeps the pool at zero", () => {
-    const view = winProbabilities(feed());
-    expect(view.candidates.map((c) => c.name)).toEqual([
-      "Olivia Chow",
-      "Brad Bradford",
-      "Chris Alexander",
-    ]);
-    expect(view.candidates[0].probability).toBeGreaterThan(view.candidates[1].probability);
-    const sum = view.candidates.reduce((s, c) => s + c.probability, 0);
-    expect(sum).toBeCloseTo(1, 6);
-    expect(view.pool).toEqual({ label: "Other candidates", probability: 0 });
   });
 });
 

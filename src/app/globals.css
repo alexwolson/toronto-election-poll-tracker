@@ -2850,9 +2850,7 @@ body {
 
 /* ── 1. Margin between the two poll leaders: three named outcomes ─ */
 .forecast-margin,
-.forecast-shares,
-.forecast-odds,
-.forecast-uncertainty-section {
+.forecast-shares {
   margin-top: 2rem;
 }
 .forecast-outcomes {
@@ -3027,30 +3025,52 @@ body {
   text-align: right;
 }
 
-/* ── 3. Full-race win chances ────────────────────────── */
-.forecast-odds__list {
-  margin-top: 0.75rem;
-  border-top: 2px solid var(--line-strong);
+/* ── 3. Beneath the margin chart: two views as tabs ───── */
+.forecast-tabs {
+  margin-top: 2rem;
 }
-.forecast-odds__row {
+.forecast-tabs__list {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  padding: 0.6rem 0;
+  flex-wrap: wrap;
+  gap: 0 1.75rem;
   border-bottom: 1px solid var(--line-soft);
 }
-.forecast-odds__row > span {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-}
-.forecast-odds__row > strong {
+.forecast-tabs__tab {
+  appearance: none;
+  margin: 0 0 -1px;
+  padding: 0.45rem 0 0.6rem;
+  min-height: var(--touch-target-min);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
   font-family: var(--font-newsreader), serif;
-  font-size: var(--type-metric);
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--type-heading);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: left;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+.forecast-tabs__tab:hover {
+  color: var(--text-strong);
+}
+.forecast-tabs__tab[aria-selected="true"] {
+  color: var(--text-strong);
+  border-bottom-color: var(--line-strong);
+}
+.forecast-tabs__tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.forecast-tabs__panel {
+  padding-top: 1rem;
+}
+.forecast-tabs__intro {
+  max-width: var(--measure-reading);
+  margin: 0 0 0.25rem;
+  color: var(--text-mid);
+  font-size: var(--type-body-small);
+  line-height: 1.5;
 }
 
 /* ── Underneath: what is behind the numbers ─────────── */

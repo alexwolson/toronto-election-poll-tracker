@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MarginOutcomes } from "@/components/forecast/margin-outcomes";
+import { UncertaintyRange } from "@/components/forecast/uncertainty-range";
 import { VoteShareRanges } from "@/components/forecast/vote-share-ranges";
 import { WinProbabilities } from "@/components/forecast/win-probabilities";
 import { SectionHeading } from "@/components/section-heading";
@@ -11,6 +12,7 @@ import {
   leadForecast,
   marginOutcomes,
   residualPoolNote,
+  uncertaintyLadder,
   winProbabilities,
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
@@ -33,6 +35,7 @@ export function ForecastHero({
   const margin = marginOutcomes(feed);
   const shares = electionDayShares(feed);
   const odds = winProbabilities(feed);
+  const ladder = uncertaintyLadder(feed);
 
   if (!lead || !margin || !shares || !forecastAvailable(feed)) {
     return (
@@ -92,6 +95,24 @@ export function ForecastHero({
         </SectionHeading>
         <WinProbabilities view={odds} />
       </section>
+
+      {ladder && (
+        <section className="forecast-uncertainty-section" aria-labelledby="forecast-uncertainty-heading">
+          <SectionHeading headingId="forecast-uncertainty-heading" title="Where the uncertainty comes from">
+            <p>
+              Each row adds one source of doubt to the gap between {ladder.leader.surname} and{" "}
+              {ladder.challenger.surname}. The bar is where the middle{" "}
+              {Math.round(ladder.intervalMass * 100)}% of simulated elections land.
+            </p>
+          </SectionHeading>
+          <UncertaintyRange view={ladder} />
+          <p className="forecast-caption">
+            The last row is the published forecast. The dark tick is the middle of the range; it
+            barely moves, only the range grows. The number at the right is how often{" "}
+            {ladder.challenger.surname} is ahead at that point.
+          </p>
+        </section>
+      )}
 
       <details className="forecast-method">
         <summary>What is behind these numbers</summary>

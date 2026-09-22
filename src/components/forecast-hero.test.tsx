@@ -32,6 +32,21 @@ describe("ForecastHero", () => {
     expect(html).toContain("Who wins the full race?");
     expect(html).toMatch(/Olivia Chow<\/span><strong>\d{2}%/);
     expect(html).toContain("&lt;1%");
+    // 4. where the uncertainty comes from: three widening ranges beneath the win chances (ADR 0056)
+    expect(html).toContain("Where the uncertainty comes from");
+    expect((html.match(/forecast-uncertainty__row/g) ?? []).length).toBe(3);
+    expect(html).toContain("The polls today could be off");
+    expect(html).toContain("Results have landed away from final polls");
+    expect(html).toContain("The last row is the published forecast.");
+    expect(html.indexOf('class="forecast-odds"')).toBeLessThan(
+      html.indexOf('class="forecast-uncertainty-section"'),
+    );
+    // a feed without the block renders everything else and no strip
+    const plain = feed();
+    delete plain.uncertainty;
+    const plainHtml = renderToStaticMarkup(<ForecastHero feed={plain} />);
+    expect(plainHtml).toContain("Who wins the full race?");
+    expect(plainHtml).not.toContain("forecast-uncertainty");
     // no histogram any more
     expect(html).not.toContain("forecast-margin__bin");
     // retired vocabulary

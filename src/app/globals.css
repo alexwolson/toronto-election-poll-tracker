@@ -2851,7 +2851,8 @@ body {
 /* ── 1. Margin between the two poll leaders: three named outcomes ─ */
 .forecast-margin,
 .forecast-shares,
-.forecast-odds {
+.forecast-odds,
+.forecast-uncertainty-section {
   margin-top: 2rem;
 }
 .forecast-outcomes {

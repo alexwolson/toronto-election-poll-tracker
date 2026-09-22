@@ -177,6 +177,8 @@ export interface UncertaintyRow {
   upper: number;
   leaderAhead: number;
   challengerAhead: number;
+  /** this source's part of the forecast's spread; the three sources add to 1, the combined row is 1 */
+  share: number;
   /** all three sources together: the published forecast */
   combined: boolean;
 }
@@ -202,6 +204,7 @@ function gapRow(
   key: UncertaintyRow["key"],
   label: string,
   gap: UncertaintyGap,
+  share: number,
   combined: boolean,
 ): UncertaintyRow {
   return {
@@ -212,6 +215,7 @@ function gapRow(
     upper: gap.upper,
     leaderAhead: gap.probability_leader_ahead,
     challengerAhead: gap.probability_challenger_ahead,
+    share,
     combined,
   };
 }
@@ -222,9 +226,15 @@ export function uncertaintyBreakdown(feed: MayoralForecastFeed): UncertaintyBrea
   if (!block || !feed.election_day) return null;
   const rows = [
     ...block.sources.map((source) =>
-      gapRow(source.key, UNCERTAINTY_LABELS[source.key](feed.election_date), source, false),
+      gapRow(
+        source.key,
+        UNCERTAINTY_LABELS[source.key](feed.election_date),
+        source,
+        source.share_of_uncertainty,
+        false,
+      ),
     ),
-    gapRow("combined", "All three together: the forecast", block.combined, true),
+    gapRow("combined", "All three together: the forecast", block.combined, 1, true),
   ];
   const lowest = Math.min(0, ...rows.map((r) => r.lower));
   const highest = Math.max(0, ...rows.map((r) => r.upper));

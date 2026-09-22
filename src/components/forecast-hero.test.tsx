@@ -45,7 +45,9 @@ describe("ForecastHero", () => {
     expect(html).toContain("The polls today could be off");
     expect(html).toContain("Results have landed away from final polls");
     expect(html).toContain("All three together: the forecast");
-    expect(html).toContain("not by adding");
+    expect(html).toContain("share of the uncertainty");
+    expect(html).toContain("the three add up to 100%");
+    expect(html).toMatch(/the forecast, with Bradford ahead in \d{2}% of simulated/);
     // 3. the full-race win list is retired
     expect(html).not.toContain("Who wins the full race?");
     expect(html).not.toContain("forecast-odds");

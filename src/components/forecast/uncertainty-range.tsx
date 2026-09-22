@@ -1,11 +1,12 @@
-import { chance, type UncertaintyBreakdownView } from "@/lib/mayoral-forecast";
+import type { UncertaintyBreakdownView } from "@/lib/mayoral-forecast";
 
 /**
  * Where the uncertainty comes from (ADR 0056): the leader margin under each
  * source of doubt on its own, then all three together, drawn as bands on one
  * shared axis with the tie marked and a tick at the middle. The last row is
- * the published forecast and is set apart. The value at the right is how often
- * the challenger is ahead in that row. Shares the chart grammar
+ * the published forecast and is set apart. The value at the right is each
+ * source's share of the uncertainty, which the three sources add up to 100%;
+ * the ranges themselves do not add. Shares the chart grammar
  * (label | track | value) with the other forecast views.
  */
 export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
@@ -22,7 +23,7 @@ export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
           <span>tie</span>
           <span>{view.leader.surname} ahead</span>
         </span>
-        <span className="forecast-chart__axis-value">{view.challenger.surname} ahead</span>
+        <span className="forecast-chart__axis-value">Share</span>
       </div>
       <div role="list" aria-label="Where the uncertainty comes from">
         {view.rows.map((row) => {
@@ -69,7 +70,7 @@ export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
                   style={{ left: `${at(row.median)}%`, background: view.leader.colorVar }}
                 />
               </span>
-              <strong className="forecast-chart__value">{chance(row.challengerAhead)}</strong>
+              <strong className="forecast-chart__value">{Math.round(row.share * 100)}%</strong>
             </div>
           );
         })}

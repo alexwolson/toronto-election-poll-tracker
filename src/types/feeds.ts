@@ -131,6 +131,8 @@ export interface UncertaintyGap {
 
 export interface UncertaintySource extends UncertaintyGap {
   key: UncertaintySourceKey;
+  /** this source's variance over the three sources' summed variance; the three add to 1 */
+  share_of_uncertainty: number;
 }
 
 /**
@@ -148,6 +150,8 @@ export interface UncertaintyBreakdown {
   /** polls today, campaign movement, election day, each on its own */
   sources: UncertaintySource[];
   combined: UncertaintyGap;
+  /** audit: the three sources' summed variance over the combined variance, close to 1 */
+  variance_explained: number;
   note: string;
 }
 

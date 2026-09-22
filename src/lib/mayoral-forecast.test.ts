@@ -144,6 +144,12 @@ describe("uncertaintyBreakdown", () => {
     ]);
     expect(view.rows.map((r) => r.combined)).toEqual([false, false, false, true]);
     expect(view.rows[1].median).toBe(block.sources[1].median);
+    // Shares of the uncertainty: the three sources' add to 1, the combined row is the whole.
+    expect(view.rows.slice(0, 3).map((r) => r.share)).toEqual(
+      block.sources.map((s) => s.share_of_uncertainty),
+    );
+    expect(view.rows.slice(0, 3).reduce((a, r) => a + r.share, 0)).toBeCloseTo(1, 4);
+    expect(view.rows[3].share).toBe(1);
     // The combined row is the published margin's own pairwise split.
     expect(view.rows[3].challengerAhead).toBe(
       feed().election_day!.pairwise_margin.probability_challenger_ahead,

@@ -80,6 +80,11 @@ describe("validateForecast", () => {
     expect(combined?.lower).toBe(margin?.lower);
     expect(combined?.upper).toBe(margin?.upper);
     expect(combined?.probability_challenger_ahead).toBe(margin?.probability_challenger_ahead);
+    // The shares are what the page adds up, and they add up.
+    const shares = block?.sources.map((s) => s.share_of_uncertainty) ?? [];
+    expect(shares.every((s) => s > 0 && s < 1)).toBe(true);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 4);
+    expect(block?.variance_explained).toBeGreaterThan(0);
     // Releases before ADR 0056 carry no block; that still validates.
     const without = structuredClone(forecastFixture) as Record<string, unknown>;
     delete without.uncertainty;
@@ -95,6 +100,8 @@ describe("validateForecast", () => {
       (f) => { f.uncertainty.unit = "percent"; },
       (f) => { delete (f.uncertainty as Record<string, unknown>).centre; },
       (f) => { delete (f.uncertainty as Record<string, unknown>).combined; },
+      (f) => { f.uncertainty.sources[0].share_of_uncertainty += 0.1; },
+      (f) => { f.uncertainty.variance_explained = 0; },
     ];
     for (const mutate of cases) {
       const malformed = structuredClone(forecastFixture);

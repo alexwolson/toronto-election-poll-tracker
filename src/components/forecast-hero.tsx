@@ -106,15 +106,19 @@ export function ForecastHero({
                   <p className="forecast-tabs__intro">
                     Each row applies one source of doubt, on its own, to today&rsquo;s estimate of
                     the gap between {breakdown.leader.surname} and {breakdown.challenger.surname}.
-                    The last row is all three together: the forecast.
+                    The last row is all three together: the forecast, with{" "}
+                    {breakdown.challenger.surname} ahead in{" "}
+                    {chance(breakdown.rows[breakdown.rows.length - 1].challengerAhead)} of simulated
+                    elections.
                   </p>
                   <UncertaintyRange view={breakdown} />
                   <p className="forecast-caption">
-                    Bands are where the middle {Math.round(breakdown.intervalMass * 100)}% of
-                    simulated elections land; the tick is the middle. The number at the right is
-                    how often {breakdown.challenger.surname} is ahead. The sources combine roughly
-                    as the square root of the sum of squares, not by adding, so the last band is
-                    wider than any one source but narrower than their sum.
+                    The number at the right is each source&rsquo;s share of the uncertainty, its
+                    part of the spread of the simulated outcomes; the three add up to 100%. Bands
+                    are where the middle {Math.round(breakdown.intervalMass * 100)}% of simulated
+                    elections land, and the tick is the middle. The ranges themselves do not add,
+                    which is why the last band is wider than any one source but narrower than
+                    their sum.
                   </p>
                 </>
               ),

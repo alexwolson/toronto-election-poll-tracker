@@ -356,13 +356,22 @@ function validUncertainty(value: unknown, margin: Record<string, unknown>): bool
     value.statistic !== "median" ||
     typeof value.note !== "string" ||
     !isFinitePoints(value.centre) ||
+    !isFinitePoints(value.variance_explained) || value.variance_explained <= 0 ||
     !Array.isArray(value.sources) || value.sources.length !== UNCERTAINTY_SOURCES.length ||
     !validGap(value.combined)
   ) return false;
+  let shares = 0;
   for (let i = 0; i < UNCERTAINTY_SOURCES.length; i++) {
     const source = value.sources[i];
-    if (!validGap(source) || source.key !== UNCERTAINTY_SOURCES[i]) return false;
+    if (
+      !validGap(source) ||
+      source.key !== UNCERTAINTY_SOURCES[i] ||
+      !isShare(source.share_of_uncertainty)
+    ) return false;
+    shares += source.share_of_uncertainty;
   }
+  // The shares are what the page adds up, so they must add up.
+  if (Math.abs(shares - 1) > 1e-4) return false;
   const combined = value.combined;
   return (
     combined.median === margin.median &&

@@ -17,7 +17,14 @@ describe("ForecastHero", () => {
     expect(html).toContain("Chow ahead by 2 or more");
     expect(html).toContain("Within 2 points either way");
     expect(html).toContain("Bradford ahead by 2 or more");
-    expect((html.match(/forecast-outcomes__row/g) ?? []).length).toBe(3);
+    // one chart grammar for all three views: 3 outcome rows + 4 vote-range rows + 3 uncertainty rows
+    expect((html.match(/forecast-chart__row/g) ?? []).length).toBe(10);
+    expect((html.match(/forecast-chart--outcomes/g) ?? []).length).toBe(1);
+    expect((html.match(/forecast-chart--shares/g) ?? []).length).toBe(1);
+    expect((html.match(/forecast-chart--uncertainty/g) ?? []).length).toBe(1);
+    expect(html).not.toContain("forecast-outcomes__");
+    expect(html).not.toContain("forecast-shares__");
+    expect(html).not.toContain("forecast-uncertainty__");
     expect(html).toMatch(/Chow finishes ahead in \d{2}% and Bradford in \d{2}%/);
     expect(html).toContain("Olivia Chow is favoured to win");
     expect(html).toContain("Forecast evidence through");
@@ -34,7 +41,6 @@ describe("ForecastHero", () => {
     expect(html).toContain("Sarah McVie");
     expect(html).toContain("central 80%");
     // 2b. where the uncertainty comes from: three widening ranges (ADR 0056)
-    expect((html.match(/forecast-uncertainty__row/g) ?? []).length).toBe(3);
     expect(html).toContain("The polls today could be off");
     expect(html).toContain("Results have landed away from final polls");
     expect(html).toContain("The last row is the published forecast.");
@@ -49,7 +55,9 @@ describe("ForecastHero", () => {
     expect(plainHtml).toContain('class="forecast-shares"');
     expect(plainHtml).toContain("What the vote could look like");
     expect(plainHtml).not.toContain('role="tablist"');
-    expect(plainHtml).not.toContain("forecast-uncertainty");
+    expect(plainHtml).not.toContain("forecast-chart--uncertainty");
+    expect(plainHtml).not.toContain("The polls today could be off");
+    expect((plainHtml.match(/forecast-chart__row/g) ?? []).length).toBe(7);
     // no histogram any more
     expect(html).not.toContain("forecast-margin__bin");
     // retired vocabulary

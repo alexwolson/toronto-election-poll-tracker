@@ -54,7 +54,15 @@ export function ForecastHero({
   }
 
   const draws = feed.model.draws.toLocaleString();
-  const voteRanges = <VoteShareRanges view={shares} />;
+  const voteRanges = (
+    <>
+      <p className="forecast-tabs__intro">
+        Each candidate&rsquo;s share of all votes cast on election day, across the same
+        simulations.
+      </p>
+      <VoteShareRanges view={shares} />
+    </>
+  );
   return (
     <>
       <section className="forecast-lead" aria-labelledby="forecast-heading">
@@ -102,9 +110,9 @@ export function ForecastHero({
                   </p>
                   <UncertaintyRange view={ladder} />
                   <p className="forecast-caption">
-                    The last row is the published forecast. The dark tick is the middle of the
-                    range; it barely moves, only the range grows. The number at the right is how
-                    often {ladder.challenger.surname} is ahead at that point.
+                    The last row is the published forecast. The tick is the middle of the range;
+                    it barely moves, only the range grows. The number at the right is how often{" "}
+                    {ladder.challenger.surname} is ahead at that point.
                   </p>
                 </>
               ),

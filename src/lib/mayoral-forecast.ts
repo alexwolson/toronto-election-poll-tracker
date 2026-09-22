@@ -11,7 +11,7 @@
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { formatDate } from "@/lib/format";
-import type { MayoralForecastFeed, UncertaintyStepKey } from "@/types/feeds";
+import type { MayoralForecastFeed, UncertaintyGap, UncertaintySourceKey } from "@/types/feeds";
 
 /** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
 export function chance(value: number): string {
@@ -169,7 +169,7 @@ export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | 
 }
 
 export interface UncertaintyRow {
-  key: UncertaintyStepKey;
+  key: UncertaintySourceKey | "combined";
   label: string;
   /** vote-share points, signed: positive means the leader is ahead */
   lower: number;
@@ -177,44 +177,61 @@ export interface UncertaintyRow {
   upper: number;
   leaderAhead: number;
   challengerAhead: number;
+  /** all three sources together: the published forecast */
+  combined: boolean;
 }
 
-export interface UncertaintyLadderView {
+export interface UncertaintyBreakdownView {
   leader: ComparedCandidate;
   challenger: ComparedCandidate;
   intervalMass: number;
   /** one shared axis in points, a multiple of 10 on each side, always containing the tie */
   axisMin: number;
   axisMax: number;
-  /** polls today, then campaign movement, then election day (the published margin) */
+  /** each source on its own, then the combined row last */
   rows: UncertaintyRow[];
 }
 
-const UNCERTAINTY_LABELS: Record<UncertaintyStepKey, (electionDate: string) => string> = {
+const UNCERTAINTY_LABELS: Record<UncertaintySourceKey, (electionDate: string) => string> = {
   polls_today: () => "The polls today could be off",
   campaign_movement: (electionDate) => `Support could shift before ${formatDate(electionDate)}`,
   election_day: () => "Results have landed away from final polls",
 };
 
-/** The widening-range strip (ADR 0056); null when the feed does not carry the block. */
-export function uncertaintyLadder(feed: MayoralForecastFeed): UncertaintyLadderView | null {
-  const ladder = feed.uncertainty;
-  if (!ladder || !feed.election_day) return null;
-  const rows: UncertaintyRow[] = ladder.steps.map((step) => ({
-    key: step.key,
-    label: UNCERTAINTY_LABELS[step.key](feed.election_date),
-    lower: step.lower,
-    median: step.median,
-    upper: step.upper,
-    leaderAhead: step.probability_leader_ahead,
-    challengerAhead: step.probability_challenger_ahead,
-  }));
+function gapRow(
+  key: UncertaintyRow["key"],
+  label: string,
+  gap: UncertaintyGap,
+  combined: boolean,
+): UncertaintyRow {
+  return {
+    key,
+    label,
+    lower: gap.lower,
+    median: gap.median,
+    upper: gap.upper,
+    leaderAhead: gap.probability_leader_ahead,
+    challengerAhead: gap.probability_challenger_ahead,
+    combined,
+  };
+}
+
+/** Where the uncertainty comes from (ADR 0056); null when the feed does not carry the block. */
+export function uncertaintyBreakdown(feed: MayoralForecastFeed): UncertaintyBreakdownView | null {
+  const block = feed.uncertainty;
+  if (!block || !feed.election_day) return null;
+  const rows = [
+    ...block.sources.map((source) =>
+      gapRow(source.key, UNCERTAINTY_LABELS[source.key](feed.election_date), source, false),
+    ),
+    gapRow("combined", "All three together: the forecast", block.combined, true),
+  ];
   const lowest = Math.min(0, ...rows.map((r) => r.lower));
   const highest = Math.max(0, ...rows.map((r) => r.upper));
   return {
-    leader: compared(ladder.leader_candidate_id),
-    challenger: compared(ladder.challenger_candidate_id),
-    intervalMass: ladder.interval_mass,
+    leader: compared(block.leader_candidate_id),
+    challenger: compared(block.challenger_candidate_id),
+    intervalMass: block.interval_mass,
     axisMin: Math.floor((lowest - 1) / 10) * 10,
     axisMax: Math.ceil((highest + 1) / 10) * 10,
     rows,

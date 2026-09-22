@@ -1,14 +1,14 @@
-import { chance, type UncertaintyLadderView } from "@/lib/mayoral-forecast";
+import { chance, type UncertaintyBreakdownView } from "@/lib/mayoral-forecast";
 
 /**
- * Where the uncertainty comes from (ADR 0056): the leader margin at three
- * snapshots of the same simulations, drawn as bands on one shared axis with
- * the tie marked and a tick at the middle. The band widens row by row while
- * its middle barely moves; the value at the right is how often the challenger
- * is ahead at that point. Shares the chart grammar (label | track | value)
- * with the other forecast views.
+ * Where the uncertainty comes from (ADR 0056): the leader margin under each
+ * source of doubt on its own, then all three together, drawn as bands on one
+ * shared axis with the tie marked and a tick at the middle. The last row is
+ * the published forecast and is set apart. The value at the right is how often
+ * the challenger is ahead in that row. Shares the chart grammar
+ * (label | track | value) with the other forecast views.
  */
-export function UncertaintyRange({ view }: { view: UncertaintyLadderView }) {
+export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
   const span = view.axisMax - view.axisMin;
   const at = (points: number) => ((points - view.axisMin) / span) * 100;
   const tie = at(0);
@@ -32,7 +32,11 @@ export function UncertaintyRange({ view }: { view: UncertaintyLadderView }) {
           const leaderLeft = Math.max(left, tie);
           const leaderWidth = Math.max(0, right - leaderLeft);
           return (
-            <div className="forecast-chart__row" role="listitem" key={row.key}>
+            <div
+              className={`forecast-chart__row${row.combined ? " forecast-chart__row--combined" : ""}`}
+              role="listitem"
+              key={row.key}
+            >
               <span className="forecast-chart__label">{row.label}</span>
               <span
                 className="forecast-chart__track"

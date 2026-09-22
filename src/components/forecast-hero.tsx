@@ -12,7 +12,7 @@ import {
   leadForecast,
   marginOutcomes,
   residualPoolNote,
-  uncertaintyLadder,
+  uncertaintyBreakdown,
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
 
@@ -36,7 +36,7 @@ export function ForecastHero({
   const lead = leadForecast(feed);
   const margin = marginOutcomes(feed);
   const shares = electionDayShares(feed);
-  const ladder = uncertaintyLadder(feed);
+  const breakdown = uncertaintyBreakdown(feed);
 
   if (!lead || !margin || !shares || !forecastAvailable(feed)) {
     return (
@@ -93,7 +93,7 @@ export function ForecastHero({
         </p>
       </section>
 
-      {ladder ? (
+      {breakdown ? (
         <ForecastTabs
           label="More on the forecast"
           tabs={[
@@ -104,15 +104,17 @@ export function ForecastHero({
               content: (
                 <>
                   <p className="forecast-tabs__intro">
-                    Each row adds one source of doubt to the gap between {ladder.leader.surname}{" "}
-                    and {ladder.challenger.surname}. The bar is where the middle{" "}
-                    {Math.round(ladder.intervalMass * 100)}% of simulated elections land.
+                    Each row applies one source of doubt, on its own, to today&rsquo;s estimate of
+                    the gap between {breakdown.leader.surname} and {breakdown.challenger.surname}.
+                    The last row is all three together: the forecast.
                   </p>
-                  <UncertaintyRange view={ladder} />
+                  <UncertaintyRange view={breakdown} />
                   <p className="forecast-caption">
-                    The last row is the published forecast. The tick is the middle of the range;
-                    it barely moves, only the range grows. The number at the right is how often{" "}
-                    {ladder.challenger.surname} is ahead at that point.
+                    Bands are where the middle {Math.round(breakdown.intervalMass * 100)}% of
+                    simulated elections land; the tick is the middle. The number at the right is
+                    how often {breakdown.challenger.surname} is ahead. The sources combine roughly
+                    as the square root of the sum of squares, not by adding, so the last band is
+                    wider than any one source but narrower than their sum.
                   </p>
                 </>
               ),

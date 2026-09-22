@@ -17,8 +17,9 @@ describe("ForecastHero", () => {
     expect(html).toContain("Chow ahead by 2 or more");
     expect(html).toContain("Within 2 points either way");
     expect(html).toContain("Bradford ahead by 2 or more");
-    // one chart grammar for all three views: 3 outcome rows + 4 vote-range rows + 3 uncertainty rows
-    expect((html.match(/forecast-chart__row/g) ?? []).length).toBe(10);
+    // one chart grammar for all three views: 3 outcome rows + 4 vote-range rows + 4 uncertainty rows
+    expect((html.match(/forecast-chart__row(?!--)/g) ?? []).length).toBe(11);
+    expect((html.match(/forecast-chart__row--combined/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--outcomes/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--shares/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--uncertainty/g) ?? []).length).toBe(1);
@@ -43,7 +44,8 @@ describe("ForecastHero", () => {
     // 2b. where the uncertainty comes from: three widening ranges (ADR 0056)
     expect(html).toContain("The polls today could be off");
     expect(html).toContain("Results have landed away from final polls");
-    expect(html).toContain("The last row is the published forecast.");
+    expect(html).toContain("All three together: the forecast");
+    expect(html).toContain("not by adding");
     // 3. the full-race win list is retired
     expect(html).not.toContain("Who wins the full race?");
     expect(html).not.toContain("forecast-odds");

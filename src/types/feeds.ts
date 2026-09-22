@@ -118,11 +118,10 @@ export interface ElectionDay {
   pairwise_margin: PairwiseMargin;
 }
 
-export type UncertaintyStepKey = "polls_today" | "campaign_movement" | "election_day";
+export type UncertaintySourceKey = "polls_today" | "campaign_movement" | "election_day";
 
-export interface UncertaintyStep {
-  key: UncertaintyStepKey;
-  /** leader-minus-challenger gap in full-ballot vote-share points, central interval */
+/** leader-minus-challenger gap in full-ballot vote-share points: central interval and who is ahead */
+export interface UncertaintyGap {
   median: number;
   lower: number;
   upper: number;
@@ -130,18 +129,25 @@ export interface UncertaintyStep {
   probability_challenger_ahead: number;
 }
 
+export interface UncertaintySource extends UncertaintyGap {
+  key: UncertaintySourceKey;
+}
+
 /**
- * The leader margin at three snapshots of the same joint draws (ADR 0056): what the
- * polls say now, support at election day before the election-day error, the result.
- * The last step reproduces `pairwise_margin` exactly.
+ * Where the uncertainty comes from (ADR 0056): the leader margin under each source
+ * of doubt on its own, applied to today's middle estimate (`centre`), and under all
+ * three together (`combined`), which reproduces `pairwise_margin` exactly.
  */
-export interface UncertaintyLadder {
+export interface UncertaintyBreakdown {
   leader_candidate_id: string;
   challenger_candidate_id: string;
   unit: "vote_share_points";
   interval_mass: number;
   statistic: "median";
-  steps: UncertaintyStep[];
+  centre: number;
+  /** polls today, campaign movement, election day, each on its own */
+  sources: UncertaintySource[];
+  combined: UncertaintyGap;
   note: string;
 }
 
@@ -175,7 +181,7 @@ export interface MayoralForecastFeed {
   /** null only on the development fallback; the validator requires it */
   election_day: ElectionDay | null;
   /** optional and additive (ADR 0056); absent on releases before it was published */
-  uncertainty?: UncertaintyLadder;
+  uncertainty?: UncertaintyBreakdown;
   model: ForecastModelRecord;
   /** prespecified alternative refits; audit metadata, never rendered */
   sensitivity: unknown[];

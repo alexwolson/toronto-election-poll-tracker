@@ -9,7 +9,7 @@ import {
   leadForecast,
   marginOutcomes,
   residualPoolNote,
-  uncertaintyLadder,
+  uncertaintyBreakdown,
   viableField,
 } from "./mayoral-forecast";
 
@@ -124,26 +124,32 @@ describe("marginOutcomes", () => {
   });
 });
 
-describe("uncertaintyLadder", () => {
-  it("returns three widening rows on one axis that contains the tie, labels from the feed", () => {
-    const view = uncertaintyLadder(feed())!;
-    const source = feed().uncertainty!;
+describe("uncertaintyBreakdown", () => {
+  it("returns each source on its own, then the combined row, on one axis that contains the tie", () => {
+    const view = uncertaintyBreakdown(feed())!;
+    const block = feed().uncertainty!;
     expect(view.leader.surname).toBe("Chow");
     expect(view.challenger.surname).toBe("Bradford");
-    expect(view.rows.map((r) => r.key)).toEqual(["polls_today", "campaign_movement", "election_day"]);
+    expect(view.rows.map((r) => r.key)).toEqual([
+      "polls_today",
+      "campaign_movement",
+      "election_day",
+      "combined",
+    ]);
     expect(view.rows.map((r) => r.label)).toEqual([
       "The polls today could be off",
       `Support could shift before ${formatDate(feed().election_date)}`,
       "Results have landed away from final polls",
+      "All three together: the forecast",
     ]);
-    expect(view.rows[2].median).toBe(source.steps[2].median);
-    // The last row is the published margin's own pairwise split.
-    expect(view.rows[2].challengerAhead).toBe(
+    expect(view.rows.map((r) => r.combined)).toEqual([false, false, false, true]);
+    expect(view.rows[1].median).toBe(block.sources[1].median);
+    // The combined row is the published margin's own pairwise split.
+    expect(view.rows[3].challengerAhead).toBe(
       feed().election_day!.pairwise_margin.probability_challenger_ahead,
     );
     const widths = view.rows.map((r) => r.upper - r.lower);
-    expect(widths[0]).toBeLessThan(widths[1]);
-    expect(widths[1]).toBeLessThan(widths[2]);
+    for (const width of widths.slice(0, 3)) expect(width).toBeLessThan(widths[3]);
     expect(view.axisMin).toBeLessThan(Math.min(0, ...view.rows.map((r) => r.lower)));
     expect(view.axisMax).toBeGreaterThan(Math.max(0, ...view.rows.map((r) => r.upper)));
     expect(Math.abs(view.axisMin % 10)).toBe(0);
@@ -152,6 +158,6 @@ describe("uncertaintyLadder", () => {
   it("is null when the feed does not carry the block", () => {
     const plain = feed();
     delete plain.uncertainty;
-    expect(uncertaintyLadder(plain)).toBeNull();
+    expect(uncertaintyBreakdown(plain)).toBeNull();
   });
 });

@@ -42,7 +42,9 @@ export default async function Home() {
             <PollingScopeNote />
           </SectionHeading>
           <p className="poll-snapshot-line" aria-label="Latest poll shares">
-            {latest.firm}, {formatDate(latest.date_conducted)}:{" "}
+            <PollsterLink firm={latest.firm} />, {formatDate(latest.date_conducted)}
+            {latest.sample_size ? `, ${latest.sample_size.toLocaleString()} respondents` : ""} by{" "}
+            {pollMethodLabel(latest.methodology).replace(/^./, (c) => c.toLowerCase())}:{" "}
             {ranked.map((id, index) => {
               const meta = candidateMeta(id);
               return (
@@ -60,27 +62,6 @@ export default async function Home() {
               </span>
             )}
             .
-          </p>
-          <dl className="poll-context-grid" aria-label="Latest poll context">
-            <div>
-              <dt>Pollster</dt>
-              <dd><PollsterLink firm={latest.firm} /></dd>
-            </div>
-            <div>
-              <dt>Conducted</dt>
-              <dd>{formatDate(latest.date_conducted)}</dd>
-            </div>
-            <div>
-              <dt>Sample</dt>
-              <dd>{latest.sample_size?.toLocaleString() ?? "Not supplied"}</dd>
-            </div>
-            <div>
-              <dt>Survey method</dt>
-              <dd>{pollMethodLabel(latest.methodology)}</dd>
-            </div>
-          </dl>
-          <p className="poll-context-note">
-            Question wording and respondent base are not supplied in this feed.
           </p>
           <Link href="/polls" className="text-link">
             See all mayoral polls and the trend →

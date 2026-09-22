@@ -51,8 +51,8 @@ export function VoteShareRanges({ view }: { view: ElectionDaySharesView }) {
         </div>
       ))}
       <p className="forecast-caption">
-        Tick: middle estimate. Band: central {mass}% of simulated election outcomes; the remaining{" "}
-        {100 - mass}% lie outside. Ranges can overlap; they are not chances of winning.
+        Tick: middle estimate. Band: the middle {mass}% of simulated outcomes. Ranges are not
+        chances of winning.
       </p>
     </div>
   );

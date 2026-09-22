@@ -26,9 +26,11 @@ describe("ForecastHero", () => {
     expect(html).not.toContain("forecast-outcomes__");
     expect(html).not.toContain("forecast-shares__");
     expect(html).not.toContain("forecast-uncertainty__");
-    expect(html).toMatch(/Chow finishes ahead in \d{2}% and Bradford in \d{2}%/);
+    expect(html).toMatch(/Chow finishes ahead of Bradford in \d{2}% of simulated elections\./);
     expect(html).toContain("Olivia Chow is favoured to win");
-    expect(html).toContain("Forecast evidence through");
+    expect(html).toContain("Evidence through");
+    expect(html).toContain("Forecast for election day, Oct 26, 2026.");
+    expect(html).not.toContain("forecast-kicker");
     expect(html.indexOf('class="forecast-margin"')).toBeLessThan(html.indexOf('class="forecast-tabs"'));
     // 2. beneath the margin chart, two views of the same simulations as real tabs
     expect(html).toContain('role="tablist"');
@@ -40,14 +42,13 @@ describe("ForecastHero", () => {
     // 2a. vote ranges for the three named candidates and the pool, visible first
     expect(html).toContain("Other candidates");
     expect(html).toContain("Sarah McVie");
-    expect(html).toContain("central 80%");
+    expect(html).toContain("the middle 80%");
     // 2b. where the uncertainty comes from: three widening ranges (ADR 0056)
     expect(html).toContain("The polls today could be off");
     expect(html).toContain("Results have landed away from final polls");
     expect(html).toContain("All three together: the forecast");
     expect(html).toContain("share of the uncertainty");
     expect(html).toContain("the three add up to 100%");
-    expect(html).toMatch(/the forecast, with Bradford ahead in \d{2}% of simulated/);
     // 3. the full-race win list is retired
     expect(html).not.toContain("Who wins the full race?");
     expect(html).not.toContain("forecast-odds");

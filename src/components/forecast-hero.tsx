@@ -22,9 +22,11 @@ import type { MayoralForecastFeed } from "@/types/feeds";
  * leaders leads, as three named outcomes with their exact shares of the
  * simulated elections. Beneath it, two further views of the same simulations
  * as tabs: each candidate's election-day vote range, and where the forecast's
- * uncertainty comes from (ADR 0056). A feed without the uncertainty block shows
- * the vote ranges as a plain section. When the forecast is withheld, an honest
- * note stands in.
+ * uncertainty comes from (ADR 0056). Every fact is stated once: the headline
+ * chance in the lede, the draw count and the shared-simulations point in the
+ * disclosure at the end. A feed without the uncertainty block shows the vote
+ * ranges as a plain section. When the forecast is withheld, an honest note
+ * stands in.
  */
 export function ForecastHero({
   feed,
@@ -57,8 +59,7 @@ export function ForecastHero({
   const voteRanges = (
     <>
       <p className="forecast-tabs__intro">
-        Each candidate&rsquo;s share of all votes cast on election day, across the same
-        simulations.
+        Each candidate&rsquo;s share of all votes cast on election day.
       </p>
       <VoteShareRanges view={shares} />
     </>
@@ -66,18 +67,15 @@ export function ForecastHero({
   return (
     <>
       <section className="forecast-lead" aria-labelledby="forecast-heading">
-        <p className="forecast-kicker">
-          The election-day forecast · {formatDate(feed.election_date)}
-        </p>
         <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
         <p className="forecast-lede">
           {margin.leader.surname} finishes ahead of {margin.challenger.surname} in{" "}
-          {chance(margin.leaderAhead)} of simulated elections. The bars show how big the gap is
-          likely to be.
+          {chance(margin.leaderAhead)} of simulated elections.
         </p>
-        {asOfDate && (
-          <p className="forecast-as-of">Forecast evidence through {formatDate(asOfDate)}</p>
-        )}
+        <p className="forecast-as-of">
+          Forecast for election day, {formatDate(feed.election_date)}.
+          {asOfDate ? ` Evidence through ${formatDate(asOfDate)}.` : ""}
+        </p>
       </section>
 
       <section className="forecast-margin" aria-labelledby="forecast-margin-heading">
@@ -86,11 +84,6 @@ export function ForecastHero({
           title={`How far apart ${margin.leader.surname} and ${margin.challenger.surname} are likely to finish`}
         />
         <MarginOutcomes view={margin} />
-        <p className="forecast-caption">
-          Percentages are the share of {draws} simulated elections. Counting the close outcomes by
-          who is ahead, {margin.leader.surname} finishes ahead in {chance(margin.leaderAhead)} and{" "}
-          {margin.challenger.surname} in {chance(margin.challengerAhead)}.
-        </p>
       </section>
 
       {breakdown ? (
@@ -104,21 +97,16 @@ export function ForecastHero({
               content: (
                 <>
                   <p className="forecast-tabs__intro">
-                    Each row applies one source of doubt, on its own, to today&rsquo;s estimate of
-                    the gap between {breakdown.leader.surname} and {breakdown.challenger.surname}.
-                    The last row is all three together: the forecast, with{" "}
-                    {breakdown.challenger.surname} ahead in{" "}
-                    {chance(breakdown.rows[breakdown.rows.length - 1].challengerAhead)} of simulated
-                    elections.
+                    Each row applies one source of doubt, on its own, to today&rsquo;s gap between{" "}
+                    {breakdown.leader.surname} and {breakdown.challenger.surname}. The last row is
+                    all three together: the forecast.
                   </p>
                   <UncertaintyRange view={breakdown} />
                   <p className="forecast-caption">
-                    The number at the right is each source&rsquo;s share of the uncertainty, its
-                    part of the spread of the simulated outcomes; the three add up to 100%. Bands
-                    are where the middle {Math.round(breakdown.intervalMass * 100)}% of simulated
-                    elections land, and the tick is the middle. The ranges themselves do not add,
-                    which is why the last band is wider than any one source but narrower than
-                    their sum.
+                    The number at the right is each source&rsquo;s share of the uncertainty; the
+                    three add up to 100%. Bands are the middle{" "}
+                    {Math.round(breakdown.intervalMass * 100)}% of simulated outcomes, the tick the
+                    middle; the bands themselves do not add.
                   </p>
                 </>
               ),
@@ -140,8 +128,7 @@ export function ForecastHero({
         <p>
           One statistical model, fitted to the {feed.final_field_samples.length} published polls of
           the certified field and to seven past Toronto mayoral campaigns, produces {draws}{" "}
-          simulated elections. The margin outcomes, the vote ranges and the uncertainty rows all
-          summarize those same simulations.
+          simulated elections. Every number above is a summary of those same simulations.
         </p>
         <p>Other candidates: {residualPoolNote(feed)}</p>
         <p>

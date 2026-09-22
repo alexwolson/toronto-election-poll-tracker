@@ -100,10 +100,13 @@ describe("primary pages drop retired methodology copy", () => {
 });
 
 describe("primary pages keep their facts and controls", () => {
-  it("forecast hero keeps the three margin-first views", () => {
+  it("forecast hero keeps the margin view first and the two tabbed views beneath it", () => {
     expect(HERO).toContain("forecast-margin");
-    expect(HERO).toContain("forecast-shares");
-    expect(HERO).toContain("forecast-odds");
+    expect(HERO).toContain("ForecastTabs");
+    expect(HERO).toContain("What the vote could look like");
+    expect(HERO).toContain("Where the uncertainty comes from");
+    expect(HERO).not.toContain("forecast-odds");
+    expect(HERO).not.toContain("Who wins the full race");
     expect(HERO).not.toContain("band-board");
   });
 
@@ -116,14 +119,19 @@ describe("primary pages keep their facts and controls", () => {
     expect(normalized).toContain("does not include question wording or respondent base");
   });
 
-  it("homepage groups the latest poll context and dates the forecast evidence", () => {
-    expect(HOME).toContain("poll-context-grid");
-    expect(HOME).toContain("poll-context-note");
+  it("homepage states each poll fact once and dates the forecast evidence", () => {
+    expect(HOME).toContain("poll-snapshot-line");
+    expect(HOME).toContain("<PollsterLink");
+    expect(HOME).toContain("respondents");
+    expect(HOME).not.toContain("poll-context-grid");
+    expect(HOME).not.toContain("poll-context-note");
+    expect(HOME).not.toContain("Question wording");
     expect(HOME).toContain("Other reported choices");
     expect(HOME).toContain("Browse all 25 ward races");
     expect(HOME).toContain("How the evidence is handled");
     expect(HOME).not.toContain("methodology-prompt");
-    expect(HERO).toContain("Forecast evidence through");
+    expect(HERO).toContain("Evidence through");
+    expect(HERO).not.toContain("forecast-kicker");
   });
 
   it("council index keeps the ward browser", () => {

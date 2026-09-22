@@ -2813,14 +2813,6 @@ body {
   font-size: var(--type-headline);
   line-height: 1.08;
 }
-.forecast-kicker {
-  margin: 0;
-  color: var(--text-soft);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: var(--type-data);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 .forecast-lede {
   max-width: 46rem;
   margin: 0.25rem 0 0;
@@ -2850,206 +2842,159 @@ body {
 
 /* ── 1. Margin between the two poll leaders: three named outcomes ─ */
 .forecast-margin,
-.forecast-shares,
-.forecast-odds {
+.forecast-shares {
   margin-top: 2rem;
 }
-.forecast-outcomes {
+/* ── One chart grammar for the forecast views: label | track | value ─ */
+.forecast-chart {
   margin-top: 0.75rem;
   border-top: 2px solid var(--line-strong);
 }
-.forecast-outcomes__row {
+.forecast-chart__axis,
+.forecast-chart__row {
   display: grid;
   grid-template-columns: minmax(11rem, 17rem) minmax(0, 1fr) 4rem;
   align-items: center;
-  gap: 0.9rem;
+  column-gap: 0.9rem;
+}
+.forecast-chart__axis {
+  padding: 0.55rem 0 0.15rem;
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: var(--type-diagram);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.forecast-chart__axis-track {
+  display: flex;
+  justify-content: space-between;
+}
+.forecast-chart__axis-value {
+  text-align: right;
+}
+.forecast-chart__row {
   padding: 0.7rem 0;
   border-bottom: 1px solid var(--line-soft);
 }
-.forecast-outcomes__label {
+/* All sources together: the published forecast, set apart from the sources above it. */
+.forecast-chart__row--combined {
+  margin-top: 0.4rem;
+  border-top: 2px solid var(--line-strong);
+}
+.forecast-chart__row--combined .forecast-chart__label {
+  font-weight: 600;
+}
+.forecast-chart__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
   font-size: var(--type-body);
   color: var(--text-strong);
 }
-.forecast-outcomes__track {
+.forecast-chart__track {
+  position: relative;
   display: block;
-  height: 1.6rem;
+  height: 1.25rem;
   min-width: 0;
+  background: var(--muted);
 }
-.forecast-outcomes__bar {
+.forecast-chart__bar {
   display: block;
   height: 100%;
   min-width: 2px;
 }
-.forecast-outcomes__value {
-  font-family: var(--font-newsreader), serif;
-  font-size: var(--type-metric);
-  font-weight: 600;
-  line-height: 1;
-  text-align: right;
-}
-
-/* Where the uncertainty comes from (ADR 0056): three ranges on one margin axis. */
-.forecast-uncertainty {
-  margin-top: 0.75rem;
-  border-top: 2px solid var(--line-strong);
-}
-.forecast-uncertainty__axis,
-.forecast-uncertainty__row {
-  display: grid;
-  grid-template-columns: minmax(11rem, 17rem) minmax(0, 1fr) 4rem;
-  align-items: center;
-  gap: 0.9rem;
-}
-.forecast-uncertainty__axis {
-  padding: 0.55rem 0 0.15rem;
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: var(--type-diagram);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-soft);
-}
-.forecast-uncertainty__axis-track {
-  display: flex;
-  justify-content: space-between;
-}
-.forecast-uncertainty__axis-value {
-  text-align: right;
-}
-.forecast-uncertainty__row {
-  padding: 0.7rem 0;
-  border-bottom: 1px solid var(--line-soft);
-}
-.forecast-uncertainty__label {
-  font-size: var(--type-body);
-  color: var(--text-strong);
-}
-.forecast-uncertainty__track {
-  position: relative;
-  display: block;
-  height: 1.25rem;
-  background: var(--muted);
-}
-.forecast-uncertainty__tie {
+.forecast-chart__line {
   position: absolute;
   top: -0.2rem;
   bottom: -0.2rem;
   width: 1px;
   background: var(--line-strong);
 }
-.forecast-uncertainty__range {
+.forecast-chart__band {
   position: absolute;
   top: 0.2rem;
   bottom: 0.2rem;
-  opacity: 0.45;
+  opacity: 0.5;
 }
-.forecast-uncertainty__median {
+.forecast-chart__band--hatched {
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(58, 37, 0, 0.45) 4px 6px);
+}
+.forecast-chart__tick {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 3px;
   transform: translateX(-50%);
 }
-.forecast-uncertainty__value {
+.forecast-chart__value {
   font-family: var(--font-newsreader), serif;
   font-size: var(--type-metric);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
   text-align: right;
 }
-.poll-snapshot-line {
-  margin: 0.75rem 0 0.5rem;
-  max-width: 46rem;
-  font-family: var(--font-newsreader), serif;
-  font-size: 1.15rem;
-  line-height: 1.45;
+@media (max-width: 560px) {
+  .forecast-chart__axis,
+  .forecast-chart__row {
+    grid-template-columns: minmax(0, 1fr) 4rem;
+    row-gap: 0.35rem;
+  }
+  .forecast-chart__label {
+    grid-column: 1 / -1;
+  }
+  .forecast-chart__axis > :first-child {
+    display: none;
+  }
 }
 
-/* ── 2. Election-day vote ranges ─────────────────────── */
-.forecast-shares__chart {
-  margin-top: 0.75rem;
+/* ── 3. Beneath the margin chart: two views as tabs ───── */
+.forecast-tabs {
+  margin-top: 2rem;
 }
-.forecast-shares__scale {
-  display: grid;
-  grid-template-columns: 11rem 1fr 1fr 1fr;
-  margin: 0 3.5rem 0.35rem 0;
-  color: var(--text-soft);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: var(--type-data);
-  letter-spacing: 0.02em;
-}
-.forecast-shares__scale span:nth-child(3) { text-align: center; }
-.forecast-shares__scale span:nth-child(4) { text-align: right; }
-.forecast-shares__row {
-  display: grid;
-  grid-template-columns: 11rem minmax(0, 1fr) 3.5rem;
-  align-items: center;
-  gap: 0 0.5rem;
-  padding: 0.45rem 0;
-  border-top: 1px solid var(--line-soft);
-}
-.forecast-shares__name {
+.forecast-tabs__list {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-  font-weight: 600;
-}
-.forecast-shares__track {
-  position: relative;
-  height: 1.1rem;
-  background-image: linear-gradient(to right, var(--line-soft) 1px, transparent 1px);
-  background-size: 25% 100%;
-  border-left: 1px solid var(--line-soft);
-  border-right: 1px solid var(--line-soft);
-}
-.forecast-shares__range {
-  position: absolute;
-  top: 0.4rem;
-  height: 0.3rem;
-  opacity: 0.85;
-}
-.forecast-shares__range--hatched {
-  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(58, 37, 0, 0.4) 4px 6px);
-}
-.forecast-shares__dot {
-  position: absolute;
-  top: 0.2rem;
-  width: 0.7rem;
-  height: 0.7rem;
-  margin-left: -0.35rem;
-  border: 2px solid var(--bg-base);
-  border-radius: 50%;
-}
-.forecast-shares__value {
-  font-family: var(--font-newsreader), serif;
-  font-size: 1.15rem;
-  text-align: right;
-}
-
-/* ── 3. Full-race win chances ────────────────────────── */
-.forecast-odds__list {
-  margin-top: 0.75rem;
-  border-top: 2px solid var(--line-strong);
-}
-.forecast-odds__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  padding: 0.6rem 0;
+  flex-wrap: wrap;
+  gap: 0 1.75rem;
   border-bottom: 1px solid var(--line-soft);
 }
-.forecast-odds__row > span {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-}
-.forecast-odds__row > strong {
+.forecast-tabs__tab {
+  appearance: none;
+  margin: 0 0 -1px;
+  padding: 0.45rem 0 0.6rem;
+  min-height: var(--touch-target-min);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
   font-family: var(--font-newsreader), serif;
-  font-size: var(--type-metric);
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--type-heading);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: left;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+.forecast-tabs__tab:hover {
+  color: var(--text-strong);
+}
+.forecast-tabs__tab[aria-selected="true"] {
+  color: var(--text-strong);
+  border-bottom-color: var(--line-strong);
+}
+.forecast-tabs__tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.forecast-tabs__panel {
+  padding-top: 1rem;
+}
+.forecast-tabs__intro {
+  max-width: var(--measure-reading);
+  margin: 0 0 0.25rem;
+  color: var(--text-mid);
+  font-size: var(--type-body-small);
+  line-height: 1.5;
 }
 
 /* ── Underneath: what is behind the numbers ─────────── */
@@ -3071,15 +3016,6 @@ body {
   margin: 0.6rem 0 0;
 }
 
-@media (max-width: 760px) {
-  .forecast-shares__scale {
-    grid-template-columns: 7rem 1fr 1fr 1fr;
-    margin-right: 3rem;
-  }
-  .forecast-shares__row {
-    grid-template-columns: 7rem minmax(0, 1fr) 3rem;
-  }
-}
 
 /* ── Poll archive ─────────────────────────────── */
 .poll-archive {
@@ -3799,41 +3735,6 @@ body {
   text-underline-offset: 0.18em;
 }
 
-.poll-context-grid {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr 0.7fr 1.35fr;
-  margin: 0 0 1rem;
-  padding: 0;
-  border-top: 2px solid var(--line-strong);
-  border-left: 1px solid var(--line-soft);
-}
-.poll-context-grid > div {
-  min-width: 0;
-  padding: 0.7rem 0.75rem;
-  border-right: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
-}
-.poll-context-grid dt {
-  color: var(--text-soft);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: var(--type-label);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  line-height: 1.4;
-  text-transform: uppercase;
-}
-.poll-context-grid dd {
-  margin: 0.3rem 0 0;
-  color: var(--text-strong);
-  font-size: var(--type-compact);
-  line-height: 1.4;
-}
-.poll-context-note {
-  max-width: var(--measure-reading);
-  margin: -0.35rem 0 0.75rem;
-  color: var(--text-faint);
-  font-size: var(--type-data);
-}
 
 /* ══ How it works ══════════════════════════════════════════ */
 
@@ -4490,9 +4391,6 @@ body {
 }
 
 @media (max-width: 640px) {
-  .poll-context-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .poll-archive {
     overflow: visible;
   }
@@ -4566,12 +4464,6 @@ body {
 @media (max-width: 480px) {
   .poll-archive__candidate-value {
     flex-basis: 50%;
-  }
-  .poll-context-grid {
-    grid-template-columns: 1fr;
-  }
-  .poll-context-grid > div:last-child {
-    grid-column: auto;
   }
 }
 

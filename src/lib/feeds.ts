@@ -328,12 +328,23 @@ export function validateForecast(value: unknown): MayoralForecastFeed | null {
   return value as unknown as MayoralForecastFeed;
 }
 
-const UNCERTAINTY_STEPS = ["polls_today", "campaign_movement", "election_day"] as const;
+const UNCERTAINTY_SOURCES = ["polls_today", "campaign_movement", "election_day"] as const;
+
+function validGap(value: unknown): value is Record<string, unknown> {
+  return (
+    isRecord(value) &&
+    isFinitePoints(value.lower) && isFinitePoints(value.median) && isFinitePoints(value.upper) &&
+    value.lower <= value.median && value.median <= value.upper &&
+    isShare(value.probability_leader_ahead) && isShare(value.probability_challenger_ahead) &&
+    value.probability_leader_ahead + value.probability_challenger_ahead <= 1 + 1e-6
+  );
+}
 
 /**
- * The uncertainty ladder (ADR 0056) is optional and additive: absent is fine,
- * present and malformed fails the whole feed closed. Its last step must be the
- * published margin, so the strip can never disagree with the headline.
+ * Where the uncertainty comes from (ADR 0056) is optional and additive: absent is
+ * fine, present and malformed fails the whole feed closed. Three sources in a
+ * fixed order, each on its own, then all three together, which must equal the
+ * published margin so the view can never disagree with the headline.
  */
 function validUncertainty(value: unknown, margin: Record<string, unknown>): boolean {
   if (
@@ -344,25 +355,29 @@ function validUncertainty(value: unknown, margin: Record<string, unknown>): bool
     !isShare(value.interval_mass) || value.interval_mass <= 0 || value.interval_mass >= 1 ||
     value.statistic !== "median" ||
     typeof value.note !== "string" ||
-    !Array.isArray(value.steps) || value.steps.length !== UNCERTAINTY_STEPS.length
+    !isFinitePoints(value.centre) ||
+    !isFinitePoints(value.variance_explained) || value.variance_explained <= 0 ||
+    !Array.isArray(value.sources) || value.sources.length !== UNCERTAINTY_SOURCES.length ||
+    !validGap(value.combined)
   ) return false;
-  for (let i = 0; i < UNCERTAINTY_STEPS.length; i++) {
-    const step = value.steps[i];
+  let shares = 0;
+  for (let i = 0; i < UNCERTAINTY_SOURCES.length; i++) {
+    const source = value.sources[i];
     if (
-      !isRecord(step) ||
-      step.key !== UNCERTAINTY_STEPS[i] ||
-      !isFinitePoints(step.lower) || !isFinitePoints(step.median) || !isFinitePoints(step.upper) ||
-      step.lower > step.median || step.median > step.upper ||
-      !isShare(step.probability_leader_ahead) || !isShare(step.probability_challenger_ahead) ||
-      step.probability_leader_ahead + step.probability_challenger_ahead > 1 + 1e-6
+      !validGap(source) ||
+      source.key !== UNCERTAINTY_SOURCES[i] ||
+      !isShare(source.share_of_uncertainty)
     ) return false;
+    shares += source.share_of_uncertainty;
   }
-  const last = value.steps[UNCERTAINTY_STEPS.length - 1] as Record<string, unknown>;
+  // The shares are what the page adds up, so they must add up.
+  if (Math.abs(shares - 1) > 1e-4) return false;
+  const combined = value.combined;
   return (
-    last.median === margin.median &&
-    last.lower === margin.lower &&
-    last.upper === margin.upper &&
-    last.probability_challenger_ahead === margin.probability_challenger_ahead
+    combined.median === margin.median &&
+    combined.lower === margin.lower &&
+    combined.upper === margin.upper &&
+    combined.probability_challenger_ahead === margin.probability_challenger_ahead
   );
 }
 

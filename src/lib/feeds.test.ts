@@ -69,30 +69,39 @@ describe("validateForecast", () => {
     }
   });
 
-  it("accepts the additive uncertainty ladder, tolerates its absence, and fails closed when malformed", () => {
+  it("accepts the additive uncertainty breakdown, tolerates its absence, and fails closed when malformed", () => {
     const feed = validateForecast(forecastFixture);
-    const ladder = feed?.uncertainty;
-    expect(ladder?.steps.map((s) => s.key)).toEqual(["polls_today", "campaign_movement", "election_day"]);
-    // The last step is the published margin, so the strip can never disagree with the headline.
-    const last = ladder?.steps[2];
+    const block = feed?.uncertainty;
+    expect(block?.sources.map((s) => s.key)).toEqual(["polls_today", "campaign_movement", "election_day"]);
+    // All three together is the published margin, so the view can never disagree with the headline.
+    const combined = block?.combined;
     const margin = feed?.election_day?.pairwise_margin;
-    expect(last?.median).toBe(margin?.median);
-    expect(last?.lower).toBe(margin?.lower);
-    expect(last?.upper).toBe(margin?.upper);
-    expect(last?.probability_challenger_ahead).toBe(margin?.probability_challenger_ahead);
+    expect(combined?.median).toBe(margin?.median);
+    expect(combined?.lower).toBe(margin?.lower);
+    expect(combined?.upper).toBe(margin?.upper);
+    expect(combined?.probability_challenger_ahead).toBe(margin?.probability_challenger_ahead);
+    // The shares are what the page adds up, and they add up.
+    const shares = block?.sources.map((s) => s.share_of_uncertainty) ?? [];
+    expect(shares.every((s) => s > 0 && s < 1)).toBe(true);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 4);
+    expect(block?.variance_explained).toBeGreaterThan(0);
     // Releases before ADR 0056 carry no block; that still validates.
     const without = structuredClone(forecastFixture) as Record<string, unknown>;
     delete without.uncertainty;
     expect(validateForecast(without)?.schema_version).toBe(4);
     expect(validateForecast(without)?.uncertainty).toBeUndefined();
     const cases: Array<(feed: typeof forecastFixture) => void> = [
-      (f) => { f.uncertainty.steps.pop(); },
-      (f) => { f.uncertainty.steps[0].key = "election_day"; },
-      (f) => { f.uncertainty.steps[2].median += 1; },
-      (f) => { f.uncertainty.steps[1].lower = f.uncertainty.steps[1].upper + 1; },
+      (f) => { f.uncertainty.sources.pop(); },
+      (f) => { f.uncertainty.sources[0].key = "election_day"; },
+      (f) => { f.uncertainty.combined.median += 1; },
+      (f) => { f.uncertainty.sources[1].lower = f.uncertainty.sources[1].upper + 1; },
       (f) => { f.uncertainty.leader_candidate_id = f.uncertainty.challenger_candidate_id; },
-      (f) => { f.uncertainty.steps[0].probability_leader_ahead = 0.9; f.uncertainty.steps[0].probability_challenger_ahead = 0.9; },
+      (f) => { f.uncertainty.sources[0].probability_leader_ahead = 0.9; f.uncertainty.sources[0].probability_challenger_ahead = 0.9; },
       (f) => { f.uncertainty.unit = "percent"; },
+      (f) => { delete (f.uncertainty as Record<string, unknown>).centre; },
+      (f) => { delete (f.uncertainty as Record<string, unknown>).combined; },
+      (f) => { f.uncertainty.sources[0].share_of_uncertainty += 0.1; },
+      (f) => { f.uncertainty.variance_explained = 0; },
     ];
     for (const mutate of cases) {
       const malformed = structuredClone(forecastFixture);

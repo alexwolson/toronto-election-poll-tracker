@@ -11,6 +11,7 @@ import {
   residualPoolNote,
   uncertaintyBreakdown,
   viableField,
+  wholePercent,
 } from "./mayoral-forecast";
 
 const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
@@ -29,6 +30,16 @@ describe("chance", () => {
     expect(chance(0.995)).toBe(">99%");
     expect(chance(0)).toBe("<1%");
     expect(chance(1)).toBe(">99%");
+  });
+});
+
+describe("wholePercent", () => {
+  it("prints a set-rounded whole percent, guarding the tails like chance()", () => {
+    expect(wholePercent(67, 0.665875)).toBe("67%");
+    expect(wholePercent(0, 0.004)).toBe("<1%");
+    expect(wholePercent(0, 0)).toBe("0%");
+    expect(wholePercent(100, 0.996)).toBe(">99%");
+    expect(wholePercent(100, 1)).toBe("100%");
   });
 });
 
@@ -113,6 +124,9 @@ describe("marginOutcomes", () => {
     expect(view.rows[2].probability).toBe(source.challenger_ahead);
     expect(view.rows[0].colorVar).toBe("var(--color-chow)");
     expect(view.rows[2].colorVar).toBe("var(--color-bradford)");
+    // Displayed whole percentages are rounded as a set so they add to 100 (plain rounding gives 101).
+    expect(view.rows.map((r) => r.percent)).toEqual([67, 7, 26]);
+    expect(view.rows.reduce((a, r) => a + r.percent, 0)).toBe(100);
     // The caption's pairwise split counts every draw by who is ahead, from the feed.
     expect(view.challengerAhead).toBe(feed().election_day!.pairwise_margin.probability_challenger_ahead);
     expect(view.leaderAhead).toBeCloseTo(1 - view.challengerAhead, 6);
@@ -150,6 +164,9 @@ describe("uncertaintyBreakdown", () => {
     );
     expect(view.rows.slice(0, 3).reduce((a, r) => a + r.share, 0)).toBeCloseTo(1, 4);
     expect(view.rows[3].share).toBe(1);
+    // Displayed shares are rounded as a set so the three sources add to 100; the combined row is 100.
+    expect(view.rows.map((r) => r.sharePercent)).toEqual([9, 19, 72, 100]);
+    expect(view.rows.slice(0, 3).reduce((a, r) => a + r.sharePercent, 0)).toBe(100);
     // The combined row is the published margin's own pairwise split.
     expect(view.rows[3].challengerAhead).toBe(
       feed().election_day!.pairwise_margin.probability_challenger_ahead,

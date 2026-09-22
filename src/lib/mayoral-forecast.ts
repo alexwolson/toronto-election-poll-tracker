@@ -4,13 +4,15 @@
  *
  * Every public number is a summary of the same joint election-day draws; these
  * selectors only reshape the feed for the three views the approved presentation
- * renders (the leader margin, candidate vote ranges, full-race win chances).
- * Shares arrive as fractions and leave as percentage points; probabilities stay
- * fractions and are formatted once, by `chance`.
+ * renders (the leader margin, candidate vote ranges, where the uncertainty comes
+ * from). Shares arrive as fractions and leave as percentage points. Probabilities
+ * stay fractions and are formatted once: a lone chance by `chance`, and the parts
+ * of a whole (margin outcomes, uncertainty shares) as whole percents rounded as a
+ * set so they add to 100, printed by `wholePercent`.
  */
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import { formatDate } from "@/lib/format";
+import { formatDate, percentagesToHundred } from "@/lib/format";
 import type { MayoralForecastFeed, UncertaintyGap, UncertaintySourceKey } from "@/types/feeds";
 
 /** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
@@ -18,6 +20,13 @@ export function chance(value: number): string {
   if (value < 0.01) return "<1%";
   if (value > 0.99) return ">99%";
   return `${Math.round(value * 100)}%`;
+}
+
+/** A set-rounded whole percent (see `percentagesToHundred`) with the same guarded tails as `chance`. */
+export function wholePercent(percent: number, fraction: number): string {
+  if (percent === 0 && fraction > 0) return "<1%";
+  if (percent === 100 && fraction < 1) return ">99%";
+  return `${percent}%`;
 }
 
 export interface ForecastLead {
@@ -114,6 +123,8 @@ export interface MarginOutcomeRow {
   key: "leader_ahead" | "close" | "challenger_ahead";
   label: string;
   probability: number;
+  /** whole percent, rounded with the other two outcomes so the three add to 100 */
+  percent: number;
   colorVar: string;
 }
 
@@ -139,6 +150,8 @@ export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | 
   const leader = compared(margin.leader_candidate_id);
   const challenger = compared(margin.challenger_candidate_id);
   const t = points(margin.outcomes.close_threshold_points);
+  const { leader_ahead, close, challenger_ahead } = margin.outcomes;
+  const [leaderPct, closePct, challengerPct] = percentagesToHundred([leader_ahead, close, challenger_ahead]);
   return {
     thresholdPoints: margin.outcomes.close_threshold_points,
     leader,
@@ -147,19 +160,22 @@ export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | 
       {
         key: "leader_ahead",
         label: `${leader.surname} ahead by ${t} or more`,
-        probability: margin.outcomes.leader_ahead,
+        probability: leader_ahead,
+        percent: leaderPct,
         colorVar: leader.colorVar,
       },
       {
         key: "close",
         label: `Within ${t} points either way`,
-        probability: margin.outcomes.close,
+        probability: close,
+        percent: closePct,
         colorVar: "var(--text-soft)",
       },
       {
         key: "challenger_ahead",
         label: `${challenger.surname} ahead by ${t} or more`,
-        probability: margin.outcomes.challenger_ahead,
+        probability: challenger_ahead,
+        percent: challengerPct,
         colorVar: challenger.colorVar,
       },
     ],
@@ -179,6 +195,8 @@ export interface UncertaintyRow {
   challengerAhead: number;
   /** this source's part of the forecast's spread; the three sources add to 1, the combined row is 1 */
   share: number;
+  /** whole percent of `share`, rounded with the other sources so the three add to 100; 100 for the combined row */
+  sharePercent: number;
   /** all three sources together: the published forecast */
   combined: boolean;
 }
@@ -205,6 +223,7 @@ function gapRow(
   label: string,
   gap: UncertaintyGap,
   share: number,
+  sharePercent: number,
   combined: boolean,
 ): UncertaintyRow {
   return {
@@ -216,6 +235,7 @@ function gapRow(
     leaderAhead: gap.probability_leader_ahead,
     challengerAhead: gap.probability_challenger_ahead,
     share,
+    sharePercent,
     combined,
   };
 }
@@ -224,17 +244,19 @@ function gapRow(
 export function uncertaintyBreakdown(feed: MayoralForecastFeed): UncertaintyBreakdownView | null {
   const block = feed.uncertainty;
   if (!block || !feed.election_day) return null;
+  const sharePercents = percentagesToHundred(block.sources.map((s) => s.share_of_uncertainty));
   const rows = [
-    ...block.sources.map((source) =>
+    ...block.sources.map((source, i) =>
       gapRow(
         source.key,
         UNCERTAINTY_LABELS[source.key](feed.election_date),
         source,
         source.share_of_uncertainty,
+        sharePercents[i],
         false,
       ),
     ),
-    gapRow("combined", "All three together: the forecast", block.combined, 1, true),
+    gapRow("combined", "All three together: the forecast", block.combined, 1, 100, true),
   ];
   const lowest = Math.min(0, ...rows.map((r) => r.lower));
   const highest = Math.max(0, ...rows.map((r) => r.upper));

@@ -1,12 +1,12 @@
-import type { UncertaintyBreakdownView } from "@/lib/mayoral-forecast";
+import { wholePercent, type UncertaintyBreakdownView } from "@/lib/mayoral-forecast";
 
 /**
  * Where the uncertainty comes from (ADR 0056): the leader margin under each
  * source of doubt on its own, then all three together, drawn as bands on one
  * shared axis with the tie marked and a tick at the middle. The last row is
  * the published forecast and is set apart. The value at the right is each
- * source's share of the uncertainty, which the three sources add up to 100%;
- * the ranges themselves do not add. Shares the chart grammar
+ * source's share of the uncertainty as a whole percent, the three rounded
+ * together so they add to 100; the ranges themselves do not add. Shares the chart grammar
  * (label | track | value) with the other forecast views.
  */
 export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
@@ -70,7 +70,7 @@ export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
                   style={{ left: `${at(row.median)}%`, background: view.leader.colorVar }}
                 />
               </span>
-              <strong className="forecast-chart__value">{Math.round(row.share * 100)}%</strong>
+              <strong className="forecast-chart__value">{wholePercent(row.sharePercent, row.share)}</strong>
             </div>
           );
         })}

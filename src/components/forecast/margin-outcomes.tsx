@@ -1,9 +1,10 @@
-import { chance, type MarginOutcomesView } from "@/lib/mayoral-forecast";
+import { wholePercent, type MarginOutcomesView } from "@/lib/mayoral-forecast";
 
 /**
  * The margin between the two poll leaders as three named outcomes, each with
- * its exact share of the simulated elections written on it. Bars are scaled to
- * the largest outcome; the numbers, not the bars, carry the precision. Shares
+ * its share of the simulated elections written on it as a whole percent, the
+ * three rounded together so they add to 100. Bars are scaled to the largest
+ * outcome; the numbers, not the bars, carry the precision. Shares
  * the chart grammar (label | track | value) with the other forecast views.
  */
 export function MarginOutcomes({ view }: { view: MarginOutcomesView }) {
@@ -23,7 +24,7 @@ export function MarginOutcomes({ view }: { view: MarginOutcomesView }) {
               style={{ width: `${(row.probability / max) * 100}%`, background: row.colorVar }}
             />
           </span>
-          <strong className="forecast-chart__value">{chance(row.probability)}</strong>
+          <strong className="forecast-chart__value">{wholePercent(row.percent, row.probability)}</strong>
         </div>
       ))}
     </div>

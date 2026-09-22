@@ -31,3 +31,18 @@ export function isoDayNumber(iso: string): number {
   const [, y, m, d] = match;
   return Math.round(Date.UTC(Number(y), Number(m) - 1, Number(d)) / 86_400_000);
 }
+
+/** Parts of a whole (fractions summing to 1) as whole percents that add to
+ *  exactly 100. Each part is floored, then the points still missing go to the
+ *  parts with the largest remainders (earlier index wins a tie), so no value
+ *  moves by a full point and plain rounding's 67 + 8 + 26 = 101 cannot happen. */
+export function percentagesToHundred(fractions: number[]): number[] {
+  const scaled = fractions.map((f) => f * 100);
+  const out = scaled.map((v) => Math.floor(v));
+  const missing = 100 - out.reduce((a, b) => a + b, 0);
+  const byRemainder = scaled
+    .map((v, i) => ({ i, remainder: v - out[i] }))
+    .sort((a, b) => b.remainder - a.remainder || a.i - b.i);
+  for (const { i } of byRemainder.slice(0, Math.max(0, missing))) out[i] += 1;
+  return out;
+}

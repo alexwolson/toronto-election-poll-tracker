@@ -1,5 +1,6 @@
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import { describe, expect, it } from "vitest";
+import { formatDate } from "@/lib/format";
 import type { MayoralForecastFeed } from "@/types/feeds";
 import {
   chance,
@@ -8,6 +9,7 @@ import {
   leadForecast,
   marginOutcomes,
   residualPoolNote,
+  uncertaintyLadder,
   viableField,
   winProbabilities,
 } from "./mayoral-forecast";
@@ -135,5 +137,37 @@ describe("marginOutcomes", () => {
     const dark = feed();
     dark.election_day = null;
     expect(marginOutcomes(dark)).toBeNull();
+  });
+});
+
+describe("uncertaintyLadder", () => {
+  it("returns three widening rows on one axis that contains the tie, labels from the feed", () => {
+    const view = uncertaintyLadder(feed())!;
+    const source = feed().uncertainty!;
+    expect(view.leader.surname).toBe("Chow");
+    expect(view.challenger.surname).toBe("Bradford");
+    expect(view.rows.map((r) => r.key)).toEqual(["polls_today", "campaign_movement", "election_day"]);
+    expect(view.rows.map((r) => r.label)).toEqual([
+      "The polls today could be off",
+      `Support could shift before ${formatDate(feed().election_date)}`,
+      "Results have landed away from final polls",
+    ]);
+    expect(view.rows[2].median).toBe(source.steps[2].median);
+    // The last row is the published margin's own pairwise split.
+    expect(view.rows[2].challengerAhead).toBe(
+      feed().election_day!.pairwise_margin.probability_challenger_ahead,
+    );
+    const widths = view.rows.map((r) => r.upper - r.lower);
+    expect(widths[0]).toBeLessThan(widths[1]);
+    expect(widths[1]).toBeLessThan(widths[2]);
+    expect(view.axisMin).toBeLessThan(Math.min(0, ...view.rows.map((r) => r.lower)));
+    expect(view.axisMax).toBeGreaterThan(Math.max(0, ...view.rows.map((r) => r.upper)));
+    expect(Math.abs(view.axisMin % 10)).toBe(0);
+    expect(Math.abs(view.axisMax % 10)).toBe(0);
+  });
+  it("is null when the feed does not carry the block", () => {
+    const plain = feed();
+    delete plain.uncertainty;
+    expect(uncertaintyLadder(plain)).toBeNull();
   });
 });

@@ -118,6 +118,33 @@ export interface ElectionDay {
   pairwise_margin: PairwiseMargin;
 }
 
+export type UncertaintyStepKey = "polls_today" | "campaign_movement" | "election_day";
+
+export interface UncertaintyStep {
+  key: UncertaintyStepKey;
+  /** leader-minus-challenger gap in full-ballot vote-share points, central interval */
+  median: number;
+  lower: number;
+  upper: number;
+  probability_leader_ahead: number;
+  probability_challenger_ahead: number;
+}
+
+/**
+ * The leader margin at three snapshots of the same joint draws (ADR 0056): what the
+ * polls say now, support at election day before the election-day error, the result.
+ * The last step reproduces `pairwise_margin` exactly.
+ */
+export interface UncertaintyLadder {
+  leader_candidate_id: string;
+  challenger_candidate_id: string;
+  unit: "vote_share_points";
+  interval_mass: number;
+  statistic: "median";
+  steps: UncertaintyStep[];
+  note: string;
+}
+
 export interface ForecastModelRecord {
   name: string;
   version: string;
@@ -147,6 +174,8 @@ export interface MayoralForecastFeed {
   candidate_win: Record<string, ForecastQuantityCard>;
   /** null only on the development fallback; the validator requires it */
   election_day: ElectionDay | null;
+  /** optional and additive (ADR 0056); absent on releases before it was published */
+  uncertainty?: UncertaintyLadder;
   model: ForecastModelRecord;
   /** prespecified alternative refits; audit metadata, never rendered */
   sensitivity: unknown[];

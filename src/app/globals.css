@@ -2887,6 +2887,75 @@ body {
   line-height: 1;
   text-align: right;
 }
+
+/* Where the uncertainty comes from (ADR 0056): three ranges on one margin axis. */
+.forecast-uncertainty {
+  margin-top: 0.75rem;
+  border-top: 2px solid var(--line-strong);
+}
+.forecast-uncertainty__axis,
+.forecast-uncertainty__row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 17rem) minmax(0, 1fr) 4rem;
+  align-items: center;
+  gap: 0.9rem;
+}
+.forecast-uncertainty__axis {
+  padding: 0.55rem 0 0.15rem;
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: var(--type-diagram);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+}
+.forecast-uncertainty__axis-track {
+  display: flex;
+  justify-content: space-between;
+}
+.forecast-uncertainty__axis-value {
+  text-align: right;
+}
+.forecast-uncertainty__row {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.forecast-uncertainty__label {
+  font-size: var(--type-body);
+  color: var(--text-strong);
+}
+.forecast-uncertainty__track {
+  position: relative;
+  display: block;
+  height: 1.25rem;
+  background: var(--muted);
+}
+.forecast-uncertainty__tie {
+  position: absolute;
+  top: -0.2rem;
+  bottom: -0.2rem;
+  width: 1px;
+  background: var(--line-strong);
+}
+.forecast-uncertainty__range {
+  position: absolute;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  opacity: 0.45;
+}
+.forecast-uncertainty__median {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  transform: translateX(-50%);
+}
+.forecast-uncertainty__value {
+  font-family: var(--font-newsreader), serif;
+  font-size: var(--type-metric);
+  font-weight: 600;
+  line-height: 1;
+  text-align: right;
+}
 .poll-snapshot-line {
   margin: 0.75rem 0 0.5rem;
   max-width: 46rem;

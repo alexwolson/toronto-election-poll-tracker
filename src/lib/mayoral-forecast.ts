@@ -10,7 +10,8 @@
  */
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import type { MayoralForecastFeed } from "@/types/feeds";
+import { formatDate } from "@/lib/format";
+import type { MayoralForecastFeed, UncertaintyStepKey } from "@/types/feeds";
 
 /** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
 export function chance(value: number): string {
@@ -164,6 +165,59 @@ export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | 
     ],
     leaderAhead: 1 - margin.probability_challenger_ahead,
     challengerAhead: margin.probability_challenger_ahead,
+  };
+}
+
+export interface UncertaintyRow {
+  key: UncertaintyStepKey;
+  label: string;
+  /** vote-share points, signed: positive means the leader is ahead */
+  lower: number;
+  median: number;
+  upper: number;
+  leaderAhead: number;
+  challengerAhead: number;
+}
+
+export interface UncertaintyLadderView {
+  leader: ComparedCandidate;
+  challenger: ComparedCandidate;
+  intervalMass: number;
+  /** one shared axis in points, a multiple of 10 on each side, always containing the tie */
+  axisMin: number;
+  axisMax: number;
+  /** polls today, then campaign movement, then election day (the published margin) */
+  rows: UncertaintyRow[];
+}
+
+const UNCERTAINTY_LABELS: Record<UncertaintyStepKey, (electionDate: string) => string> = {
+  polls_today: () => "The polls today could be off",
+  campaign_movement: (electionDate) => `Support could shift before ${formatDate(electionDate)}`,
+  election_day: () => "Results have landed away from final polls",
+};
+
+/** The widening-range strip (ADR 0056); null when the feed does not carry the block. */
+export function uncertaintyLadder(feed: MayoralForecastFeed): UncertaintyLadderView | null {
+  const ladder = feed.uncertainty;
+  if (!ladder || !feed.election_day) return null;
+  const rows: UncertaintyRow[] = ladder.steps.map((step) => ({
+    key: step.key,
+    label: UNCERTAINTY_LABELS[step.key](feed.election_date),
+    lower: step.lower,
+    median: step.median,
+    upper: step.upper,
+    leaderAhead: step.probability_leader_ahead,
+    challengerAhead: step.probability_challenger_ahead,
+  }));
+  const lowest = Math.min(0, ...rows.map((r) => r.lower));
+  const highest = Math.max(0, ...rows.map((r) => r.upper));
+  return {
+    leader: compared(ladder.leader_candidate_id),
+    challenger: compared(ladder.challenger_candidate_id),
+    intervalMass: ladder.interval_mass,
+    axisMin: Math.floor((lowest - 1) / 10) * 10,
+    axisMax: Math.ceil((highest + 1) / 10) * 10,
+    rows,
   };
 }
 

@@ -23,6 +23,13 @@ describe("ForecastHero", () => {
     expect((html.match(/forecast-chart--outcomes/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--shares/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--uncertainty/g) ?? []).length).toBe(1);
+    // The axis's "tie" label sits over the tie line, not at the middle of the track.
+    const uncertainty = html.slice(html.indexOf("forecast-chart--uncertainty"));
+    const tieLabel = /forecast-chart__axis-tie" style="left:([\d.]+)%"/.exec(uncertainty);
+    const tieLine = /forecast-chart__line" style="left:([\d.]+)%"/.exec(uncertainty);
+    expect(tieLabel).not.toBeNull();
+    expect(tieLine).not.toBeNull();
+    expect(tieLabel![1]).toBe(tieLine![1]);
     // Parts of a whole add to 100 on the page: the margin outcomes and the uncertainty shares.
     const values = [...html.matchAll(/forecast-chart__value[^>]*>([^<]*)</g)].map((m) => m[1]);
     expect(values.slice(0, 3)).toEqual(["67%", "7%", "26%"]);

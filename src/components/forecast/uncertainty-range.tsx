@@ -20,7 +20,9 @@ export function UncertaintyRange({ view }: { view: UncertaintyBreakdownView }) {
         <span />
         <span className="forecast-chart__axis-track">
           <span>{view.challenger.surname} ahead</span>
-          <span>tie</span>
+          <span className="forecast-chart__axis-tie" style={{ left: `${tie}%` }}>
+            tie
+          </span>
           <span>{view.leader.surname} ahead</span>
         </span>
         <span className="forecast-chart__axis-value">Share</span>

@@ -13,6 +13,7 @@
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { formatDate, isoDayNumber, percentagesToHundred } from "@/lib/format";
+import { loessCurve } from "@/lib/loess";
 import type { CandidateTrend } from "@/lib/polling";
 import type { MayoralForecastFeed, UncertaintyGap, UncertaintySourceKey } from "@/types/feeds";
 
@@ -286,8 +287,9 @@ export function residualPoolNote(feed: MayoralForecastFeed): string {
 }
 
 /** The forecast history as the polling chart's series: one point per release and
- * candidate, joined straight through the points (no smoothing); null when the
- * feed carries no history. x is the publication date as a day number. */
+ * candidate, with the same LOESS trend line the polling chart uses (none under
+ * its minimum point count); null when the feed carries no history. x is the
+ * publication date as a day number. */
 export function forecastHistoryTrends(
   feed: MayoralForecastFeed,
   field: string[],
@@ -302,7 +304,7 @@ export function forecastHistoryTrends(
         y: point.win_probability[id],
         poll_id: point.poll_sample_ids.join(", "),
       }));
-    return { id, markers, curve: markers.map(({ x, y }) => ({ x, y })) };
+    return { id, markers, curve: loessCurve(markers.map(({ x, y }) => ({ x, y }))) };
   });
 }
 

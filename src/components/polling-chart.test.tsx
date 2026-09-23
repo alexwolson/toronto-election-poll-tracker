@@ -70,7 +70,6 @@ describe("PollingChart accessibility", () => {
         trends={TRENDS}
         series={SERIES}
         yDomain={[0, 100]}
-        lineType="stepAfter"
         summary={{ intro: "Forecast history summary.", rows: ["Candidate A: 60% then 70%."] }}
       />,
     );

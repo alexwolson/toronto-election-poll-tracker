@@ -70,18 +70,18 @@ export default async function PollsPage() {
                   Each candidate&apos;s chance of winning as it would have stood the day each poll
                   was published, recomputed with the current model. It is not a record of what this
                   site showed at the time. Polls are placed by publication date, since a poll can
-                  only move the forecast once it is out.
+                  only move the forecast once it is out. As in the chart above, the line is a
+                  smoothed trend through the points.
                 </p>
               </SectionHeading>
               <PollingChart
                 trends={historyTrends}
                 series={series}
                 yDomain={[0, 100]}
-                lineType="stepAfter"
                 xAxis="month"
                 summary={{
                   intro:
-                    "Forecast history summary. Each point is each candidate's chance of winning after a poll release, recomputed with the current model.",
+                    "Forecast history summary. Each point is each candidate's chance of winning after a poll release, recomputed with the current model. Smoothed lines summarize the direction of those points; the forecast itself changes only when a poll is published.",
                   rows: forecastHistorySummaryRows(forecast, series),
                 }}
               />

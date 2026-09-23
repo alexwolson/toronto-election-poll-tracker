@@ -9,7 +9,7 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import { viableField } from "@/lib/mayoral-forecast";
-import { candidateTrends, pollsterRegistry } from "@/lib/polling";
+import { candidateTrends, latestPoll, pollsByFieldwork, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -30,7 +30,7 @@ export default async function PollsPage() {
     return { id, name: candidateName(id), color: meta.colorVar, hatch: meta.hatch };
   });
   const registry = pollsterRegistry(polling);
-  const latest = polling.latest;
+  const latest = latestPoll(polling);
 
   return (
     <main id="main-content" className="np-shell">
@@ -67,7 +67,7 @@ export default async function PollsPage() {
                 wording or respondent base.
               </p>
             </SectionHeading>
-            <PollArchive polls={polling.polls} field={field} />
+            <PollArchive polls={pollsByFieldwork(polling)} field={field} />
           </section>
 
           <section className="page-section" aria-labelledby="firms-heading">

@@ -7,12 +7,30 @@ import { isoDayNumber } from "@/lib/format";
 import { type LoessPoint, loessCurve } from "@/lib/loess";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 
-/** The newest poll's shares, restricted to the field. */
+/** Polls ordered by when the fieldwork happened, newest first. The feed lists
+ * them newest *published* first; a poll released weeks after its fieldwork
+ * (Ipsos, September 2026) must not displace polls conducted after it. Ties
+ * break by publication date, then id. */
+export function pollsByFieldwork(feed: MayoralPollingFeed): Poll[] {
+  return [...feed.polls].sort(
+    (a, b) =>
+      b.date_conducted.localeCompare(a.date_conducted) ||
+      b.date_published.localeCompare(a.date_published) ||
+      b.poll_id.localeCompare(a.poll_id),
+  );
+}
+
+/** The poll with the most recent fieldwork; null when the feed has none. */
+export function latestPoll(feed: MayoralPollingFeed): Poll | null {
+  return pollsByFieldwork(feed)[0] ?? null;
+}
+
+/** The latest poll's shares (by fieldwork), restricted to the field. */
 export function latestFieldShares(
   feed: MayoralPollingFeed,
   field: string[],
 ): Record<string, number> {
-  const latest = feed.latest;
+  const latest = latestPoll(feed);
   const shares: Record<string, number> = {};
   if (!latest) return shares;
   for (const id of field) {

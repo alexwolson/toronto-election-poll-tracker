@@ -10,6 +10,7 @@ import { viableField } from "@/lib/mayoral-forecast";
 import {
   explicitOtherShare,
   latestFieldShares,
+  latestPoll,
   latestReferencedPollDate,
   pollMethodLabel,
 } from "@/lib/polling";
@@ -25,7 +26,7 @@ export default async function Home() {
   const ranked = field
     .filter((id) => id in shares)
     .sort((a, b) => shares[b] - shares[a]);
-  const latest = polling.latest;
+  const latest = latestPoll(polling);
   const otherShare = latest ? explicitOtherShare(latest, field) : null;
   const forecastAsOf = latestReferencedPollDate(polling, forecast.final_field_samples);
 

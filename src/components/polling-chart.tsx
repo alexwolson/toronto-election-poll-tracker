@@ -56,27 +56,54 @@ export function pollingTrendSummaryRows(
 export function PollingChart({
   trends,
   series,
+  yDomain,
+  lineType,
+  xAxis,
+  summary,
 }: {
   trends: CandidateTrend[];
   series: ChartSeries[];
+  /** y-axis range in percent; defaults to the polling chart's 0–60 */
+  yDomain?: [number, number];
+  /** "stepAfter" for values that change only at each point; defaults to a smooth line */
+  lineType?: "monotone" | "stepAfter";
+  /** "month" ticks the first of each month with the month name, for short ranges */
+  xAxis?: "monthYear" | "month";
+  /** a caller's text equivalent, in place of the polling summary */
+  summary?: { intro: string; rows: string[] };
 }) {
-  const summaryRows = pollingTrendSummaryRows(trends, series);
-
   return (
     <div className="polling-chart-shell">
-      <PollingChartLoader trends={trends} series={series} />
+      <PollingChartLoader
+        trends={trends}
+        series={series}
+        yDomain={yDomain}
+        lineType={lineType}
+        xAxis={xAxis}
+      />
 
       <div className="sr-only">
-        <p>
-          Polling trend summary. Each point is a published poll result. Smoothed
-          lines summarize the direction of those reports; they are not polling
-          averages or forecasts. A candidate missing from a poll is omitted, not
-          counted as zero.
-        </p>
-        <ul>
-          {summaryRows.map((row) => <li key={row}>{row}</li>)}
-        </ul>
-        <p>The poll archive below contains every reported value and its source.</p>
+        {summary ? (
+          <>
+            <p>{summary.intro}</p>
+            <ul>
+              {summary.rows.map((row) => <li key={row}>{row}</li>)}
+            </ul>
+          </>
+        ) : (
+          <>
+            <p>
+              Polling trend summary. Each point is a published poll result. Smoothed
+              lines summarize the direction of those reports; they are not polling
+              averages or forecasts. A candidate missing from a poll is omitted, not
+              counted as zero.
+            </p>
+            <ul>
+              {pollingTrendSummaryRows(trends, series).map((row) => <li key={row}>{row}</li>)}
+            </ul>
+            <p>The poll archive below contains every reported value and its source.</p>
+          </>
+        )}
       </div>
     </div>
   );

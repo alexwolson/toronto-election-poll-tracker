@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import type { PollingChartGraphicProps } from "./polling-chart-loader";
 import { candidateName } from "@/lib/candidates";
+import { monthStartDays } from "@/lib/format";
 
 const LEGEND_SHAPE: Record<string, "circle" | "rect" | "diamond"> = {
   chow: "circle",
@@ -20,6 +21,7 @@ const LEGEND_SHAPE: Record<string, "circle" | "rect" | "diamond"> = {
   alexander: "diamond",
 };
 
+const MONTH_FORMATTER = new Intl.DateTimeFormat("en-CA", { month: "short", timeZone: "UTC" });
 const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   month: "short",
   year: "2-digit",
@@ -109,6 +111,9 @@ function legendLabel(value: unknown) {
 export const PollingChartGraphic = memo(function PollingChartGraphic({
   trends,
   series,
+  yDomain = [0, 60],
+  lineType = "monotone",
+  xAxis = "monthYear",
 }: PollingChartGraphicProps) {
   const { data, hasCurve } = useMemo(() => {
     const byX = new Map<number, Record<string, number>>();
@@ -147,14 +152,19 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
           type="number"
           scale="linear"
           domain={["dataMin", "dataMax"]}
-          tickFormatter={(value) => labelForDay(Number(value))}
+          ticks={xAxis === "month" && data.length > 0 ? monthStartDays(data[0].x, data[data.length - 1].x) : undefined}
+          tickFormatter={(value) =>
+            xAxis === "month"
+              ? MONTH_FORMATTER.format(new Date(Number(value) * 86_400_000))
+              : labelForDay(Number(value))
+          }
           tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           axisLine={{ stroke: "var(--border)" }}
           tickLine={{ stroke: "var(--border)" }}
           minTickGap={40}
         />
         <YAxis
-          domain={[0, 60]}
+          domain={yDomain}
           tickFormatter={(value) => `${value}%`}
           tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           axisLine={{ stroke: "var(--border)" }}
@@ -197,7 +207,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
                     strokeWidth={2.5}
                     strokeDasharray={candidate.hatch ? "8 5" : undefined}
                     legendType={shape}
-                    type="monotone"
+                    type={lineType}
                     connectNulls
                     dot={false}
                     isAnimationActive={false}

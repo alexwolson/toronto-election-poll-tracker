@@ -1,11 +1,13 @@
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import { describe, expect, it } from "vitest";
-import { formatDate } from "@/lib/format";
+import { formatDate, isoDayNumber } from "@/lib/format";
 import type { MayoralForecastFeed } from "@/types/feeds";
 import {
   chance,
   electionDayShares,
   forecastAvailable,
+  forecastHistorySummaryRows,
+  forecastHistoryTrends,
   leadForecast,
   marginOutcomes,
   residualPoolNote,
@@ -182,5 +184,33 @@ describe("uncertaintyBreakdown", () => {
     const plain = feed();
     delete plain.uncertainty;
     expect(uncertaintyBreakdown(plain)).toBeNull();
+  });
+});
+
+describe("forecast history", () => {
+  it("turns each release into one point per candidate, joined by a line, oldest first", () => {
+    const f = feed();
+    const trends = forecastHistoryTrends(f, [CHOW, BRADFORD, ALEXANDER])!;
+    expect(trends.map((t) => t.id)).toEqual([CHOW, BRADFORD, ALEXANDER]);
+    const chow = trends[0];
+    expect(chow.markers).toHaveLength(7);
+    expect(chow.markers.map((m) => m.x)).toEqual([...chow.markers.map((m) => m.x)].sort((a, b) => a - b));
+    expect(chow.markers[0].x).toBe(isoDayNumber("2026-07-30"));
+    expect(chow.markers.at(-1)?.y).toBe(f.candidate_win[CHOW].probability);
+    expect(chow.markers[0].poll_id).toBe("forum-2026-07-29");
+    // The line runs through the points themselves; nothing is smoothed.
+    expect(chow.curve).toEqual(chow.markers.map(({ x, y }) => ({ x, y })));
+  });
+  it("is null when the feed carries no history", () => {
+    const f = feed();
+    delete f.history;
+    expect(forecastHistoryTrends(f, [CHOW])).toBeNull();
+  });
+  it("summarizes each candidate's first and latest chance for screen readers", () => {
+    const f = feed();
+    const rows = forecastHistorySummaryRows(f, [{ id: CHOW, name: "Olivia Chow" }]);
+    expect(rows).toEqual([
+      "Olivia Chow: 68.5% after the poll published Jul 30, 2026; 70.4% after the latest, published Sep 22, 2026; 7 releases.",
+    ]);
   });
 });

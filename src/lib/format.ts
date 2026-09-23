@@ -46,3 +46,24 @@ export function percentagesToHundred(fractions: number[]): number[] {
   for (const { i } of byRemainder.slice(0, Math.max(0, missing))) out[i] += 1;
   return out;
 }
+
+/** Day numbers of the first day of each month within [minDay, maxDay], for axis
+ *  ticks on short date ranges. */
+export function monthStartDays(minDay: number, maxDay: number): number[] {
+  const start = new Date(minDay * 86_400_000);
+  let year = start.getUTCFullYear();
+  let month = start.getUTCMonth();
+  if (start.getUTCDate() !== 1) month += 1;
+  const days: number[] = [];
+  for (;;) {
+    const day = Math.round(Date.UTC(year, month, 1) / 86_400_000);
+    if (day > maxDay) break;
+    days.push(day);
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  return days;
+}

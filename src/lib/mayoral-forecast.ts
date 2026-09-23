@@ -12,7 +12,8 @@
  */
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import { formatDate, percentagesToHundred } from "@/lib/format";
+import { formatDate, isoDayNumber, percentagesToHundred } from "@/lib/format";
+import type { CandidateTrend } from "@/lib/polling";
 import type { MayoralForecastFeed, UncertaintyGap, UncertaintySourceKey } from "@/types/feeds";
 
 /** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
@@ -282,4 +283,44 @@ export function residualPoolNote(feed: MayoralForecastFeed): string {
   const named = pool.named_in_polls.map((n) => n.display_name);
   const including = named.length > 0 ? `, including ${listNames(named)}` : "";
   return `${pool.candidate_count} certified candidates${including}, modelled together.`;
+}
+
+/** The forecast history as the polling chart's series: one point per release and
+ * candidate, joined straight through the points (no smoothing); null when the
+ * feed carries no history. x is the publication date as a day number. */
+export function forecastHistoryTrends(
+  feed: MayoralForecastFeed,
+  field: string[],
+): CandidateTrend[] | null {
+  const history = feed.history;
+  if (!history || history.length === 0) return null;
+  return field.map((id) => {
+    const markers = history
+      .filter((point) => id in point.win_probability)
+      .map((point) => ({
+        x: isoDayNumber(point.date),
+        y: point.win_probability[id],
+        poll_id: point.poll_sample_ids.join(", "),
+      }));
+    return { id, markers, curve: markers.map(({ x, y }) => ({ x, y })) };
+  });
+}
+
+/** Screen-reader rows for the forecast-history chart. */
+export function forecastHistorySummaryRows(
+  feed: MayoralForecastFeed,
+  series: Array<{ id: string; name: string }>,
+): string[] {
+  const history = feed.history ?? [];
+  if (history.length === 0) return [];
+  const first = history[0];
+  const last = history[history.length - 1];
+  const pct = (value: number | undefined) =>
+    value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`;
+  return series.map(
+    ({ id, name }) =>
+      `${name}: ${pct(first.win_probability[id])} after the poll published ${formatDate(first.date)}; ` +
+      `${pct(last.win_probability[id])} after the latest, published ${formatDate(last.date)}; ` +
+      `${history.length} releases.`,
+  );
 }

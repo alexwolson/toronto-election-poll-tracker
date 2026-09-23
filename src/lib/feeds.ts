@@ -319,6 +319,10 @@ export function validateForecast(value: unknown): MayoralForecastFeed | null {
     return null;
   }
   if (
+    value.history !== undefined &&
+    !validHistory(value.history, value.candidate_win as Record<string, ForecastQuantityCard>)
+  ) return null;
+  if (
     value.uncertainty !== undefined &&
     !validUncertainty(
       value.uncertainty,
@@ -346,6 +350,39 @@ function validGap(value: unknown): value is Record<string, unknown> {
  * fixed order, each on its own, then all three together, which must equal the
  * published margin so the view can never disagree with the headline.
  */
+/** The forecast after each release: dated in order, one more poll each time, a full
+ * set of chances that add to one, ending on the published forecast itself. */
+function validHistory(value: unknown, candidateWin: Record<string, ForecastQuantityCard>): boolean {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  const ids = Object.keys(candidateWin).sort();
+  let previousDate = "";
+  let previousPolls = 0;
+  for (const point of value) {
+    if (
+      !isRecord(point) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(String(point.date)) ||
+      String(point.date) <= previousDate ||
+      !isUniqueStringArray(point.poll_sample_ids) ||
+      !Number.isInteger(point.polls) ||
+      Number(point.polls) <= previousPolls ||
+      !isRecord(point.win_probability) ||
+      (point.diagnostics !== undefined && !isRecord(point.diagnostics))
+    ) return false;
+    const chances = point.win_probability;
+    if (Object.keys(chances).sort().join() !== ids.join()) return false;
+    if (!Object.values(chances).every(isShare)) return false;
+    const total = Object.values(chances).reduce((sum: number, share) => sum + Number(share), 0);
+    if (Math.abs(total - 1) > 1e-4) return false;
+    previousDate = String(point.date);
+    previousPolls = Number(point.polls);
+  }
+  const last = (value.at(-1) as { win_probability: Record<string, number> }).win_probability;
+  return ids.every((id) => {
+    const published = candidateWin[id].probability;
+    return published !== null && Math.abs(last[id] - published) < 1e-9;
+  });
+}
+
 function validUncertainty(value: unknown, margin: Record<string, unknown>): boolean {
   if (
     !isRecord(value) ||

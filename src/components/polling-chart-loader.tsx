@@ -7,6 +7,10 @@ import type { CandidateTrend } from "@/lib/polling";
 export interface PollingChartGraphicProps {
   trends: CandidateTrend[];
   series: ChartSeries[];
+  yDomain?: [number, number];
+  lineType?: "monotone" | "stepAfter";
+  /** "month" ticks the first of each month with the month name, for short ranges */
+  xAxis?: "monthYear" | "month";
 }
 
 export function PollingChartLoader(props: PollingChartGraphicProps) {

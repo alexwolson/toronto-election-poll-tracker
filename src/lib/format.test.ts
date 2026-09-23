@@ -4,6 +4,7 @@ import {
   formatDetailedSharePct,
   formatSharePct,
   isoDayNumber,
+  monthStartDays,
   percentagesToHundred,
 } from "./format";
 
@@ -57,5 +58,18 @@ describe("percentagesToHundred", () => {
     const out = percentagesToHundred(input);
     expect(out.reduce((a, b) => a + b, 0)).toBe(100);
     for (const [i, v] of out.entries()) expect(Math.abs(v - input[i] * 100)).toBeLessThan(1);
+  });
+});
+
+describe("monthStartDays", () => {
+  it("returns the first day of each month inside the range, as day numbers", () => {
+    expect(monthStartDays(isoDayNumber("2026-07-30"), isoDayNumber("2026-09-23"))).toEqual([
+      isoDayNumber("2026-08-01"),
+      isoDayNumber("2026-09-01"),
+    ]);
+    expect(monthStartDays(isoDayNumber("2026-08-01"), isoDayNumber("2026-08-01"))).toEqual([
+      isoDayNumber("2026-08-01"),
+    ]);
+    expect(monthStartDays(isoDayNumber("2026-08-02"), isoDayNumber("2026-08-30"))).toEqual([]);
   });
 });

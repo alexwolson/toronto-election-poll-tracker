@@ -69,6 +69,33 @@ describe("validateForecast", () => {
     }
   });
 
+  it("accepts the additive forecast history, tolerates its absence, and fails closed when malformed", () => {
+    const feed = validateForecast(forecastFixture);
+    const history = feed?.history ?? [];
+    expect(history.length).toBe(7);
+    // The last point is the published forecast itself.
+    const last = history.at(-1)?.win_probability ?? {};
+    for (const [id, card] of Object.entries(feed?.candidate_win ?? {})) expect(last[id]).toBe(card.probability);
+    const without = structuredClone(forecastFixture) as Record<string, unknown>;
+    delete without.history;
+    expect(validateForecast(without)?.history).toBeUndefined();
+    const cases: Array<(feed: typeof forecastFixture) => void> = [
+      (f) => { f.history = []; },
+      (f) => { f.history[1].date = f.history[0].date; },
+      (f) => { f.history[1].date = "Aug 7"; },
+      (f) => { f.history[2].polls = f.history[1].polls; },
+      (f) => { f.history[0].poll_sample_ids = []; },
+      (f) => { delete (f.history[0].win_probability as Record<string, number>)[Object.keys(f.history[0].win_probability)[0]]; },
+      (f) => { const k = Object.keys(f.history[0].win_probability)[0]; (f.history[0].win_probability as Record<string, number>)[k] += 0.2; },
+      (f) => { const k = Object.keys(f.history[6].win_probability)[0]; (f.history[6].win_probability as Record<string, number>)[k] -= 0.01; (f.history[6].win_probability as Record<string, number>)[Object.keys(f.history[6].win_probability)[1]] += 0.01; },
+    ];
+    for (const mutate of cases) {
+      const malformed = structuredClone(forecastFixture);
+      mutate(malformed);
+      expect(validateForecast(malformed), mutate.toString()).toBeNull();
+    }
+  });
+
   it("accepts the additive uncertainty breakdown, tolerates its absence, and fails closed when malformed", () => {
     const feed = validateForecast(forecastFixture);
     const block = feed?.uncertainty;

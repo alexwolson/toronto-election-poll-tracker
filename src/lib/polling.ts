@@ -51,6 +51,37 @@ export function explicitOtherShare(poll: Poll, field: string[]): number | null {
   return reportedOutsideField.reduce((sum, [, share]) => sum + share, 0);
 }
 
+const UNDECIDED_KEY = "response:undecided";
+
+export interface ResidualShares {
+  /** the poll's reported undecided share, when its denominator keeps undecideds in */
+  undecided: number | null;
+  /** everything else reported outside the forecast field: other candidates, non-voters */
+  other: number | null;
+}
+
+/** Responses a poll reports outside the forecast field, with undecided kept
+ * apart from the rest so an all-respondents reading is not read as "38% chose
+ * someone else". Nothing is inferred from an incomplete total. */
+export function residualShares(poll: Poll, field: string[]): ResidualShares {
+  const fieldIds = new Set(field);
+  let undecided: number | null = null;
+  let other: number | null = null;
+  for (const [id, share] of Object.entries(poll.shares)) {
+    if (fieldIds.has(id)) continue;
+    if (id === UNDECIDED_KEY) undecided = (undecided ?? 0) + share;
+    else other = (other ?? 0) + share;
+  }
+  return { undecided, other };
+}
+
+/** The poll's denominator label as it reads mid-sentence; null when the feed has none. */
+export function denominatorPhrase(poll: Poll): string | null {
+  const label = poll.denominator?.trim();
+  if (!label) return null;
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 /** Expand terse feed codes where a plain-language label is known. */
 export function pollMethodLabel(methodology: string): string {
   const normalized = methodology.trim().toLowerCase();

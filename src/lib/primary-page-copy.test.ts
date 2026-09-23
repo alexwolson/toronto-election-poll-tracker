@@ -26,6 +26,7 @@ const WARD_DETAIL = read("src/app/wards/[ward_num]/page.tsx");
 const HERO = read("src/components/forecast-hero.tsx");
 const MASTHEAD = read("src/components/masthead-nav.tsx");
 const LAYOUT = read("src/app/layout.tsx");
+const ARCHIVE = read("src/components/poll-archive.tsx");
 const WARDS_BROWSER = read("src/components/wards-browser.tsx");
 
 // Methodology qualifications / internal vocabulary retired from every primary
@@ -116,6 +117,8 @@ describe("primary pages keep their facts and controls", () => {
     expect(POLLS).toContain("<PollArchive");
     expect(POLLS).toContain("public polls; latest from");
     expect(POLLS).toContain("Other reported choices");
+    expect(ARCHIVE).toContain("Undecided");
+    expect(ARCHIVE).toContain("Denominator");
     expect(normalized).toContain("does not include question wording or respondent base");
   });
 
@@ -126,7 +129,10 @@ describe("primary pages keep their facts and controls", () => {
     expect(HOME).not.toContain("poll-context-grid");
     expect(HOME).not.toContain("poll-context-note");
     expect(HOME).not.toContain("Question wording");
-    expect(HOME).toContain("Other reported choices");
+    // The latest-poll line names the denominator and keeps undecided apart from other responses.
+    expect(HOME).toContain("denominatorPhrase");
+    expect(HOME).toContain("other reported choices");
+    expect(HOME).toContain("undecided");
     expect(HOME).toContain("Browse all 25 ward races");
     expect(HOME).toContain("How the evidence is handled");
     expect(HOME).not.toContain("methodology-prompt");

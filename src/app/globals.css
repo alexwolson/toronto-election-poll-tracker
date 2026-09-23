@@ -2187,6 +2187,17 @@ body {
   text-transform: uppercase;
 }
 .site-nav { border-top: 1px solid var(--line-strong); }
+.site-notice {
+  margin: 0;
+  padding: 0.45rem 1rem;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-mid);
+  font-family: var(--font-ibm-mono), ui-monospace, monospace;
+  font-size: var(--type-label);
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  text-align: center;
+}
 .nav-link {
   min-width: 6.5rem;
   padding: 0.62rem 1rem;

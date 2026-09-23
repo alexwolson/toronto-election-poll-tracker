@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Newsreader, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { MastheadNav } from "@/components/masthead-nav";
+import { SiteNotice } from "@/components/site-notice";
 
 const kidsVoteDirectionContract = `<!--
 THESIS: A hands-on poll experiment lets children discover that a sample is a useful clue, not a promise; it refuses the adult election-dashboard default.
@@ -61,6 +62,7 @@ export default function RootLayout({
           </div>
           <MastheadNav />
         </header>
+        <SiteNotice />
         {children}
       </body>
     </html>

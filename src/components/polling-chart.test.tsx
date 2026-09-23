@@ -64,6 +64,22 @@ describe("PollingChart accessibility", () => {
     expect(html).toContain("The poll archive below contains every reported value and its source.");
   });
 
+  it("takes a caller's text equivalent in place of the polling summary", () => {
+    const html = renderToStaticMarkup(
+      <PollingChart
+        trends={TRENDS}
+        series={SERIES}
+        yDomain={[0, 100]}
+        lineType="stepAfter"
+        summary={{ intro: "Forecast history summary.", rows: ["Candidate A: 60% then 70%."] }}
+      />,
+    );
+    expect(html).toContain("Forecast history summary.");
+    expect(html).toContain("<li>Candidate A: 60% then 70%.</li>");
+    expect(html).not.toContain("Polling trend summary.");
+    expect(html).not.toContain("The poll archive below contains every reported value");
+  });
+
   it("loads the visual chart only after its reserved region nears the viewport", async () => {
     class ImmediateIntersectionObserver {
       constructor(private readonly callback: IntersectionObserverCallback) {}

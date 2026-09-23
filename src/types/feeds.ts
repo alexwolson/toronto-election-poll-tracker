@@ -167,6 +167,17 @@ export interface ForecastModelRecord {
   [key: string]: unknown;
 }
 
+export interface ForecastHistoryPoint {
+  /** publication date of the poll(s) that moved the forecast, YYYY-MM-DD */
+  date: string;
+  poll_sample_ids: string[];
+  /** certified-field polls in the model at this point */
+  polls: number;
+  /** candidate id -> chance of winning (fraction) */
+  win_probability: Record<string, number>;
+  diagnostics?: Record<string, unknown>;
+}
+
 export interface MayoralForecastFeed {
   schema_version: 4;
   publication_policy: "margin-first-joint-draws-v1";
@@ -186,6 +197,8 @@ export interface MayoralForecastFeed {
   election_day: ElectionDay | null;
   /** optional and additive (ADR 0056); absent on releases before it was published */
   uncertainty?: UncertaintyBreakdown;
+  /** the forecast after each poll release, recomputed with the current model; last point = candidate_win */
+  history?: ForecastHistoryPoint[];
   model: ForecastModelRecord;
   /** prespecified alternative refits; audit metadata, never rendered */
   sensitivity: unknown[];

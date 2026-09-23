@@ -118,6 +118,12 @@ describe("primary pages keep their facts and controls", () => {
     expect(POLLS).toContain("public polls; latest from");
     expect(POLLS).toContain("Other reported choices");
     expect(ARCHIVE).toContain("Undecided");
+    // One forecast-history chart, reusing the polling chart, placed by publication date.
+    expect(POLLS).toContain("How the forecast has moved with each poll");
+    expect(POLLS).toContain("recomputed with the current model");
+    expect(POLLS).toContain('lineType="stepAfter"');
+    expect(POLLS).toContain('xAxis="month"');
+    expect(POLLS).toContain("forecastHistoryTrends(");
     expect(ARCHIVE).toContain("Denominator");
     expect(normalized).toContain("does not include question wording or respondent base");
   });

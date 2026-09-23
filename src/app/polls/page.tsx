@@ -8,7 +8,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
-import { viableField } from "@/lib/mayoral-forecast";
+import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
 import { candidateTrends, latestPoll, pollsByFieldwork, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
@@ -30,6 +30,7 @@ export default async function PollsPage() {
     return { id, name: candidateName(id), color: meta.colorVar, hatch: meta.hatch };
   });
   const registry = pollsterRegistry(polling);
+  const historyTrends = forecastHistoryTrends(forecast, field);
   const latest = latestPoll(polling);
 
   return (
@@ -58,6 +59,34 @@ export default async function PollsPage() {
             </SectionHeading>
             <PollingChart trends={trends} series={series} />
           </section>
+
+          {historyTrends && (
+            <section className="page-section" aria-labelledby="forecast-history-heading">
+              <SectionHeading
+                headingId="forecast-history-heading"
+                title="How the forecast has moved with each poll"
+              >
+                <p>
+                  Each candidate&apos;s chance of winning as it would have stood the day each poll
+                  was published, recomputed with the current model. It is not a record of what this
+                  site showed at the time. Polls are placed by publication date, since a poll can
+                  only move the forecast once it is out.
+                </p>
+              </SectionHeading>
+              <PollingChart
+                trends={historyTrends}
+                series={series}
+                yDomain={[0, 100]}
+                lineType="stepAfter"
+                xAxis="month"
+                summary={{
+                  intro:
+                    "Forecast history summary. Each point is each candidate's chance of winning after a poll release, recomputed with the current model.",
+                  rows: forecastHistorySummaryRows(forecast, series),
+                }}
+              />
+            </section>
+          )}
 
           <section className="page-section" aria-labelledby="archive-heading">
             <SectionHeading headingId="archive-heading" title="Poll archive">

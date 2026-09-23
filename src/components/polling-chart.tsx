@@ -57,7 +57,6 @@ export function PollingChart({
   trends,
   series,
   yDomain,
-  lineType,
   xAxis,
   summary,
 }: {
@@ -65,8 +64,6 @@ export function PollingChart({
   series: ChartSeries[];
   /** y-axis range in percent; defaults to the polling chart's 0–60 */
   yDomain?: [number, number];
-  /** "stepAfter" for values that change only at each point; defaults to a smooth line */
-  lineType?: "monotone" | "stepAfter";
   /** "month" ticks the first of each month with the month name, for short ranges */
   xAxis?: "monthYear" | "month";
   /** a caller's text equivalent, in place of the polling summary */
@@ -78,7 +75,6 @@ export function PollingChart({
         trends={trends}
         series={series}
         yDomain={yDomain}
-        lineType={lineType}
         xAxis={xAxis}
       />
 

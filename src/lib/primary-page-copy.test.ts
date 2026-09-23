@@ -121,7 +121,8 @@ describe("primary pages keep their facts and controls", () => {
     // One forecast-history chart, reusing the polling chart, placed by publication date.
     expect(POLLS).toContain("How the forecast has moved with each poll");
     expect(POLLS).toContain("recomputed with the current model");
-    expect(POLLS).toContain('lineType="stepAfter"');
+    expect(POLLS).not.toContain("lineType");
+    expect(POLLS).toContain("smoothed trend");
     expect(POLLS).toContain('xAxis="month"');
     expect(POLLS).toContain("forecastHistoryTrends(");
     expect(ARCHIVE).toContain("Denominator");

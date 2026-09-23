@@ -112,7 +112,6 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
   trends,
   series,
   yDomain = [0, 60],
-  lineType = "monotone",
   xAxis = "monthYear",
 }: PollingChartGraphicProps) {
   const { data, hasCurve } = useMemo(() => {
@@ -207,7 +206,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
                     strokeWidth={2.5}
                     strokeDasharray={candidate.hatch ? "8 5" : undefined}
                     legendType={shape}
-                    type={lineType}
+                    type="monotone"
                     connectNulls
                     dot={false}
                     isAnimationActive={false}

@@ -1,6 +1,7 @@
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import { describe, expect, it } from "vitest";
 import { formatDate, isoDayNumber } from "@/lib/format";
+import { loessCurve } from "@/lib/loess";
 import type { MayoralForecastFeed } from "@/types/feeds";
 import {
   chance,
@@ -198,8 +199,9 @@ describe("forecast history", () => {
     expect(chow.markers[0].x).toBe(isoDayNumber("2026-07-30"));
     expect(chow.markers.at(-1)?.y).toBe(f.candidate_win[CHOW].probability);
     expect(chow.markers[0].poll_id).toBe("forum-2026-07-29");
-    // The line runs through the points themselves; nothing is smoothed.
-    expect(chow.curve).toEqual(chow.markers.map(({ x, y }) => ({ x, y })));
+    // The same LOESS trend line as the polling chart, fitted to the release points.
+    expect(chow.curve).toEqual(loessCurve(chow.markers.map(({ x, y }) => ({ x, y }))));
+    expect(chow.curve).not.toBeNull();
   });
   it("is null when the feed carries no history", () => {
     const f = feed();

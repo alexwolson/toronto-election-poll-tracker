@@ -2866,8 +2866,15 @@ body {
   color: var(--text-soft);
 }
 .forecast-chart__axis-track {
+  position: relative;
   display: flex;
   justify-content: space-between;
+}
+/* The tie label is pinned to the tie line's position, not the track's middle. */
+.forecast-chart__axis-tie {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
 }
 .forecast-chart__axis-value {
   text-align: right;

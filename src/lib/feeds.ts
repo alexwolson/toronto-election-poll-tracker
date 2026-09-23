@@ -778,6 +778,7 @@ function validPoll(value: unknown, candidates: Set<string>): boolean {
     (value.sample_size !== null &&
       (!Number.isInteger(value.sample_size) || Number(value.sample_size) <= 0)) ||
     !isNonEmptyString(value.methodology) ||
+    (value.denominator !== undefined && typeof value.denominator !== "string") ||
     !isUniqueStringArray(value.field_tested) ||
     !isRecord(value.shares) ||
     Object.keys(value.shares).length === 0 ||

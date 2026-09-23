@@ -3,6 +3,7 @@ import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 import {
   candidateTrends,
+  denominatorPhrase,
   explicitOtherShare,
   latestFieldShares,
   latestPoll,
@@ -11,6 +12,7 @@ import {
   pollMethodLabel,
   pollsterRegistry,
   pollsterWebsite,
+  residualShares,
 } from "./polling";
 
 const feed = pollingFixture as unknown as MayoralPollingFeed;
@@ -139,5 +141,25 @@ describe("fieldwork order", () => {
   });
   it("is null for an empty feed", () => {
     expect(latestPoll({ ...feed, polls: [], latest: null })).toBeNull();
+  });
+});
+
+describe("residual shares and denominator", () => {
+  it("keeps undecided apart from the other responses outside the field", () => {
+    const decided = feed.polls[0];
+    expect(residualShares(decided, FIELD)).toEqual({ undecided: null, other: decided.shares["response:other"] });
+    const all: Poll = {
+      ...decided,
+      shares: { [CHOW]: 0.36, [BRADFORD]: 0.21, [ALEXANDER]: 0.04, "response:other": 0.05, "response:undecided": 0.3, "response:would_not_vote": 0.03 },
+    };
+    const residual = residualShares(all, FIELD);
+    expect(residual.undecided).toBeCloseTo(0.3, 6);
+    expect(residual.other).toBeCloseTo(0.08, 6);
+  });
+  it("phrases the denominator for mid-sentence use and is null when the feed has none", () => {
+    expect(denominatorPhrase({ ...feed.polls[0], denominator: "All respondents" })).toBe("all respondents");
+    expect(denominatorPhrase({ ...feed.polls[0], denominator: "Decided and leaning voters" })).toBe("decided and leaning voters");
+    expect(denominatorPhrase(feed.polls[0])).toBeNull();
+    expect(denominatorPhrase({ ...feed.polls[0], denominator: "  " })).toBeNull();
   });
 });

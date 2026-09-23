@@ -8,11 +8,12 @@ import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, formatSharePct } from "@/lib/format";
 import { viableField } from "@/lib/mayoral-forecast";
 import {
-  explicitOtherShare,
+  denominatorPhrase,
   latestFieldShares,
   latestPoll,
   latestReferencedPollDate,
   pollMethodLabel,
+  residualShares,
 } from "@/lib/polling";
 
 export default async function Home() {
@@ -27,7 +28,8 @@ export default async function Home() {
     .filter((id) => id in shares)
     .sort((a, b) => shares[b] - shares[a]);
   const latest = latestPoll(polling);
-  const otherShare = latest ? explicitOtherShare(latest, field) : null;
+  const residual = latest ? residualShares(latest, field) : { undecided: null, other: null };
+  const denominator = latest ? denominatorPhrase(latest) : null;
   const forecastAsOf = latestReferencedPollDate(polling, forecast.final_field_samples);
 
   return (
@@ -45,7 +47,8 @@ export default async function Home() {
           <p className="poll-snapshot-line" aria-label="Latest poll shares">
             <PollsterLink firm={latest.firm} />, {formatDate(latest.date_conducted)}
             {latest.sample_size ? `, ${latest.sample_size.toLocaleString()} respondents` : ""} by{" "}
-            {pollMethodLabel(latest.methodology).replace(/^./, (c) => c.toLowerCase())}:{" "}
+            {pollMethodLabel(latest.methodology).replace(/^./, (c) => c.toLowerCase())}
+            {denominator ? `, ${denominator}` : ""}:{" "}
             {ranked.map((id, index) => {
               const meta = candidateMeta(id);
               return (
@@ -57,10 +60,11 @@ export default async function Home() {
                 </span>
               );
             })}
-            {otherShare !== null && (
-              <span>
-                , Other reported choices {formatSharePct(otherShare)}
-              </span>
+            {residual.undecided !== null && (
+              <span>, undecided {formatSharePct(residual.undecided)}</span>
+            )}
+            {residual.other !== null && (
+              <span>, other reported choices {formatSharePct(residual.other)}</span>
             )}
             .
           </p>

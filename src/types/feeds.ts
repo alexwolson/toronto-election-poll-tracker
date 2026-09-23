@@ -375,6 +375,8 @@ export interface Poll {
   date_published: string;
   sample_size: number | null;
   methodology: string;
+  /** public label of the reading's denominator ("Decided and leaning voters", "All respondents"); absent in older releases */
+  denominator?: string;
   field_tested: string[];
   shares: Record<string, number>;
   notes: string;

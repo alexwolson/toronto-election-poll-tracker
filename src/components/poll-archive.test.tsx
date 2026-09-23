@@ -38,3 +38,37 @@ describe("PollArchive", () => {
     expect(html).toContain("Interactive voice response (IVR)");
   });
 });
+
+describe("PollArchive denominator and undecided", () => {
+  const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
+  const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";
+  const FIELD = [CHOW, BRADFORD];
+  const poll = (overrides: Partial<Poll>): Poll => ({
+    ...POLL,
+    shares: { [CHOW]: 0.36, [BRADFORD]: 0.21, "response:other": 0.05, "response:undecided": 0.3 },
+    ...overrides,
+  });
+
+  it("shows the denominator and keeps undecided in its own column", () => {
+    const html = renderToStaticMarkup(
+      <PollArchive
+        polls={[
+          poll({ denominator: "All respondents" }),
+          poll({
+            poll_id: "q",
+            shares: { [CHOW]: 0.47, [BRADFORD]: 0.4, "response:other": 0.03 },
+            denominator: "Decided and leaning voters",
+          }),
+        ]}
+        field={FIELD}
+      />,
+    );
+    expect(html).toContain("<th>Denominator</th>");
+    expect(html).toContain(">Undecided</th>");
+    expect(html).toContain('data-label="Undecided" class="poll-archive__candidate-value font-mono">30%<');
+    expect(html).toContain('data-label="Other reported choices" class="poll-archive__candidate-value font-mono">5%<');
+    expect(html).toContain('data-label="Undecided" class="poll-archive__candidate-value font-mono">—<');
+    expect(html).toContain(">All respondents<");
+    expect(html).toContain(">Decided and leaning voters<");
+  });
+});

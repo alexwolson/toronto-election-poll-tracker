@@ -5,7 +5,9 @@ import {
   candidateTrends,
   explicitOtherShare,
   latestFieldShares,
+  latestPoll,
   latestReferencedPollDate,
+  pollsByFieldwork,
   pollMethodLabel,
   pollsterRegistry,
   pollsterWebsite,
@@ -102,5 +104,40 @@ describe("pollster registry", () => {
   it("links known firms and leaves unknown firms unlinked", () => {
     expect(pollsterWebsite("Forum Research")).toBe("https://forumresearch.com/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
+  });
+});
+
+describe("fieldwork order", () => {
+  /** The feed lists polls newest published first; the site orders by when the
+   * fieldwork happened. Ipsos's September 23 release of a September 4-8 poll is
+   * the case: published last, conducted before two other polls. */
+  function staggered(): MayoralPollingFeed {
+    const copy = structuredClone(feed);
+    copy.polls[0] = { ...copy.polls[0], date_conducted: "2026-08-10", date_published: "2026-08-25" };
+    copy.latest = copy.polls[0];
+    return copy;
+  }
+  it("orders polls by fieldwork end, newest first, not by publication", () => {
+    const ordered = pollsByFieldwork(staggered());
+    const dates = ordered.map((p) => p.date_conducted);
+    expect(dates).toEqual([...dates].sort().reverse());
+    expect(ordered[0].poll_id).toBe("liaison-2026-08-16");
+    expect(ordered.map((p) => p.poll_id)).toContain("pallas-2026-08-21");
+    expect(ordered).toHaveLength(feed.polls.length);
+  });
+  it("names the latest poll by fieldwork and reads its shares", () => {
+    const stale = staggered();
+    expect(latestPoll(stale)?.poll_id).toBe("liaison-2026-08-16");
+    expect(latestFieldShares(stale, FIELD)[CHOW]).toBeCloseTo(0.4851, 4);
+    // With the fixture as published, fieldwork and publication agree.
+    expect(latestPoll(feed)?.poll_id).toBe("pallas-2026-08-21");
+  });
+  it("breaks a fieldwork tie by publication date, then id", () => {
+    const tied = structuredClone(feed);
+    tied.polls[1] = { ...tied.polls[1], date_conducted: tied.polls[0].date_conducted, date_published: "2026-08-30" };
+    expect(latestPoll(tied)?.poll_id).toBe(tied.polls[1].poll_id);
+  });
+  it("is null for an empty feed", () => {
+    expect(latestPoll({ ...feed, polls: [], latest: null })).toBeNull();
   });
 });

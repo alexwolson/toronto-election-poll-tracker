@@ -7,7 +7,7 @@ import type { Poll } from "@/types/feeds";
 
 type PollArchiveRowStyle = CSSProperties & { "--poll-field-count": number };
 
-/** Full poll archive, newest first (spec §/polls). Shows each poll's share for
+/** Full poll archive, newest fieldwork first (spec §/polls). Shows each poll's share for
  *  the current field; "—" where a candidate was not tested. */
 export function PollArchive({ polls, field }: { polls: Poll[]; field: string[] }) {
   return (

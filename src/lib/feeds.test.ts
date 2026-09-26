@@ -399,6 +399,33 @@ describe("validateCouncil", () => {
     expect(Object.keys(validated?.wards ?? {})).toHaveLength(25);
   });
 
+  it("accepts schema 9 endorsements and still accepts a schema 8 feed without them", () => {
+    const valid = validateCouncil(councilFixture);
+    const endorsed = Object.values(valid?.wards ?? {})
+      .flatMap((card) => card.candidates)
+      .filter((candidate) => (candidate.endorsements ?? []).length > 0);
+    expect(endorsed).toHaveLength(1);
+    expect(endorsed[0].endorsements?.[0].endorser_name).toBe("Progress Toronto");
+
+    const older = structuredClone(councilFixture) as unknown as Record<string, unknown> & CouncilRaceCardsFeed;
+    older.schema_version = 8 as never;
+    for (const card of Object.values(older.wards)) for (const c of card.candidates) delete c.endorsements;
+    expect(validateCouncil(older)).not.toBeNull();
+  });
+
+  it("rejects schema 9 candidates without an endorsements list or with a nameless endorser", () => {
+    const missing = structuredClone(councilFixture) as unknown as CouncilRaceCardsFeed;
+    delete missing.wards["1"].candidates[0].endorsements;
+    expect(validateCouncil(missing)).toBeNull();
+
+    const nameless = structuredClone(councilFixture) as unknown as CouncilRaceCardsFeed;
+    const target = Object.values(nameless.wards)
+      .flatMap((card) => card.candidates)
+      .find((candidate) => (candidate.endorsements ?? []).length > 0)!;
+    target.endorsements![0].endorser_name = "";
+    expect(validateCouncil(nameless)).toBeNull();
+  });
+
   it("rejects a missing ward instead of publishing an incomplete city", () => {
     const malformed = structuredClone(councilFixture) as unknown as CouncilRaceCardsFeed;
     delete malformed.wards["25"];

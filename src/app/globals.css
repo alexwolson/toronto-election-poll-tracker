@@ -3375,6 +3375,16 @@ body {
   color: var(--text-mid);
   font-size: var(--type-compact);
 }
+.candidate-row__endorsements {
+  margin: 0 0 0.45rem;
+  color: var(--text-mid);
+  font-size: var(--type-compact);
+}
+.candidate-row__endorsements a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
 .candidate-coverage-note {
   max-width: var(--measure-reading);
   margin: 1rem 0 0;

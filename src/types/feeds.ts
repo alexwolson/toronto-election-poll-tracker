@@ -531,6 +531,19 @@ export interface PastElection {
   field_size: number | null;
 }
 
+/** A confirmed endorsement from the Results release (backend ADR 0058). Observed
+ *  fact only: lists are partial, so no endorsement never means "not endorsed". */
+export interface CandidateEndorsement {
+  endorser_id: string;
+  endorser_name: string;
+  endorser_type: string;
+  kind: string | null;
+  /** YYYY-MM-DD when known; null when the source is undated */
+  announced: string | null;
+  date_precision: string | null;
+  source_url: string | null;
+}
+
 export interface CouncilCandidate {
   candidacy_id: string | null;
   display_name: string;
@@ -545,6 +558,8 @@ export interface CouncilCandidate {
   /** full prior candidacy history (won and lost), most recent first; empty when
    *  the candidate can't be linked to a person in the canonical dataset */
   past_elections: PastElection[];
+  /** schema 9+; absent in older feeds */
+  endorsements?: CandidateEndorsement[];
 }
 
 export interface PriorResult {
@@ -607,7 +622,7 @@ export interface CouncilRaceCard {
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 8;
+  schema_version: 8 | 9;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;

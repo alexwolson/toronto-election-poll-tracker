@@ -3375,15 +3375,18 @@ body {
   color: var(--text-mid);
   font-size: var(--type-compact);
 }
-.candidate-row__endorsements {
+.candidate-row__sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
   margin: 0 0 0.45rem;
-  color: var(--text-mid);
-  font-size: var(--type-compact);
 }
-.candidate-row__endorsements a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+.candidate-row__sources-label {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: var(--type-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 .candidate-coverage-note {
   max-width: var(--measure-reading);

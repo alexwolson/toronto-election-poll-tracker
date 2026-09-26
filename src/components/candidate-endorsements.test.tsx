@@ -21,12 +21,12 @@ describe("CandidateEndorsements", () => {
         ]}
       />,
     );
-    const link = screen.getByRole("link", { name: /Progress Toronto/ });
+    const link = screen.getByRole("link", { name: /Progress Toronto endorsement source/ });
     expect(link.getAttribute("href")).toBe("https://www.progresstoronto.ca/progressive-champions");
   });
 
   it("says lists are partial", () => {
     render(<EndorsementsNote />);
-    expect(screen.getByText(/may simply not be listed yet/)).toBeTruthy();
+    expect(screen.getByText("Endorsement lists are partial and still growing.")).toBeTruthy();
   });
 });

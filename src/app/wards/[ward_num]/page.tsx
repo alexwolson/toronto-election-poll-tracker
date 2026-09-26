@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CandidateHistoryItem, CandidateLinksNote } from "@/components/candidate-history";
+import { CandidateEndorsements, EndorsementsNote } from "@/components/candidate-endorsements";
 import { loadCouncilRaceCards } from "@/lib/feeds";
 import { wardAttentionLevel, type AttentionLevel } from "@/lib/council";
 import {
@@ -51,6 +52,7 @@ function CandidateItem({
   const history = candidate.past_elections;
   const signals = ownHistorySignals(candidate.historical_hints);
   const sameWardReturn = sameWardReturnSummary(candidate, ward, prior, isIncumbent);
+  const endorsements = candidate.endorsements ?? [];
 
   return (
     <CandidateHistoryItem
@@ -59,7 +61,8 @@ function CandidateItem({
       history={history}
       currentOfficeType={isIncumbent ? "councillor" : undefined}
       summaryPrefix={sameWardReturn?.topline}
-      hasAdditionalDetails={Boolean(sameWardReturn) || signals.length > 0}
+      hasAdditionalDetails={Boolean(sameWardReturn) || signals.length > 0 || endorsements.length > 0}
+      leadDetail={endorsements.length > 0 ? <CandidateEndorsements endorsements={endorsements} /> : undefined}
     >
       {sameWardReturn && (
         <p className="candidate-row__return-detail">{sameWardReturn.detail}</p>
@@ -201,6 +204,9 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
         </ul>
         {card.candidates.some((candidate) => candidate.campaign_url) && (
           <CandidateLinksNote />
+        )}
+        {card.candidates.some((candidate) => (candidate.endorsements ?? []).length > 0) && (
+          <EndorsementsNote />
         )}
       </section>
 

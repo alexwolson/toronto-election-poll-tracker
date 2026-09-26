@@ -3375,6 +3375,19 @@ body {
   color: var(--text-mid);
   font-size: var(--type-compact);
 }
+.candidate-row__sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.45rem;
+}
+.candidate-row__sources-label {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: var(--type-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
 .candidate-coverage-note {
   max-width: var(--measure-reading);
   margin: 1rem 0 0;

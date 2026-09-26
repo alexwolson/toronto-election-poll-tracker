@@ -875,14 +875,26 @@ export function loadMayoralPolling(): Promise<MayoralPollingFeed> {
 // ── council race cards ──────────────────────────────────────────────────────
 
 const COUNCIL_FALLBACK: CouncilRaceCardsFeed = {
-  schema_version: 8,
+  schema_version: 9,
   base_rate_note: "",
   wards: {},
   map: null,
 };
 
+function validEndorsement(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.endorser_id) &&
+    isNonEmptyString(value.endorser_name) &&
+    (value.source_url === null || isNonEmptyString(value.source_url)) &&
+    (value.announced === null || /^\d{4}-\d{2}-\d{2}$/.test(String(value.announced)))
+  );
+}
+
 export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  if (!isRecord(value) || value.schema_version !== 8) return null;
+  // Schema 9 adds candidate endorsements (backend ADR 0058); 8 is still accepted.
+  if (!isRecord(value) || (value.schema_version !== 8 && value.schema_version !== 9)) return null;
+  const withEndorsements = value.schema_version === 9;
   if (!isNonEmptyString(value.base_rate_note) || !isRecord(value.wards)) return null;
   const wards = value.wards;
   const expectedWards = Array.from({ length: 25 }, (_, index) => String(index + 1));
@@ -904,7 +916,10 @@ export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
         (candidate) =>
           isRecord(candidate) &&
           Array.isArray(candidate.past_elections) &&
-          candidate.past_elections.every(validPastElection),
+          candidate.past_elections.every(validPastElection) &&
+          (!withEndorsements ||
+            (Array.isArray(candidate.endorsements) &&
+              candidate.endorsements.every(validEndorsement))),
       )
     ) return null;
   }

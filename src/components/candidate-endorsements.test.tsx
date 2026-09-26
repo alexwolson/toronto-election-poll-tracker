@@ -21,7 +21,8 @@ describe("CandidateEndorsements", () => {
         ]}
       />,
     );
-    const link = screen.getByRole("link", { name: /Progress Toronto endorsement source/ });
+    expect(screen.getByText("Endorsed by")).toBeTruthy();
+    const link = screen.getByRole("link", { name: /Progress Toronto \(endorsement source/ });
     expect(link.getAttribute("href")).toBe("https://www.progresstoronto.ca/progressive-champions");
   });
 

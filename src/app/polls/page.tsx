@@ -9,11 +9,11 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
-import { candidateTrends, latestPoll, pollsByFieldwork, pollsterRegistry } from "@/lib/polling";
+import { candidateChoiceShares, candidateTrends, latestPoll, pollsByFieldwork, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
-  description: "Every public mayoral poll and the reported trend.",
+  description: "Every public mayoral poll and the candidate-choice trend.",
 };
 
 export default async function PollsPage() {
@@ -24,6 +24,7 @@ export default async function PollsPage() {
 
   const field = viableField(forecast);
   const trends = candidateTrends(polling, field);
+  const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
   const series: ChartSeries[] = field.map((id) => {
     const meta = candidateMeta(id);
     // recharts renders SVG in the DOM, so the palette CSS variable resolves.
@@ -56,6 +57,21 @@ export default async function PollsPage() {
           <section className="page-section page-section--lead" aria-labelledby="trend-heading">
             <SectionHeading headingId="trend-heading" title="Polling support over time">
               <PollingScopeNote />
+              <p>
+                Support among respondents naming a candidate, including leaners where asked.
+                All-respondent polls are converted to this basis, excluding undecided and
+                non-voter responses and including other candidates. Filled dots show derived
+                shares; tooltips give the original figures. Question wording and candidate
+                fields still differ.
+              </p>
+              {excluded.length > 0 && (
+                <p>
+                  {excluded.length} {excluded.length === 1 ? "poll is" : "polls are"} excluded
+                  from this chart because the denominator or complete response breakdown is
+                  unavailable: {excluded.map((poll) => `${poll.firm} (${formatDate(poll.date_conducted)})`).join("; ")}.
+                  {" "}Original figures remain in the <a href="#archive-heading">poll archive</a>.
+                </p>
+              )}
             </SectionHeading>
             <PollingChart trends={trends} series={series} />
           </section>

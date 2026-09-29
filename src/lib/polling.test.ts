@@ -3,6 +3,7 @@ import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 import {
   candidateTrends,
+  candidateChoiceShares,
   denominatorPhrase,
   explicitOtherShare,
   latestFieldShares,
@@ -56,8 +57,13 @@ describe("poll context", () => {
 });
 
 describe("candidate trends", () => {
+  // Older offline fixtures predate denominator metadata. These tests exercise
+  // known decided readings; separate cases below test missing metadata.
+  const decidedFeed = { ...feed, polls: feed.polls.map((poll) => ({
+    ...poll, denominator: "Decided voters",
+  })) };
   it("fits a LOESS curve per candidate from that candidate's own polls", () => {
-    const trends = candidateTrends(feed, FIELD);
+    const trends = candidateTrends(decidedFeed, FIELD);
     const chow = trends.find((t) => t.id === CHOW)!;
     // markers are that candidate's polls, chronological, shares in (0,1)
     expect(chow.markers.length).toBeGreaterThan(5);
@@ -74,17 +80,72 @@ describe("candidate trends", () => {
   });
 
   it("leaves a thin series as markers only (no curve)", () => {
-    const alexander = candidateTrends(feed, FIELD).find((t) => t.id === ALEXANDER)!;
+    const alexander = candidateTrends(decidedFeed, FIELD).find((t) => t.id === ALEXANDER)!;
     expect(alexander.markers.length).toBeLessThan(5); // tested in only a few polls
     expect(alexander.curve).toBeNull();
   });
 
   it("does not zero-fill a candidate not tested in a poll", () => {
-    const bradford = candidateTrends(feed, FIELD).find((t) => t.id === BRADFORD)!;
+    const bradford = candidateTrends(decidedFeed, FIELD).find((t) => t.id === BRADFORD)!;
     // every marker is a real reported share, never a 0 stand-in
     expect(bradford.markers.every((m) => m.y > 0)).toBe(true);
     // fewer markers than total polls, because some polls didn't test bradford
     expect(bradford.markers.length).toBeLessThan(feed.polls.length);
+  });
+});
+
+describe("candidate-choice chart basis", () => {
+  const ipsos: Poll = {
+    ...feed.polls[0], poll_id: "ipsos-september", firm: "Ipsos",
+    denominator: "All respondents",
+    shares: { [CHOW]: 0.36, [BRADFORD]: 0.21, [ALEXANDER]: 0.04,
+      "response:other": 0.05, "response:undecided": 0.3, "response:would_not_vote": 0.03 },
+  };
+
+  it("uses the complete candidate total rather than 100 minus rounded nonchoices", () => {
+    const source = structuredClone(ipsos);
+    const reading = candidateChoiceShares(ipsos)!;
+    expect(reading.derived).toBe(true);
+    expect(reading.shares[CHOW]).toBeCloseTo(36 / 66);
+    expect(reading.shares[BRADFORD]).toBeCloseTo(21 / 66);
+    expect(reading.shares[ALEXANDER]).toBeCloseTo(4 / 66);
+    expect(reading.shares["response:other"]).toBeCloseTo(5 / 66);
+    expect(Object.keys(reading.shares)).not.toContain("response:undecided");
+    expect(ipsos).toEqual(source);
+  });
+
+  it("includes candidates outside the forecast field without inventing missing candidates", () => {
+    const earlier: Poll = { ...ipsos, shares: {
+      [CHOW]: 0.33, per_former_candidate: 0.25, "response:other": 0.31,
+      "response:would_not_vote": 0.11,
+    } };
+    const trends = candidateTrends({ ...feed, polls: [earlier] }, FIELD);
+    expect(trends[0].markers[0]).toMatchObject({
+      reportedShare: 0.33, derived: true, firm: "Ipsos",
+    });
+    expect(trends[0].markers[0].y).toBeCloseTo(33 / 89);
+    expect(trends[1].markers).toEqual([]);
+    expect(trends[2].markers).toEqual([]);
+  });
+
+  it("preserves published decided shares including their rounding", () => {
+    const poll: Poll = { ...ipsos, denominator: "Decided and leaning voters",
+      shares: { [CHOW]: 0.5, [BRADFORD]: 0.39, [ALEXANDER]: 0.1, "response:other": 0.02 } };
+    expect(candidateChoiceShares(poll)).toEqual({ shares: poll.shares, derived: false });
+  });
+
+  it("leaves unknown, incomplete and unclassifiable readings out of the smoother", () => {
+    const unknown = { ...ipsos, denominator: "Not stated" };
+    const incomplete = { ...ipsos, shares: { [CHOW]: 0.36, [BRADFORD]: 0.21 } };
+    const combined = { ...ipsos, shares: {
+      [CHOW]: 0.36, [BRADFORD]: 0.21, "response:combined_residual": 0.43,
+    } };
+    for (const poll of [unknown, incomplete, combined, { ...ipsos, denominator: undefined }]) {
+      expect(candidateChoiceShares(poll)).toBeNull();
+    }
+    const valid = { ...feed, polls: [ipsos] };
+    expect(candidateTrends({ ...valid, polls: [unknown, incomplete, combined, ipsos] }, FIELD))
+      .toEqual(candidateTrends(valid, FIELD));
   });
 });
 

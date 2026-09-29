@@ -1,6 +1,6 @@
 /**
- * Pure reshaping of the descriptive polling feed for the chart and archive
- * (spec §Chart: raw current-field points, no modelled average).
+ * Descriptive polling views: candidate-choice chart shares and an archive
+ * preserving the source figures, with no modelled polling average.
  */
 
 import { isoDayNumber } from "@/lib/format";
@@ -146,34 +146,77 @@ export function pollArchive(feed: MayoralPollingFeed): Poll[] {
 
 export interface TrendMarker {
   x: number; // fieldwork date as a day number
-  y: number; // reported share (0..1)
+  y: number; // chart share (0..1)
   poll_id: string;
+  reportedShare?: number;
+  derived?: boolean;
+  firm?: string;
+  denominator?: string;
 }
 
 export interface CandidateTrend {
   id: string;
-  /** raw poll observations for this candidate, chronological */
+  /** comparable poll observations for this candidate, chronological */
   markers: TrendMarker[];
   /** LOESS smoother over the markers, or null when there are too few to fit */
   curve: LoessPoint[] | null;
 }
 
-/**
- * Per-candidate trend: raw markers plus a LOESS smoother, each candidate fitted
- * only from its own reported shares (a poll that didn't test a candidate
- * contributes nothing — never zero-filled or inferred from another candidate).
- */
+const NON_CHOICE_RESPONSES = new Set([
+  "response:undecided", "response:would_not_vote", "response:refusal",
+  "response:dont_know", "response:none_of_the_above", "response:no_answer",
+]);
+
+/** Expressed candidate choice, including every named candidate and the other
+ * candidate pool. Decided readings retain source rounding. All-respondent
+ * readings need a complete, classifiable total before deriving their shares;
+ * an unknown denominator or combined residual cannot establish this basis. */
+export function candidateChoiceShares(poll: Poll): {
+  shares: Record<string, number>;
+  derived: boolean;
+} | null {
+  if (poll.denominator === "Decided voters" ||
+      poll.denominator === "Decided and leaning voters") {
+    return { shares: poll.shares, derived: false };
+  }
+  if (poll.denominator !== "All respondents") return null;
+
+  const responses = Object.entries(poll.shares);
+  if (responses.some(([id]) =>
+    !id.startsWith("per_") && id !== "response:other" && !NON_CHOICE_RESPONSES.has(id),
+  )) return null;
+  const total = responses.reduce((sum, [, share]) => sum + share, 0);
+  // Whole-point rounding can move the reported total slightly away from 100%.
+  if (Math.abs(total - 1) > 0.02 + Number.EPSILON) return null;
+  const choices = responses.filter(([id]) => !NON_CHOICE_RESPONSES.has(id));
+  const choiceTotal = choices.reduce((sum, [, share]) => sum + share, 0);
+  if (choiceTotal <= 0) return null;
+  return {
+    shares: Object.fromEntries(choices.map(([id, share]) => [id, share / choiceTotal])),
+    derived: true,
+  };
+}
+
+/** Candidate-choice markers and LOESS, without inventing an absent candidate. */
 export function candidateTrends(
   feed: MayoralPollingFeed,
   field: string[],
 ): CandidateTrend[] {
+  const comparable = feed.polls.flatMap((poll) => {
+    const choice = candidateChoiceShares(poll);
+    return choice ? [{ poll, ...choice }] : [];
+  });
   return field.map((id) => {
-    const markers: TrendMarker[] = feed.polls
-      .filter((poll) => id in poll.shares)
-      .map((poll) => ({
+    const markers: TrendMarker[] = comparable
+      .filter(({ shares }) => id in shares)
+      .map(({ poll, shares, derived }) => ({
         x: isoDayNumber(poll.date_conducted),
-        y: poll.shares[id],
+        y: shares[id],
         poll_id: poll.poll_id,
+        reportedShare: poll.shares[id],
+        derived,
+        firm: poll.firm,
+        denominator: poll.denominator,
       }))
       .sort((a, b) => a.x - b.x);
     const curve = loessCurve(markers.map((m) => ({ x: m.x, y: m.y })));

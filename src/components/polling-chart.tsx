@@ -19,7 +19,7 @@ function fullDayLabel(day: number): string {
   return FULL_DAY_FORMATTER.format(new Date(day * 86_400_000));
 }
 
-function reportedShare(value: number): string {
+function chartShare(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
@@ -32,19 +32,23 @@ export function pollingTrendSummaryRows(
   return series.map((candidate) => {
     const trend = trendsById.get(candidate.id);
     if (!trend || trend.markers.length === 0) {
-      return `${candidate.name}: no reported poll values are available.`;
+      return `${candidate.name}: no comparable poll values are available.`;
     }
 
     const first = trend.markers[0];
     const latest = trend.markers[trend.markers.length - 1];
     const reports = trend.markers.length === 1
-      ? `1 published poll reports ${reportedShare(latest.y)} on ${fullDayLabel(latest.x)}.`
-      : `${trend.markers.length} published polls, from ${reportedShare(first.y)} on ${fullDayLabel(first.x)} to ${reportedShare(latest.y)} on ${fullDayLabel(latest.x)}.`;
+      ? `1 poll shown at ${chartShare(latest.y)} on ${fullDayLabel(latest.x)}.`
+      : `${trend.markers.length} polls shown, from ${chartShare(first.y)} on ${fullDayLabel(first.x)} to ${chartShare(latest.y)} on ${fullDayLabel(latest.x)}.`;
+    const derived = trend.markers.filter((marker) => marker.derived);
+    const derivation = derived.length > 0
+      ? ` ${derived.length} chart ${derived.length === 1 ? "point is" : "points are"} derived from all-respondent shares; original figures remain in the archive.`
+      : "";
     const treatment = trend.curve
       ? "A smoothed trend line is shown."
-      : "Only reported points are shown because too few polls tested this candidate for a trend line.";
+      : "Only points are shown because too few comparable polls tested this candidate for a trend line.";
 
-    return `${candidate.name}: ${reports} ${treatment}`;
+    return `${candidate.name}: ${reports} ${treatment}${derivation}`;
   });
 }
 
@@ -89,10 +93,11 @@ export function PollingChart({
         ) : (
           <>
             <p>
-              Polling trend summary. Each point is a published poll result. Smoothed
-              lines summarize the direction of those reports; they are not polling
-              averages or forecasts. A candidate missing from a poll is omitted, not
-              counted as zero.
+              Polling trend summary. Points show support among respondents naming a
+              candidate, including leaners where asked. All-respondent readings are
+              converted to this basis across all reported candidate choices. Smoothed
+              lines summarize these comparable shares; they are not polling averages
+              or forecasts. A candidate missing from a poll is omitted, not counted as zero.
             </p>
             <ul>
               {pollingTrendSummaryRows(trends, series).map((row) => <li key={row}>{row}</li>)}

@@ -192,10 +192,22 @@ export default async function HowItWorksPage() {
           >
             <div className="how-copy-grid">
               <div>
-                <h3>The dots are reports; the curve is a summary</h3>
+                <h3>The dots show candidate choices; the curve is a summary</h3>
                 <p>
-                  Each dot is one candidate&rsquo;s reported share in one poll, positioned
-                  at the poll&rsquo;s fieldwork date. The LOESS curve follows the local shape
+                  Each dot shows one candidate&rsquo;s support among respondents naming a
+                  candidate, positioned at the poll&rsquo;s fieldwork date. Decided and
+                  decided-and-leaning shares retain the poll&rsquo;s published values.
+                  All-respondent readings are divided by the sum of every reported
+                  candidate choice, including other candidates, excluding undecided and
+                  non-voter responses. Filled dots identify these derived shares;
+                  tooltips show the original percentages, which remain in the archive.
+                </p>
+                <p>
+                  This conversion does not recover leaners the poll did not ask for.
+                  Question wording and offered candidates still differ. Polls without
+                  a known denominator or a complete response breakdown stay in the
+                  archive and are excluded from this chart.
+                  The LOESS curve follows the local shape
                   of those dots instead of drawing a straight segment from one poll to
                   the next.
                 </p>

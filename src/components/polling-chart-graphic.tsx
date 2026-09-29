@@ -14,6 +14,7 @@ import {
 import type { PollingChartGraphicProps } from "./polling-chart-loader";
 import { candidateName } from "@/lib/candidates";
 import { monthStartDays } from "@/lib/format";
+import type { CandidateTrend, TrendMarker } from "@/lib/polling";
 
 const LEGEND_SHAPE: Record<string, "circle" | "rect" | "diamond"> = {
   chow: "circle",
@@ -45,10 +46,11 @@ function fullDayLabel(day: number): string {
   return FULL_DAY_FORMATTER.format(new Date(day * 86_400_000));
 }
 
-function marker(id: string, color: string, cx = 0, cy = 0) {
+function marker(id: string, color: string, cx = 0, cy = 0, derived = false) {
+  const fill = derived ? color : "var(--panel)";
   if (id === "bradford") {
     return (
-      <rect x={cx - 4} y={cy - 4} width={8} height={8} fill="var(--panel)" stroke={color} strokeWidth={2} />
+      <rect x={cx - 4} y={cy - 4} width={8} height={8} fill={fill} stroke={color} strokeWidth={2} />
     );
   }
   if (id === "alexander") {
@@ -61,15 +63,22 @@ function marker(id: string, color: string, cx = 0, cy = 0) {
       />
     );
   }
-  return <circle cx={cx} cy={cy} r={4} fill="var(--panel)" stroke={color} strokeWidth={2} />;
+  return <circle cx={cx} cy={cy} r={4} fill={fill} stroke={color} strokeWidth={2} />;
+}
+
+interface ChartDatum {
+  x: number;
+  details?: Record<string, TrendMarker>;
+  [key: string]: number | Record<string, TrendMarker> | undefined;
 }
 
 interface TipEntry {
   dataKey?: string | number;
   value?: number;
+  payload?: ChartDatum;
 }
 
-const RawTooltip = memo(function RawTooltip({
+export const PollingChartTooltip = memo(function PollingChartTooltip({
   active,
   payload,
   label,
@@ -85,17 +94,26 @@ const RawTooltip = memo(function RawTooltip({
     (entry) => typeof entry.dataKey === "string" && entry.dataKey.startsWith("raw_") && entry.value != null,
   );
   if (raw.length === 0) return null;
+  const firstId = String(raw[0].dataKey).slice(4);
+  const source = raw[0].payload?.details?.[firstId];
 
   return (
     <div className="polling-chart-tooltip">
       <div className="font-mono polling-chart-tooltip__date">
         {label != null ? fullDayLabel(label) : ""}
       </div>
+      {source?.firm && <div>{source.firm}</div>}
+      {source?.derived && <div>Derived among candidate choices</div>}
+      {source?.denominator && <div>Published basis: {source.denominator}</div>}
       {raw.map((entry) => {
         const id = String(entry.dataKey).slice(4);
+        const point = entry.payload?.details?.[id];
         return (
           <div key={id}>
-            {seriesById.get(id) ?? candidateName(id)}: {(entry.value as number).toFixed(1)}%
+            {seriesById.get(id) ?? candidateName(id)}: {entry.value?.toFixed(1)}%
+            {point?.derived && point.reportedShare != null && (
+              <> (reported {(point.reportedShare * 100).toFixed(1)}%)</>
+            )}
           </div>
         );
       })}
@@ -107,6 +125,38 @@ function legendLabel(value: unknown) {
   return <span className="polling-chart__legend-label">{String(value)}</span>;
 }
 
+export function pollingChartRows(trends: CandidateTrend[]): ChartDatum[] {
+  // Preserve separate samples sharing a fieldwork date, with their own tooltip.
+  const rows = new Map<string, ChartDatum>();
+  const byX = new Map<number, ChartDatum[]>();
+  const row = (key: string, x: number) => {
+    const existing = rows.get(key);
+    if (existing) return existing;
+    const created: ChartDatum = { x };
+    rows.set(key, created);
+    const group = byX.get(x) ?? [];
+    group.push(created);
+    byX.set(x, group);
+    return created;
+  };
+
+  for (const trend of trends) {
+    for (const point of trend.markers) {
+      const datum = row(`poll:${point.x}:${point.poll_id}`, point.x);
+      datum[`raw_${trend.id}`] = point.y * 100;
+      datum.details ??= {};
+      datum.details[trend.id] = point;
+    }
+  }
+  for (const trend of trends) {
+    for (const point of trend.curve ?? []) {
+      const group = byX.get(point.x) ?? [row(`curve:${point.x}`, point.x)];
+      for (const datum of group) datum[`loess_${trend.id}`] = point.y * 100;
+    }
+  }
+  return [...rows.values()].sort((a, b) => a.x - b.x);
+}
+
 /** Visual-only Recharts layer, deferred until the chart nears the viewport. */
 export const PollingChartGraphic = memo(function PollingChartGraphic({
   trends,
@@ -115,24 +165,8 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
   xAxis = "monthYear",
 }: PollingChartGraphicProps) {
   const { data, hasCurve } = useMemo(() => {
-    const byX = new Map<number, Record<string, number>>();
-    const row = (x: number) => {
-      const existing = byX.get(x);
-      if (existing) return existing;
-      const created: Record<string, number> = { x };
-      byX.set(x, created);
-      return created;
-    };
-
-    for (const trend of trends) {
-      for (const point of trend.markers) row(point.x)[`raw_${trend.id}`] = point.y * 100;
-      if (trend.curve) {
-        for (const point of trend.curve) row(point.x)[`loess_${trend.id}`] = point.y * 100;
-      }
-    }
-
     return {
-      data: [...byX.values()].sort((a, b) => a.x - b.x),
+      data: pollingChartRows(trends),
       hasCurve: new Map(trends.map((trend) => [trend.id, trend.curve !== null])),
     };
   }, [trends]);
@@ -169,7 +203,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
           axisLine={{ stroke: "var(--border)" }}
           tickLine={{ stroke: "var(--border)" }}
         />
-        <Tooltip content={<RawTooltip seriesById={seriesById} />} />
+        <Tooltip content={<PollingChartTooltip seriesById={seriesById} />} />
         <Legend formatter={legendLabel} wrapperStyle={{ fontSize: "0.75rem", paddingTop: "0.5rem" }} />
         {series.flatMap((candidate) => {
           const shape = LEGEND_SHAPE[candidate.id] ?? "circle";
@@ -190,7 +224,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
                 }
                 return (
                   <g key={`${candidate.id}-dot-${props.index}`}>
-                    {marker(candidate.id, candidate.color, props.cx, props.cy)}
+                    {marker(candidate.id, candidate.color, props.cx, props.cy, props.payload?.details?.[candidate.id]?.derived)}
                   </g>
                 );
               }}

@@ -4530,3 +4530,18 @@ body {
     justify-content: center;
   }
 }
+
+/* Keep the polling denominator and date controls together in one toolbar. */
+.polling-view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.polling-view-controls .evidence-lenses {
+  display: flex;
+  margin: 0;
+  border-bottom: 0;
+}

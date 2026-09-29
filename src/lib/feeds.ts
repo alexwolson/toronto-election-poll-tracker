@@ -815,6 +815,7 @@ function validPoll(value: unknown, candidates: Set<string>): boolean {
     (value.sample_size !== null &&
       (!Number.isInteger(value.sample_size) || Number(value.sample_size) <= 0)) ||
     !isNonEmptyString(value.methodology) ||
+    (value.poll_reading_id !== undefined && !isNonEmptyString(value.poll_reading_id)) ||
     (value.denominator !== undefined && typeof value.denominator !== "string") ||
     !isUniqueStringArray(value.field_tested) ||
     !isRecord(value.shares) ||
@@ -850,6 +851,28 @@ export function validatePolling(value: unknown): MayoralPollingFeed | null {
   }
   if (!validPoll(value.latest, candidates) || value.latest.poll_id !== value.polls[0].poll_id) {
     return null;
+  }
+  if (value.all_respondents !== undefined) {
+    if (!Array.isArray(value.all_respondents)) return null;
+    const alternateIds = new Set<string>();
+    const readingIds = new Set<string>();
+    for (const poll of value.all_respondents) {
+      if (!isRecord(poll) || !validPoll(poll, candidates) ||
+          poll.denominator !== "All respondents" || !isNonEmptyString(poll.poll_reading_id) ||
+          !pollIds.has(String(poll.poll_id)) || alternateIds.has(String(poll.poll_id)) ||
+          readingIds.has(poll.poll_reading_id) ||
+          !Array.isArray(poll.field_tested) ||
+          !isRecord(poll.shares)) return null;
+      const shares = poll.shares;
+      if (Object.keys(shares).length !== poll.field_tested.length ||
+          poll.field_tested.some((id) => !Object.hasOwn(shares, id)) ||
+          Math.abs(Object.values(shares).reduce<number>((sum, share) => sum + Number(share), 0) - 1) > 0.02 + Number.EPSILON) return null;
+      const original = value.polls.find((row) => row.poll_id === poll.poll_id);
+      if (["firm", "date_conducted", "date_published", "sample_size", "methodology"]
+          .some((key) => original[key] !== poll[key])) return null;
+      alternateIds.add(String(poll.poll_id));
+      readingIds.add(poll.poll_reading_id);
+    }
   }
   if (Object.keys(value.trend).length !== candidates.size) return null;
   for (const [candidateId, points] of Object.entries(value.trend)) {

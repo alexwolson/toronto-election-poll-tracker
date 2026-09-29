@@ -50,6 +50,27 @@ describe("polling trend views", () => {
     expect(screen.getByText(/Olivia Chow: 1 poll shown at 50.0%/)).toBeTruthy();
   });
 
+  it("switches the denominator while retaining the period, published shares and its own summary", () => {
+    const allRespondents = allTrends.map((trend) => ({ ...trend,
+      markers: trend.markers.map((marker) => ({ ...marker, y: 0.36, derived: false })),
+    }));
+    const recent = [{ ...allRespondents[0], markers: [allRespondents[0].markers[1]] }];
+    render(<PollingTrendViews allTrends={allTrends} qualifiedTrends={qualifiedTrends}
+      allRespondentTrends={allRespondents} recentAllRespondentTrends={recent} series={series}
+      allPollNote={<p>Unknown basis poll is excluded.</p>} />);
+    fireEvent.click(screen.getByRole("button", { name: "All respondents" }));
+    expect(screen.getByRole("button", { name: "Since nominations closed" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(/Olivia Chow: 1 poll shown at 36.0%/)).toBeTruthy();
+    expect(screen.getByText(/Published support among all respondents/)).toBeTruthy();
+    expect(screen.queryByText(/Points show support among respondents naming a/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "All polls" }));
+    expect(screen.getByText(/Olivia Chow: 2 polls shown, from 36.0%/)).toBeTruthy();
+    expect(screen.queryByText("Unknown basis poll is excluded.")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Candidate choices" }));
+    expect(screen.getByText(/Olivia Chow: 2 polls shown, from 40.0%/)).toBeTruthy();
+    expect(screen.getByText("Unknown basis poll is excluded.")).toBeTruthy();
+  });
+
   it("shows an empty state when no comparable poll reports the full field", () => {
     render(<PollingTrendViews allTrends={allTrends} qualifiedTrends={[]} series={series} />);
     expect(screen.getByText("No comparable three-candidate polls since nominations closed yet.")).toBeTruthy();

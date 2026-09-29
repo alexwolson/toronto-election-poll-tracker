@@ -382,6 +382,8 @@ export interface TrusteeRaceCardsFeed {
 // ── 3. Polling-owned descriptive feed (schema_version 2) ────────────────────
 
 export interface Poll {
+  /** Source reading provenance, required for alternate-basis readings. */
+  poll_reading_id?: string;
   poll_id: string;
   firm: string;
   date_conducted: string;
@@ -407,6 +409,8 @@ export interface MayoralPollingFeed {
   candidates: string[];
   /** newest published first */
   polls: Poll[];
+  /** One published all-respondent reading per sample, with source reading IDs. */
+  all_respondents?: Poll[];
   latest: Poll | null;
   /** per-candidate reported share over time, chronological (oldest first) */
   trend: Record<string, TrendPoint[]>;

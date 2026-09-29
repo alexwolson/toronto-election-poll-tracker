@@ -231,16 +231,40 @@ export function candidateTrends(
   return trendsForReadings(feed.polls, field, candidateChoiceShares);
 }
 
-/** Published all-respondent shares, including undecided/non-voters in the base. */
+export const ALL_RESPONDENT_OTHER_ID = "response:other_candidates";
+export const ALL_RESPONDENT_UNDECIDED_ID = "response:undecided_or_dont_know";
+
+/** Published all-respondent shares, with candidate LOESS and dots-only response pools.
+ * Other candidates combines named candidates outside the chart field and the
+ * explicit other category. Non-voters/refusals never enter either response pool;
+ * absent categories remain absent, rather than inferred from the total. */
 export function allRespondentTrends(feed: MayoralPollingFeed, field: string[]): CandidateTrend[] {
-  return trendsForReadings(feed.all_respondents ?? [], field, (poll) => ({
+  const polls = feed.all_respondents ?? [];
+  const fieldIds = new Set(field);
+  const candidates = trendsForReadings(polls, field, (poll) => ({
     shares: poll.shares, derived: false,
   }));
+  const responses = trendsForReadings(polls,
+    [ALL_RESPONDENT_OTHER_ID, ALL_RESPONDENT_UNDECIDED_ID], (poll) => {
+      const shares: Record<string, number> = {};
+      for (const [id, share] of Object.entries(poll.shares)) {
+        let pool: string;
+        if (id === "response:undecided" || id === "response:dont_know") {
+          pool = ALL_RESPONDENT_UNDECIDED_ID;
+        } else if (id === "response:other" || (id.startsWith("per_") && !fieldIds.has(id))) {
+          pool = ALL_RESPONDENT_OTHER_ID;
+        } else continue;
+        shares[pool] = (shares[pool] ?? 0) + share;
+      }
+      return { shares, derived: false };
+    }, false);
+  return [...candidates, ...responses];
 }
 
 function trendsForReadings(
   polls: Poll[], field: string[],
   readShares: (poll: Poll) => { shares: Record<string, number>; derived: boolean } | null,
+  smooth = true,
 ): CandidateTrend[] {
   const comparable = polls.flatMap((poll) => {
     const choice = readShares(poll);
@@ -259,7 +283,7 @@ function trendsForReadings(
         denominator: poll.denominator,
       }))
       .sort((a, b) => a.x - b.x);
-    const curve = loessCurve(markers.map((m) => ({ x: m.x, y: m.y })));
+    const curve = smooth ? loessCurve(markers.map((m) => ({ x: m.x, y: m.y }))) : null;
     return { id, markers, curve };
   });
 }

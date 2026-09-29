@@ -214,7 +214,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
         <Legend formatter={legendLabel} wrapperStyle={{ fontSize: "0.75rem", paddingTop: "0.5rem" }} />
         {series.flatMap((candidate) => {
           const shape = LEGEND_SHAPE[candidate.id] ?? "circle";
-          const curved = hasCurve.get(candidate.id) ?? false;
+          const curved = !candidate.pointsOnly && (hasCurve.get(candidate.id) ?? false);
           return [
             <Line
               key={`raw-${candidate.id}`}

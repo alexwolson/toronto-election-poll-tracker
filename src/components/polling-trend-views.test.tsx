@@ -8,8 +8,10 @@ import type { PollingChartGraphicProps } from "./polling-chart-loader";
 import { isoDayNumber } from "@/lib/format";
 
 vi.mock("./polling-chart-loader", () => ({
-  PollingChartLoader: ({ xDomain }: PollingChartGraphicProps) =>
-    <div data-testid="chart-window">{xDomain?.join(",") ?? "full history"}</div>,
+  PollingChartLoader: ({ xDomain, series }: PollingChartGraphicProps) =>
+    <div data-testid="chart-window" data-series={series.map((entry) => entry.name).join(",")}>
+      {xDomain?.join(",") ?? "full history"}
+    </div>,
 }));
 
 const series = [{ id: "chow", name: "Olivia Chow", color: "purple", hatch: false }];
@@ -58,15 +60,21 @@ describe("polling trend views", () => {
     render(<PollingTrendViews allTrends={allTrends} qualifiedTrends={qualifiedTrends}
       allRespondentTrends={allRespondents} recentAllRespondentTrends={recent} series={series}
       allPollNote={<p>Unknown basis poll is excluded.</p>} />);
+    expect(screen.getByTestId("chart-window").getAttribute("data-series")).toBe("Olivia Chow");
     fireEvent.click(screen.getByRole("button", { name: "All respondents" }));
+    expect(screen.getByTestId("chart-window").getAttribute("data-series"))
+      .toBe("Olivia Chow,Other candidates,Undecided / don’t know");
     expect(screen.getByRole("button", { name: "Since nominations closed" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText(/Olivia Chow: 1 poll shown at 36.0%/)).toBeTruthy();
     expect(screen.getByText(/Published support among all respondents/)).toBeTruthy();
     expect(screen.queryByText(/Points show support among respondents naming a/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "All polls" }));
+    expect(screen.getByTestId("chart-window").getAttribute("data-series"))
+      .toBe("Olivia Chow,Other candidates,Undecided / don’t know");
     expect(screen.getByText(/Olivia Chow: 2 polls shown, from 36.0%/)).toBeTruthy();
     expect(screen.queryByText("Unknown basis poll is excluded.")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Candidate choices" }));
+    expect(screen.getByTestId("chart-window").getAttribute("data-series")).toBe("Olivia Chow");
     expect(screen.getByText(/Olivia Chow: 2 polls shown, from 40.0%/)).toBeTruthy();
     expect(screen.getByText("Unknown basis poll is excluded.")).toBeTruthy();
   });

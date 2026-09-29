@@ -55,6 +55,12 @@ describe("PollingChart accessibility", () => {
     expect(rows[2]).toBe("Candidate C: no comparable poll values are available.");
   });
 
+  it("describes deliberately unsmoothed response series as points only", () => {
+    const rows = pollingTrendSummaryRows(TRENDS, [{ ...SERIES[0], pointsOnly: true }]);
+    expect(rows[0]).toContain("Only reported points are shown, without a trend line.");
+    expect(rows[0]).not.toContain("too few");
+  });
+
   it("keeps the visual chart out of the accessibility tree and exposes its text equivalent", () => {
     const html = renderToStaticMarkup(<PollingChart trends={TRENDS} series={SERIES} />);
 

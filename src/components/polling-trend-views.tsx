@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { PollingChart, type ChartSeries } from "./polling-chart";
-import type { CandidateTrend } from "@/lib/polling";
+import { NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
+import { formatDate, isoDayNumber } from "@/lib/format";
 
 export function PollingTrendViews({
   allTrends,
@@ -15,8 +16,9 @@ export function PollingTrendViews({
   series: ChartSeries[];
   allPollNote?: ReactNode;
 }) {
-  const [qualified, setQualified] = useState(false);
+  const [qualified, setQualified] = useState(true);
   const qualifiedCount = qualifiedTrends[0]?.markers.length ?? 0;
+  const recentEnd = Math.max(...qualifiedTrends.flatMap((trend) => trend.markers.map((marker) => marker.x)));
 
   return (
     <div>
@@ -25,23 +27,26 @@ export function PollingTrendViews({
           All polls
         </button>
         <button type="button" aria-pressed={qualified} onClick={() => setQualified(true)}>
-          Alexander included
+          Since nominations closed
         </button>
       </div>
       {!qualified && allPollNote}
       {qualified && (
         <p className="evidence-explainer" role="status">
-          {qualifiedCount} {qualifiedCount === 1 ? "poll reporting" : "polls reporting"} Chow,
-          Bradford and Alexander.
+          {qualifiedCount} {qualifiedCount === 1 ? "poll completed" : "polls completed"} after{" "}
+          {formatDate(NOMINATIONS_CLOSED_DATE)}, reporting Chow, Bradford and Alexander.
+          {" "}Trend lines use the full polling history.
         </p>
       )}
       {qualified && qualifiedCount === 0 ? (
-        <p className="forecast-unavailable">No comparable polls report all three candidates yet.</p>
+        <p className="forecast-unavailable">No comparable three-candidate polls since nominations closed yet.</p>
       ) : (
         <PollingChart
           trends={qualified ? qualifiedTrends : allTrends}
           series={series}
-          xAxis={qualified ? "month" : "monthYear"}
+          xAxis={qualified ? "dayMonth" : "monthYear"}
+          // Half a day of space keeps the latest hollow marker inside the clipping boundary.
+          xDomain={qualified ? [isoDayNumber(NOMINATIONS_CLOSED_DATE) + 1, recentEnd + 0.5] : undefined}
         />
       )}
     </div>

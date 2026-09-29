@@ -10,7 +10,7 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
-import { candidateChoiceShares, candidateTrends, latestPoll, pollsByFieldwork, pollsIncludingCandidates, pollsterRegistry } from "@/lib/polling";
+import { candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -25,9 +25,8 @@ export default async function PollsPage() {
 
   const field = viableField(forecast);
   const trends = candidateTrends(polling, field);
-  const qualifiedTrends = candidateTrends(
-    { ...polling, polls: pollsIncludingCandidates(polling, field) },
-    field,
+  const qualifiedTrends = candidateTrendsForPolls(
+    trends, pollsSinceNominationsClosed(polling, field),
   );
   const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
   const series: ChartSeries[] = field.map((id) => {

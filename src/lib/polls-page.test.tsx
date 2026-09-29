@@ -22,6 +22,7 @@ describe("Polls page", () => {
     const bradford = "per_d8dfddfb642358e299f4b428292666bf";
     const alexander = "per_345dd6a9ee645c0bb5a8ade615f91579";
     polling.polls = [{ ...polling.polls[0], firm: "Ipsos", denominator: "All respondents",
+      date_conducted: "2026-09-08",
       shares: { [chow]: 0.36, [bradford]: 0.21, [alexander]: 0.04,
         "response:other": 0.05, "response:undecided": 0.3, "response:would_not_vote": 0.03 },
     }, { ...polling.polls[1], firm: "Unknown basis firm", denominator: "Not stated" }];
@@ -30,13 +31,13 @@ describe("Polls page", () => {
     const html = renderToStaticMarkup(await PollsPage());
     expect(html).toContain("Support among respondents naming a candidate");
     expect(html).toContain("derived and published percentages");
-    expect(html).toContain("1 poll is excluded");
+    expect(html).toContain("1 poll completed");
     expect(html).toContain("Unknown basis firm");
     expect(html).toContain("54.5%");
     expect(html).toMatch(/data-label="Olivia Chow"[^>]*>36%/);
     expect(html).toContain("All respondents");
     expect(html).toContain("Forecast history summary");
-    expect(html).toContain("Alexander included");
+    expect(html).toContain("Since nominations closed");
   });
   it("shows one empty state without empty archive or source scaffolding", async () => {
     const polling = structuredClone(pollingFixture) as unknown as MayoralPollingFeed;

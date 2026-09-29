@@ -3,6 +3,7 @@ import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 import {
   candidateTrends,
+  candidateTrendsForPolls,
   candidateChoiceShares,
   denominatorPhrase,
   explicitOtherShare,
@@ -10,7 +11,7 @@ import {
   latestPoll,
   latestReferencedPollDate,
   pollsByFieldwork,
-  pollsIncludingCandidates,
+  pollsSinceNominationsClosed,
   pollMethodLabel,
   pollsterRegistry,
   pollsterWebsite,
@@ -63,21 +64,32 @@ describe("candidate trends", () => {
   const decidedFeed = { ...feed, polls: feed.polls.map((poll) => ({
     ...poll, denominator: "Decided voters",
   })) };
-  it("refits the three-candidate view from only polls reporting the full field", () => {
-    const polls = pollsIncludingCandidates(decidedFeed, FIELD);
-    const qualified = candidateTrends({ ...decidedFeed, polls }, FIELD);
-    expect(polls.length).toBeGreaterThan(0);
-    expect(polls.length).toBeLessThan(decidedFeed.polls.length);
+  it("selects post-nomination full-field markers while preserving the full-history fit", () => {
+    const recentFeed = { ...decidedFeed, polls: decidedFeed.polls.map((poll, index) =>
+      index < 3 ? { ...poll, date_conducted: `2026-09-0${5 + index}` } : poll,
+    ) };
+    const polls = pollsSinceNominationsClosed(recentFeed, FIELD);
+    const allTrends = candidateTrends(recentFeed, FIELD);
+    const qualified = candidateTrendsForPolls(allTrends, polls);
+    expect(polls).toHaveLength(3);
     for (const trend of qualified) {
       expect(trend.markers.map((point) => point.poll_id).sort())
         .toEqual(polls.map((poll) => poll.poll_id).sort());
-      expect(trend.curve).toBeNull(); // this fixture has fewer than five qualified readings
+      expect(trend.curve).toBe(allTrends.find((full) => full.id === trend.id)!.curve);
     }
-    expect(candidateTrends(decidedFeed, FIELD)[0].curve).not.toBeNull();
-    const zero = { ...polls[0], shares: { ...polls[0].shares, [ALEXANDER]: 0 } };
+    // A refit on just these three polls would lose the curve entirely.
+    expect(qualified[0].curve).not.toBeNull();
+    expect(allTrends[0].markers.length).toBeGreaterThan(qualified[0].markers.length);
+    const zero = { ...decidedFeed.polls[0], date_conducted: "2026-08-22",
+      shares: { [CHOW]: 0.5, [BRADFORD]: 0.4, [ALEXANDER]: 0 } };
     const missing = { ...zero, shares: { [CHOW]: 0.5, [ALEXANDER]: 0.1 } };
-    expect(pollsIncludingCandidates({ ...feed, polls: [zero, missing] }, FIELD)).toEqual([zero]);
-    expect(pollsIncludingCandidates(decidedFeed, [])).toEqual([]);
+    const onDeadline = { ...zero, date_conducted: "2026-08-21" };
+    const beforeDeadline = { ...zero, date_conducted: "2026-07-29",
+      date_published: "2026-09-01" };
+    expect(pollsSinceNominationsClosed(
+      { ...feed, polls: [zero, missing, onDeadline, beforeDeadline] }, FIELD,
+    )).toEqual([zero]);
+    expect(pollsSinceNominationsClosed(decidedFeed, [])).toEqual([]);
   });
   it("fits a LOESS curve per candidate from that candidate's own polls", () => {
     const trends = candidateTrends(decidedFeed, FIELD);

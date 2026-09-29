@@ -47,12 +47,12 @@ describe("PollingChart accessibility", () => {
   it("summarizes reported endpoints without inventing missing values", () => {
     const rows = pollingTrendSummaryRows(TRENDS, SERIES);
 
-    expect(rows[0]).toContain("2 published polls, from 31.0%");
+    expect(rows[0]).toContain("2 polls shown, from 31.0%");
     expect(rows[0]).toContain("to 36.0%");
     expect(rows[0]).toContain("A smoothed trend line is shown.");
-    expect(rows[1]).toContain("1 published poll reports 8.0%");
-    expect(rows[1]).toContain("too few polls tested this candidate");
-    expect(rows[2]).toBe("Candidate C: no reported poll values are available.");
+    expect(rows[1]).toContain("1 poll shown at 8.0%");
+    expect(rows[1]).toContain("too few comparable polls tested this candidate");
+    expect(rows[2]).toBe("Candidate C: no comparable poll values are available.");
   });
 
   it("keeps the visual chart out of the accessibility tree and exposes its text equivalent", () => {
@@ -77,6 +77,14 @@ describe("PollingChart accessibility", () => {
     expect(html).toContain("<li>Candidate A: 60% then 70%.</li>");
     expect(html).not.toContain("Polling trend summary.");
     expect(html).not.toContain("The poll archive below contains every reported value");
+  });
+
+  it("explains derived chart values in the accessible summary", () => {
+    const trends = structuredClone(TRENDS);
+    trends[0].markers[0] = { ...trends[0].markers[0], derived: true, reportedShare: 0.25 };
+    expect(pollingTrendSummaryRows(trends, SERIES)[0]).toContain(
+      "1 chart point is derived from all-respondent shares; original figures remain in the archive",
+    );
   });
 
   it("loads the visual chart only after its reserved region nears the viewport", async () => {

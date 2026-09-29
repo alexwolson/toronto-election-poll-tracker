@@ -1,16 +1,17 @@
 import { MayorTabs } from "@/components/mayor-tabs";
 import { PageHero } from "@/components/page-hero";
 import { PollArchive } from "@/components/poll-archive";
-import { PollingChart, type ChartSeries } from "@/components/polling-chart";
+import type { ChartSeries } from "@/components/polling-chart";
+import { ForecastHistoryViews } from "@/components/forecast-history-views";
 import { PollingTrendViews } from "@/components/polling-trend-views";
 import { PollsterLink } from "@/components/pollster-link";
 import { PollingScopeNote } from "@/components/polling-scope-note";
 import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
-import { formatDate } from "@/lib/format";
+import { formatDate, isoDayNumber } from "@/lib/format";
 import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
-import { candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
+import { candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -36,6 +37,15 @@ export default async function PollsPage() {
   });
   const registry = pollsterRegistry(polling);
   const historyTrends = forecastHistoryTrends(forecast, field);
+  // History is positioned by publication date; retain the original full-history curves.
+  const recentHistoryTrends = historyTrends?.map((trend) => ({
+    ...trend,
+    markers: trend.markers.filter((marker) => marker.x > isoDayNumber(NOMINATIONS_CLOSED_DATE)),
+  })) ?? [];
+  const recentForecast = {
+    ...forecast,
+    history: forecast.history?.filter((point) => point.date > NOMINATIONS_CLOSED_DATE),
+  };
   const latest = latestPoll(polling);
 
   return (
@@ -96,16 +106,12 @@ export default async function PollsPage() {
                   smoothed trend through the points.
                 </p>
               </SectionHeading>
-              <PollingChart
-                trends={historyTrends}
+              <ForecastHistoryViews
+                allTrends={historyTrends}
+                recentTrends={recentHistoryTrends}
                 series={series}
-                yDomain={[0, 100]}
-                xAxis="month"
-                summary={{
-                  intro:
-                    "Forecast history summary. Each point is each candidate's chance of winning after a poll release, recomputed with the current model. Smoothed lines summarize the direction of those points; the forecast itself changes only when a poll is published.",
-                  rows: forecastHistorySummaryRows(forecast, series),
-                }}
+                allSummaryRows={forecastHistorySummaryRows(forecast, series)}
+                recentSummaryRows={forecastHistorySummaryRows(recentForecast, series)}
               />
             </section>
           )}

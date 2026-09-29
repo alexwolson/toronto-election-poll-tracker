@@ -113,17 +113,17 @@ describe("primary pages keep their facts and controls", () => {
 
   it("Polls page keeps the chart, archive, and actual poll metadata", () => {
     const normalized = POLLS.replace(/\s+/g, " ");
-    expect(POLLS).toContain("<PollingChart");
+    expect(POLLS).toContain("<PollingTrendViews");
+    expect(POLLS).toContain("<ForecastHistoryViews");
     expect(POLLS).toContain("<PollArchive");
     expect(POLLS).toContain("public polls; latest from");
     expect(POLLS).toContain("Other reported choices");
     expect(ARCHIVE).toContain("Undecided");
-    // One forecast-history chart, reusing the polling chart, placed by publication date.
+    // The forecast-history view remains placed by publication date.
     expect(POLLS).toContain("How the forecast has moved with each poll");
     expect(POLLS).toContain("recomputed with the current model");
     expect(POLLS).not.toContain("lineType");
     expect(POLLS).toContain("smoothed trend");
-    expect(POLLS).toContain('xAxis="month"');
     expect(POLLS).toContain("forecastHistoryTrends(");
     expect(ARCHIVE).toContain("Denominator");
     expect(normalized).toContain("does not include question wording or respondent base");

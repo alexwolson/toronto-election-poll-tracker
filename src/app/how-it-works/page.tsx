@@ -220,6 +220,12 @@ export default async function HowItWorksPage() {
                   the default view shows only their portion since nominations closed.
                 </p>
                 <p>
+                  The forecast-history chart uses the same toggle and defaults to
+                  updates published since nominations closed. Its dots use publication
+                  dates, when each poll could first affect the forecast, rather than
+                  fieldwork dates. Its two views share the full-history LOESS curves.
+                </p>
+                <p>
                   Each candidate is fitted independently. If a poll did not test a
                   candidate, it contributes no dot and no inferred zero. Curves stop at
                   the first and last observed dates, and a candidate with too few

@@ -199,8 +199,8 @@ export default async function HowItWorksPage() {
                   decided-and-leaning shares retain the poll&rsquo;s published values.
                   All-respondent readings are divided by the sum of every reported
                   candidate choice, including other candidates, excluding undecided and
-                  non-voter responses. Filled dots identify these derived shares;
-                  tooltips show the original percentages, which remain in the archive.
+                  non-voter responses. Tooltips identify derived shares and show the
+                  original percentages, which remain in the archive.
                 </p>
                 <p>
                   This conversion does not recover leaners the poll did not ask for.

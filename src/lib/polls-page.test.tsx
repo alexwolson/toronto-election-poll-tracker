@@ -39,6 +39,20 @@ describe("Polls page", () => {
     expect(html).toContain("Forecast history summary");
     expect(html).toContain("Since nominations closed");
   });
+  it("filters forecast history by publication date and updates its accessible summary", async () => {
+    const forecast = structuredClone(forecastFixture) as unknown as MayoralForecastFeed;
+    const sample = forecast.history![0];
+    forecast.history = ["2026-07-30", "2026-08-21", "2026-08-25", "2026-09-29"]
+      .map((date) => ({ ...sample, date }));
+    mocks.loadMayoralForecast.mockResolvedValue(forecast);
+    mocks.loadMayoralPolling.mockResolvedValue(pollingFixture);
+    const html = renderToStaticMarkup(await PollsPage());
+    expect(html).toContain("2 poll releases");
+    expect(html).toContain("after the poll published Aug 25, 2026");
+    expect(html).toContain("2 releases.");
+    expect(html).not.toContain("4 releases.");
+    expect(html.match(/Poll releases shown in the forecast history chart/g)).toHaveLength(1);
+  });
   it("shows one empty state without empty archive or source scaffolding", async () => {
     const polling = structuredClone(pollingFixture) as unknown as MayoralPollingFeed;
     polling.polls = [];

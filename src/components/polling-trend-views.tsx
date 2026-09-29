@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { PollingChart, type ChartSeries } from "./polling-chart";
+import { PollPeriodToggle } from "./poll-period-toggle";
 import { NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
 import { formatDate, isoDayNumber } from "@/lib/format";
 
@@ -22,14 +23,7 @@ export function PollingTrendViews({
 
   return (
     <div>
-      <div className="evidence-lenses" role="group" aria-label="Polls shown in the trend chart">
-        <button type="button" aria-pressed={!qualified} onClick={() => setQualified(false)}>
-          All polls
-        </button>
-        <button type="button" aria-pressed={qualified} onClick={() => setQualified(true)}>
-          Since nominations closed
-        </button>
-      </div>
+      <PollPeriodToggle label="Polls shown in the trend chart" recent={qualified} onChange={setQualified} />
       {!qualified && allPollNote}
       {qualified && (
         <p className="evidence-explainer" role="status">

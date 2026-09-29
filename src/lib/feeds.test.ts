@@ -146,6 +146,28 @@ describe("validatePolling", () => {
 
     expect(validatePolling(malformed)).toBeNull();
   });
+  it("accepts an additive all-respondent reading and rejects duplicates, provenance and basis drift", () => {
+    const poll = { ...structuredClone(pollingFixture.polls[0]),
+      denominator: "All respondents", poll_reading_id: "source-reading",
+      shares: { [pollingFixture.candidates[0]]: 0.36, "response:undecided": 0.64 },
+      field_tested: [pollingFixture.candidates[0], "response:undecided"],
+    };
+    const feed = { ...structuredClone(pollingFixture), all_respondents: [poll] };
+    if (!feed.candidates.includes("response:undecided")) {
+      feed.candidates.push("response:undecided");
+      Object.assign(feed.trend, { "response:undecided": [] });
+    }
+    expect(validatePolling(feed)?.all_respondents?.[0].shares).toEqual(poll.shares);
+    expect(validatePolling({ ...feed, all_respondents: [poll, poll] })).toBeNull();
+    for (const patch of [
+      { denominator: "Decided voters" }, { poll_reading_id: "" }, { poll_id: "unknown" },
+      { date_conducted: "2026-08-01" }, { field_tested: [] },
+      { shares: { [pollingFixture.candidates[0]]: 0.36 } },
+    ]) {
+      expect(validatePolling({ ...feed, all_respondents: [{ ...poll, ...patch }] })).toBeNull();
+    }
+  });
+
 });
 
 describe("validateManifest", () => {

@@ -11,11 +11,11 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, isoDayNumber } from "@/lib/format";
 import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
-import { candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
+import { allRespondentTrends, candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
-  description: "Every public mayoral poll and the candidate-choice trend.",
+  description: "Every public mayoral poll, with candidate-choice and all-respondent trends.",
 };
 
 export default async function PollsPage() {
@@ -28,6 +28,10 @@ export default async function PollsPage() {
   const trends = candidateTrends(polling, field);
   const qualifiedTrends = candidateTrendsForPolls(
     trends, pollsSinceNominationsClosed(polling, field),
+  );
+  const allRespondents = allRespondentTrends(polling, field);
+  const recentAllRespondents = candidateTrendsForPolls(allRespondents,
+    pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, field),
   );
   const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
   const series: ChartSeries[] = field.map((id) => {
@@ -71,15 +75,12 @@ export default async function PollsPage() {
           <section className="page-section page-section--lead" aria-labelledby="trend-heading">
             <SectionHeading headingId="trend-heading" title="Polling support over time">
               <PollingScopeNote />
-              <p>
-                Support among respondents naming a candidate, including leaners where asked.
-                All-respondent polls are converted to this basis; tooltips show the
-                derived and published percentages.
-              </p>
             </SectionHeading>
             <PollingTrendViews
               allTrends={trends}
               qualifiedTrends={qualifiedTrends}
+              allRespondentTrends={allRespondents}
+              recentAllRespondentTrends={recentAllRespondents}
               series={series}
               allPollNote={excluded.length > 0 && (
                 <p className="evidence-explainer">

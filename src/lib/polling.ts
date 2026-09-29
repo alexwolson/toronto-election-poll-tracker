@@ -228,8 +228,22 @@ export function candidateTrends(
   feed: MayoralPollingFeed,
   field: string[],
 ): CandidateTrend[] {
-  const comparable = feed.polls.flatMap((poll) => {
-    const choice = candidateChoiceShares(poll);
+  return trendsForReadings(feed.polls, field, candidateChoiceShares);
+}
+
+/** Published all-respondent shares, including undecided/non-voters in the base. */
+export function allRespondentTrends(feed: MayoralPollingFeed, field: string[]): CandidateTrend[] {
+  return trendsForReadings(feed.all_respondents ?? [], field, (poll) => ({
+    shares: poll.shares, derived: false,
+  }));
+}
+
+function trendsForReadings(
+  polls: Poll[], field: string[],
+  readShares: (poll: Poll) => { shares: Record<string, number>; derived: boolean } | null,
+): CandidateTrend[] {
+  const comparable = polls.flatMap((poll) => {
+    const choice = readShares(poll);
     return choice ? [{ poll, ...choice }] : [];
   });
   return field.map((id) => {

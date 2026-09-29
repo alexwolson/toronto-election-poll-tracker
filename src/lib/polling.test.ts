@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 import {
+  allRespondentTrends,
   candidateTrends,
   candidateTrendsForPolls,
   candidateChoiceShares,
@@ -251,5 +252,35 @@ describe("residual shares and denominator", () => {
     expect(denominatorPhrase({ ...feed.polls[0], denominator: "Decided and leaning voters" })).toBe("decided and leaning voters");
     expect(denominatorPhrase(feed.polls[0])).toBeNull();
     expect(denominatorPhrase({ ...feed.polls[0], denominator: "  " })).toBeNull();
+  });
+});
+
+
+describe("all-respondent chart basis", () => {
+  it("preserves published shares, fits its own full-history LOESS and retains it in the recent view", () => {
+    const readings: Poll[] = Array.from({ length: 8 }, (_, index) => ({
+      ...feed.polls[0], poll_id: `sample-${index}`, poll_reading_id: `reading-${index}`,
+      date_conducted: `2026-0${index < 4 ? 7 : 9}-${String(index + 1).padStart(2, "0")}`,
+      denominator: "All respondents",
+      shares: { [CHOW]: 0.3 + index * 0.01, [BRADFORD]: 0.2, [ALEXANDER]: 0.05,
+        "response:undecided": 0.45 - index * 0.01 },
+    }));
+    const source = structuredClone(readings);
+    const polling = { ...feed, polls: readings, all_respondents: readings };
+    const trends = allRespondentTrends(polling, FIELD);
+    expect(trends[0].markers.map((point) => point.y)).toEqual(readings.map((poll) => poll.shares[CHOW]));
+    expect(trends[0].markers.every((point) => point.derived === false)).toBe(true);
+    expect(trends[0].curve).not.toBeNull();
+    expect(trends[0].curve).not.toEqual(candidateTrends(polling, FIELD)[0].curve);
+    const recent = candidateTrendsForPolls(trends, pollsSinceNominationsClosed(polling, FIELD));
+    expect(recent[0].markers).toHaveLength(4);
+    expect(recent[0].curve).toBe(trends[0].curve);
+    expect(readings).toEqual(source);
+  });
+
+  it("does not infer all-respondent shares from older releases or unreported candidates", () => {
+    expect(allRespondentTrends(feed, FIELD).every((trend) => trend.markers.length === 0)).toBe(true);
+    const reading = { ...feed.polls[0], shares: { [CHOW]: 0.33, "response:undecided": 0.67 } };
+    expect(allRespondentTrends({ ...feed, all_respondents: [reading] }, FIELD)[1].markers).toEqual([]);
   });
 });

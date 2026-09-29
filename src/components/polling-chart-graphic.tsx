@@ -46,8 +46,8 @@ function fullDayLabel(day: number): string {
   return FULL_DAY_FORMATTER.format(new Date(day * 86_400_000));
 }
 
-function marker(id: string, color: string, cx = 0, cy = 0, derived = false) {
-  const fill = derived ? color : "var(--panel)";
+function marker(id: string, color: string, cx = 0, cy = 0) {
+  const fill = "var(--panel)";
   if (id === "bradford") {
     return (
       <rect x={cx - 4} y={cy - 4} width={8} height={8} fill={fill} stroke={color} strokeWidth={2} />
@@ -224,7 +224,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
                 }
                 return (
                   <g key={`${candidate.id}-dot-${props.index}`}>
-                    {marker(candidate.id, candidate.color, props.cx, props.cy, props.payload?.details?.[candidate.id]?.derived)}
+                    {marker(candidate.id, candidate.color, props.cx, props.cy)}
                   </g>
                 );
               }}

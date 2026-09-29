@@ -59,10 +59,8 @@ export default async function PollsPage() {
               <PollingScopeNote />
               <p>
                 Support among respondents naming a candidate, including leaners where asked.
-                All-respondent polls are converted to this basis, excluding undecided and
-                non-voter responses and including other candidates. Filled dots show derived
-                shares; tooltips give the original figures. Question wording and candidate
-                fields still differ.
+                All-respondent polls are converted to this basis; tooltips show the
+                derived and published percentages.
               </p>
               {excluded.length > 0 && (
                 <p>

@@ -29,7 +29,7 @@ describe("Polls page", () => {
     mocks.loadMayoralPolling.mockResolvedValue(polling);
     const html = renderToStaticMarkup(await PollsPage());
     expect(html).toContain("Support among respondents naming a candidate");
-    expect(html).toContain("Filled dots show derived");
+    expect(html).toContain("derived and published percentages");
     expect(html).toContain("1 poll is excluded");
     expect(html).toContain("Unknown basis firm");
     expect(html).toContain("54.5%");

@@ -23,6 +23,9 @@ const LEGEND_SHAPE: Record<string, "circle" | "rect" | "diamond"> = {
 };
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat("en-CA", { month: "short", timeZone: "UTC" });
+const DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  month: "short", day: "numeric", timeZone: "UTC",
+});
 const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   month: "short",
   year: "2-digit",
@@ -162,6 +165,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
   trends,
   series,
   yDomain = [0, 60],
+  xDomain,
   xAxis = "monthYear",
 }: PollingChartGraphicProps) {
   const { data, hasCurve } = useMemo(() => {
@@ -184,12 +188,15 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
           dataKey="x"
           type="number"
           scale="linear"
-          domain={["dataMin", "dataMax"]}
+          domain={xDomain ?? ["dataMin", "dataMax"]}
+          allowDataOverflow={xDomain !== undefined}
           ticks={xAxis === "month" && data.length > 0 ? monthStartDays(data[0].x, data[data.length - 1].x) : undefined}
           tickFormatter={(value) =>
             xAxis === "month"
               ? MONTH_FORMATTER.format(new Date(Number(value) * 86_400_000))
-              : labelForDay(Number(value))
+              : xAxis === "dayMonth"
+                ? DAY_MONTH_FORMATTER.format(new Date(Number(value) * 86_400_000))
+                : labelForDay(Number(value))
           }
           tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           axisLine={{ stroke: "var(--border)" }}

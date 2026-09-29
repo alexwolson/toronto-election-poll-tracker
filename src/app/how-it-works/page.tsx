@@ -212,6 +212,14 @@ export default async function HowItWorksPage() {
                   the next.
                 </p>
                 <p>
+                  The default &ldquo;Since nominations closed&rdquo; view shows polls
+                  reporting Chow, Bradford and Alexander with fieldwork completed after
+                  the <a href="https://www.toronto.ca/news/municipal-election-candidate-nominations-close-tomorrow/">August 21 nomination deadline</a>.
+                  &ldquo;All polls&rdquo; includes the earlier history. Both views use
+                  the same LOESS curves fitted from the full comparable polling history;
+                  the default view shows only their portion since nominations closed.
+                </p>
+                <p>
                   Each candidate is fitted independently. If a poll did not test a
                   candidate, it contributes no dot and no inferred zero. Curves stop at
                   the first and last observed dates, and a candidate with too few

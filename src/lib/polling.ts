@@ -158,8 +158,34 @@ export interface CandidateTrend {
   id: string;
   /** comparable poll observations for this candidate, chronological */
   markers: TrendMarker[];
-  /** LOESS smoother over the markers, or null when there are too few to fit */
+  /** LOESS fit from the full comparable history; views may show fewer markers. */
   curve: LoessPoint[] | null;
+}
+
+/** Toronto's nomination deadline was August 21 at 2 p.m.
+ * https://www.toronto.ca/news/municipal-election-candidate-nominations-close-tomorrow/ */
+export const NOMINATIONS_CLOSED_DATE = "2026-08-21";
+
+/** Public polls completed after nomination day and reporting the current field.
+ * End dates have no time of day, so a poll ending on nomination day cannot
+ * establish post-deadline fieldwork. A reported zero qualifies; an absent
+ * candidate does not. This is a chart filter, not the model's selection gate. */
+export function pollsSinceNominationsClosed(feed: MayoralPollingFeed, field: string[]): Poll[] {
+  if (field.length === 0) return [];
+  return feed.polls.filter((poll) =>
+    poll.date_conducted > NOMINATIONS_CLOSED_DATE &&
+    field.every((id) => Object.hasOwn(poll.shares, id)),
+  );
+}
+
+/** Select displayed observations while retaining the full-history LOESS fit.
+ * The chart's date domain clips the curve; this never refits the selected polls. */
+export function candidateTrendsForPolls(trends: CandidateTrend[], polls: Poll[]): CandidateTrend[] {
+  const ids = new Set(polls.map((poll) => poll.poll_id));
+  return trends.map((trend) => ({
+    ...trend,
+    markers: trend.markers.filter((marker) => ids.has(marker.poll_id)),
+  }));
 }
 
 const NON_CHOICE_RESPONSES = new Set([

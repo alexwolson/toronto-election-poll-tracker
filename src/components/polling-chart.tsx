@@ -61,6 +61,7 @@ export function PollingChart({
   trends,
   series,
   yDomain,
+  xDomain,
   xAxis,
   summary,
 }: {
@@ -68,8 +69,10 @@ export function PollingChart({
   series: ChartSeries[];
   /** y-axis range in percent; defaults to the polling chart's 0–60 */
   yDomain?: [number, number];
-  /** "month" ticks the first of each month with the month name, for short ranges */
-  xAxis?: "monthYear" | "month";
+  /** Clip the full-history curve to a displayed date window, without refitting. */
+  xDomain?: [number, number];
+  /** "month" ticks month starts; "dayMonth" labels dates within a short range. */
+  xAxis?: "monthYear" | "month" | "dayMonth";
   /** a caller's text equivalent, in place of the polling summary */
   summary?: { intro: string; rows: string[] };
 }) {
@@ -79,6 +82,7 @@ export function PollingChart({
         trends={trends}
         series={series}
         yDomain={yDomain}
+        xDomain={xDomain}
         xAxis={xAxis}
       />
 

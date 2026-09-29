@@ -8,8 +8,10 @@ export interface PollingChartGraphicProps {
   trends: CandidateTrend[];
   series: ChartSeries[];
   yDomain?: [number, number];
-  /** "month" ticks the first of each month with the month name, for short ranges */
-  xAxis?: "monthYear" | "month";
+  /** Clip the full-history curve to a displayed date window, without refitting. */
+  xDomain?: [number, number];
+  /** "month" ticks month starts; "dayMonth" labels dates within a short range. */
+  xAxis?: "monthYear" | "month" | "dayMonth";
 }
 
 export function PollingChartLoader(props: PollingChartGraphicProps) {

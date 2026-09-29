@@ -6,6 +6,8 @@ export interface ChartSeries {
   name: string;
   color: string;
   hatch: boolean;
+  /** A response category displayed as observations without a trend line. */
+  pointsOnly?: boolean;
 }
 
 const FULL_DAY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
@@ -44,7 +46,9 @@ export function pollingTrendSummaryRows(
     const derivation = derived.length > 0
       ? ` ${derived.length} chart ${derived.length === 1 ? "point is" : "points are"} derived from all-respondent shares; original figures remain in the archive.`
       : "";
-    const treatment = trend.curve
+    const treatment = candidate.pointsOnly
+      ? "Only reported points are shown, without a trend line."
+      : trend.curve
       ? "A smoothed trend line is shown."
       : "Only points are shown because too few comparable polls tested this candidate for a trend line.";
 

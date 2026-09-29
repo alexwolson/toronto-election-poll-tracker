@@ -3,8 +3,13 @@
 import { useState, type ReactNode } from "react";
 import { PollingChart, pollingTrendSummaryRows, type ChartSeries } from "./polling-chart";
 import { PollPeriodToggle } from "./poll-period-toggle";
-import { NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
+import { ALL_RESPONDENT_OTHER_ID, ALL_RESPONDENT_UNDECIDED_ID, NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
 import { formatDate, isoDayNumber } from "@/lib/format";
+
+const RESPONSE_SERIES: ChartSeries[] = [
+  { id: ALL_RESPONDENT_OTHER_ID, name: "Other candidates", color: "#7A6A57", hatch: false, pointsOnly: true },
+  { id: ALL_RESPONDENT_UNDECIDED_ID, name: "Undecided / don’t know", color: "#476B87", hatch: false, pointsOnly: true },
+];
 
 export function PollingTrendViews({
   allTrends,
@@ -26,6 +31,7 @@ export function PollingTrendViews({
   const fullTrends = allRespondents ? allRespondentTrends : allTrends;
   const recentTrends = allRespondents ? recentAllRespondentTrends : qualifiedTrends;
   const shownTrends = qualified ? recentTrends : fullTrends;
+  const shownSeries = allRespondents ? [...series, ...RESPONSE_SERIES] : series;
   const qualifiedCount = recentTrends[0]?.markers.length ?? 0;
   const recentEnd = Math.max(...recentTrends.flatMap((trend) => trend.markers.map((marker) => marker.x)));
 
@@ -46,9 +52,10 @@ export function PollingTrendViews({
       </div>
       <p className="evidence-explainer">
         {allRespondents ? (
-          <>Published support among all respondents, including undecided people and non-voters
-            in the base. Leaners are included where the pollster assigns them.
-            Only polls publishing this breakdown are shown.</>
+          <>Published support among all respondents; leaners are included where assigned.
+            Other candidates and undecided / don’t know are dots only, where reported.
+            Other candidates includes named candidates outside the three shown;
+            non-voters are kept separate.</>
         ) : (
           <>Support among respondents naming a candidate, including leaners where asked.
             All-respondent polls are converted to this basis; tooltips show the
@@ -72,10 +79,13 @@ export function PollingTrendViews({
             intro: "Polling trend summary. Points show published support among all respondents. " +
               "Undecided people and non-voters remain in the denominator; leaners are included " +
               "where assigned. Each sample contributes one published reading. Missing candidates " +
-              "are omitted, not counted as zero. Lines are LOESS trends, not forecasts.",
-            rows: pollingTrendSummaryRows(shownTrends, series),
+              "are omitted, not counted as zero. Other candidates combines named candidates outside " +
+              "the chart field and the reported other category. Undecided / don’t know combines " +
+              "those reported responses. Both are dots only; missing categories are omitted. " +
+              "Non-voters are excluded from both groups. Candidate lines are LOESS trends, not forecasts.",
+            rows: pollingTrendSummaryRows(shownTrends, shownSeries),
           } : undefined}
-          series={series}
+          series={shownSeries}
           xAxis={qualified ? "dayMonth" : "monthYear"}
           // Half a day of space keeps the latest hollow marker inside the clipping boundary.
           xDomain={qualified ? [isoDayNumber(NOMINATIONS_CLOSED_DATE) + 1, recentEnd + 0.5] : undefined}

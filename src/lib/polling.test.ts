@@ -3,6 +3,8 @@ import pollingFixture from "../../fixtures/mayoral_polling.json";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 import {
   allRespondentTrends,
+  ALL_RESPONDENT_OTHER_ID,
+  ALL_RESPONDENT_UNDECIDED_ID,
   candidateTrends,
   candidateTrendsForPolls,
   candidateChoiceShares,
@@ -282,5 +284,44 @@ describe("all-respondent chart basis", () => {
     expect(allRespondentTrends(feed, FIELD).every((trend) => trend.markers.length === 0)).toBe(true);
     const reading = { ...feed.polls[0], shares: { [CHOW]: 0.33, "response:undecided": 0.67 } };
     expect(allRespondentTrends({ ...feed, all_respondents: [reading] }, FIELD)[1].markers).toEqual([]);
+  });
+});
+
+
+describe("all-respondent response dots", () => {
+  it("sums explicit candidates and uncertainty categories without adding non-voters or inferring gaps", () => {
+    const reading: Poll = { ...feed.polls[0], denominator: "All respondents",
+      shares: { [CHOW]: 0.381, [BRADFORD]: 0.314, [ALEXANDER]: 0.08,
+        per_mcvie: 0.021, per_parker: 0.016, "response:other": 0.02,
+        "response:undecided": 0.168, "response:dont_know": 0.01,
+        "response:would_not_vote": 0.06, "response:refusal": 0.01 } };
+    const absent = { ...reading, poll_id: "absent", shares: { [CHOW]: 0.38 } };
+    const zero = { ...reading, poll_id: "zero", shares: {
+      [CHOW]: 0.38, "response:other": 0, "response:dont_know": 0 } };
+    const readings = [reading, absent, zero];
+    const source = structuredClone(readings);
+    const trends = allRespondentTrends({ ...feed, all_respondents: readings }, FIELD);
+    const other = trends.find((trend) => trend.id === ALL_RESPONDENT_OTHER_ID)!;
+    const undecided = trends.find((trend) => trend.id === ALL_RESPONDENT_UNDECIDED_ID)!;
+    expect(other.markers.map((point) => point.poll_id)).toEqual([reading.poll_id, "zero"]);
+    expect(other.markers[0].y).toBeCloseTo(0.057);
+    expect(undecided.markers[0].y).toBeCloseTo(0.178);
+    expect(other.markers[1].y).toBe(0);
+    expect(undecided.markers[1].y).toBe(0);
+    expect(readings).toEqual(source);
+  });
+
+  it("keeps response categories unsmoothed even with enough observations for LOESS", () => {
+    const readings = Array.from({ length: 8 }, (_, index) => ({ ...feed.polls[0],
+      poll_id: `sample-${index}`, date_conducted: `2026-09-${String(index + 1).padStart(2, "0")}`,
+      shares: { [CHOW]: 0.4, "response:other": 0.1, "response:dont_know": 0.2 },
+    }));
+    const trends = allRespondentTrends({ ...feed, all_respondents: readings }, FIELD);
+    expect(trends[0].curve).not.toBeNull();
+    for (const id of [ALL_RESPONDENT_OTHER_ID, ALL_RESPONDENT_UNDECIDED_ID]) {
+      const trend = trends.find((trend) => trend.id === id)!;
+      expect(trend.markers).toHaveLength(8);
+      expect(trend.curve).toBeNull();
+    }
   });
 });

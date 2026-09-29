@@ -36,6 +36,7 @@ describe("Polls page", () => {
     expect(html).toMatch(/data-label="Olivia Chow"[^>]*>36%/);
     expect(html).toContain("All respondents");
     expect(html).toContain("Forecast history summary");
+    expect(html).toContain("Alexander included");
   });
   it("shows one empty state without empty archive or source scaffolding", async () => {
     const polling = structuredClone(pollingFixture) as unknown as MayoralPollingFeed;

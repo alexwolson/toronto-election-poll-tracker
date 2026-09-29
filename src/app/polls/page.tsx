@@ -2,6 +2,7 @@ import { MayorTabs } from "@/components/mayor-tabs";
 import { PageHero } from "@/components/page-hero";
 import { PollArchive } from "@/components/poll-archive";
 import { PollingChart, type ChartSeries } from "@/components/polling-chart";
+import { PollingTrendViews } from "@/components/polling-trend-views";
 import { PollsterLink } from "@/components/pollster-link";
 import { PollingScopeNote } from "@/components/polling-scope-note";
 import { SectionHeading } from "@/components/section-heading";
@@ -9,7 +10,7 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
-import { candidateChoiceShares, candidateTrends, latestPoll, pollsByFieldwork, pollsterRegistry } from "@/lib/polling";
+import { candidateChoiceShares, candidateTrends, latestPoll, pollsByFieldwork, pollsIncludingCandidates, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -24,6 +25,10 @@ export default async function PollsPage() {
 
   const field = viableField(forecast);
   const trends = candidateTrends(polling, field);
+  const qualifiedTrends = candidateTrends(
+    { ...polling, polls: pollsIncludingCandidates(polling, field) },
+    field,
+  );
   const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
   const series: ChartSeries[] = field.map((id) => {
     const meta = candidateMeta(id);
@@ -62,16 +67,20 @@ export default async function PollsPage() {
                 All-respondent polls are converted to this basis; tooltips show the
                 derived and published percentages.
               </p>
-              {excluded.length > 0 && (
-                <p>
+            </SectionHeading>
+            <PollingTrendViews
+              allTrends={trends}
+              qualifiedTrends={qualifiedTrends}
+              series={series}
+              allPollNote={excluded.length > 0 && (
+                <p className="evidence-explainer">
                   {excluded.length} {excluded.length === 1 ? "poll is" : "polls are"} excluded
                   from this chart because the denominator or complete response breakdown is
                   unavailable: {excluded.map((poll) => `${poll.firm} (${formatDate(poll.date_conducted)})`).join("; ")}.
                   {" "}Original figures remain in the <a href="#archive-heading">poll archive</a>.
                 </p>
               )}
-            </SectionHeading>
-            <PollingChart trends={trends} series={series} />
+            />
           </section>
 
           {historyTrends && (

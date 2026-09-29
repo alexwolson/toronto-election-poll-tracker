@@ -212,6 +212,11 @@ export default async function HowItWorksPage() {
                   the next.
                 </p>
                 <p>
+                  Use &ldquo;Alexander included&rdquo; to show only polls reporting Chow,
+                  Bradford and Alexander. The curves are fitted again using only those
+                  polls, on the same candidate-choice basis.
+                </p>
+                <p>
                   Each candidate is fitted independently. If a poll did not test a
                   candidate, it contributes no dot and no inferred zero. Curves stop at
                   the first and last observed dates, and a candidate with too few

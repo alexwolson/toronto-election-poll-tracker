@@ -162,6 +162,14 @@ export interface CandidateTrend {
   curve: LoessPoint[] | null;
 }
 
+/** Public polls reporting every candidate in the current forecast field.
+ * A reported zero qualifies; an absent candidate never does. This is a chart
+ * filter, not the model's reading-selection or numerical qualification gate. */
+export function pollsIncludingCandidates(feed: MayoralPollingFeed, field: string[]): Poll[] {
+  if (field.length === 0) return [];
+  return feed.polls.filter((poll) => field.every((id) => Object.hasOwn(poll.shares, id)));
+}
+
 const NON_CHOICE_RESPONSES = new Set([
   "response:undecided", "response:would_not_vote", "response:refusal",
   "response:dont_know", "response:none_of_the_above", "response:no_answer",

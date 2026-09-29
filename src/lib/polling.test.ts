@@ -10,6 +10,7 @@ import {
   latestPoll,
   latestReferencedPollDate,
   pollsByFieldwork,
+  pollsIncludingCandidates,
   pollMethodLabel,
   pollsterRegistry,
   pollsterWebsite,
@@ -62,6 +63,22 @@ describe("candidate trends", () => {
   const decidedFeed = { ...feed, polls: feed.polls.map((poll) => ({
     ...poll, denominator: "Decided voters",
   })) };
+  it("refits the three-candidate view from only polls reporting the full field", () => {
+    const polls = pollsIncludingCandidates(decidedFeed, FIELD);
+    const qualified = candidateTrends({ ...decidedFeed, polls }, FIELD);
+    expect(polls.length).toBeGreaterThan(0);
+    expect(polls.length).toBeLessThan(decidedFeed.polls.length);
+    for (const trend of qualified) {
+      expect(trend.markers.map((point) => point.poll_id).sort())
+        .toEqual(polls.map((poll) => poll.poll_id).sort());
+      expect(trend.curve).toBeNull(); // this fixture has fewer than five qualified readings
+    }
+    expect(candidateTrends(decidedFeed, FIELD)[0].curve).not.toBeNull();
+    const zero = { ...polls[0], shares: { ...polls[0].shares, [ALEXANDER]: 0 } };
+    const missing = { ...zero, shares: { [CHOW]: 0.5, [ALEXANDER]: 0.1 } };
+    expect(pollsIncludingCandidates({ ...feed, polls: [zero, missing] }, FIELD)).toEqual([zero]);
+    expect(pollsIncludingCandidates(decidedFeed, [])).toEqual([]);
+  });
   it("fits a LOESS curve per candidate from that candidate's own polls", () => {
     const trends = candidateTrends(decidedFeed, FIELD);
     const chow = trends.find((t) => t.id === CHOW)!;

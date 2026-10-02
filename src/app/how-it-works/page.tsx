@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MethodFlow } from "@/components/method-flow";
 import { PageHero } from "@/components/page-hero";
-import { loadManifest } from "@/lib/feeds";
+import { loadCouncilRaceCards, loadManifest } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import {
   forecastFlow,
@@ -64,7 +64,8 @@ function MethodDisclosure({
 }
 
 export default async function HowItWorksPage() {
-  const manifest = await loadManifest();
+  const [manifest, council] = await Promise.all([loadManifest(), loadCouncilRaceCards()]);
+  const benchmark = council.ward_poll_benchmark;
 
   return (
     <main id="main-content" className="np-shell how-shell">
@@ -601,6 +602,76 @@ export default async function HowItWorksPage() {
             <span>Site data as of {formatDate(manifest.backend_generated_at)}</span>
           )}
         </div>
+      </QuestionSection>
+      <QuestionSection
+        id="ward-polls"
+        title="How much weight should I put on a ward poll?"
+        answer="The topline is a reading. Past misses show how much it can leave out."
+      >
+        <p>
+          The ward charts keep the poll’s published shares. Each band adds the
+          smallest and largest differences between a named candidate’s polled
+          share and their eventual result in our historical comparison.
+        </p>
+        {benchmark && (
+          <p>
+            That comparison covers {benchmark.contest_count} wards,{" "}
+            {benchmark.cycle_count === 1
+              ? "one election"
+              : `${benchmark.cycle_count} elections`}{" "}
+            and{" "}
+            {benchmark.pollster_count === 1
+              ? "one pollster"
+              : `${benchmark.pollster_count} pollsters`}
+            . Results ranged from{" "}
+            {(Math.abs(benchmark.error_lower) * 100).toFixed(1)} points below to{" "}
+            {(benchmark.error_upper * 100).toFixed(1)} points above the poll.
+          </p>
+        )}
+        <p>
+          The reference polls were taken three to six weeks before voting. The
+          bands include polling misses and later campaign changes. They are not
+          confidence intervals, bounds on future errors, or chances of winning;
+          each row is a separate historical comparison.
+        </p>
+        <p>
+          The latest Forum polls mix random telephone interviewing with a
+          non-random online panel and weight responses by age and gender. The
+          council question’s decided/leaning base is smaller than the overall
+          sample; weighting does not tell us the effective sample size. We do
+          not shrink the historical bands because a new poll has a larger
+          headline sample.
+        </p>
+        <p>
+          Other stays as the reported response. Candidates not named by the poll
+          have no individual reading or band. No support is assigned to them by
+          the site.
+        </p>
+        {benchmark && (
+          <MethodDisclosure
+            title="Historical sources"
+            description="Audited polls matched to official Toronto results"
+          >
+            <ul>
+              {benchmark.sources.map((source) => (
+                <li key={source.sample_id}>
+                  <a href={source.retrieved_url ?? source.source_url}>
+                    {source.pollster}, Ward {source.ward},{" "}
+                    {formatDate(source.fieldwork_end)}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p>
+              Repeated samples stay within their contest. The benchmark takes
+              the latest eligible sample per contest and compares named
+              candidates only, without normalizing published percentages. We
+              also check how the span changes when each contest is left out.
+              This small historical set cannot establish how often a future
+              result will fall inside these bands.
+            </p>
+          </MethodDisclosure>
+        )}
       </QuestionSection>
     </main>
   );

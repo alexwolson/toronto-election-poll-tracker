@@ -4544,3 +4544,9 @@ body {
   margin: 0;
   border-bottom: 0;
 }
+
+/* Historical ward-poll context shares the vote-range chart grammar. */
+.ward-poll-context { margin-block: 1.75rem; }
+.ward-poll-context > h3 { font-size: var(--type-heading); margin-bottom: 0.5rem; }
+.ward-poll-context > .font-mono { font-size: var(--type-diagram); }
+.ward-poll-context__note { font-size: var(--type-body-small); color: var(--text-soft); }

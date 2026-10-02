@@ -23,6 +23,7 @@ export interface GlossaryEntry {
 export const methodologyNav: MethodologyNavItem[] = [
   { id: "mayoral-forecast", label: "Forecast trust" },
   { id: "council-attention", label: "Ward attention" },
+  { id: "ward-polls", label: "Ward polls" },
   { id: "limitations", label: "Withheld results" },
   { id: "sources", label: "Data sources" },
 ];

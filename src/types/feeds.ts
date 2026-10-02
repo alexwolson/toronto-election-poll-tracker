@@ -595,6 +595,42 @@ export interface WardPollCandidate {
   registration_status: "registered" | "unregistered" | "residual";
 }
 
+export interface WardPollHistoricalContext {
+  reading_id: string;
+  sample_id: string;
+  unweighted_base: number | null;
+  weighted_base: number | null;
+  reported_base: number | null;
+  rows: {
+    candidate_id: string;
+    candidate_name: string;
+    reported_share: number;
+    lower: number;
+    upper: number;
+  }[];
+}
+
+export interface WardPollBenchmark {
+  method: "observed-named-candidate-error-span-v1";
+  sample_count: number;
+  contest_count: number;
+  cycle_count: number;
+  pollster_count: number;
+  candidate_comparisons: number;
+  error_lower: number;
+  error_upper: number;
+  corpus_sha256: string;
+  sources: {
+    sample_id: string;
+    year: number;
+    ward: string;
+    fieldwork_end: string;
+    pollster: string;
+    source_url: string;
+    retrieved_url?: string;
+  }[];
+}
+
 export interface WardPoll {
   poll_id: string;
   firm: string;
@@ -606,6 +642,8 @@ export interface WardPoll {
   ballot_status: string;
   undecided_share: number | null;
   candidates: WardPollCandidate[];
+  source_url?: string | null;
+  historical_context?: WardPollHistoricalContext | null;
 }
 
 export interface CouncilRaceCard {
@@ -626,7 +664,8 @@ export interface CouncilRaceCard {
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 8 | 9;
+  schema_version: 8 | 9 | 10;
+  ward_poll_benchmark?: WardPollBenchmark | null;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;

@@ -914,10 +914,117 @@ function validEndorsement(value: unknown): boolean {
   );
 }
 
+function validWardBenchmark(value: unknown): boolean {
+  if (value === null) return true;
+  return (
+    isRecord(value) &&
+    value.method === "observed-named-candidate-error-span-v1" &&
+    [
+      value.sample_count,
+      value.contest_count,
+      value.cycle_count,
+      value.pollster_count,
+      value.candidate_comparisons,
+    ].every(
+      (count) =>
+        typeof count === "number" && Number.isInteger(count) && count > 0,
+    ) &&
+    typeof value.error_lower === "number" &&
+    Number.isFinite(value.error_lower) &&
+    typeof value.error_upper === "number" &&
+    Number.isFinite(value.error_upper) &&
+    value.error_lower <= value.error_upper &&
+    value.error_lower >= -1 &&
+    value.error_upper <= 1 &&
+    typeof value.corpus_sha256 === "string" &&
+    /^[a-f0-9]{64}$/.test(value.corpus_sha256) &&
+    Array.isArray(value.sources) &&
+    value.sources.length === value.sample_count &&
+    value.sources.every(
+      (source) =>
+        isRecord(source) &&
+        isNonEmptyString(source.sample_id) &&
+        isNonEmptyString(source.source_url),
+    )
+  );
+}
+
+function validWardContext(poll: unknown, benchmark: unknown): boolean {
+  if (!isRecord(poll)) return false;
+  const context = poll.historical_context;
+  if (context === null) return true;
+  if (
+    !isRecord(benchmark) ||
+    !isRecord(context) ||
+    !isNonEmptyString(context.reading_id) ||
+    !isNonEmptyString(context.sample_id) ||
+    !Array.isArray(context.rows) ||
+    context.rows.length === 0 ||
+    ![
+      context.unweighted_base,
+      context.weighted_base,
+      context.reported_base,
+    ].every(
+      (base) =>
+        base === null ||
+        (typeof base === "number" && Number.isInteger(base) && base > 0),
+    ) ||
+    !Array.isArray(poll.candidates)
+  )
+    return false;
+  const named = poll.candidates.filter(
+    (candidate) => isRecord(candidate) && candidate.is_residual === false,
+  );
+  return (
+    named.length === context.rows.length &&
+    new Set(
+      context.rows.map((row) => (isRecord(row) ? row.candidate_id : null)),
+    ).size === named.length &&
+    context.rows.every((row) => {
+      if (
+        !isRecord(row) ||
+        !isNonEmptyString(row.candidate_id) ||
+        !isNonEmptyString(row.candidate_name) ||
+        ![row.reported_share, row.lower, row.upper].every(
+          (share) =>
+            typeof share === "number" &&
+            Number.isFinite(share) &&
+            share >= 0 &&
+            share <= 1,
+        )
+      )
+        return false;
+      const candidate = named.find(
+        (candidate) =>
+          isRecord(candidate) && candidate.candidate_id === row.candidate_id,
+      );
+      if (
+        !isRecord(candidate) ||
+        candidate.candidate_name !== row.candidate_name ||
+        candidate.share !== row.reported_share
+      )
+        return false;
+      const lower = Math.max(
+        0,
+        Number(row.reported_share) + Number(benchmark.error_lower),
+      );
+      const upper = Math.min(
+        1,
+        Number(row.reported_share) + Number(benchmark.error_upper),
+      );
+      return (
+        Math.abs(Number(row.lower) - lower) < 1e-9 &&
+        Math.abs(Number(row.upper) - upper) < 1e-9
+      );
+    })
+  );
+}
+
 export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  // Schema 9 adds candidate endorsements (backend ADR 0058); 8 is still accepted.
-  if (!isRecord(value) || (value.schema_version !== 8 && value.schema_version !== 9)) return null;
-  const withEndorsements = value.schema_version === 9;
+  // Schema 10 adds descriptive historical ward-poll comparisons (ADR 0059).
+  if (!isRecord(value) || typeof value.schema_version !== "number" || ![8, 9, 10].includes(value.schema_version)) return null;
+  const withEndorsements = value.schema_version !== 8;
+  if (value.schema_version === 10 && !validWardBenchmark(value.ward_poll_benchmark)) return null;
   if (!isNonEmptyString(value.base_rate_note) || !isRecord(value.wards)) return null;
   const wards = value.wards;
   const expectedWards = Array.from({ length: 25 }, (_, index) => String(index + 1));
@@ -926,6 +1033,8 @@ export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
     expectedWards.some((ward) => !(ward in wards))
   ) return null;
   for (const [ward, card] of Object.entries(wards)) {
+    if (value.schema_version === 10 && (!isRecord(card) || !Array.isArray(card.ward_polls) ||
+      !card.ward_polls.every((poll) => validWardContext(poll, value.ward_poll_benchmark)))) return null;
     if (
       !isRecord(card) ||
       card.ward !== ward ||

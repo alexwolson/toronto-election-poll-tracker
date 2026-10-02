@@ -12,6 +12,7 @@ import {
 } from "./methodology";
 
 vi.mock("@/lib/feeds", () => ({
+  loadCouncilRaceCards: async () => ({ ward_poll_benchmark: null }),
   loadManifest: async () => ({ backend_generated_at: "2026-08-21T12:00:00Z" }),
 }));
 
@@ -22,6 +23,7 @@ describe("methodology content", () => {
     expect(ids).toEqual([
       "mayoral-forecast",
       "council-attention",
+      "ward-polls",
       "limitations",
       "sources",
     ]);

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MethodFlow } from "@/components/method-flow";
 import { PageHero } from "@/components/page-hero";
-import { loadManifest } from "@/lib/feeds";
+import { loadCouncilRaceCards, loadManifest } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
 import {
   forecastFlow,
@@ -64,7 +64,8 @@ function MethodDisclosure({
 }
 
 export default async function HowItWorksPage() {
-  const manifest = await loadManifest();
+  const [manifest, council] = await Promise.all([loadManifest(), loadCouncilRaceCards()]);
+  const benchmark = council.ward_poll_benchmark;
 
   return (
     <main id="main-content" className="np-shell how-shell">
@@ -601,6 +602,63 @@ export default async function HowItWorksPage() {
             <span>Site data as of {formatDate(manifest.backend_generated_at)}</span>
           )}
         </div>
+      </QuestionSection>
+      <QuestionSection
+        id="ward-polls"
+        title="How much weight should I put on a ward poll?"
+        answer="A reported lead can disappear under plausible polling error. These polls do not settle who will win."
+      >
+        <p>
+          The ward charts model votes among the candidates each poll names. We divide
+          each named candidate’s share by the total for those names, and compare the
+          same group in past election results. Other stays in the original toplines;
+          it is not assigned to anyone or treated as the eventual unnamed vote.
+        </p>
+        <p>
+          A joint statistical model learns how far these relative shares have moved
+          between a poll and the result. Each simulated result totals 100% across the
+          named candidates. The chart follows the poll’s leader against the strongest other named
+          candidate in each simulation. Its central 80% lead ranges include uncertainty
+          in the size of historical polling error. A range crossing the tie line includes
+          a different candidate ahead.
+        </p>
+        {benchmark && <p>
+          The evidence is {benchmark.contest_count} ward races from one pollster in
+          2022, polled three to six weeks before voting. We withheld each ward in turn
+          and predicted its result. Large misses remained, particularly in Parkdale–High Park.
+          Six tests from one election cannot establish reliable future coverage.
+        </p>}
+        <p>
+          The latest Forum polls mix telephone interviewing with a non-random online
+          panel and weight responses by age and gender. The decided/leaning base is
+          smaller than the headline sample, and effective sample size is unknown.
+          We transfer the total historical error without shrinking it for today’s
+          larger samples. That transfer across survey methods and elections is an assumption.
+        </p>
+        <p>
+          These ranges depend on the model’s assumptions. We also check different
+          error priors and a different distribution for vote shares. {benchmark && <>The
+          alternative distribution moves some range endpoints by up to {Math.ceil(benchmark.model.shape_sensitivity_max_endpoint_difference * 100)} percentage
+          points, so treat these as rough estimates. </>}Candidates
+          missing from the poll have no individual estimate; these charts do not
+          predict who will win the whole ward.
+        </p>
+        {benchmark && <MethodDisclosure title="Model and historical sources" description="Joint shares, whole-ward checks, and audited poll tables">
+          <p>
+            The model uses a Dirichlet distribution centred on each poll’s named-set
+            shares, with an uncertain concentration that can vary by ward. Concentration
+            measures total poll-to-result error, not respondent count. Each ward is
+            one joint observation. We integrate both the typical concentration and
+            its variation across wards, rather than fixing either at a best estimate.
+          </p>
+          <p>
+            Historical sampling error, campaign changes and survey bias are combined;
+            six polls cannot separate them. Repeated samples cannot add independent
+            election outcomes. A larger named field adds within-ward contrasts, not
+            additional historical races. Source percentages remain available unchanged.
+          </p>
+          <ul>{benchmark.sources.map((source) => <li key={source.sample_id}><a href={source.retrieved_url ?? source.source_url}>{source.pollster}, Ward {source.ward}, {formatDate(source.fieldwork_end)}</a></li>)}</ul>
+        </MethodDisclosure>}
       </QuestionSection>
     </main>
   );

@@ -4544,3 +4544,21 @@ body {
   margin: 0;
   border-bottom: 0;
 }
+
+/* Historical ward-poll context shares the vote-range chart grammar. */
+.ward-poll-context { margin-block: 1.75rem; }
+.ward-poll-context > h3 { font-size: var(--type-heading); margin-bottom: 0.5rem; }
+.ward-poll-context > .font-mono { font-size: var(--type-diagram); }
+.ward-poll-context__note { font-size: var(--type-body-small); color: var(--text-soft); }
+
+.ward-lead-chart { margin-top: 1rem; }
+.ward-lead-chart__axis, .ward-lead-chart__row { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 1rem; }
+.ward-lead-chart__axis { font-size: var(--type-diagram); padding-bottom: .75rem; }
+.ward-lead-chart__axis > div { display: flex; justify-content: space-between; gap: 1rem; }
+.ward-lead-chart__row { padding: .75rem 0; border-top: 1px solid var(--line-soft); align-items: center; }
+.ward-lead-chart__track { height: 2rem; position: relative; background: var(--muted); }
+.ward-lead-chart__band { position: absolute; height: 1rem; top: .5rem; background: var(--text-strong); opacity: .5; }
+.ward-lead-chart__zero { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid var(--text-strong); }
+@media (max-width: 600px) {
+  .ward-lead-chart__axis, .ward-lead-chart__row { grid-template-columns: 7rem minmax(0, 1fr); gap: .5rem; }
+}

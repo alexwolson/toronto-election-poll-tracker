@@ -914,10 +914,127 @@ function validEndorsement(value: unknown): boolean {
   );
 }
 
+function validWardBenchmark(value: unknown): boolean {
+  if (value === null) return true;
+  return (
+    isRecord(value) &&
+    value.method === "conditional-named-set-dirichlet-v1" &&
+    isRecord(value.model) && value.model.name === value.method &&
+    value.model.denominator === "named_candidates" && value.model.interval_mass === 0.8 &&
+    value.model.qualification_passed === true &&
+    typeof value.model.shape_sensitivity_max_endpoint_difference === "number" &&
+    Number.isFinite(value.model.shape_sensitivity_max_endpoint_difference) &&
+    value.model.shape_sensitivity_max_endpoint_difference >= 0 && value.model.shape_sensitivity_max_endpoint_difference <= 1 &&
+    Array.isArray(value.model.leave_one_contest_out) &&
+    value.model.leave_one_contest_out.length === value.contest_count &&
+    [
+      value.sample_count,
+      value.contest_count,
+      value.cycle_count,
+      value.pollster_count,
+      value.candidate_comparisons,
+    ].every(
+      (count) =>
+        typeof count === "number" && Number.isInteger(count) && count > 0,
+    ) &&
+    typeof value.error_lower === "number" &&
+    Number.isFinite(value.error_lower) &&
+    typeof value.error_upper === "number" &&
+    Number.isFinite(value.error_upper) &&
+    value.error_lower <= value.error_upper &&
+    value.error_lower >= -1 &&
+    value.error_upper <= 1 &&
+    typeof value.corpus_sha256 === "string" &&
+    /^[a-f0-9]{64}$/.test(value.corpus_sha256) &&
+    Array.isArray(value.sources) &&
+    value.sources.length === value.sample_count &&
+    value.sources.every(
+      (source) =>
+        isRecord(source) &&
+        isNonEmptyString(source.sample_id) &&
+        isNonEmptyString(source.source_url),
+    )
+  );
+}
+
+function validWardContext(poll: unknown, benchmark: unknown): boolean {
+  if (!isRecord(poll)) return false;
+  const context = poll.modelled_context;
+  if (context === null) return true;
+  if (
+    !isRecord(benchmark) ||
+    !isRecord(context) ||
+    context.denominator !== "named_candidates" || context.interval_mass !== 0.8 ||
+    !isNonEmptyString(context.reading_id) ||
+    !isNonEmptyString(context.sample_id) ||
+    !Array.isArray(context.rows) ||
+    context.rows.length === 0 ||
+    ![
+      context.unweighted_base,
+      context.weighted_base,
+      context.reported_base,
+    ].every(
+      (base) =>
+        base === null ||
+        (typeof base === "number" && Number.isInteger(base) && base > 0),
+    ) ||
+    !Array.isArray(poll.candidates)
+  )
+    return false;
+  const named = poll.candidates.filter(
+    (candidate) => isRecord(candidate) && candidate.is_residual === false,
+  );
+  const leader = context.leader;
+  if (!isRecord(leader) || !Array.isArray(leader.ranges) || leader.ranges.length !== 2 ||
+    leader.ranges[0]?.model !== "dirichlet" || leader.ranges[1]?.model !== "logistic_normal" ||
+    !leader.ranges.every((range) => isRecord(range) && typeof range.lower === "number" && typeof range.upper === "number" &&
+      Number.isFinite(range.lower) && Number.isFinite(range.upper) && range.lower >= -1 && range.upper <= 1 && range.lower <= range.upper)) return false;
+  const ordered = [...named].sort((a,b) => (isRecord(b) ? Number(b.share) : 0) - (isRecord(a) ? Number(a.share) : 0));
+  if (!isRecord(ordered[0]) || !isRecord(ordered[1]) || leader.candidate_id !== ordered[0].candidate_id ||
+    leader.candidate_name !== ordered[0].candidate_name || typeof leader.reported_lead !== "number" ||
+    Math.abs(leader.reported_lead - (Number(ordered[0].share) - Number(ordered[1].share))) > 1e-9) return false;
+  return (
+    named.length === context.rows.length &&
+    new Set(
+      context.rows.map((row) => (isRecord(row) ? row.candidate_id : null)),
+    ).size === named.length &&
+    context.rows.every((row) => {
+      if (
+        !isRecord(row) ||
+        !isNonEmptyString(row.candidate_id) ||
+        !isNonEmptyString(row.candidate_name) ||
+        ![row.reported_share, row.named_share, row.median, row.lower, row.upper].every(
+          (share) =>
+            typeof share === "number" &&
+            Number.isFinite(share) &&
+            share >= 0 &&
+            share <= 1,
+        )
+      )
+        return false;
+      const candidate = named.find(
+        (candidate) =>
+          isRecord(candidate) && candidate.candidate_id === row.candidate_id,
+      );
+      if (
+        !isRecord(candidate) ||
+        candidate.candidate_name !== row.candidate_name ||
+        candidate.share !== row.reported_share
+      )
+        return false;
+      const total = named.reduce((sum, candidate) => sum + (isRecord(candidate) ? Number(candidate.share) : 0), 0);
+      return total > 0 && Math.abs(Number(row.named_share) - Number(row.reported_share) / total) < 1e-9 &&
+        Number(row.lower) <= Number(row.median) && Number(row.median) <= Number(row.upper);
+
+    })
+  );
+}
+
 export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  // Schema 9 adds candidate endorsements (backend ADR 0058); 8 is still accepted.
-  if (!isRecord(value) || (value.schema_version !== 8 && value.schema_version !== 9)) return null;
-  const withEndorsements = value.schema_version === 9;
+  // Schema 10 adds conditional named-set ward-poll modelling (ADR 0059).
+  if (!isRecord(value) || typeof value.schema_version !== "number" || ![8, 9, 10].includes(value.schema_version)) return null;
+  const withEndorsements = value.schema_version !== 8;
+  if (value.schema_version === 10 && !validWardBenchmark(value.ward_poll_benchmark)) return null;
   if (!isNonEmptyString(value.base_rate_note) || !isRecord(value.wards)) return null;
   const wards = value.wards;
   const expectedWards = Array.from({ length: 25 }, (_, index) => String(index + 1));
@@ -926,6 +1043,8 @@ export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
     expectedWards.some((ward) => !(ward in wards))
   ) return null;
   for (const [ward, card] of Object.entries(wards)) {
+    if (value.schema_version === 10 && (!isRecord(card) || !Array.isArray(card.ward_polls) ||
+      !card.ward_polls.every((poll) => validWardContext(poll, value.ward_poll_benchmark)))) return null;
     if (
       !isRecord(card) ||
       card.ward !== ward ||

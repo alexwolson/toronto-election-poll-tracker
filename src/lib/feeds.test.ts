@@ -1,4 +1,5 @@
 import candidatesFixture from "../../fixtures/mayoral_candidates.json";
+import { benchmark, poll } from "@/components/ward-poll-context.fixture";
 import councilFixture from "../../fixtures/council_race_cards.json";
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import pollingFixture from "../../fixtures/mayoral_polling.json";
@@ -453,5 +454,32 @@ describe("validateCouncil", () => {
     delete malformed.wards["25"];
 
     expect(validateCouncil(malformed)).toBeNull();
+  });
+});
+
+
+describe("schema 10 historical ward comparisons", () => {
+  function currentFeed() {
+    const fixture = structuredClone(councilFixture);
+    return { ...fixture, schema_version: 10, ward_poll_benchmark: benchmark,
+      wards: Object.fromEntries(Object.entries(fixture.wards).map(([ward, card]) => [ward, {
+        ...card, ward_polls: ward === "4" ? [structuredClone(poll)] : card.ward_polls.map((reading) => ({ ...reading, modelled_context: null })),
+      }])),
+    };
+  }
+  it("accepts a complete source-consistent comparison", () => {
+    expect(validateCouncil(currentFeed())).not.toBeNull();
+  });
+  it("rejects invented shares, wrong bands, residual bands and missing evidence", () => {
+    const wrongShare = currentFeed();
+    wrongShare.wards["4"].ward_polls[0].candidates[0].share = 0.99;
+    expect(validateCouncil(wrongShare)).toBeNull();
+    const wrongBand = currentFeed();
+    const reading = wrongBand.wards["4"].ward_polls[0];
+    if ("modelled_context" in reading && reading.modelled_context) reading.modelled_context.rows[0].upper = 0.2;
+    expect(validateCouncil(wrongBand)).toBeNull();
+    const missing = currentFeed();
+    expect(validateCouncil({ ...missing, ward_poll_benchmark: undefined })).toBeNull();
+    expect(validateCouncil({ ...missing, schema_version: "10" })).toBeNull();
   });
 });

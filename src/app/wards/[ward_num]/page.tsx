@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WardPollContext } from "@/components/ward-poll-context";
 import { notFound } from "next/navigation";
 import { CandidateHistoryItem, CandidateLinksNote } from "@/components/candidate-history";
 import { CandidateEndorsements, EndorsementsNote } from "@/components/candidate-endorsements";
@@ -13,7 +14,7 @@ import {
   raceHistorySignals,
 } from "@/lib/council-signals";
 import { formatDate, formatSharePct } from "@/lib/format";
-import type { CouncilCandidate, CouncilRaceCard } from "@/types/feeds";
+import type { CouncilCandidate, CouncilRaceCard, WardPollBenchmark } from "@/types/feeds";
 
 const ATTENTION_LABEL: Record<AttentionLevel, string> = {
   high: "High attention",
@@ -80,7 +81,7 @@ function CandidateItem({
   );
 }
 
-function WardDetail({ card }: { card: CouncilRaceCard }) {
+function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: WardPollBenchmark | null }) {
   const attention = wardAttentionLevel(card);
   const inc = card.incumbent;
   const prior = card.prior_result;
@@ -213,7 +214,9 @@ function WardDetail({ card }: { card: CouncilRaceCard }) {
       {card.ward_polls.length > 0 && (
         <section className="ward-detail-section">
           <h2>Ward polls</h2>
-          {card.ward_polls.map((poll) => (
+          {card.ward_polls.map((poll) => poll.modelled_context && benchmark ? (
+            <WardPollContext key={poll.poll_id} poll={poll} benchmark={benchmark} />
+          ) : (
             <div key={poll.poll_id} style={{ marginBottom: "1rem" }}>
               <p className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-faint)" }}>
                 {poll.firm} · {formatDate(poll.date_conducted)}
@@ -257,5 +260,5 @@ export default async function WardPage({
   const card = council.wards[ward_num];
   if (!card) notFound();
 
-  return <WardDetail card={card} />;
+  return <WardDetail card={card} benchmark={council.ward_poll_benchmark} />;
 }

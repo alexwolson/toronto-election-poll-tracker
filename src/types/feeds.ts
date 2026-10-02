@@ -452,7 +452,7 @@ export interface Manifest {
   }>;
 }
 
-// ── 5. council race cards (schema_version 5) ────────────────────────────────
+// ── 5. council race cards (schema_version 8–10) ────────────────────────────────
 
 export interface Appearance {
   year: number;
@@ -595,6 +595,55 @@ export interface WardPollCandidate {
   registration_status: "registered" | "unregistered" | "residual";
 }
 
+export interface WardPollModelContext {
+  leader: { candidate_id: string; candidate_name: string; reported_lead: number; ranges: { model: "dirichlet" | "logistic_normal"; lower: number; upper: number }[] };
+  denominator: "named_candidates";
+  interval_mass: 0.8;
+  reading_id: string;
+  sample_id: string;
+  unweighted_base: number | null;
+  weighted_base: number | null;
+  reported_base: number | null;
+  rows: {
+    candidate_id: string;
+    candidate_name: string;
+    reported_share: number;
+    named_share: number;
+    median: number;
+    lower: number;
+    upper: number;
+  }[];
+}
+
+export interface WardPollBenchmark {
+  model: {
+    name: "conditional-named-set-dirichlet-v1";
+    denominator: "named_candidates";
+    interval_mass: 0.8;
+    qualification_passed: true;
+    shape_sensitivity_max_endpoint_difference: number;
+    leave_one_contest_out: { omitted_sample: string; named_candidates: number; covered_80: number; covered_95: number; mean_interval_width: number }[];
+  };
+  method: "conditional-named-set-dirichlet-v1";
+  sample_count: number;
+  contest_count: number;
+  cycle_count: number;
+  pollster_count: number;
+  candidate_comparisons: number;
+  error_lower: number;
+  error_upper: number;
+  corpus_sha256: string;
+  sources: {
+    sample_id: string;
+    year: number;
+    ward: string;
+    fieldwork_end: string;
+    pollster: string;
+    source_url: string;
+    retrieved_url?: string;
+  }[];
+}
+
 export interface WardPoll {
   poll_id: string;
   firm: string;
@@ -606,6 +655,8 @@ export interface WardPoll {
   ballot_status: string;
   undecided_share: number | null;
   candidates: WardPollCandidate[];
+  source_url?: string | null;
+  modelled_context?: WardPollModelContext | null;
 }
 
 export interface CouncilRaceCard {
@@ -626,7 +677,8 @@ export interface CouncilRaceCard {
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 8 | 9;
+  schema_version: 8 | 9 | 10;
+  ward_poll_benchmark?: WardPollBenchmark | null;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */
   wards: Record<string, CouncilRaceCard>;

@@ -289,6 +289,27 @@ describe("all-respondent chart basis", () => {
 
 
 describe("all-respondent response dots", () => {
+  it("shows minor candidate observations while retaining their shares in the combined other total", () => {
+    const readings: Poll[] = [
+      { ...feed.polls[0], poll_id: "five-names", date_conducted: "2026-09-29",
+        shares: { [CHOW]: 0.381, [BRADFORD]: 0.322, [ALEXANDER]: 0.072,
+          per_mcvie: 0.02, per_parker: 0.018, "response:other": 0.027,
+          "response:undecided": 0.16 } },
+      { ...feed.polls[0], poll_id: "three-names", date_conducted: "2026-09-27",
+        shares: { [CHOW]: 0.42, [BRADFORD]: 0.33, [ALEXANDER]: 0.08,
+          "response:other": 0.03, "response:undecided": 0.14 } },
+    ];
+    const trends = allRespondentTrends({ ...feed, all_respondents: readings },
+      [...FIELD, "per_mcvie", "per_parker"], FIELD);
+    expect(trends.find((trend) => trend.id === "per_mcvie")!.markers.map((marker) => marker.y))
+      .toEqual([0.02]);
+    expect(trends.find((trend) => trend.id === "per_parker")!.markers.map((marker) => marker.y))
+      .toEqual([0.018]);
+    expect(trends.find((trend) => trend.id === ALL_RESPONDENT_OTHER_ID)!.markers.map((marker) => marker.y))
+      .toEqual([0.03, 0.065]);
+    expect(trends.find((trend) => trend.id === "per_mcvie")!.curve).toBeNull();
+  });
+
   it("sums explicit candidates and uncertainty categories without adding non-voters or inferring gaps", () => {
     const reading: Poll = { ...feed.polls[0], denominator: "All respondents",
       shares: { [CHOW]: 0.381, [BRADFORD]: 0.314, [ALEXANDER]: 0.08,

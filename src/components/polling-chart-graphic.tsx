@@ -60,9 +60,9 @@ function marker(id: string, color: string, cx = 0, cy = 0) {
     return (
       <path
         d={`M ${cx} ${cy - 5} L ${cx + 5} ${cy} L ${cx} ${cy + 5} L ${cx - 5} ${cy} Z`}
-        fill={color}
-        stroke="#3A2500"
-        strokeWidth={1.75}
+        fill={fill}
+        stroke={color}
+        strokeWidth={2}
       />
     );
   }

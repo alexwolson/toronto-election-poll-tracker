@@ -37,7 +37,7 @@ describe("polling trend views", () => {
     expect(all.getAttribute("aria-pressed")).toBe("false");
     expect(screen.getByTestId("chart-window").textContent)
       .toBe([isoDayNumber("2026-08-22"), isoDayNumber("2026-09-24") + 0.5].join(","));
-    expect(screen.getByRole("status").textContent).toBe("1 poll completed after Aug 21, 2026, reporting Chow, Bradford and Alexander. Trend lines use the full polling history.");
+    expect(screen.getByRole("status").textContent).toBe("1 poll since nominations closed. Lines use the full polling history.");
     expect(screen.getByText(/Olivia Chow: 1 poll shown at 50.0%/)).toBeTruthy();
     expect(screen.queryByText(/Olivia Chow: 2 polls shown/)).toBeNull();
     expect(screen.queryByText("Unknown basis poll is excluded.")).toBeNull();
@@ -63,14 +63,14 @@ describe("polling trend views", () => {
     expect(screen.getByTestId("chart-window").getAttribute("data-series")).toBe("Olivia Chow");
     fireEvent.click(screen.getByRole("button", { name: "All respondents" }));
     expect(screen.getByTestId("chart-window").getAttribute("data-series"))
-      .toBe("Olivia Chow,Other candidates,Undecided / don’t know");
+      .toBe("Olivia Chow,Other candidates combined,Undecided / don’t know");
     expect(screen.getByRole("button", { name: "Since nominations closed" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText(/Olivia Chow: 1 poll shown at 36.0%/)).toBeTruthy();
-    expect(screen.getByText(/Published support among all respondents/)).toBeTruthy();
+    expect(screen.getByText(/Shares of all respondents, including undecided voters/)).toBeTruthy();
     expect(screen.queryByText(/Points show support among respondents naming a/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "All polls" }));
     expect(screen.getByTestId("chart-window").getAttribute("data-series"))
-      .toBe("Olivia Chow,Other candidates,Undecided / don’t know");
+      .toBe("Olivia Chow,Other candidates combined,Undecided / don’t know");
     expect(screen.getByText(/Olivia Chow: 2 polls shown, from 36.0%/)).toBeTruthy();
     expect(screen.queryByText("Unknown basis poll is excluded.")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Candidate choices" }));

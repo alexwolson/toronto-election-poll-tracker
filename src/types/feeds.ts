@@ -452,7 +452,7 @@ export interface Manifest {
   }>;
 }
 
-// ── 5. council race cards (schema_version 5) ────────────────────────────────
+// ── 5. council race cards (schema_version 8–10) ────────────────────────────────
 
 export interface Appearance {
   year: number;
@@ -595,7 +595,9 @@ export interface WardPollCandidate {
   registration_status: "registered" | "unregistered" | "residual";
 }
 
-export interface WardPollHistoricalContext {
+export interface WardPollModelContext {
+  denominator: "named_candidates";
+  interval_mass: 0.8;
   reading_id: string;
   sample_id: string;
   unweighted_base: number | null;
@@ -605,13 +607,23 @@ export interface WardPollHistoricalContext {
     candidate_id: string;
     candidate_name: string;
     reported_share: number;
+    named_share: number;
+    median: number;
     lower: number;
     upper: number;
   }[];
 }
 
 export interface WardPollBenchmark {
-  method: "observed-named-candidate-error-span-v1";
+  model: {
+    name: "conditional-named-set-dirichlet-v1";
+    denominator: "named_candidates";
+    interval_mass: 0.8;
+    qualification_passed: true;
+    shape_sensitivity_max_endpoint_difference: number;
+    leave_one_contest_out: { omitted_sample: string; named_candidates: number; covered_80: number; covered_95: number; mean_interval_width: number }[];
+  };
+  method: "conditional-named-set-dirichlet-v1";
   sample_count: number;
   contest_count: number;
   cycle_count: number;
@@ -643,7 +655,7 @@ export interface WardPoll {
   undecided_share: number | null;
   candidates: WardPollCandidate[];
   source_url?: string | null;
-  historical_context?: WardPollHistoricalContext | null;
+  modelled_context?: WardPollModelContext | null;
 }
 
 export interface CouncilRaceCard {

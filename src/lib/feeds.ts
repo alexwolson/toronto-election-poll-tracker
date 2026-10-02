@@ -918,7 +918,15 @@ function validWardBenchmark(value: unknown): boolean {
   if (value === null) return true;
   return (
     isRecord(value) &&
-    value.method === "observed-named-candidate-error-span-v1" &&
+    value.method === "conditional-named-set-dirichlet-v1" &&
+    isRecord(value.model) && value.model.name === value.method &&
+    value.model.denominator === "named_candidates" && value.model.interval_mass === 0.8 &&
+    value.model.qualification_passed === true &&
+    typeof value.model.shape_sensitivity_max_endpoint_difference === "number" &&
+    Number.isFinite(value.model.shape_sensitivity_max_endpoint_difference) &&
+    value.model.shape_sensitivity_max_endpoint_difference >= 0 && value.model.shape_sensitivity_max_endpoint_difference <= 1 &&
+    Array.isArray(value.model.leave_one_contest_out) &&
+    value.model.leave_one_contest_out.length === value.contest_count &&
     [
       value.sample_count,
       value.contest_count,
@@ -951,11 +959,12 @@ function validWardBenchmark(value: unknown): boolean {
 
 function validWardContext(poll: unknown, benchmark: unknown): boolean {
   if (!isRecord(poll)) return false;
-  const context = poll.historical_context;
+  const context = poll.modelled_context;
   if (context === null) return true;
   if (
     !isRecord(benchmark) ||
     !isRecord(context) ||
+    context.denominator !== "named_candidates" || context.interval_mass !== 0.8 ||
     !isNonEmptyString(context.reading_id) ||
     !isNonEmptyString(context.sample_id) ||
     !Array.isArray(context.rows) ||
@@ -985,7 +994,7 @@ function validWardContext(poll: unknown, benchmark: unknown): boolean {
         !isRecord(row) ||
         !isNonEmptyString(row.candidate_id) ||
         !isNonEmptyString(row.candidate_name) ||
-        ![row.reported_share, row.lower, row.upper].every(
+        ![row.reported_share, row.named_share, row.median, row.lower, row.upper].every(
           (share) =>
             typeof share === "number" &&
             Number.isFinite(share) &&
@@ -1004,24 +1013,16 @@ function validWardContext(poll: unknown, benchmark: unknown): boolean {
         candidate.share !== row.reported_share
       )
         return false;
-      const lower = Math.max(
-        0,
-        Number(row.reported_share) + Number(benchmark.error_lower),
-      );
-      const upper = Math.min(
-        1,
-        Number(row.reported_share) + Number(benchmark.error_upper),
-      );
-      return (
-        Math.abs(Number(row.lower) - lower) < 1e-9 &&
-        Math.abs(Number(row.upper) - upper) < 1e-9
-      );
+      const total = named.reduce((sum, candidate) => sum + (isRecord(candidate) ? Number(candidate.share) : 0), 0);
+      return total > 0 && Math.abs(Number(row.named_share) - Number(row.reported_share) / total) < 1e-9 &&
+        Number(row.lower) <= Number(row.median) && Number(row.median) <= Number(row.upper);
+
     })
   );
 }
 
 export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  // Schema 10 adds descriptive historical ward-poll comparisons (ADR 0059).
+  // Schema 10 adds conditional named-set ward-poll modelling (ADR 0059).
   if (!isRecord(value) || typeof value.schema_version !== "number" || ![8, 9, 10].includes(value.schema_version)) return null;
   const withEndorsements = value.schema_version !== 8;
   if (value.schema_version === 10 && !validWardBenchmark(value.ward_poll_benchmark)) return null;

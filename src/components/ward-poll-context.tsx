@@ -10,13 +10,12 @@ export function WardPollContext({
   poll: WardPoll;
   benchmark: WardPollBenchmark;
 }) {
-  const context = poll.historical_context;
+  const context = poll.modelled_context;
   if (!context) return null;
   const base = context.unweighted_base ?? context.reported_base;
-  const other = poll.candidates.filter((candidate) => candidate.is_residual);
   return (
     <div className="ward-poll-context">
-      <h3>How far a ward poll can miss</h3>
+      <h3>What the named-candidate vote could look like</h3>
       <p className="font-mono">
         {poll.firm} · {formatDate(poll.date_conducted)}
         {base !== null && <> · {base} decided/leaning respondents</>}
@@ -28,42 +27,45 @@ export function WardPollContext({
         )}
       </p>
       <p>
-        Published support among {poll.denominator}, with past polling errors
-        shown alongside.
+        Shares among the candidates named in this poll. Other candidates are
+        excluded.
       </p>
       <ShareRangeChart
         rows={context.rows.map((row) => ({
           id: row.candidate_id,
           name: row.candidate_name,
-          point: row.reported_share * 100,
+          point: row.median * 100,
           lower: row.lower * 100,
           upper: row.upper * 100,
           color: "var(--text-strong)",
         }))}
         middleLabel="50%"
-        pointLabel="Poll"
-        pointDescription="published share"
-        rangeDescription="historical comparison"
+        pointLabel="Median"
+        pointDescription="modelled median"
+        rangeDescription="central 80% modelled range"
         caption={
           <>
-            Tick: published share. Band: the range of misses in{" "}
-            {benchmark.contest_count} past ward polls. This is a historical
-            comparison, not a confidence interval.
+            Median and central 80% range, using polling errors from{" "}
+            {benchmark.contest_count} past ward races. These are model-based
+            ranges, not chances of winning.
           </>
         }
       />
-      {other.map((candidate) => (
-        <p key={candidate.candidate_id} className="font-mono">
-          {candidate.candidate_name}: {formatSharePct(candidate.share)}
-        </p>
-      ))}
+      <details>
+        <summary>Published toplines</summary>
+        <p>{poll.denominator}; original percentages.</p>
+        <ul>
+          {poll.candidates.map((candidate) => (
+            <li key={candidate.candidate_id}>
+              {formatSharePct(candidate.share)} — {candidate.candidate_name}
+            </li>
+          ))}
+        </ul>
+      </details>
       <p className="ward-poll-context__note">
         {poll.methodology}. Effective sample size is not published. The
-        historical evidence covers{" "}
-        {benchmark.cycle_count === 1
-          ? "one election"
-          : `${benchmark.cycle_count} elections`}
-        . <Link href="/how-it-works/#ward-polls">How to read these bands</Link>.
+        historical evidence covers one election.{" "}
+        <Link href="/how-it-works/#ward-polls">How to read these ranges</Link>.
       </p>
     </div>
   );

@@ -214,7 +214,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
       {card.ward_polls.length > 0 && (
         <section className="ward-detail-section">
           <h2>Ward polls</h2>
-          {card.ward_polls.map((poll) => poll.historical_context && benchmark ? (
+          {card.ward_polls.map((poll) => poll.modelled_context && benchmark ? (
             <WardPollContext key={poll.poll_id} poll={poll} benchmark={benchmark} />
           ) : (
             <div key={poll.poll_id} style={{ marginBottom: "1rem" }}>

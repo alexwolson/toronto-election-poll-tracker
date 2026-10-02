@@ -463,7 +463,7 @@ describe("schema 10 historical ward comparisons", () => {
     const fixture = structuredClone(councilFixture);
     return { ...fixture, schema_version: 10, ward_poll_benchmark: benchmark,
       wards: Object.fromEntries(Object.entries(fixture.wards).map(([ward, card]) => [ward, {
-        ...card, ward_polls: ward === "4" ? [structuredClone(poll)] : card.ward_polls.map((reading) => ({ ...reading, historical_context: null })),
+        ...card, ward_polls: ward === "4" ? [structuredClone(poll)] : card.ward_polls.map((reading) => ({ ...reading, modelled_context: null })),
       }])),
     };
   }
@@ -476,7 +476,7 @@ describe("schema 10 historical ward comparisons", () => {
     expect(validateCouncil(wrongShare)).toBeNull();
     const wrongBand = currentFeed();
     const reading = wrongBand.wards["4"].ward_polls[0];
-    if ("historical_context" in reading && reading.historical_context) reading.historical_context.rows[0].upper = 0.9;
+    if ("modelled_context" in reading && reading.modelled_context) reading.modelled_context.rows[0].upper = 0.2;
     expect(validateCouncil(wrongBand)).toBeNull();
     const missing = currentFeed();
     expect(validateCouncil({ ...missing, ward_poll_benchmark: undefined })).toBeNull();

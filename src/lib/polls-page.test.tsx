@@ -44,7 +44,7 @@ describe("Polls page", () => {
     const html = renderToStaticMarkup(await PollsPage());
     const support = html.split('aria-labelledby="trend-heading"')[1].split('</section>')[0];
     const history = html.split('aria-labelledby="forecast-history-heading"')[1].split('</section>')[0];
-    expect(support).toContain("3 polls completed");
+    expect(support).toContain("3 polls");
     expect(support).toContain("Sarah McVie: 2 polls shown, from 2.5%");
     expect(support).toContain("to 2.4%");
     expect(support).toContain("Odessa Paloma Parker: 2 polls shown, from 1.9%");
@@ -67,9 +67,8 @@ describe("Polls page", () => {
     mocks.loadMayoralForecast.mockResolvedValue(forecastFixture);
     mocks.loadMayoralPolling.mockResolvedValue(polling);
     const html = renderToStaticMarkup(await PollsPage());
-    expect(html).toContain("Support among respondents naming a candidate");
-    expect(html).toContain("derived and published percentages");
-    expect(html).toContain("1 poll completed");
+    expect(html).toContain("Shares among respondents naming a candidate");
+    expect(html).toContain("1 poll");
     expect(html).toContain("Unknown basis firm");
     expect(html).toContain("54.5%");
     expect(html).toMatch(/data-label="Olivia Chow"[^>]*>36%/);

@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { PollingChart, pollingTrendSummaryRows, type ChartSeries } from "./polling-chart";
 import { PollPeriodToggle } from "./poll-period-toggle";
 import { ALL_RESPONDENT_OTHER_ID, ALL_RESPONDENT_UNDECIDED_ID, NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
-import { formatDate, isoDayNumber } from "@/lib/format";
+import { isoDayNumber } from "@/lib/format";
 
 const RESPONSE_SERIES: ChartSeries[] = [
   { id: ALL_RESPONDENT_OTHER_ID, name: "Other candidates combined", color: "#7A6A57", hatch: false, pointsOnly: true },
@@ -52,24 +52,17 @@ export function PollingTrendViews({
       </div>
       <p className="evidence-explainer">
         {allRespondents ? (
-          <>Published support among all respondents; leaners are included where assigned.
-            Other candidates and undecided / don’t know are dots only, where reported.
-            Other candidates combined includes McVie, Parker and all reported
-            choices outside the three forecast candidates;
-            non-voters are kept separate.</>
+          <>Shares of all respondents, including undecided voters.
+            {" "}Other candidates combined includes McVie and Parker.</>
         ) : (
-          <>Support among respondents naming a candidate, including leaners where asked.
-            All-respondent polls are converted to this basis; tooltips show the
-            derived and published percentages.</>
+          <>Shares among respondents naming a candidate, including leaners.</>
         )}
-        {" "}McVie and Parker are dots only, where reported, with no trend lines.
       </p>
       {!qualified && !allRespondents && allPollNote}
       {qualified && (
         <p className="evidence-explainer" role="status">
-          {qualifiedCount} {qualifiedCount === 1 ? "poll completed" : "polls completed"} after{" "}
-          {formatDate(NOMINATIONS_CLOSED_DATE)}, reporting Chow, Bradford and Alexander.
-          {" "}Trend lines use the full polling history.
+          {qualifiedCount} {qualifiedCount === 1 ? "poll" : "polls"} since nominations closed.
+          {" "}Lines use the full polling history.
         </p>
       )}
       {qualified && qualifiedCount === 0 ? (

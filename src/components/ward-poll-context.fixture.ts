@@ -71,6 +71,15 @@ export const poll: WardPoll = {
     },
   ],
   modelled_context: {
+    leader: {
+      candidate_id: "opponent",
+      candidate_name: "Opponent",
+      reported_lead: 0.1,
+      ranges: [
+        { model: "dirichlet", lower: -0.2, upper: 0.4 },
+        { model: "logistic_normal", lower: -0.4, upper: 0.6 },
+      ],
+    },
     denominator: "named_candidates",
     interval_mass: 0.8,
     reading_id: "r",

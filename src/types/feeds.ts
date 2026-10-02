@@ -596,6 +596,7 @@ export interface WardPollCandidate {
 }
 
 export interface WardPollModelContext {
+  leader: { candidate_id: string; candidate_name: string; reported_lead: number; ranges: { model: "dirichlet" | "logistic_normal"; lower: number; upper: number }[] };
   denominator: "named_candidates";
   interval_mass: 0.8;
   reading_id: string;

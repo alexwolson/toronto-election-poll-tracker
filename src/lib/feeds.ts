@@ -984,6 +984,15 @@ function validWardContext(poll: unknown, benchmark: unknown): boolean {
   const named = poll.candidates.filter(
     (candidate) => isRecord(candidate) && candidate.is_residual === false,
   );
+  const leader = context.leader;
+  if (!isRecord(leader) || !Array.isArray(leader.ranges) || leader.ranges.length !== 2 ||
+    leader.ranges[0]?.model !== "dirichlet" || leader.ranges[1]?.model !== "logistic_normal" ||
+    !leader.ranges.every((range) => isRecord(range) && typeof range.lower === "number" && typeof range.upper === "number" &&
+      Number.isFinite(range.lower) && Number.isFinite(range.upper) && range.lower >= -1 && range.upper <= 1 && range.lower <= range.upper)) return false;
+  const ordered = [...named].sort((a,b) => (isRecord(b) ? Number(b.share) : 0) - (isRecord(a) ? Number(a.share) : 0));
+  if (!isRecord(ordered[0]) || !isRecord(ordered[1]) || leader.candidate_id !== ordered[0].candidate_id ||
+    leader.candidate_name !== ordered[0].candidate_name || typeof leader.reported_lead !== "number" ||
+    Math.abs(leader.reported_lead - (Number(ordered[0].share) - Number(ordered[1].share))) > 1e-9) return false;
   return (
     named.length === context.rows.length &&
     new Set(

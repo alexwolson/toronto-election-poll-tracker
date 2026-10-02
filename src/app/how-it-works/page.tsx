@@ -606,7 +606,7 @@ export default async function HowItWorksPage() {
       <QuestionSection
         id="ward-polls"
         title="How much weight should I put on a ward poll?"
-        answer="The model allows for large polling misses. Its historical evidence is limited."
+        answer="A reported lead can disappear under plausible polling error. These polls do not settle who will win."
       >
         <p>
           The ward charts model votes among the candidates each poll names. We divide
@@ -617,8 +617,10 @@ export default async function HowItWorksPage() {
         <p>
           A joint statistical model learns how far these relative shares have moved
           between a poll and the result. Each simulated result totals 100% across the
-          named candidates. The chart shows the median and central 80% range for each
-          person, including uncertainty in the size of historical polling error.
+          named candidates. The chart follows the poll’s leader against the strongest other named
+          candidate in each simulation. Its central 80% lead ranges include uncertainty
+          in the size of historical polling error. A range crossing the tie line includes
+          a different candidate ahead.
         </p>
         {benchmark && <p>
           The evidence is {benchmark.contest_count} ward races from one pollster in

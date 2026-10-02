@@ -12,14 +12,14 @@ describe("ward poll context", () => {
     render(<WardPollContext poll={poll} benchmark={benchmark} />);
     expect(
       screen.getByRole("img", {
-        name: "Debbie King: modelled median 44.0%, central 80% modelled range 21.0% to 63.0%",
+        name: "Opponent's lead over the strongest other named candidate: model, central 80% range -20.0 to 40.0 percentage points",
       }),
     ).not.toBeNull();
     expect(screen.getAllByRole("img")).toHaveLength(2);
     expect(screen.getByText(/307 decided\/leaning respondents/)).not.toBeNull();
     expect(screen.getByText(/16% — Other candidates/)).not.toBeNull();
     expect(
-      screen.getByText(/Shares among the candidates named in this poll/),
+      screen.getByText(/The reported lead could reverse/),
     ).not.toBeNull();
     expect(
       screen

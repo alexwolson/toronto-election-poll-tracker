@@ -6,7 +6,7 @@ export interface ChartSeries {
   name: string;
   color: string;
   hatch: boolean;
-  /** A response category displayed as observations without a trend line. */
+  /** Observations displayed without a trend line, including sparsely polled candidates. */
   pointsOnly?: boolean;
 }
 

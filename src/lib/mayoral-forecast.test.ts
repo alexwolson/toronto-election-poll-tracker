@@ -87,7 +87,7 @@ describe("electionDayShares", () => {
     expect(chow.upper).toBeCloseTo(source.upper * 100, 6);
     expect(chow.lower).toBeLessThanOrEqual(chow.median);
     expect(chow.median).toBeLessThanOrEqual(chow.upper);
-    expect(view.rows[2].hatch).toBe(true);
+    expect(view.rows[2].hatch).toBe(false);
     const pool = view.rows[3];
     expect(pool.candidateId).toBeNull();
     expect(pool.colorVar).toBe("var(--color-disengaged)");

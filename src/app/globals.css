@@ -188,13 +188,15 @@
   --win-low-fg:    #9b1c1c;
   --win-low-line:  #ef4444;
 
-  /* ── Candidate segment colours ── */
+  /* ── Site-wide candidate palette: define each base colour only here ── */
   --color-chow:        #854A90;
-  --color-chow-mid:    #aa78ba;
-  --color-chow-soft:   #c4a0cc;
+  --color-chow-mid:    color-mix(in srgb, var(--color-chow) 70%, var(--panel));
+  --color-chow-soft:   color-mix(in srgb, var(--color-chow) 50%, var(--panel));
   --color-bradford:    #2E8B57;
-  --color-bradford-soft: #b7d9c5;
-  --color-alexander:   #F8C466;
+  --color-bradford-soft: color-mix(in srgb, var(--color-bradford) 30%, var(--panel));
+  --color-alexander:   #54C4CC;
+  --color-mcvie:       #D70404;
+  --color-parker:      #B2156E;
   --color-disengaged:  #c8c4be;
 
   /* ── Signal-range / coattail neutral ── */
@@ -511,8 +513,9 @@ body {
 .candidate-marker--bradford { background: var(--color-bradford); }
 .candidate-marker--alexander {
   background-color: var(--color-alexander);
-  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(58, 37, 0, 0.45) 4px 5px);
 }
+.candidate-marker--mcvie { background: var(--color-mcvie); border-radius: 50%; }
+.candidate-marker--parker { background: var(--color-parker); border-radius: 50%; }
 .candidate-marker--residual { background: var(--color-disengaged); border-radius: 50%; }
 
 /* ── Observed mayoral evidence and forecast ───────────────── */
@@ -573,8 +576,6 @@ body {
 .evidence-stack-segment--bradford { background: var(--color-bradford); }
 .evidence-stack-segment--alexander {
   background-color: var(--color-alexander);
-  background-image: repeating-linear-gradient(135deg, transparent 0 7px, rgba(58, 37, 0, 0.5) 7px 9px);
-  box-shadow: inset 0 0 0 1px #3a2500;
 }
 .evidence-stack-segment--residual,
 .evidence-stack-segment--unsure { background: var(--color-disengaged); }
@@ -599,7 +600,7 @@ body {
 .lane-split-values { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: 0.45rem; border: 1px solid var(--line-strong); }
 .lane-split-values span { min-width: 0; padding: 0.55rem; font-size: 0.65rem; font-weight: 700; }
 .lane-split-bradford { color: #fff; background: var(--color-bradford); }
-.lane-split-alexander { color: #3a2500; background-color: var(--color-alexander); background-image: repeating-linear-gradient(135deg, transparent 0 7px, rgba(58, 37, 0, 0.22) 7px 9px); }
+.lane-split-alexander { color: var(--text-strong); background: var(--color-alexander); }
 .lane-split p { margin: 0.45rem 0 0; }
 
 .forecast-warning { margin: 0 0 0.85rem; font-size: 0.75rem; line-height: 1.5; }
@@ -616,8 +617,7 @@ body {
 .forecast-range i { position: absolute; top: -0.2rem; width: 3px; height: 1.1rem; background: var(--text-strong); transform: translateX(-50%); }
 .forecast-candidate--chow { color: var(--color-chow); }
 .forecast-candidate--bradford { color: var(--color-bradford); }
-.forecast-candidate--alexander { color: #8a5a00; }
-.forecast-candidate--alexander .forecast-range span { background-color: var(--color-alexander); background-image: repeating-linear-gradient(135deg, transparent 0 5px, rgba(58, 37, 0, 0.4) 5px 7px); opacity: 1; }
+.forecast-candidate--alexander { color: var(--color-alexander); }
 .forecast-candidate > p { margin: 0.3rem 0 0; }
 .forecast-candidate .forecast-odds { margin-top: 0.75rem; color: var(--text-strong); }
 .forecast-odds strong { font-family: var(--font-newsreader), serif; font-size: 1rem; }
@@ -793,7 +793,7 @@ body {
   background: color-mix(in oklch, var(--color-alexander) 8%, var(--panel));
 }
 
-.alexander-callout .np-kicker { color: #765000; }
+.alexander-callout .np-kicker { color: var(--text-strong); }
 
 .alexander-callout h2,
 .poll-figure h2 {
@@ -1665,8 +1665,7 @@ body {
 }
 
 .va-swatch--alexander {
-  border: 1px solid #5b4000;
-  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(58, 37, 0, 0.45) 4px 5px);
+  border: 1px solid var(--text-strong);
 }
 
 .va-row {
@@ -2925,7 +2924,7 @@ body {
   opacity: 0.5;
 }
 .forecast-chart__band--hatched {
-  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(58, 37, 0, 0.45) 4px 6px);
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--text-strong) 45%, transparent) 4px 6px);
 }
 .forecast-chart__tick {
   position: absolute;

@@ -1,7 +1,7 @@
 /**
  * Candidate display registry (spec §Candidate palette). Names, palette CSS
- * variable, and whether the fill is a hatch pattern (Alexander's gold reads as a
- * pattern, not a solid). Unknown ids fall back to a title-cased name and the
+ * variable, and whether the fill is a hatch pattern. Palette values are defined
+ * once in globals.css. Unknown ids fall back to a title-cased name and the
  * neutral "disengaged" colour so historical/minor candidates still render.
  */
 
@@ -34,11 +34,23 @@ const REGISTRY: Record<string, Known> = {
     slug: "bradford",
     hatch: false,
   },
-  alexander: { name: "Chris Alexander", slug: "alexander", hatch: true },
+  alexander: { name: "Chris Alexander", slug: "alexander", hatch: false },
   per_345dd6a9ee645c0bb5a8ade615f91579: {
     name: "Chris Alexander",
     slug: "alexander",
-    hatch: true,
+    hatch: false,
+  },
+  "sarah-mcvie": { name: "Sarah McVie", slug: "mcvie", hatch: false },
+  per_95cd5c92c035574ab823643b45e8a5ae: {
+    name: "Sarah McVie",
+    slug: "mcvie",
+    hatch: false,
+  },
+  "odessa-paloma-parker": { name: "Odessa Paloma Parker", slug: "parker", hatch: false },
+  per_56060d2725565733b8f3a78855fc0c25: {
+    name: "Odessa Paloma Parker",
+    slug: "parker",
+    hatch: false,
   },
 };
 

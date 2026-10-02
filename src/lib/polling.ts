@@ -235,12 +235,15 @@ export const ALL_RESPONDENT_OTHER_ID = "response:other_candidates";
 export const ALL_RESPONDENT_UNDECIDED_ID = "response:undecided_or_dont_know";
 
 /** Published all-respondent shares, with candidate LOESS and dots-only response pools.
- * Other candidates combines named candidates outside the chart field and the
- * explicit other category. Non-voters/refusals never enter either response pool;
+ * Other candidates combines named candidates outside the forecast field and the
+ * explicit other category. Separately plotted minor candidates remain included
+ * in this combined group. Non-voters/refusals never enter either response pool;
  * absent categories remain absent, rather than inferred from the total. */
-export function allRespondentTrends(feed: MayoralPollingFeed, field: string[]): CandidateTrend[] {
+export function allRespondentTrends(
+  feed: MayoralPollingFeed, field: string[], forecastField = field,
+): CandidateTrend[] {
   const polls = feed.all_respondents ?? [];
-  const fieldIds = new Set(field);
+  const fieldIds = new Set(forecastField);
   const candidates = trendsForReadings(polls, field, (poll) => ({
     shares: poll.shares, derived: false,
   }));

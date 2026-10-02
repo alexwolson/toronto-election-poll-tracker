@@ -24,23 +24,28 @@ export default async function PollsPage() {
     loadMayoralPolling(),
   ]);
 
-  const field = viableField(forecast);
+  const forecastField = viableField(forecast);
+  const minorField = (forecast.election_day?.residual_pool.named_in_polls ?? [])
+    .map((candidate) => candidate.candidate_id);
+  const field = [...new Set([...forecastField, ...minorField])];
   const trends = candidateTrends(polling, field);
   const qualifiedTrends = candidateTrendsForPolls(
-    trends, pollsSinceNominationsClosed(polling, field),
+    trends, pollsSinceNominationsClosed(polling, forecastField),
   );
-  const allRespondents = allRespondentTrends(polling, field);
+  const allRespondents = allRespondentTrends(polling, field, forecastField);
   const recentAllRespondents = candidateTrendsForPolls(allRespondents,
-    pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, field),
+    pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, forecastField),
   );
   const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
   const series: ChartSeries[] = field.map((id) => {
     const meta = candidateMeta(id);
     // recharts renders SVG in the DOM, so the palette CSS variable resolves.
-    return { id, name: candidateName(id), color: meta.colorVar, hatch: meta.hatch };
+    return { id, name: candidateName(id), color: meta.colorVar, hatch: meta.hatch,
+      pointsOnly: !forecastField.includes(id) };
   });
+  const historySeries = series.filter((candidate) => forecastField.includes(candidate.id));
   const registry = pollsterRegistry(polling);
-  const historyTrends = forecastHistoryTrends(forecast, field);
+  const historyTrends = forecastHistoryTrends(forecast, forecastField);
   // History is positioned by publication date; retain the original full-history curves.
   const recentHistoryTrends = historyTrends?.map((trend) => ({
     ...trend,
@@ -110,9 +115,9 @@ export default async function PollsPage() {
               <ForecastHistoryViews
                 allTrends={historyTrends}
                 recentTrends={recentHistoryTrends}
-                series={series}
-                allSummaryRows={forecastHistorySummaryRows(forecast, series)}
-                recentSummaryRows={forecastHistorySummaryRows(recentForecast, series)}
+                series={historySeries}
+                allSummaryRows={forecastHistorySummaryRows(forecast, historySeries)}
+                recentSummaryRows={forecastHistorySummaryRows(recentForecast, historySeries)}
               />
             </section>
           )}
@@ -125,7 +130,7 @@ export default async function PollsPage() {
                 wording or respondent base.
               </p>
             </SectionHeading>
-            <PollArchive polls={pollsByFieldwork(polling)} field={field} />
+            <PollArchive polls={pollsByFieldwork(polling)} field={forecastField} />
           </section>
 
           <section className="page-section" aria-labelledby="firms-heading">

@@ -7,7 +7,7 @@ import { ALL_RESPONDENT_OTHER_ID, ALL_RESPONDENT_UNDECIDED_ID, NOMINATIONS_CLOSE
 import { formatDate, isoDayNumber } from "@/lib/format";
 
 const RESPONSE_SERIES: ChartSeries[] = [
-  { id: ALL_RESPONDENT_OTHER_ID, name: "Other candidates", color: "#7A6A57", hatch: false, pointsOnly: true },
+  { id: ALL_RESPONDENT_OTHER_ID, name: "Other candidates combined", color: "#7A6A57", hatch: false, pointsOnly: true },
   { id: ALL_RESPONDENT_UNDECIDED_ID, name: "Undecided / don’t know", color: "#476B87", hatch: false, pointsOnly: true },
 ];
 
@@ -54,13 +54,15 @@ export function PollingTrendViews({
         {allRespondents ? (
           <>Published support among all respondents; leaners are included where assigned.
             Other candidates and undecided / don’t know are dots only, where reported.
-            Other candidates includes named candidates outside the three shown;
+            Other candidates combined includes McVie, Parker and all reported
+            choices outside the three forecast candidates;
             non-voters are kept separate.</>
         ) : (
           <>Support among respondents naming a candidate, including leaners where asked.
             All-respondent polls are converted to this basis; tooltips show the
             derived and published percentages.</>
         )}
+        {" "}McVie and Parker are dots only, where reported, with no trend lines.
       </p>
       {!qualified && !allRespondents && allPollNote}
       {qualified && (
@@ -79,8 +81,10 @@ export function PollingTrendViews({
             intro: "Polling trend summary. Points show published support among all respondents. " +
               "Undecided people and non-voters remain in the denominator; leaners are included " +
               "where assigned. Each sample contributes one published reading. Missing candidates " +
-              "are omitted, not counted as zero. Other candidates combines named candidates outside " +
-              "the chart field and the reported other category. Undecided / don’t know combines " +
+              "are omitted, not counted as zero. Other candidates combined includes McVie, Parker, " +
+              "other named candidates outside the forecast field and the reported other category. " +
+              "The McVie and Parker dots are parts of that total, not additional shares. " +
+              "Undecided / don’t know combines " +
               "those reported responses. Both are dots only; missing categories are omitted. " +
               "Non-voters are excluded from both groups. Candidate lines are LOESS trends, not forecasts.",
             rows: pollingTrendSummaryRows(shownTrends, shownSeries),

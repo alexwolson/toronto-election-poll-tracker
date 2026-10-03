@@ -3869,6 +3869,8 @@ body {
   margin: 0.65rem 0 0;
 }
 .how-prose p:first-child { margin-top: 0; }
+.how-ward-polls-copy { max-width: var(--measure-reading); }
+.how-ward-polls-copy p { margin-top: 1rem; font-size: var(--type-body); line-height: var(--leading-body); }
 
 .how-disclosures {
   margin-top: 1.5rem;

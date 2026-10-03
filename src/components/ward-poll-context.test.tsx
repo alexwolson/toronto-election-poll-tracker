@@ -8,7 +8,7 @@ import { WardPollContext } from "./ward-poll-context";
 afterEach(cleanup);
 
 describe("ward poll context", () => {
-  it("distinguishes the published topline, modelled range, actual base and unallocated Other", () => {
+  it("labels the scenario axes and preserves the warning and evidence limits", () => {
     render(<WardPollContext poll={poll} benchmark={benchmark} />);
     expect(
       screen.getByRole("img", {
@@ -19,9 +19,12 @@ describe("ward poll context", () => {
     expect(screen.getByText("Share of simulated scenarios")).not.toBeNull();
     expect(screen.getByText("+100")).not.toBeNull();
     expect(screen.getByText("Tie")).not.toBeNull();
-    expect(screen.getByText(/combining two error models equally/)).not.toBeNull();
-    expect(screen.getByText(/307 decided\/leaning respondents/)).not.toBeNull();
-    expect(screen.getByText(/16% — Other candidates/)).not.toBeNull();
+    expect(
+      screen.getByText(/combining two error models equally/),
+    ).not.toBeNull();
+    expect(
+      screen.getByText(/from one election cannot establish reliable win odds/),
+    ).not.toBeNull();
     expect(screen.getByText(/The reported lead could reverse/)).not.toBeNull();
     expect(
       screen

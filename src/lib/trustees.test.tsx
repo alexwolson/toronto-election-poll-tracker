@@ -113,7 +113,7 @@ describe("Trustees pages", () => {
 
     expect(html).toContain("Toronto District School Board");
     expect(html).toContain("The 12 wards");
-    expect(html).toContain('class="race-index-section"');
+    expect(html).toMatch(/class="[^"]*\brace-index-section\b[^"]*"/);
     expect(html).toContain('class="race-index-list trustee-ward-list"');
     expect(html).toContain("race-index-card trustee-ward-link");
     expect(html).toContain('<span class="race-index-card__eyebrow">Ward 2</span>');

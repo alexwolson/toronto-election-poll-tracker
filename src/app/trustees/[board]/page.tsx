@@ -65,6 +65,7 @@ export default async function TrusteeBoardPage({
       <PageHero
         headingId="trustees-heading"
         title={board?.display_name ?? fallback.displayName}
+        kicker="Trustees · School-board races"
         className="trustee-hero"
       />
 

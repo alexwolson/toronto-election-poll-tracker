@@ -1,3 +1,4 @@
+import { ContentSection } from "@/components/content-section";
 import Link from "next/link";
 import { WardPolls } from "@/components/ward-polls";
 import { notFound } from "next/navigation";
@@ -96,21 +97,21 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
 
   return (
     <main id="main-content" className="np-shell">
-      <p className="np-kicker">
+      <p className="np-kicker breadcrumb">
         <Link href="/wards" className="text-link">
           Council
         </Link>{" "}
         · Ward {card.ward}
       </p>
-      <section className="race-hero">
+      <ContentSection className="race-hero" kicker="Council · Toronto Election 2026">
         <h1>{card.ward_name ?? `Ward ${card.ward}`}</h1>
         <span className={`ward-attn-tag ward-attn-tag--${attention}`}>
           {ATTENTION_LABEL[attention]}
         </span>
-      </section>
+      </ContentSection>
 
       {!card.is_open_seat && (
-        <section className="ward-detail-section">
+        <ContentSection className="ward-detail-section" kicker="The sitting councillor">
           <h2>The incumbent</h2>
           <dl className="prior-result-grid">
             <div>
@@ -148,11 +149,11 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
               </ul>
             </>
           )}
-        </section>
+        </ContentSection>
       )}
 
       {prior && (
-        <section className="ward-detail-section">
+        <ContentSection className="ward-detail-section" kicker="The previous race">
           <h2>Last election ({prior.year})</h2>
           <dl className="prior-result-grid">
             <div>
@@ -180,10 +181,10 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
               <dd>{prior.field_size}</dd>
             </div>
           </dl>
-        </section>
+        </ContentSection>
       )}
 
-      <section className="ward-detail-section">
+      <ContentSection className="ward-detail-section" kicker="The certified ballot">
         <h2>Candidates in 2026 ({card.candidates.length})</h2>
         {raceSignals.length > 0 && (
           <ul className="signal-list" style={{ marginBottom: "0.75rem" }}>
@@ -209,7 +210,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
         {card.candidates.some((candidate) => (candidate.endorsements ?? []).length > 0) && (
           <EndorsementsNote />
         )}
-      </section>
+      </ContentSection>
 
       <WardPolls polls={card.ward_polls} benchmark={benchmark} />
     </main>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContentSection } from "@/components/content-section";
 import { CandidateBrowser } from "@/components/candidate-browser";
 import { CandidateLinksNote } from "@/components/candidate-history";
 import { MayorTabs } from "@/components/mayor-tabs";
@@ -20,6 +21,7 @@ export default async function CandidatesPage() {
       <PageHero
         headingId="candidates-heading"
         title="Candidates on the 2026 mayoral ballot"
+        kicker="Mayor · The certified ballot"
       >
         {available && feed.coverage.methodology_note ? (
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
@@ -28,7 +30,8 @@ export default async function CandidatesPage() {
 
       <MayorTabs activeTab="candidates" />
 
-      <section className="ward-detail-section" aria-label="Candidate roster">
+      <ContentSection tint kicker="Who’s running" className="ward-detail-section" aria-labelledby="candidate-roster-heading">
+        <h2 id="candidate-roster-heading">The mayoral candidates</h2>
         {available ? (
           <CandidateBrowser candidates={feed.candidates} />
         ) : (
@@ -39,7 +42,7 @@ export default async function CandidatesPage() {
         {available && feed.candidates.some((candidate) => candidate.campaign_url) && (
           <CandidateLinksNote />
         )}
-      </section>
+      </ContentSection>
     </main>
   );
 }

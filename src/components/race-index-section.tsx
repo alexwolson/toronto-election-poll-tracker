@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { RaceViewSwitcher } from "@/components/race-view-switcher";
+import { ContentSection } from "@/components/content-section";
 import type { RaceMap } from "@/types/feeds";
 
 export function RaceIndexSection({
@@ -16,10 +17,10 @@ export function RaceIndexSection({
   children: ReactNode;
 }) {
   return (
-    <section className="race-index-section" aria-labelledby={headingId}>
+    <ContentSection tint kicker="Explore the races" className="race-index-section" aria-labelledby={headingId}>
       <h2 id={headingId}>{title}</h2>
       {note}
       <RaceViewSwitcher map={map}>{children}</RaceViewSwitcher>
-    </section>
+    </ContentSection>
   );
 }

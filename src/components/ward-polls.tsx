@@ -1,3 +1,4 @@
+import { ContentSection } from "@/components/content-section";
 import { WardPollContext } from "@/components/ward-poll-context";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { WardPoll, WardPollBenchmark } from "@/types/feeds";
@@ -199,7 +200,7 @@ export function WardPolls({
   const [latest, ...earlier] = [...reports.values()];
   if (!latest) return null;
   return (
-    <section className="ward-detail-section">
+    <ContentSection className="ward-detail-section" kicker="Published ward polling">
       <h2>Ward polls</h2>
       <PollReport polls={latest} benchmark={benchmark} latest />
       {earlier.length > 0 && (
@@ -214,6 +215,6 @@ export function WardPolls({
           ))}
         </div>
       )}
-    </section>
+    </ContentSection>
   );
 }

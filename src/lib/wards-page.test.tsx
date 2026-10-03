@@ -25,7 +25,7 @@ describe("Council ward pages", () => {
 
     expect(html).toContain("<h1 id=\"council-heading\">Toronto City Council</h1>");
     expect(html).toContain("<h2 id=\"council-wards-heading\">The 25 wards</h2>");
-    expect(html).toContain('class="race-index-section"');
+    expect(html).toMatch(/class="[^"]*\brace-index-section\b[^"]*"/);
     expect(html).toContain('class="race-index-list ward-index-grid"');
     expect(html).toContain("race-index-card ward-index-card");
   });

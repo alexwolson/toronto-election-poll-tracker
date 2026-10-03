@@ -22,20 +22,22 @@ export function RouteTabs<Id extends string>({
   activeId,
 }: RouteTabsProps<Id>) {
   return (
-    <nav className="route-tabs" aria-label={label}>
-      {items.map((item) => {
-        const active = activeId === item.id;
-        return (
-          <Link
-            key={item.id}
-            href={item.href}
-            className={`route-tab${active ? " route-tab--active" : ""}`}
-            aria-current={active ? "page" : undefined}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <div className="route-navigation">
+      <nav className="wrap route-tabs" aria-label={label}>
+        {items.map((item) => {
+          const active = activeId === item.id;
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`route-tab${active ? " route-tab--active" : ""}`}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }

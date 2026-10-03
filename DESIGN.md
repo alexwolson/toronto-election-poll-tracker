@@ -1,473 +1,367 @@
 ---
-version: alpha
-name: "Toronto Election 2026"
-description: "A civic broadsheet system for clear, evidence-led election reporting."
+name: "Toronto Election 2026 · City Hall Watcher"
+description: "CHW’s publication identity applied to an evidence-first municipal election guide."
 colors:
-  paper: "#faf9f6"
-  paper-raised: "#f5f2ed"
-  paper-hover: "#f0ede8"
-  inverse-paper: "#ffffff"
-  body-ink: "oklch(0.24 0.03 248)"
-  ink: "#1a1a1a"
-  text-mid: "#555555"
-  text-soft: "#666666"
-  text-faint: "#707070"
-  text-ghost: "#aaaaaa"
-  rule-soft: "#cccccc"
-  rule-inner: "#e0ddd8"
-  track-paper: "#e8e5e0"
-  focus-blue: "#1f5f99"
-  chart-axis: "oklch(0.48 0.03 250)"
-  chow-plum: "#854a90"
-  chow-plum-mid: "#aa78ba"
-  chow-plum-soft: "#c4a0cc"
-  bradford-green: "#2e8b57"
-  bradford-green-soft: "#b7d9c5"
-  alexander-gold: "#f8c466"
-  uncommitted-grey: "#c8c4be"
-  high-attention-ink: "#9b1c1c"
-  high-attention-red: "#ef4444"
-  high-attention-wash: "#fee2e2"
-  high-attention-map: "#fca5a5"
-  elevated-ink: "#92400e"
-  elevated-amber: "#f59e0b"
-  elevated-wash: "#fef3c7"
-  elevated-map: "#fde68a"
-  quiet-ink: "#166534"
-  quiet-green: "#22c55e"
-  quiet-wash: "#dcfce7"
-  quiet-map: "#86efac"
-  open-grey: "#999999"
-  open-wash: "#e5e5e5"
-  open-map: "#d4d4d4"
-  trustee-open-clay: "#744838"
-  trustee-open-clay-rule: "#8f604f"
-  trustee-open-clay-wash: "#efe4de"
-  trustee-two-harbour: "#36586d"
-  trustee-two-harbour-rule: "#58798d"
-  trustee-two-harbour-wash: "#e4ecef"
-  trustee-one-olive: "#4f6548"
-  trustee-one-olive-rule: "#6c805f"
-  trustee-one-olive-wash: "#e6ece2"
-  trustee-acclaimed-grey: "#5f5a53"
-  trustee-acclaimed-grey-rule: "#7d7770"
-  trustee-acclaimed-grey-wash: "#ebe8e3"
-  trustee-prior-ochre: "#76591f"
-  trustee-prior-ochre-rule: "#94702e"
-  trustee-prior-ochre-wash: "#f3ead5"
+  blue: "#274490"
+  blue-dark: "#1e3574"
+  deep: "#16264f"
+  tint: "#eaeef9"
+  paper: "#ffffff"
+  card: "#ffffff"
+  ink: "#16264f"
+  body: "#38415a"
+  muted: "#5c6478"
+  faint: "#61697d"
+  rule: "#e3e0d6"
+  rule-soft: "#edeae0"
+  nav-link: "#c9d4f0"
+  drawer-link: "#dce3f5"
+  on-deep: "#c9d2e8"
+  on-deep-muted: "#8fa3cc"
+  foot-text: "#93a2c4"
+  foot-legal: "#8494bc"
+  ghost-border: "#c7cee4"
+  hover-border: "#cfd6e8"
+  row-hover: "#fafaf6"
+  field-bg: "#fcfcfa"
+  field-border: "#cfd3d9"
+  placeholder: "#6a7280"
+  veil: "rgba(255,255,255,.10)"
+  deep-rule: "rgba(255,255,255,.09)"
+  chow: "#854A90"
+  bradford: "#2E8B57"
+  alexander: "#54C4CC"
+  mcvie: "#D70404"
+  parker: "#B2156E"
+  vuln-high-fg: "#9b1c1c"
+  vuln-high-line: "#ef4444"
+  vuln-high-bg: "#fee2e2"
+  vuln-med-fg: "#92400e"
+  vuln-med-line: "#f59e0b"
+  vuln-med-bg: "#fef3c7"
+  vuln-low-fg: "#166534"
+  vuln-low-line: "#22c55e"
+  vuln-low-bg: "#dcfce7"
+  vuln-open-line: "#999"
+  vuln-open-bg: "#e5e5e5"
+  trustee-open-fg: "#744838"
+  trustee-open-line: "#8f604f"
+  trustee-open-bg: "#efe4de"
+  trustee-two-fg: "#36586d"
+  trustee-two-line: "#58798d"
+  trustee-two-bg: "#e4ecef"
+  trustee-one-fg: "#4f6548"
+  trustee-one-line: "#6c805f"
+  trustee-one-bg: "#e6ece2"
+  trustee-acclaimed-fg: "#5f5a53"
+  trustee-acclaimed-line: "#7d7770"
+  trustee-acclaimed-bg: "#ebe8e3"
+  trustee-under-majority-fg: "#76591f"
+  trustee-under-majority-line: "#94702e"
+  trustee-under-majority-bg: "#f3ead5"
 typography:
   display:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "clamp(3rem, 7vw, 5.25rem)"
-    fontWeight: 700
-    lineHeight: 0.93
-    letterSpacing: "-0.01em"
-  feature-heading:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "clamp(2rem, 4.5vw, 3.45rem)"
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "-0.01em"
+    fontFamily: "Schibsted Grotesk, sans-serif"
+    fontSize: "clamp(2.1rem, 5.4vw, 3.4rem)"
+    fontWeight: 800
+    lineHeight: 1.12
+    letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "clamp(1.65rem, 3vw, 2.2rem)"
-    fontWeight: 700
-    lineHeight: 1.05
-    letterSpacing: "-0.01em"
+    fontFamily: "Schibsted Grotesk, sans-serif"
+    fontSize: "clamp(1.6rem, 3.4vw, 2.3rem)"
+    fontWeight: 800
+    lineHeight: 1.12
+    letterSpacing: "-0.02em"
   heading:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "1.3rem"
-    fontWeight: 700
-    lineHeight: 1.15
-    letterSpacing: "-0.01em"
-  metric:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "1.55rem"
-    fontWeight: 600
-    lineHeight: 1.1
+    fontFamily: "Schibsted Grotesk, sans-serif"
+    fontSize: "1.2rem"
+    fontWeight: 800
+    lineHeight: 1.12
     letterSpacing: "-0.01em"
   title:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "1.05rem"
-    fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: "-0.01em"
+    fontFamily: "Schibsted Grotesk, sans-serif"
+    fontSize: "1.12rem"
+    fontWeight: 700
+    lineHeight: 1.2
   lead:
-    fontFamily: "Newsreader, Georgia, serif"
-    fontSize: "clamp(1.15rem, 2.2vw, 1.45rem)"
+    fontFamily: "Hanken Grotesk, sans-serif"
+    fontSize: "clamp(1.08rem, 2vw, 1.25rem)"
     fontWeight: 400
-    lineHeight: 1.45
-    letterSpacing: "normal"
+    lineHeight: 1.65
   body:
-    fontFamily: "Source Sans 3, Arial, sans-serif"
-    fontSize: "1rem"
+    fontFamily: "Hanken Grotesk, sans-serif"
+    fontSize: "1.0625rem"
     fontWeight: 400
-    lineHeight: 1.55
-    letterSpacing: "normal"
+    lineHeight: 1.65
   body-small:
-    fontFamily: "Source Sans 3, Arial, sans-serif"
-    fontSize: "0.9rem"
+    fontFamily: "Hanken Grotesk, sans-serif"
+    fontSize: "0.96rem"
     fontWeight: 400
-    lineHeight: 1.55
+    lineHeight: 1.65
+  button:
+    fontFamily: "Hanken Grotesk, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 700
+  nav:
+    fontFamily: "Hanken Grotesk, sans-serif"
+    fontSize: "0.94rem"
+    fontWeight: 600
     letterSpacing: "normal"
-  compact:
-    fontFamily: "Source Sans 3, Arial, sans-serif"
-    fontSize: "0.78rem"
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: "normal"
-  data:
+  kicker:
     fontFamily: "IBM Plex Mono, monospace"
     fontSize: "0.72rem"
     fontWeight: 500
-    lineHeight: 1.45
-    letterSpacing: "0.02em"
-  control-data:
-    fontFamily: "IBM Plex Mono, monospace"
-    fontSize: "0.72rem"
-    fontWeight: 700
-    lineHeight: 1.55
-    letterSpacing: "normal"
+    lineHeight: 1.65
+    letterSpacing: "0.16em"
   label:
     fontFamily: "IBM Plex Mono, monospace"
-    fontSize: "0.62rem"
+    fontSize: "0.68rem"
     fontWeight: 600
-    lineHeight: 1.45
-    letterSpacing: "0.06em"
-  control-label:
+    letterSpacing: "0.1em"
+  data:
     fontFamily: "IBM Plex Mono, monospace"
-    fontSize: "0.62rem"
-    fontWeight: 700
-    lineHeight: 1.45
-    letterSpacing: "0.04em"
-  diagram:
-    fontFamily: "IBM Plex Mono, monospace"
-    fontSize: "0.58rem"
-    fontWeight: 500
-    lineHeight: 1.4
-    letterSpacing: "0.02em"
+    fontSize: "0.76rem"
+    lineHeight: 1.5
 rounded:
-  square: "0"
-  marker-round: "999px"
+  r-sm: "6px"
+  r: "10px"
+  r-lg: "16px"
+  r-mark: "7px"
+  r-pill: "999px"
 spacing:
+  gut: "20px"
+  gut-wide: "32px"
+  section-min: "48px"
+  section-max: "84px"
+  card-pad: "24px"
+  grid-gap: "18px"
+  stack: "14px"
   xs: "0.25rem"
   sm: "0.5rem"
   md: "0.75rem"
   lg: "1rem"
   xl: "1.5rem"
   2xl: "2rem"
-  section: "3rem"
   touch-target-min: "44px"
 components:
-  page-hero:
+  button-primary:
+    backgroundColor: "{colors.blue}"
+    textColor: "{colors.paper}"
+    typography: "{typography.button}"
+    rounded: "{rounded.r}"
+    padding: "13px 24px"
+  button-primary-hover:
+    backgroundColor: "{colors.blue-dark}"
+    textColor: "{colors.paper}"
+  button-light:
     backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.display}"
-    rounded: "{rounded.square}"
-    padding: "2.4rem 0 2.5rem"
-  section-heading:
-    textColor: "{colors.ink}"
-    typography: "{typography.headline}"
-    rounded: "{rounded.square}"
-    padding: "0"
+    textColor: "{colors.blue}"
+    typography: "{typography.button}"
+    rounded: "{rounded.r}"
+    padding: "13px 24px"
+  button-light-hover:
+    backgroundColor: "{colors.tint}"
+    textColor: "{colors.blue-dark}"
+  button-ghost:
+    backgroundColor: "transparent"
+    textColor: "{colors.blue}"
+    typography: "{typography.button}"
+    rounded: "{rounded.r}"
+    padding: "13px 24px"
+  button-ghost-hover:
+    backgroundColor: "{colors.tint}"
+    textColor: "{colors.blue-dark}"
   masthead-nav:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.text-mid}"
-    typography: "{typography.label}"
-    rounded: "{rounded.square}"
-    padding: "0.62rem 1rem"
+    textColor: "{colors.nav-link}"
+    typography: "{typography.nav}"
+    rounded: "{rounded.r-sm}"
+    padding: "10px 12px"
   masthead-nav-active:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.square}"
-    padding: "0.62rem 1rem"
+    backgroundColor: "{colors.veil}"
+    textColor: "{colors.paper}"
   route-tab:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.text-mid}"
-    typography: "{typography.control-label}"
-    rounded: "{rounded.square}"
-    padding: "0.65rem 1rem"
+    textColor: "{colors.muted}"
+    rounded: "{rounded.r-sm}"
+    padding: "10px 18px"
   route-tab-active:
+    backgroundColor: "{colors.tint}"
+    textColor: "{colors.blue}"
+  forecast-tab:
     backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.control-label}"
-    rounded: "{rounded.square}"
-    padding: "0.65rem 1rem"
+    textColor: "{colors.blue}"
+    rounded: "{rounded.r}"
+    padding: "12px 18px"
+  forecast-tab-active:
+    backgroundColor: "{colors.blue}"
+    textColor: "{colors.paper}"
   segmented-control:
     backgroundColor: "{colors.paper}"
-    textColor: "{colors.text-mid}"
-    typography: "{typography.control-label}"
-    rounded: "{rounded.square}"
-    padding: "0.4rem 0.7rem"
+    textColor: "{colors.blue}"
+    rounded: "{rounded.r-sm}"
+    padding: "9px 14px"
   segmented-control-active:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.inverse-paper}"
-    typography: "{typography.control-label}"
-    rounded: "{rounded.square}"
-    padding: "0.4rem 0.7rem"
+    backgroundColor: "{colors.blue}"
+    textColor: "{colors.paper}"
   search-field:
+    backgroundColor: "{colors.field-bg}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.r-sm}"
+    padding: "10px 12px"
+  race-card:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.r-lg}"
+    padding: "{spacing.card-pad}"
+  race-status-tag:
+    typography: "{typography.label}"
+    rounded: "{rounded.r-pill}"
+    padding: "4px 9px"
+  methodology-disclosure:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
-    typography: "{typography.control-data}"
-    rounded: "{rounded.square}"
-    padding: "0.4rem 0.6rem"
-  attention-tag-high:
-    backgroundColor: "{colors.high-attention-wash}"
-    textColor: "{colors.high-attention-ink}"
-    rounded: "{rounded.square}"
-    padding: "0.15rem 0.4rem"
-  attention-tag-elevated:
-    backgroundColor: "{colors.elevated-wash}"
-    textColor: "{colors.elevated-ink}"
-    rounded: "{rounded.square}"
-    padding: "0.15rem 0.4rem"
-  attention-tag-quiet:
-    backgroundColor: "{colors.quiet-wash}"
-    textColor: "{colors.quiet-ink}"
-    rounded: "{rounded.square}"
-    padding: "0.15rem 0.4rem"
-  attention-tag-open:
-    backgroundColor: "{colors.open-wash}"
-    textColor: "{colors.text-mid}"
-    rounded: "{rounded.square}"
-    padding: "0.15rem 0.4rem"
-  ward-card:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "0.85rem 0.95rem 1rem"
-  trustee-card:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "0.85rem"
-  candidate-disclosure-open:
-    backgroundColor: "{colors.paper-raised}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "0.85rem 1rem 1rem"
-  forecast-band-card:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "1rem 1.1rem 1.15rem"
+    rounded: "{rounded.r-lg}"
+    padding: "20px 24px"
 ---
 
-# Design System: Toronto Election 2026
+# Design System: Toronto Election 2026 · City Hall Watcher
 
 ## Overview
 
-**Creative North Star: "The Civic Data Desk"**
+**Creative North Star: "City Hall Watcher’s publication identity"**
 
-The system feels like a public-service election desk working in full view: measured, editorial, and evidence-led. Warm paper, firm rules, disciplined typography, and dense but legible information create the authority of a municipal broadsheet without imitating print ornament. The interface should help a voter scan quickly, then reward closer reading.
+Toronto Election 2026 uses the supplied City Hall Watcher world: a confident blue masthead, white reading surfaces, pale-blue section bands, warm hairlines and rounded cards. The publication identity is the organising idea. Election evidence remains the subject; the shell gives readers a recognisable place to inspect it.
 
-Its visual confidence comes from structure rather than spectacle. Large Newsreader headlines establish editorial hierarchy; Source Sans 3 carries explanation; IBM Plex Mono identifies metadata, controls, sources, and evidence categories. Candidate and status colours communicate identity or meaning inside data, while the surrounding interface remains quiet enough for those colours to stay useful.
+Schibsted Grotesk supplies compact, heavy headlines; Hanken Grotesk carries generous running text; IBM Plex Mono identifies dates, sources and metadata. Sections use clear spacing and source-system kickers. Controls speak in words, while the supplied onward and external arrows retain CHW’s familiar reading cues.
 
-Components are restrained editorial instruments: precise, square, compact, and evidence-led. Borders, paper tones, inset rules, hatching, and responsive layout changes express grouping and state. Decoration never competes with the evidence, and each material fact should be stated once at the point where it is most useful.
+The system is border-led and lightly responsive to interaction: linked cards lift on hover or keyboard focus, controls change colour, and mobile layouts preserve readable labels. Candidate and race-status palettes keep their established meanings inside charts, maps and badges. The scoped Kids Vote education experience sits within the same publication shell without turning its lesson styling into global rules.
 
 **Key Characteristics:**
 
-- Warm off-white paper with a faint 44px evidence grid.
-- High-contrast serif hierarchy over highly legible sans-serif body copy.
-- Monospaced uppercase labels for metadata, controls, and methodological cues.
-- Square, ruled containers with no ambient shadows.
-- Candidate colour, shape, and hatching used together for data identity.
-- Responsive grids that translate into a continuous reading order on narrow screens.
-- Quiet information architecture that removes generic labels and repeated facts.
+- CHW blue and deep navy around white paper and pale-blue sections.
+- Heavy Schibsted headlines, open Hanken prose and small Plex metadata.
+- Warm rule borders, rounded cards and restrained interaction lift.
+- A supplied PNG mark paired with a live-text publication wordmark.
+- Labelled navigation, visible keyboard focus and readable mobile controls.
+- Election colours reserved for candidate identity and evidence meaning.
 
 ## Colors
 
-The palette is a restrained civic neutral field punctuated by candidate and evidence colours whose scarcity preserves their meaning.
+The palette places cool publication blues against white surfaces and warm, quiet dividers. The frontmatter records the normative values; use the matching CSS variables from `src/styles/chw.css` and `src/app/globals.css`.
 
 ### Primary
 
-- **Editorial Ink** (#1a1a1a): The near-black authority colour for headings, active controls, heavy rules, and selected states.
-- **Warm Newsprint** (#faf9f6): The default canvas, panel, card, and input surface; most of every screen remains this colour.
-- **Body Ink** (oklch(0.24 0.03 248)): A subtly cool near-black for sustained reading, distinct from the harder Editorial Ink used for hierarchy.
-
-### Secondary
-
-- **Chow Plum** (#854a90): Candidate identity for Olivia Chow in forecast bands, chart marks, dots, and explanatory figures.
-- **Bradford Civic Green** (#2e8b57): Candidate identity for Brad Bradford in the same evidence contexts.
-- **Alexander Ballot Gold** (#f8c466): Candidate identity for Chris Alexander, paired with diagonal hatching and a dark stroke so it never relies on hue alone.
-- **Uncommitted Grey** (#c8c4be): Residual, unmeasured, or neutral data segments.
-
-### Tertiary
-
-- **Attention Red** (#ef4444): High-attention council status, used as a narrow rule, pale wash, or map region rather than a large alarm surface.
-- **Evidence Amber** (#f59e0b): Elevated-attention or limited-evidence status.
-- **Quiet Green** (#22c55e): Quiet-race and supported-positive status.
-- **Open Grey** (#999999): Open-seat and structurally neutral status.
-- **Trustee Clay** (#744838): Open trustee contests, carrying a warm archival character without borrowing the council attention-red meaning.
-- **Trustee Harbour** (#36586d): Two-incumbent trustee contests, using a muted municipal blue rather than a saturated interface blue.
-- **Trustee Olive** (#4f6548): One-incumbent trustee contests, calm and distinct from the brighter council quiet-race green.
-- **Trustee Newsprint Grey** (#5f5a53): Acclamations, intentionally structural and neutral.
-- **Trustee Ochre** (#76591f): Prior wins below a majority, a descriptive historical cue rather than a warning state.
+- **CHW Blue** (`blue`): Masthead, links, primary controls, selected forecast views and focus outlines on light grounds.
+- **Deep Navy** (`deep` / `ink`): Footer and dark bands; headings and strong text on paper.
+- **Hover Blue** (`blue-dark`): Hovered primary buttons and links; mobile navigation drawer.
+- **Pale Blue** (`tint`): Alternating sections, selected route links, callouts and chart tracks.
 
 ### Neutral
 
-- **Raised Paper** (#f5f2ed): A subtle tonal lift for explanatory notes, open disclosures, worked examples, and unavailable states.
-- **Hover Paper** (#f0ede8): The only routine surface shift on hover.
-- **Carbon Midtone** (#555555): Secondary labels and navigational text.
-- **Soft Graphite** (#666666): Supporting prose, captions, and methodology copy.
-- **Faint Graphite** (#707070): Timestamps, disabled hints, and low-priority metadata.
-- **Ghost Graphite** (#aaaaaa): Placeholders and deliberately dim diagram hints only.
-- **Weathered Rule** (#cccccc): Ordinary container borders and grid dividers.
-- **Hairline Rule** (#e0ddd8): Between-row dividers inside dense lists.
-- **Track Paper** (#e8e5e0): Neutral chart tracks and quiet horizontal separators.
-- **Civic Focus Blue** (#1f5f99): A conspicuous keyboard focus outline independent of candidate or status meaning.
-- **Chart Axis Slate** (oklch(0.48 0.03 250)): Muted chart ticks that remain subordinate to data marks.
+- **White Paper** (`paper` / `card`): The reading canvas, cards, inputs on focus and light buttons on dark grounds.
+- **Reading Slate** (`body`), **Metadata Slate** (`muted`) and **Caption Slate** (`faint`): Running copy, secondary explanation and metadata.
+- **Warm Rule** (`rule` / `rule-soft`): Card edges and internal dividers. These are decorative separators; text, fill and labels identify controls.
+- **Navigation Light** (`nav-link` / `drawer-link`) and **Dark-Ground Text** (`on-deep`, `on-deep-muted`, `foot-text`, `foot-legal`): Distinct light roles for blue and navy grounds.
+- **Control Neutrals** (`ghost-border`, `field-border`, `field-bg`, `placeholder`, `hover-border`, `row-hover`): Quiet field and secondary-control surfaces, borders and state cues.
+- **Light Veil** (`veil`) and **Deep Rule** (`deep-rule`): Translucent white navigation state and navy-ground dividers.
 
-**The Candidate Colour Is Evidence Rule.** Candidate hues belong to marks, swatches, lines, bands, and names that identify a candidate. Do not use them as general decoration or page chrome.
+### Election data
 
-**The Council Attention Map Rule.** Council map regions use the medium wash from the same red, amber, green, and grey families as the list view. Meaningful status labels return to the pale tag wash with semantic foreground and rule colours; generic or already-stated labels are omitted. Ward numbers, white boundaries, and the black selected outline keep the map readable without relying on hue alone.
+Candidate identities use `chow`, `bradford`, `alexander`, `mcvie` and `parker`; residual values use the existing muted neutral. Candidate soft variants remain the source `color-mix()` expressions in global CSS rather than independent brand colours. Shapes and explanatory text accompany candidate marks.
 
-**The Trustee Context Is Archival Rule.** Trustee race-context colours use low-chroma clay, harbour, olive, grey, and ochre families. Pair every colour with a full text label, ruled tag, or card-edge position; never reuse the brighter council attention palette for these structural categories.
+Council attention uses high, elevated, quiet and open families. Their foreground, line and background roles come from `vuln-*` variables; the internal variable name does not change public-facing attention terminology. Map hover colours remain owned by the map styles. Trustee colours describe open contests, two or one incumbents, acclamation and prior wins below a majority. They are separate descriptive categories, not win probabilities or council attention levels.
 
-**The Paper Before Panels Rule.** Default to the shared newsprint surface. Use raised paper only when a note, disclosure, example, or state needs separation that borders alone cannot provide.
+**The Data Meaning Rule.** Keep candidate and race-status colours inside their evidence contexts. They are data encodings, not additional CHW brand accents.
+
+**The Ground-Aware Text Rule.** On blue or deep grounds, use the implemented light text and focus colours. Paper-ground muted text and blue links do not transfer to dark bands.
 
 ## Typography
 
-**Display Font:** Newsreader (with Georgia and serif fallback)
+**Display Font:** Schibsted Grotesk, with sans-serif fallback.
+**Body Font:** Hanken Grotesk, with sans-serif fallback.
+**Label/Mono Font:** IBM Plex Mono, with monospace fallback.
 
-**Body Font:** Source Sans 3 (with Arial and sans-serif fallback)
-
-**Label/Mono Font:** IBM Plex Mono (with monospace fallback)
-
-**Character:** The pairing combines an editorial voice, a practical reading face, and a documentary evidence register. Newsreader makes claims and section structure feel considered; Source Sans 3 keeps long explanations open; IBM Plex Mono signals that a label, date, source, control, or metric should be read precisely.
+All three families are self-hosted with `next/font` in the root layout. The heavy, tightly tracked display ramp gives the publication its direct civic voice; relaxed body leading supports sustained explanation. Headings balance their wrapping and paragraphs use pretty wrapping.
 
 ### Hierarchy
 
-- **Display** (700, fluid 3rem–5.25rem, 0.93 line-height): Primary route and major race titles. At a 390px viewport it resolves to 3rem and remains intentionally commanding.
-- **Feature heading** (700, fluid 2rem–3.45rem, 1.0 line-height): Question-led chapters on long reading pages.
-- **Headline** (700, fluid 1.65rem–2.2rem, 1.05 line-height): Section openings, map-panel headings, and primary analytical takeaways.
-- **Heading / metric / title** (700 at 1.3rem; 600 at 1.55rem; 600 at 1.05rem): Disclosure headings, published frequency phrases, candidate names, ward names, and compact panel titles.
-- **Lead / body** (fluid 1.15rem–1.45rem Newsreader; 1rem Source Sans 3): Page introductions and ordinary explanations. Long passages use a 68ch measure and 1.55 body line-height.
-- **Small body / compact** (0.9rem and 0.78rem): Supporting explanations and genuinely secondary copy.
-- **Data / label** (0.72rem and 0.62rem IBM Plex Mono): Measured values, dates, sources, and short metadata. Strong control variants use 700 at the same sizes; status tags remain regular-weight so colour and wording carry the state.
-- **Diagram** (0.58rem IBM Plex Mono): Embedded chart and map annotation. Never use this step for continuous prose; tiny annotation must be paired with visible structure or a fuller text equivalent.
+- **Display:** Fluid page titles with heavy weight, tight tracking and compact leading; the frontmatter’s `display` role is also the page-title token.
+- **Headline:** A smaller fluid ramp for section titles (`headline`).
+- **Heading / Title:** Card headings use `heading`; candidate and disclosure names use the more moderate `title` role and weight.
+- **Lead:** Fluid Hanken introductions, generally constrained to (62ch).
+- **Body:** Default reading text is (17px), with leading (1.65); prose may use the reading measure (68ch). `body-small` supports cards, notes and tables.
+- **Navigation / Buttons:** Hanken labels use sentence case and clear medium-to-bold weight. Mono class names on legacy markup do not override the implemented control styles.
+- **Kicker / Label / Data:** Plex differentiates section introductions, status words and evidence dates. Kickers and status labels are uppercased by CSS; source text remains sentence case. Dense charts retain their own data geometry and label sizes rather than borrowing display type.
 
-**Root size:** Production uses one 18px root. Shared type, leading, and reading-measure tokens define the core scale; component-local exceptions are reserved for embedded charts, maps, and highly constrained labels.
-
-**The Three-Register Rule.** Use serif for editorial hierarchy, sans-serif for explanation, and mono for evidence or interaction metadata. A component should not add a fourth typographic voice.
-
-**The Mono Means Precision Rule.** Monospaced text should signal category, control, source, date, method, or measured value—not carry ordinary prose.
+**The Family Roles Rule.** Use Schibsted for headings and figures, Hanken for reading and controls, and Plex for metadata. Existing newsreader and source-sans variable names are compatibility aliases to the new families.
 
 ## Layout
 
-Pages sit in a centred reading shell capped at 66rem, with 1.25rem horizontal padding and generous vertical section intervals. The background extends the analytical character beyond the content using a subtle 44px square grid that fades toward the bottom.
+The standard content wrapper has a maximum outer width (1080px), including its side padding: gutters are (20px) below (768px) and (32px) from that breakpoint. This gives a desktop inner measure of (1016px), not 1080px plus gutters. A narrow wrapper is available at (760px). Sections use fluid vertical padding (`clamp(48px, 7vw, 84px)`), with white and tint providing the recurring reading rhythm. Card padding, grid gaps and stacked spacing use the frontmatter scale.
 
-Primary route sections use a 3rem interval, reduced to 2rem for the first section immediately after route tabs. Inside a section, the heading and its supporting copy stay within the 68ch reading measure and sit 1.5rem above the evidence module. Search and ordering controls form a compact grid: the field gets the flexible column, actions retain their natural width, and counts remain visually secondary unless a filter is active.
+The sticky masthead is (80px) tall on desktop and (72px) below (860px). Mobile uses a labelled Menu / Close button and a full-width dark-blue drawer. Route navigation retains its complete labels in a horizontally scrolling row. Forecast view controls stack below (701px). Candidate directories move from three columns to two at (700px), then one at (440px); race directories have their own two-to-one change at (620px). Poll tables become labelled mobile records at (640px). These are component behaviours, not a requirement that every new screen use the same grid.
 
-The core spatial grammar is ruled grids. A strong 2–4px top rule introduces an analytical module, while 1px vertical and bottom rules join its cells into one composition. Independently actionable ward records use open card gaps; trustee records, candidate directories, forecast bands, and poll records use joined grids where their shared structure matters.
-
-Responsive changes are content-driven rather than device-branded: methodology grids simplify at 850px; maps and high-frequency controls reflow at 760px; the masthead, long-form reading grids, and margin evidence translate at 680px; candidate and poll records adapt at 640px; trustee grids stack at 620px; ward controls stack at 520px; poll records simplify again at 480px; and the map panel compacts at 440px. Below 680px the shell uses 0.85rem horizontal gutters. The site navigation becomes a three-column wrapped grid, and route tabs remain horizontally scrollable. At 760px and below, and for coarse pointers at any width, listed high-frequency controls use a 44px minimum height.
-
-**The Mobile Evidence Translation Rule.** On phones, preserve the claim and the evidence but change the presentation. Lead with a concise textual takeaway, place complex historical charts behind an explicit detail control, and reflow wide poll tables into complete vertical records. Dense geographic maps retain a list alternative, enlarge their invisible pointer geometry, and use one keyboard tab stop with spatial arrow-key navigation.
-
-**The Joined Grid Rule.** When items form one analytical set, join them with shared rules and zero gap. Use open card gaps only for independently actionable records such as ward race cards.
+The methodology navigation uses five equal desktop columns for its five anchors and switches to a horizontal mobile strip at (700px). It sits below the masthead and its section anchors account for the stacked sticky region. Footer columns become (1.4fr 1fr 1fr) from (720px). Adapt shared spacing and reading order to the content; page-specific chart and map geometry stays with those components.
 
 ## Elevation & Depth
 
-The system is flat by default and uses no ambient box shadows. Depth comes from tonal paper shifts, strong-versus-soft rule weight, inset selection bars, coloured status edges, and occasional hatched fills. Hover states change the paper tone by one step; keyboard focus uses a separate 3px blue outline with a 3px offset.
+White cards and warm borders establish grouping at rest. Pale-blue bands supply tonal depth; the masthead and footer provide stronger publication boundaries. Linked race cards respond to hover and keyboard focus with a subtle blue-grey shadow and upward movement (2px). The exact lift and field-focus halo live in the sidecar because they are outside the frontmatter component schema.
 
-Inset shadows are structural rather than atmospheric: a 3px bottom inset marks the active navigation or tab, and a 4px left inset encodes trustee-race context. The race map alone uses a tight 2px focus halo to keep a white focus stroke legible over neighbouring regions. The sticky methodology question index is the sole translucent surface, using a nearly opaque paper mix and 10px backdrop blur to preserve context over scrolling content.
+**The Border at Rest Rule.** Cards separate with warm hairlines at rest. Use the subtle lift for linked-card interaction, never as the default shadow on every surface.
 
-### Structural Vocabulary
-
-- **Active baseline** (`inset 0 -3px 0`): Marks the current route or selected route tab without lifting it.
-- **Status edge** (`inset 4px 0 0`): Encodes trustee race context inside a joined grid.
-- **Map focus halo** (`drop-shadow(0 0 2px)`): A functional keyboard-focus exception, never general card elevation.
-
-**The No Ambient Shadow Rule.** Do not add ambient drop shadows or floating-card elevation. Use rules, inset state marks, a paper-tone change, or the documented map-focus exception.
+Interaction transitions are short (0.12–0.18s, ease): navigation and controls shift colour, linked cards shift border and lift, and buttons press down (1px). Reduced motion disables smooth scrolling and effectively removes animation and transitions; card movement is explicitly suppressed. Do not introduce ambient movement into evidence reading.
 
 ## Shapes
 
-Containers, controls, tags, inputs, and cards use square corners. The zero-radius geometry reinforces the document and table character, and adjoining edges should align cleanly.
-
-Rounded geometry is reserved for data differentiation: Chow uses a circular marker, Bradford a square, and Alexander a diamond or hatched gold mark. Fully rounded values appear only for circular chart marks and legend dots. These silhouettes are semantic and must not become decorative motifs elsewhere.
-
-**The Shape Carries Meaning Rule.** Preserve circle, square, diamond, and hatch distinctions wherever candidate data appears so colour is never the only identifier.
+Use softly rounded forms by role: small controls, inputs and navigation use `r-sm`; buttons and callouts use `r`; cards, maps, table containers and disclosure groups use `r-lg`. Status badges use `r-pill`. The supplied mark uses `r-mark` at a displayed size (30px). Warm hairline borders are normally (1px). Candidate markers and chart marks retain the shapes required by their data semantics.
 
 ## Components
 
-### Buttons and Segmented Controls
+### Buttons
 
-- **Shape:** Square, with adjacent buttons sharing a 1px outer rule and internal dividers.
-- **Default:** Warm paper, midtone text, compact mono labels, and 0.4rem by 0.7rem padding.
-- **Active:** Editorial Ink fill with inverse text for pressed choices; route-like variants use a 3px inset bottom rule.
-- **State semantics:** Use `aria-pressed` for in-place choices and `aria-current` for route navigation. Hover shifts one paper tone; the global focus outline remains visible outside the control.
+Confident Hanken labels sit in gently curved controls. The primary variant is white on CHW Blue; hover darkens the blue. Light buttons place blue labels on white within navy bands, changing to tint on hover. The source ghost variant uses a transparent ground and ghost border for secondary actions. Standard padding is (13px 24px); small source buttons use (9px 16px). A press moves the control down (1px). Focus is a (3px) outline offset (2px), with light outlines substituted on dark grounds.
 
-### Tags and Chips
+### Chips
 
-- **Style:** Compact regular-weight mono uppercase text with either a 1px current-colour border or a pale semantic wash; standard padding is 0.15rem by 0.4rem.
-- **Council state:** Red, amber, green, and grey families mean high attention, elevated attention, quiet race, and open seat.
-- **Trustee state:** Clay, harbour, olive, ochre, and archival grey mean open race, two incumbents, one incumbent, prior win below a majority, and acclaimed.
-- **Shape:** Always square; never convert status labels into soft pills.
+Race tags are compact rounded pills with Plex status words, padding (4px 9px), and the relevant foreground/background pair. They describe evidence or field context and are not buttons. Retain written status meaning; interactive filters belong to the control patterns below.
 
-### Cards and Containers
+### Cards / Containers
 
-- **Ward cards:** Independent, open-gap records with a 4px semantic left edge, optional incumbent and evidence rows, and a one-step hover-paper shift.
-- **Trustee cards:** Joined two-column records at wide viewports, with a structural 4px inset status edge, optional coverage, and compact facts; they stack at 620px.
-- **Candidate directory:** Joined three-column disclosures, reduced to two columns at 640px. An open disclosure spans the grid and moves to Raised Paper.
-- **Background:** Shared Newsprint at rest; Hover Paper for interactive feedback; Raised Paper for open disclosures and explanatory states.
-- **Shadow strategy:** None beyond the documented structural insets.
+Cards use white fill, `r-lg` corners, a warm rule border and `card-pad` inset. Linked race cards have the interaction lift described above; information-only candidate cards stay border-led. Candidate disclosures keep names and campaign links distinct. Maps and poll tables share the rounded container language while retaining their own internal geometry.
 
-### Inputs and Fields
+### Inputs / Fields
 
-- **Style:** Warm paper, 1px Editorial Ink border, 0.72rem mono input text, square corners, and 0.4rem by 0.6rem padding.
-- **Label:** Strong uppercase mono text above the control; placeholders use Ghost Graphite without reducing entered-value contrast.
-- **Focus:** The global 3px Civic Focus Blue outline with 3px offset.
-- **Feedback:** Search counts remain programmatically live but become visually prominent only while filtering; no-match states name the query and suggest useful alternatives.
+Directory search is a labelled Hanken field on the field background, with the field border, `r-sm` corners and padding (10px 12px). On focus the background becomes white, the border blue, and the blue halo replaces the generic outline. Placeholder text uses its dedicated token; it is not the accessible label. Named controls have a minimum touch height (44px).
 
 ### Navigation
 
-The centred masthead sets the publication name in Newsreader, followed by one concise uppercase mono descriptor and a five-link ruled navigation row. Mayor covers both candidates and polls; current route families use `aria-current`. At narrow widths the links wrap into a three-column grid.
+Masthead links use light navigation text on blue, Hanken at medium weight, and `r-sm` corners. Hover and current-page state add the light veil and white text; `aria-current` supplies the semantic state. The mobile drawer preserves those words, closes on route selection or outside press, and supports Escape with focus returned to the toggle. Focus outlines are white in the masthead and navigation-light in the footer.
 
-Use the shared route-tab primitive for mayor and trustee route families. It owns full labels, equal distribution when space permits, current-page semantics, and narrow-screen horizontal scrolling. Use the list/map switcher only when a map exists; it defaults to List, persists the choice for the session, and uses grouped pressed-state buttons.
+Route tabs use blue-on-tint selected state, warm rules around their strip and a minimum height (44px). They are links with `aria-current`, not view-switch buttons. Forecast tabs use bordered white controls, blue selected fill, and the existing tab/panel keyboard model. Segmented map/list and sort controls use blue selected fill with `aria-pressed`; evidence-lens controls use a blue underline instead. Preserve these differences in interaction semantics.
 
-The sticky methodology question index is a separate reading aid: four linked questions on wide screens and a horizontally scrolling index on narrow screens.
+### Publication headings and disclosures
 
-### Editorial Headings
+Page heroes carry a source-system kicker, a left-aligned display heading, Hanken introduction and Plex evidence metadata. Section kickers identify the reading context; they are an explicit part of the supplied CHW world. This pattern does not require inventing an extra label for every block.
 
-Use the page hero once at the start of a primary route when the page needs the standard ruled lead: one display title, optional editorial description, optional mono metadata, and an optional directly related coverage note. Do not add a kicker above shared primary-route titles.
+Methodology disclosures are native `details` / `summary` groups within a rounded bordered container. Their summary pairs a Schibsted title with smaller Hanken context, gives a visible open/closed indicator, and uses roomy insets (20px 24px). The expanded content uses (24px) padding; narrower layouts reduce horizontal padding to (18px). Preserve keyboard focus and written titles when adding disclosures.
 
-Use the section heading for recurring analytical modules inside a route. It pairs one serif title with only directly supporting copy. Kicker-style mono text is reserved for true breadcrumbs and detail-page navigation, not as routine decoration above headings.
-
-### Forecast Views
-
-The signature forecast module leads with one chart of one set of simulated elections: the margin between the two poll leaders as three named outcomes (leader ahead by two or more points, within two points either way, challenger ahead by two or more), each a ruled row with a plain-language label, a bar scaled to the largest outcome and its exact share in serif metric type. Beneath it, two further views of the same simulations sit behind real tabs (serif tab labels on a hairline, the selected one underlined in the strong rule colour; arrow keys move between them; every panel is in the markup and the inactive one is hidden): "What the vote could look like", each candidate's election-day vote range on a 0–100% track with the 50% line marked; and "Where the uncertainty comes from", the leader margin under each source of doubt on its own (the polls' own noise, campaign movement, election-day error) and then, set apart by a strong rule and a bold label, all three together, which is the published margin; all on one shared axis with the tie marked, tinted by which candidate is ahead, with each source's share of the uncertainty at the right (the three add up to 100%; the combined row reads 100%), because ranges and "ahead" chances do not add across sources and a lay reader expects the column to. All three views share one chart grammar (`.forecast-chart`): a 2 px strong top rule; rows of label, track and value on a 1 px soft rule with 0.7 rem of vertical padding; a plain paper-toned track 1.25 rem tall; a share encoded as a solid bar, a range as a tinted band at half opacity with a solid 3 px tick at its middle, and one hairline reference line per axis; the value in serif metric type with tabular numerals; an optional axis header in small uppercase monospace; and, under 560 px, the label stacking above the track and value. A feed without the uncertainty block shows the vote ranges as a plain ruled section instead of tabs. The full-race win list is retired as redundant with the lede and the margin caption. Candidate identity lives in the marker and colour; chances are rounded to whole percentages with "<1%" and ">99%" guarding the tails. Bands and frequency phrases are retired.
-
-### Charts and Maps
-
-- **Polling chart:** Lazy-load the visual layer near the viewport, reserve its height to prevent layout shift, disable mark animation, and pair the `aria-hidden` graphic with an immediate text equivalent and complete poll archive. Preserve circle, square, diamond, and dashed-line distinctions.
-- **Margin distribution:** Use ordinal bar height rather than numeric probability, candidate-colour stacking and hatching, a labelled SVG equivalent, and a concise mobile takeaway. At narrow widths place the detailed 42rem evidence canvas behind an explicit disclosure with a horizontal-scroll hint.
-- **Race map:** Support council-attention, trustee-race-structure, and prior-winner-share palettes. Keep one roving tab stop, Arrow/Home/End movement, Enter/Space selection, 44px invisible hit geometry, a polite announcement, and a list alternative. In the side panel omit generic “Contested race,” geography already present in the heading, and open-seat incumbent restatements.
-- **Poll archive:** Wide screens use a ruled table. At 640px it becomes complete labelled records; at 480px candidate and context cells simplify further without losing any field.
-
-### Labels and State Copy
-
-Use voter-facing terms consistently: say “candidates on the ballot” or “candidates in 2026,” use “attention” rather than “most watched,” distinguish “not available yet” from “no matches,” and name link destinations or outcomes. Keep legal election terms when they carry necessary meaning, then explain the consequence in plain language.
-
-**The State Each Fact Once Rule.** A status tag, heading, fact row, and supporting sentence should not restate the same information. Keep the strongest scannable expression and retain secondary copy only when it adds a new fact or consequence.
+The publication mark is the supplied PNG in `public/brand`, with its source origin embedded in image metadata. Pair it with the live-text name in masthead and footer; do not create a replacement mark. Source text glyphs →, ↗ and · retain onward, external and joined-fact meanings. CSS chevrons and disclosure indicators follow the implemented controls; a new icon library is unnecessary.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** begin major analytical modules with a firm top rule and keep internal dividers lighter.
-- **Do** use Newsreader for the claim, Source Sans 3 for the explanation, and IBM Plex Mono for the evidence label.
-- **Do** keep candidate and status colours attached to explicit data meaning and pair colour with shape, hatch, text, or position.
-- **Do** preserve the 68ch reading measure, responsive evidence translation, keyboard focus, reduced-motion behaviour, and non-colour cues.
-- **Do** use warm paper, precise alignment, and one-statement-per-fact discipline to make dense civic information feel calm.
+- **Do** use the supplied CHW colour and font variables when a matching token exists.
+- **Do** keep the PNG mark beside the live-text City Hall Watcher wordmark, with the election edition as supporting text.
+- **Do** retain CHW kickers, sentence-case headings, and → / ↗ cues where they explain section or link meaning.
+- **Do** preserve named candidate and race-status meanings with text and non-colour cues.
+- **Do** provide the ground-appropriate focus outline and respect reduced motion.
+- **Do** adapt columns to content and viewport while keeping navigation labels readable.
 
 ### Don't:
 
-- **Don't** add rounded cards, pill-shaped general controls, ambient shadows, or floating dashboard surfaces.
-- **Don't** introduce translucent effects beyond the documented sticky methodology index.
-- **Don't** use candidate colours as decorative accents or to imply political endorsement.
-- **Don't** replace ruled information structures with isolated generic cards when the items form one analytical set.
-- **Don't** use monospaced type for long prose, serif type for dense metadata, or tiny diagram type without a fuller text equivalent.
-- **Don't** animate charts, maps, or status changes merely to create activity.
-- **Don't** repeat a status or fact in adjacent labels, headings, and explanatory copy.
+- **Don’t** reintroduce the superseded warm-paper, Newsreader and square-card broadsheet identity.
+- **Don’t** redraw the supplied PNG mark as SVG or replace it with generated imagery.
+- **Don’t** treat candidate, council-attention or trustee-context colours as interchangeable decorative accents.
+- **Don’t** apply paper-ground text colours to the blue masthead or deep navy footer.
+- **Don’t** truncate navigation labels or encode status by colour alone.
+- **Don’t** make a particular page’s chart, directory or lesson composition a universal layout requirement.

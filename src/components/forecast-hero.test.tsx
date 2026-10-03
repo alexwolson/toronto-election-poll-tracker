@@ -12,7 +12,7 @@ describe("ForecastHero", () => {
   it("renders the margin-first hierarchy from the joint draws, names driven by the feed", () => {
     const html = renderToStaticMarkup(<ForecastHero feed={feed()} asOfDate="2026-09-17" />);
     // 1. margin first: three named outcomes with their percentages, the pair named from the feed
-    expect(html).toContain('class="forecast-margin"');
+    expect(html).toMatch(/class="[^"]*\bforecast-margin\b[^"]*"/);
     expect(html).toContain("How far apart Chow and Bradford are likely to finish");
     expect(html).toContain("Chow ahead by 2 or more");
     expect(html).toContain("Within 2 points either way");
@@ -42,7 +42,9 @@ describe("ForecastHero", () => {
     expect(html).toContain("Evidence through");
     expect(html).toContain("Forecast for election day, Oct 26, 2026.");
     expect(html).not.toContain("forecast-kicker");
-    expect(html.indexOf('class="forecast-margin"')).toBeLessThan(html.indexOf('class="forecast-tabs"'));
+    const marginSection = html.match(/<section[^>]*\bforecast-margin\b[^>]*>/);
+    expect(marginSection).not.toBeNull();
+    expect(marginSection!.index).toBeLessThan(html.indexOf('class="forecast-tabs"'));
     // 2. beneath the margin chart, two views of the same simulations as real tabs
     expect(html).toContain('role="tablist"');
     expect((html.match(/role="tab"/g) ?? []).length).toBe(2);

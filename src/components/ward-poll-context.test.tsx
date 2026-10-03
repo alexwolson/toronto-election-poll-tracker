@@ -12,18 +12,20 @@ describe("ward poll context", () => {
     render(<WardPollContext poll={poll} benchmark={benchmark} />);
     expect(
       screen.getByRole("img", {
-        name: "Opponent's lead over the strongest other named candidate: model, central 80% range -20.0 to 40.0 percentage points",
+        name: "Simulated lead for Opponent over the strongest other named candidate; negative values mean another candidate ahead",
       }),
     ).not.toBeNull();
-    expect(screen.getAllByRole("img")).toHaveLength(2);
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+    expect(screen.getByText("Share of simulated scenarios")).not.toBeNull();
+    expect(screen.getByText("+100")).not.toBeNull();
+    expect(screen.getByText("Tie")).not.toBeNull();
+    expect(screen.getByText(/combining two error models equally/)).not.toBeNull();
     expect(screen.getByText(/307 decided\/leaning respondents/)).not.toBeNull();
     expect(screen.getByText(/16% — Other candidates/)).not.toBeNull();
-    expect(
-      screen.getByText(/The reported lead could reverse/),
-    ).not.toBeNull();
+    expect(screen.getByText(/The reported lead could reverse/)).not.toBeNull();
     expect(
       screen
-        .getByRole("link", { name: "How to read these ranges" })
+        .getByRole("link", { name: "How to read these scenarios" })
         .getAttribute("href"),
     ).toBe("/how-it-works#ward-polls");
   });

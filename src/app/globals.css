@@ -4545,20 +4545,21 @@ body {
   border-bottom: 0;
 }
 
-/* Historical ward-poll context shares the vote-range chart grammar. */
+/* Ward poll source and model context. */
 .ward-poll-context { margin-block: 1.75rem; }
 .ward-poll-context > h3 { font-size: var(--type-heading); margin-bottom: 0.5rem; }
 .ward-poll-context > .font-mono { font-size: var(--type-diagram); }
 .ward-poll-context__note { font-size: var(--type-body-small); color: var(--text-soft); }
 
-.ward-lead-chart { margin-top: 1rem; }
-.ward-lead-chart__axis, .ward-lead-chart__row { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 1rem; }
-.ward-lead-chart__axis { font-size: var(--type-diagram); padding-bottom: .75rem; }
-.ward-lead-chart__axis > div { display: flex; justify-content: space-between; gap: 1rem; }
-.ward-lead-chart__row { padding: .75rem 0; border-top: 1px solid var(--line-soft); align-items: center; }
-.ward-lead-chart__track { height: 2rem; position: relative; background: var(--muted); }
-.ward-lead-chart__band { position: absolute; height: 1rem; top: .5rem; background: var(--text-strong); opacity: .5; }
-.ward-lead-chart__zero { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid var(--text-strong); }
-@media (max-width: 600px) {
-  .ward-lead-chart__axis, .ward-lead-chart__row { grid-template-columns: 7rem minmax(0, 1fr); gap: .5rem; }
-}
+.ward-scenarios { margin: 1rem 0; }
+.ward-scenarios__directions { display: flex; justify-content: space-between; gap: 2rem; padding-left: 3rem; font-size: var(--type-body-small); }
+.ward-scenarios__ylabel { margin: .75rem 0 .25rem; font-size: var(--type-body-small); }
+.ward-scenarios__plot { position: relative; margin-left: 3rem; height: 210px; border-bottom: 1px solid var(--line-strong); }
+.ward-scenarios__grid { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line-inner); }
+.ward-scenarios__ytick { position: absolute; top: 0; right: calc(100% + .5rem); transform: translateY(-50%); font-size: var(--type-body-small); white-space: nowrap; }
+.ward-scenarios__bar { position: absolute; bottom: 0; background: var(--text-strong); opacity: .55; }
+.ward-scenarios__zero { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid var(--line-strong); }
+.ward-scenarios__zero > span { position: absolute; top: 0; left: .25rem; font-size: var(--type-body-small); }
+.ward-scenarios__xaxis { margin: .35rem 0 0 3rem; position: relative; height: 1.5rem; font-size: var(--type-body-small); }
+.ward-scenarios__xaxis > span { position: absolute; transform: translateX(-50%); }
+.ward-scenarios__xlabel { text-align: center; font-size: var(--type-body-small); }

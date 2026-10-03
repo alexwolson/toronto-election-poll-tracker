@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WardLeadHistogram } from "@/components/ward-lead-histogram";
 import { formatDate, formatSharePct } from "@/lib/format";
 import type { WardPoll, WardPollBenchmark } from "@/types/feeds";
 
@@ -35,49 +36,26 @@ export function WardPollContext({
             ? "The reported lead could reverse."
             : crossZero
               ? "The models disagree about how secure the lead is."
-              : "Both ranges favour the reported leader."}
+              : "Both error models favour the reported leader."}
         </strong>
       </p>
       <p>
-        A small mixed-method sample and little historical evidence leave substantial
-        uncertainty about who will win. These bands show how uncertain {context.leader.candidate_name}’s lead is under two plausible models of polling error.
+        A small mixed-method sample and little historical evidence leave
+        substantial uncertainty about who will win. The histogram shows how{" "}
+        {context.leader.candidate_name}’s lead could change after allowing for
+        polling error.
       </p>
-      <div className="ward-lead-chart">
-        <div className="ward-lead-chart__axis" aria-hidden="true">
-          <span />
-          <div>
-            <span>Another named candidate ahead</span>
-            <span>{context.leader.candidate_name} ahead</span>
-          </div>
-        </div>
-        {ranges.map((range, index) => (
-          <div className="ward-lead-chart__row" key={range.model}>
-            <span>{index === 0 ? "Model" : "Alternative assumptions"}</span>
-            <span
-              className="ward-lead-chart__track"
-              role="img"
-              aria-label={`${context.leader.candidate_name}'s lead over the strongest other named candidate: ${index === 0 ? "model" : "alternative assumptions"}, central 80% range ${(range.lower * 100).toFixed(1)} to ${(range.upper * 100).toFixed(1)} percentage points`}
-            >
-              <span
-                className="ward-lead-chart__band"
-                style={{
-                  left: `${(range.lower + 1) * 50}%`,
-                  width: `${(range.upper - range.lower) * 50}%`,
-                }}
-              />
-              <span className="ward-lead-chart__zero" />
-            </span>
-          </div>
-        ))}
-        <p className="forecast-caption">
-          Central 80% modelled ranges. The line marks a tie. Shares are among
-          poll-named candidates; unreported candidates are outside the model.
-        </p>
-      </div>
+      <WardLeadHistogram
+        name={context.leader.candidate_name}
+        scenarios={context.leader.scenarios}
+      />
       <p className="ward-poll-context__note">
         These models draw on just {benchmark.contest_count} ward races from one
         election. They cannot establish reliable chances of winning.{" "}
-        <Link href="/how-it-works/#ward-polls">How to read these ranges</Link>.
+        <Link href="/how-it-works/#ward-polls">
+          How to read these scenarios
+        </Link>
+        .
       </p>
       <h4>Published toplines</h4>
       <p>{poll.denominator}; original percentages.</p>

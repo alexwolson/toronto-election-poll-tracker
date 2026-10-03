@@ -989,6 +989,15 @@ function validWardContext(poll: unknown, benchmark: unknown): boolean {
     leader.ranges[0]?.model !== "dirichlet" || leader.ranges[1]?.model !== "logistic_normal" ||
     !leader.ranges.every((range) => isRecord(range) && typeof range.lower === "number" && typeof range.upper === "number" &&
       Number.isFinite(range.lower) && Number.isFinite(range.upper) && range.lower >= -1 && range.upper <= 1 && range.lower <= range.upper)) return false;
+  const scenarios = leader.scenarios;
+  if (!isRecord(scenarios) || scenarios.method !== "equal-weight-error-model-scenarios-v1" || scenarios.denominator !== "named_candidates" ||
+    !isRecord(scenarios.model_weights) || scenarios.model_weights.dirichlet !== 0.5 || scenarios.model_weights.logistic_normal !== 0.5 ||
+    typeof scenarios.draws !== "number" || !Number.isInteger(scenarios.draws) || scenarios.draws <= 0 ||
+    !Array.isArray(scenarios.bins) || scenarios.bins.length !== 40 ||
+    !scenarios.bins.every((bin,index) => isRecord(bin) && typeof bin.left === "number" && typeof bin.right === "number" &&
+      Math.abs(bin.left - (-100+index*5)) < 1e-9 && Math.abs(bin.right - (-95+index*5)) < 1e-9 &&
+      typeof bin.fraction === "number" && Number.isFinite(bin.fraction) && bin.fraction >= 0 && bin.fraction <= 1) ||
+    Math.abs(scenarios.bins.reduce((sum,bin) => sum+(isRecord(bin) ? Number(bin.fraction):0),0)-1) > 1e-9) return false;
   const ordered = [...named].sort((a,b) => (isRecord(b) ? Number(b.share) : 0) - (isRecord(a) ? Number(a.share) : 0));
   if (!isRecord(ordered[0]) || !isRecord(ordered[1]) || leader.candidate_id !== ordered[0].candidate_id ||
     leader.candidate_name !== ordered[0].candidate_name || typeof leader.reported_lead !== "number" ||

@@ -478,6 +478,10 @@ describe("schema 10 historical ward comparisons", () => {
     const reading = wrongBand.wards["4"].ward_polls[0];
     if ("modelled_context" in reading && reading.modelled_context) reading.modelled_context.rows[0].upper = 0.2;
     expect(validateCouncil(wrongBand)).toBeNull();
+    const missingMass = currentFeed();
+    const massReading = missingMass.wards["4"].ward_polls[0];
+    if ("modelled_context" in massReading && massReading.modelled_context) massReading.modelled_context.leader.scenarios.bins[0].fraction = 0.5;
+    expect(validateCouncil(missingMass)).toBeNull();
     const missing = currentFeed();
     expect(validateCouncil({ ...missing, ward_poll_benchmark: undefined })).toBeNull();
     expect(validateCouncil({ ...missing, schema_version: "10" })).toBeNull();

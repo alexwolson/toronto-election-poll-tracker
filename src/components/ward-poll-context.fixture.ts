@@ -72,6 +72,17 @@ export const poll: WardPoll = {
   ],
   modelled_context: {
     leader: {
+      scenarios: {
+        method: "equal-weight-error-model-scenarios-v1",
+        model_weights: { dirichlet: 0.5, logistic_normal: 0.5 },
+        draws: 200000,
+        denominator: "named_candidates",
+        bins: Array.from({ length: 40 }, (_, i) => ({
+          left: -100 + i * 5,
+          right: -95 + i * 5,
+          fraction: 0.025,
+        })),
+      },
       candidate_id: "opponent",
       candidate_name: "Opponent",
       reported_lead: 0.1,

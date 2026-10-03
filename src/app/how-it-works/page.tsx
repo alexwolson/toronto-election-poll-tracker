@@ -618,15 +618,18 @@ export default async function HowItWorksPage() {
           A joint statistical model learns how far these relative shares have moved
           between a poll and the result. Each simulated result totals 100% across the
           named candidates. The chart follows the poll’s leader against the strongest other named
-          candidate in each simulation. Its central 80% lead ranges include uncertainty
-          in the size of historical polling error. A range crossing the tie line includes
-          a different candidate ahead.
+          candidate in each simulation. Negative values put another candidate ahead;
+          zero is a tie. Bar heights count the fraction of simulated outcomes in each
+          five-point interval, not a candidate’s chance of winning the whole ward.
         </p>
         {benchmark && <p>
           The evidence is {benchmark.contest_count} ward races from one pollster in
           2022, polled three to six weeks before voting. We withheld each ward in turn
           and predicted its result. Large misses remained, particularly in Parkdale–High Park.
-          Six tests from one election cannot establish reliable future coverage.
+          All six reported leaders stayed ahead within the matched candidate sets, even
+          when their leads were badly misstated. The scenarios use vote-share errors,
+          not an observed rate of leaders losing. Six tests from one election cannot
+          establish reliable future coverage.
         </p>}
         <p>
           The latest Forum polls mix telephone interviewing with a non-random online
@@ -645,11 +648,15 @@ export default async function HowItWorksPage() {
         </p>
         {benchmark && <MethodDisclosure title="Model and historical sources" description="Joint shares, whole-ward checks, and audited poll tables">
           <p>
-            The model uses a Dirichlet distribution centred on each poll’s named-set
+            The first error model uses a Dirichlet distribution centred on each poll’s named-set
             shares, with an uncertain concentration that can vary by ward. Concentration
             measures total poll-to-result error, not respondent count. Each ward is
             one joint observation. We integrate both the typical concentration and
-            its variation across wards, rather than fixing either at a best estimate.
+            its variation across wards, rather than fixing either at a best estimate. The second model, logistic-normal,
+            applies uncertain errors to relative log vote shares. It allows a different
+            pattern of misses, especially for small shares. The histogram combines equal
+            numbers of draws from both models. Equal weights are a modelling judgment;
+            six historical wards cannot determine reliable model weights.
           </p>
           <p>
             Historical sampling error, campaign changes and survey bias are combined;

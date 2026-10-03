@@ -595,8 +595,16 @@ export interface WardPollCandidate {
   registration_status: "registered" | "unregistered" | "residual";
 }
 
+export interface WardLeadScenarios {
+  method: "equal-weight-error-model-scenarios-v1";
+  model_weights: { dirichlet: 0.5; logistic_normal: 0.5 };
+  draws: number;
+  denominator: "named_candidates";
+  bins: { left: number; right: number; fraction: number }[];
+}
+
 export interface WardPollModelContext {
-  leader: { candidate_id: string; candidate_name: string; reported_lead: number; ranges: { model: "dirichlet" | "logistic_normal"; lower: number; upper: number }[] };
+  leader: { scenarios: WardLeadScenarios; candidate_id: string; candidate_name: string; reported_lead: number; ranges: { model: "dirichlet" | "logistic_normal"; lower: number; upper: number }[] };
   denominator: "named_candidates";
   interval_mass: 0.8;
   reading_id: string;

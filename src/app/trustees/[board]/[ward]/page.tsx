@@ -59,7 +59,7 @@ export default async function TrusteeWardPage({
     return (
       <main id="main-content" className="np-shell">
         <TrusteeBoardTabs activeBoard={boardId} />
-        <ContentSection className="ward-detail-section" kicker="Race details">
+        <ContentSection className="ward-detail-section">
           <h1>{fallback.shortName} Ward {wardId}</h1>
           <p className="forecast-unavailable">
             Trustee race information is not available yet.
@@ -78,14 +78,14 @@ export default async function TrusteeWardPage({
 
   return (
     <main id="main-content" className="np-shell ward-profile-shell">
-      <p className="np-kicker breadcrumb">
+      <p className="breadcrumb">
         <Link href={`/trustees/${board.board_id}`} className="text-link">
           {board.display_name}
         </Link>
       </p>
       <TrusteeBoardTabs activeBoard={boardId} />
 
-      <ContentSection className="race-hero trustee-ward-hero" kicker="Trustees · Toronto Election 2026">
+      <ContentSection className="race-hero trustee-ward-hero">
         <h1>{ward.district_name}</h1>
         <TrusteeRaceContextTag category={ward.race_context.category} />
         {!coverageRepeatsHeading && (
@@ -98,7 +98,7 @@ export default async function TrusteeWardPage({
       </ContentSection>
 
       {prior && (
-        <ContentSection className="ward-detail-section" kicker="The previous race">
+        <ContentSection className="ward-detail-section">
           <h2>Last comparable election ({prior.year})</h2>
           <dl className="prior-result-grid">
             <div>
@@ -119,7 +119,7 @@ export default async function TrusteeWardPage({
         </ContentSection>
       )}
 
-      <ContentSection className="ward-detail-section" kicker="The certified ballot">
+      <ContentSection className="ward-detail-section">
         <h2>Candidates on the certified ballot ({ward.candidates.length})</h2>
         {feed.coverage.methodology_note && (
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>

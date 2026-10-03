@@ -116,9 +116,9 @@ describe("Trustees pages", () => {
     expect(html).toMatch(/class="[^"]*\brace-index-section\b[^"]*"/);
     expect(html).toContain('class="race-index-list trustee-ward-list"');
     expect(html).toContain("race-index-card trustee-ward-link");
-    expect(html).toContain('<span class="race-index-card__eyebrow">Ward 2</span>');
+    expect(html).not.toContain("eyebrow");
     expect(html).toContain(
-      '<h3 class="race-index-card__heading trustee-ward-link__heading">Etobicoke Centre; Etobicoke-Lakeshore</h3>',
+      '<h3 class="race-index-card__heading trustee-ward-link__heading">Ward 2 · Etobicoke Centre; Etobicoke-Lakeshore</h3>',
     );
     expect(html).toContain('href="/trustees/tdsb"');
     expect(html).toContain('href="/trustees/tcdsb"');

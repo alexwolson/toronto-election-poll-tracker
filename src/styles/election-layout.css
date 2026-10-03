@@ -1,14 +1,5 @@
 /* Election chart, map, table and directory geometry. CHW application styles follow in election.css. */
 
-.np-kicker {
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-mid);
-}
-
 .text-link {
   display: inline-block;
   margin-top: 0.8rem;
@@ -152,7 +143,6 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.np-kicker { font-size: var(--type-label); letter-spacing: 0.06em; }
 .race-hero.page-hero h1 {
   font-size: var(--type-page-title);
   line-height: var(--leading-page-title);
@@ -806,13 +796,6 @@
 }
 .race-index-card:hover,
 .race-index-card:focus-visible { background: var(--bg-hover); }
-.race-index-card__eyebrow {
-  color: var(--text-faint);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: var(--type-label);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 .race-index-card__heading {
   margin: 0.15rem 0 0.2rem;
   color: var(--text-strong);
@@ -1604,9 +1587,6 @@
   border: 1px solid var(--line-soft);
   background: var(--bg-raised);
 }
-.worked-example > .np-kicker,
-.poll-method-figure .np-kicker,
-.ward-example .np-kicker { margin: 0; }
 .worked-example > p:last-child { margin: 0.8rem 0 0; }
 .worked-example__path {
   display: grid;

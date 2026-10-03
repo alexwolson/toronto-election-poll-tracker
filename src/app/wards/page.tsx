@@ -18,7 +18,6 @@ export default async function WardsPage() {
       <PageHero
         headingId="council-heading"
         title="Toronto City Council"
-        kicker="Council · The 25 ward races"
       />
 
       <RaceIndexSection

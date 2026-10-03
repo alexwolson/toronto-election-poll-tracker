@@ -822,10 +822,6 @@
         "displayName": "Nav",
         "purpose": "Masthead links."
       },
-      "kicker": {
-        "displayName": "Kicker",
-        "purpose": "Source-system section introductions."
-      },
       "label": {
         "displayName": "Label",
         "purpose": "Status words."
@@ -991,7 +987,7 @@
   ],
   "narrative": {
     "northStar": "City Hall Watcher’s publication identity",
-    "overview": "Toronto Election 2026 uses the supplied City Hall Watcher world: a confident blue masthead, white reading surfaces, pale-blue section bands, warm hairlines and rounded cards. The publication identity is the organising idea. Election evidence remains the subject; the shell gives readers a recognisable place to inspect it.\n\nSchibsted Grotesk supplies compact, heavy headlines; Hanken Grotesk carries generous running text; IBM Plex Mono identifies dates, sources and metadata. Sections use clear spacing and source-system kickers. Controls speak in words, while the supplied onward and external arrows retain CHW’s familiar reading cues.\n\nThe system is border-led and lightly responsive to interaction: linked cards lift on hover or keyboard focus, controls change colour, and mobile layouts preserve readable labels. Candidate and race-status palettes keep their established meanings inside charts, maps and badges. The scoped Kids Vote education experience sits within the same publication shell without turning its lesson styling into global rules.",
+    "overview": "Toronto Election 2026 uses the supplied City Hall Watcher world: a confident blue masthead, white reading surfaces, pale-blue section bands, warm hairlines and rounded cards. The publication identity is the organising idea. Election evidence remains the subject; the shell gives readers a recognisable place to inspect it.\n\nSchibsted Grotesk supplies compact, heavy headlines; Hanken Grotesk carries generous running text; IBM Plex Mono identifies dates, sources and metadata. Sections begin directly with their headings, without kickers or eyebrows. Controls speak in words, while the supplied onward and external arrows retain CHW’s familiar reading cues.\n\nThe system is border-led and lightly responsive to interaction: linked cards lift on hover or keyboard focus, controls change colour, and mobile layouts preserve readable labels. Candidate and race-status palettes keep their established meanings inside charts, maps and badges. The scoped Kids Vote education experience sits within the same publication shell without turning its lesson styling into global rules.",
     "keyCharacteristics": [
       "CHW blue and deep navy around white paper and pale-blue sections.",
       "Heavy Schibsted headlines, open Hanken prose and small Plex metadata.",
@@ -1025,12 +1021,13 @@
     "dos": [
       "Do use the supplied CHW colour and font variables when a matching token exists.",
       "Do keep the PNG mark beside the live-text City Hall Watcher wordmark, with the election edition as supporting text.",
-      "Do retain CHW kickers, sentence-case headings, and → / ↗ cues where they explain section or link meaning.",
+      "Do retain sentence-case headings and → / ↗ cues where they explain link meaning.",
       "Do preserve named candidate and race-status meanings with text and non-colour cues.",
       "Do provide the ground-appropriate focus outline and respect reduced motion.",
       "Do adapt columns to content and viewport while keeping navigation labels readable."
     ],
     "donts": [
+      "Don’t add kickers or eyebrows above page, section or card headings.",
       "Don’t reintroduce the superseded warm-paper, Newsreader and square-card broadsheet identity.",
       "Don’t redraw the supplied PNG mark as SVG or replace it with generated imagery.",
       "Don’t treat candidate, council-attention or trustee-context colours as interchangeable decorative accents.",

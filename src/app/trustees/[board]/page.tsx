@@ -65,7 +65,6 @@ export default async function TrusteeBoardPage({
       <PageHero
         headingId="trustees-heading"
         title={board?.display_name ?? fallback.displayName}
-        kicker="Trustees · School-board races"
         className="trustee-hero"
       />
 
@@ -108,9 +107,8 @@ export default async function TrusteeBoardPage({
                     href={`/trustees/${board.board_id}/${ward.ward_id}`}
                     className={`race-index-card trustee-ward-link${showContext ? ` trustee-ward-link--${trusteeRaceContextClass(category)}` : ""}`}
                   >
-                    <span className="race-index-card__eyebrow">Ward {ward.ward_id}</span>
                     <h3 className="race-index-card__heading trustee-ward-link__heading">
-                      {districtTitle(ward.district_name)}
+                      Ward {ward.ward_id} · {districtTitle(ward.district_name)}
                     </h3>
                     <TrusteeRaceContextTag category={category} className="race-index-tag" />
                     {!coverageRepeatsHeading && (

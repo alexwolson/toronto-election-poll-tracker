@@ -21,7 +21,6 @@ export default async function CandidatesPage() {
       <PageHero
         headingId="candidates-heading"
         title="Candidates on the 2026 mayoral ballot"
-        kicker="Mayor · The certified ballot"
       >
         {available && feed.coverage.methodology_note ? (
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
@@ -30,7 +29,7 @@ export default async function CandidatesPage() {
 
       <MayorTabs activeTab="candidates" />
 
-      <ContentSection tint kicker="Who’s running" className="ward-detail-section" aria-labelledby="candidate-roster-heading">
+      <ContentSection tint className="ward-detail-section" aria-labelledby="candidate-roster-heading">
         <h2 id="candidate-roster-heading">The mayoral candidates</h2>
         {available ? (
           <CandidateBrowser candidates={feed.candidates} />

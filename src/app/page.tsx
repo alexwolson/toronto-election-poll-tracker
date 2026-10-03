@@ -41,7 +41,6 @@ export default async function Home() {
         <ContentSection tint className="polling-takeaway" aria-labelledby="poll-snapshot-heading">
           <SectionHeading
             headingId="poll-snapshot-heading"
-            kicker="From the polling record"
             title="What the latest poll found"
           >
             <PollingScopeNote />
@@ -80,7 +79,6 @@ export default async function Home() {
       <section className="section home-explore" aria-labelledby="explore-heading">
         <div className="wrap home-explore__inner">
           <div>
-            <p className="kicker">Beyond the mayoral race</p>
             <h2 id="explore-heading">The election in your neighbourhood</h2>
             <Link href="/how-it-works" className="text-link">How the evidence is handled →</Link>
           </div>

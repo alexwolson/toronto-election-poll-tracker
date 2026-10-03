@@ -107,12 +107,6 @@ typography:
     fontSize: "0.94rem"
     fontWeight: 600
     letterSpacing: "normal"
-  kicker:
-    fontFamily: "IBM Plex Mono, monospace"
-    fontSize: "0.72rem"
-    fontWeight: 500
-    lineHeight: 1.65
-    letterSpacing: "0.16em"
   label:
     fontFamily: "IBM Plex Mono, monospace"
     fontSize: "0.68rem"
@@ -231,7 +225,7 @@ components:
 
 Toronto Election 2026 uses the supplied City Hall Watcher world: a confident blue masthead, white reading surfaces, pale-blue section bands, warm hairlines and rounded cards. The publication identity is the organising idea. Election evidence remains the subject; the shell gives readers a recognisable place to inspect it.
 
-Schibsted Grotesk supplies compact, heavy headlines; Hanken Grotesk carries generous running text; IBM Plex Mono identifies dates, sources and metadata. Sections use clear spacing and source-system kickers. Controls speak in words, while the supplied onward and external arrows retain CHW’s familiar reading cues.
+Schibsted Grotesk supplies compact, heavy headlines; Hanken Grotesk carries generous running text; IBM Plex Mono identifies dates, sources and metadata. Sections begin directly with their headings, without kickers or eyebrows. Controls speak in words, while the supplied onward and external arrows retain CHW’s familiar reading cues.
 
 The system is border-led and lightly responsive to interaction: linked cards lift on hover or keyboard focus, controls change colour, and mobile layouts preserve readable labels. Candidate and race-status palettes keep their established meanings inside charts, maps and badges. The scoped Kids Vote education experience sits within the same publication shell without turning its lesson styling into global rules.
 
@@ -290,7 +284,7 @@ All three families are self-hosted with `next/font` in the root layout. The heav
 - **Lead:** Fluid Hanken introductions, generally constrained to (62ch).
 - **Body:** Default reading text is (17px), with leading (1.65); prose may use the reading measure (68ch). `body-small` supports cards, notes and tables.
 - **Navigation / Buttons:** Hanken labels use sentence case and clear medium-to-bold weight. Mono class names on legacy markup do not override the implemented control styles.
-- **Kicker / Label / Data:** Plex differentiates section introductions, status words and evidence dates. Kickers and status labels are uppercased by CSS; source text remains sentence case. Dense charts retain their own data geometry and label sizes rather than borrowing display type.
+- **Label / Data:** Plex differentiates status words and evidence dates. Status labels are uppercased by CSS; source text remains sentence case. Dense charts retain their own data geometry and label sizes rather than borrowing display type.
 
 **The Family Roles Rule.** Use Schibsted for headings and figures, Hanken for reading and controls, and Plex for metadata. Existing newsreader and source-sans variable names are compatibility aliases to the new families.
 
@@ -340,7 +334,7 @@ Route tabs use blue-on-tint selected state, warm rules around their strip and a 
 
 ### Publication headings and disclosures
 
-Page heroes carry a source-system kicker, a left-aligned display heading, Hanken introduction and Plex evidence metadata. Section kickers identify the reading context; they are an explicit part of the supplied CHW world. This pattern does not require inventing an extra label for every block.
+Page heroes begin with a left-aligned display heading, followed by a Hanken introduction and Plex evidence metadata. Section headings stand on their own. The user explicitly removed kickers and eyebrows throughout this frontend; omit them even where the supplied source system includes them. Ward numbers belong inline in directory card headings, and breadcrumbs remain functional navigation.
 
 Methodology disclosures are native `details` / `summary` groups within a rounded bordered container. Their summary pairs a Schibsted title with smaller Hanken context, gives a visible open/closed indicator, and uses roomy insets (20px 24px). The expanded content uses (24px) padding; narrower layouts reduce horizontal padding to (18px). Preserve keyboard focus and written titles when adding disclosures.
 
@@ -352,12 +346,14 @@ The publication mark is the supplied PNG in `public/brand`, with its source orig
 
 - **Do** use the supplied CHW colour and font variables when a matching token exists.
 - **Do** keep the PNG mark beside the live-text City Hall Watcher wordmark, with the election edition as supporting text.
-- **Do** retain CHW kickers, sentence-case headings, and → / ↗ cues where they explain section or link meaning.
+- **Do** retain sentence-case headings and → / ↗ cues where they explain link meaning.
 - **Do** preserve named candidate and race-status meanings with text and non-colour cues.
 - **Do** provide the ground-appropriate focus outline and respect reduced motion.
 - **Do** adapt columns to content and viewport while keeping navigation labels readable.
 
 ### Don't:
+
+- **Don’t** add kickers or eyebrows above page, section or card headings.
 
 - **Don’t** reintroduce the superseded warm-paper, Newsreader and square-card broadsheet identity.
 - **Don’t** redraw the supplied PNG mark as SVG or replace it with generated imagery.

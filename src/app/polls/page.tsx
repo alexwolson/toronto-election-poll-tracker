@@ -63,7 +63,6 @@ export default async function PollsPage() {
       <PageHero
         headingId="polls-heading"
         title="The polls"
-        kicker="Mayor · The polling record"
         description="Public mayoral polls tracked by this site, preserving which candidates and responses each firm reported."
         meta={
           latest ? (
@@ -80,7 +79,7 @@ export default async function PollsPage() {
       {polling.polls.length > 0 ? (
         <>
           <ContentSection className="page-section page-section--lead" aria-labelledby="trend-heading">
-            <SectionHeading kicker="The campaign so far" headingId="trend-heading" title="Polling support over time">
+            <SectionHeading headingId="trend-heading" title="Polling support over time">
               <PollingScopeNote />
             </SectionHeading>
             <PollingTrendViews
@@ -103,7 +102,6 @@ export default async function PollsPage() {
           {historyTrends && (
             <ContentSection className="page-section" aria-labelledby="forecast-history-heading">
               <SectionHeading
-                kicker="Each poll, one new forecast"
                 headingId="forecast-history-heading"
                 title="How the forecast has moved with each poll"
               >
@@ -126,7 +124,7 @@ export default async function PollsPage() {
           )}
 
           <ContentSection className="page-section" aria-labelledby="archive-heading">
-            <SectionHeading kicker="The published evidence" headingId="archive-heading" title="Poll archive">
+            <SectionHeading headingId="archive-heading" title="Poll archive">
               <p>
                 “Other reported choices” totals only responses the poll lists outside the forecast
                 candidate columns; a dash means none is supplied. This feed does not include question
@@ -137,7 +135,7 @@ export default async function PollsPage() {
           </ContentSection>
 
           <ContentSection className="page-section" aria-labelledby="firms-heading">
-            <SectionHeading kicker="The sources" headingId="firms-heading" title="Pollsters in the archive" />
+            <SectionHeading headingId="firms-heading" title="Pollsters in the archive" />
             <ul className="compact-source-list font-mono">
               {registry.map((r) => (
                 <li key={r.firm}>

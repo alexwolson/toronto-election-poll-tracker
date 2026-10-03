@@ -97,13 +97,13 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
 
   return (
     <main id="main-content" className="np-shell">
-      <p className="np-kicker breadcrumb">
+      <p className="breadcrumb">
         <Link href="/wards" className="text-link">
           Council
         </Link>{" "}
         · Ward {card.ward}
       </p>
-      <ContentSection className="race-hero" kicker="Council · Toronto Election 2026">
+      <ContentSection className="race-hero">
         <h1>{card.ward_name ?? `Ward ${card.ward}`}</h1>
         <span className={`ward-attn-tag ward-attn-tag--${attention}`}>
           {ATTENTION_LABEL[attention]}
@@ -111,7 +111,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
       </ContentSection>
 
       {!card.is_open_seat && (
-        <ContentSection className="ward-detail-section" kicker="The sitting councillor">
+        <ContentSection className="ward-detail-section">
           <h2>The incumbent</h2>
           <dl className="prior-result-grid">
             <div>
@@ -153,7 +153,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
       )}
 
       {prior && (
-        <ContentSection className="ward-detail-section" kicker="The previous race">
+        <ContentSection className="ward-detail-section">
           <h2>Last election ({prior.year})</h2>
           <dl className="prior-result-grid">
             <div>
@@ -184,7 +184,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
         </ContentSection>
       )}
 
-      <ContentSection className="ward-detail-section" kicker="The certified ballot">
+      <ContentSection className="ward-detail-section">
         <h2>Candidates in 2026 ({card.candidates.length})</h2>
         {raceSignals.length > 0 && (
           <ul className="signal-list" style={{ marginBottom: "0.75rem" }}>

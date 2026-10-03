@@ -200,7 +200,7 @@ export function WardPolls({
   const [latest, ...earlier] = [...reports.values()];
   if (!latest) return null;
   return (
-    <ContentSection className="ward-detail-section" kicker="Published ward polling">
+    <ContentSection className="ward-detail-section">
       <h2>Ward polls</h2>
       <PollReport polls={latest} benchmark={benchmark} latest />
       {earlier.length > 0 && (

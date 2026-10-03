@@ -40,3 +40,10 @@ CHW's supplied stylesheet and design guide are vendored under src/styles. The on
 stylesheet adaptation removes its external Google Fonts import; next/font self-hosts
 the same three families. Logo and favicon retain the supplied export’s pixels, with their source
 origin embedded as PNG metadata. No generated raster assets ship with this rebuild.
+
+## Subsequent user preference
+
+Remove kickers and eyebrows throughout the frontend. Page and section headings
+begin directly; ward numbers sit inline in directory headings. Functional
+breadcrumb navigation and evidence/status labels remain. This preference
+overrides the supplied CHW source pattern for section introductions.

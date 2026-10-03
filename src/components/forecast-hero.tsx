@@ -43,7 +43,7 @@ export function ForecastHero({
 
   if (!lead || !margin || !shares || !forecastAvailable(feed)) {
     return (
-      <ContentSection className="forecast-lead" kicker="Toronto Election 2026 · Mayoral forecast" aria-labelledby="forecast-heading">
+      <ContentSection className="forecast-lead" aria-labelledby="forecast-heading">
         <h1 id="forecast-heading">The forecast isn&rsquo;t available yet</h1>
         <div className="forecast-unavailable">
           <p>
@@ -67,7 +67,7 @@ export function ForecastHero({
   );
   return (
     <>
-      <ContentSection className="forecast-lead" kicker="Toronto Election 2026 · Mayoral forecast" aria-labelledby="forecast-heading">
+      <ContentSection className="forecast-lead" aria-labelledby="forecast-heading">
         <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
         <p className="forecast-lede">
           {margin.leader.surname} finishes ahead of {margin.challenger.surname} in{" "}
@@ -82,14 +82,13 @@ export function ForecastHero({
       <ContentSection tint className="forecast-margin" aria-labelledby="forecast-margin-heading">
         <SectionHeading
           headingId="forecast-margin-heading"
-          kicker="The possible margins"
           title={`How far apart ${margin.leader.surname} and ${margin.challenger.surname} are likely to finish`}
         />
         <MarginOutcomes view={margin} />
       </ContentSection>
 
       <ContentSection className="forecast-details" aria-labelledby="forecast-details-heading">
-        <SectionHeading headingId="forecast-details-heading" kicker="Inside the forecast" title="Explore the simulated results" />
+        <SectionHeading headingId="forecast-details-heading" title="Explore the simulated results" />
         {breakdown ? (
           <ForecastTabs
             label="More on the forecast"

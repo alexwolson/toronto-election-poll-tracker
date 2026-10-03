@@ -42,6 +42,8 @@ describe("ForecastHero", () => {
     expect(html).toContain("Evidence through");
     expect(html).toContain("Forecast for election day, Oct 26, 2026.");
     expect(html).not.toContain("forecast-kicker");
+    expect(html).not.toContain('class="kicker"');
+    expect(html).not.toContain("Inside the forecast");
     const marginSection = html.match(/<section[^>]*\bforecast-margin\b[^>]*>/);
     expect(marginSection).not.toBeNull();
     expect(marginSection!.index).toBeLessThan(html.indexOf('class="forecast-tabs"'));

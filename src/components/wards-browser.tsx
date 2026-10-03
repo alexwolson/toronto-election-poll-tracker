@@ -83,11 +83,8 @@ export function WardsBrowser({ items }: { items: WardIndexItem[] }) {
                 href={`/wards/${w.ward}`}
                 className={`race-index-card ward-index-card ward-index-card--${w.attention}`}
               >
-                <span className="race-index-card__eyebrow ward-index-card__ward">
-                  Ward {w.ward}
-                </span>
                 <h3 className="race-index-card__heading ward-index-card__name">
-                  {w.name}
+                  Ward {w.ward} · <span>{w.name}</span>
                 </h3>
                 {!w.isOpen && (
                   <p className="ward-index-card__incumbent">{w.incumbentName}</p>

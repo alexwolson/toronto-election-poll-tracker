@@ -1,7 +1,8 @@
 # CHW frontend styles
 
 The supplied City Hall Watcher system is the visual authority. Its original guide
-is retained in `CHW-DESIGN.md`; the root `DESIGN.md` records this frontend's use of it.
+is retained in `CHW-DESIGN.md`; the root `DESIGN.md` records this frontend's use of it. The user explicitly
+removed kickers and eyebrows, so omit those source patterns in application pages.
 
 Styles load in this order from `src/app/globals.css`:
 

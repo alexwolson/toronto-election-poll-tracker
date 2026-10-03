@@ -52,3 +52,17 @@ chart region; `menu-mobile.jpg` and `council-map-mobile.jpg` show interactive st
 
 Source data and generated releases remain outside the visual migration. The
 existing working-tree change to `docs/v2-release.md` was left untouched.
+
+## Subsequent preference: remove kickers
+
+The user requested that kickers and eyebrows be removed everywhere. Shared page,
+section and content components no longer expose or render them. Ward numbers now
+appear inline in directory card headings; breadcrumbs and data labels remain.
+The root design guide and sidecar record this exception to the supplied system.
+
+All 326 tests, lint and the 68-page export pass after this change. A scan of every
+exported HTML file finds zero kicker or eyebrow elements. Browser checks cover
+the primary routes, detail pages and all four trustee boards without document
+overflow at phone width. `kickers-removed-desktop.jpg` and
+`kickers-removed-mobile.jpg` show the revised homepage; the desktop `-top` crop
+and `kickers-removed-wards-mobile.jpg` provide closer views.

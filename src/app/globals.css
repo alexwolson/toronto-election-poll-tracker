@@ -4546,10 +4546,31 @@ body {
 }
 
 /* Ward poll source and model context. */
-.ward-poll-context { margin-block: 1.75rem; }
-.ward-poll-context > h3 { font-size: var(--type-heading); margin-bottom: 0.5rem; }
-.ward-poll-context > .font-mono { font-size: var(--type-diagram); }
+.ward-poll-report { margin-top: 1.5rem; }
+.ward-poll-report__header { margin-bottom: 1.25rem; }
+.ward-poll-report__title { margin: 0 0 .35rem; font-size: var(--type-heading); }
+.ward-poll-report__metadata { margin: 0; color: var(--text-soft); font-size: var(--type-body-small); }
+.ward-poll-report__body { display: grid; gap: 2rem; align-items: start; }
+.ward-poll-report__denominator { margin: 0 0 .5rem; font-size: var(--type-body-small); color: var(--text-soft); }
+.ward-poll-results { border-collapse: collapse; width: 100%; font-size: var(--type-body-small); }
+.ward-poll-results th, .ward-poll-results td { padding: .55rem 0; border-bottom: 1px solid var(--line-soft); }
+.ward-poll-results thead th { font-size: var(--type-compact); color: var(--text-soft); }
+.ward-poll-results th { text-align: left; font-weight: 400; }
+.ward-poll-results td, .ward-poll-results th:last-child { text-align: right; padding-left: 1rem; font-variant-numeric: tabular-nums; }
+.ward-poll-report__note { margin-top: .75rem; color: var(--text-soft); font-size: var(--type-compact); }
+.ward-poll-fields { display: grid; gap: 1.5rem; }
+@media (min-width: 64rem) {
+  .ward-poll-fields:not(.ward-poll-fields--modelled) { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+}
+.ward-poll-history { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line-strong); }
+.ward-poll-history > h3 { font-size: var(--type-heading); }
+.ward-poll-history .ward-poll-report + .ward-poll-report { padding-top: 1.5rem; border-top: 1px solid var(--line-soft); }
+.ward-poll-context > h4, .ward-poll-report__results > h4 { font-size: var(--type-heading); margin: 0 0 .5rem; }
 .ward-poll-context__note { font-size: var(--type-body-small); color: var(--text-soft); }
+@media (min-width: 64rem) {
+  .ward-poll-report__body--modelled { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .ward-poll-report__body:not(.ward-poll-report__body--modelled) { max-width: 36rem; }
+}
 
 .ward-scenarios { margin: 1rem 0; }
 .ward-scenarios__directions { display: flex; justify-content: space-between; gap: 2rem; padding-left: 3rem; font-size: var(--type-body-small); }
@@ -4562,4 +4583,6 @@ body {
 .ward-scenarios__zero > span { position: absolute; top: 0; left: .25rem; font-size: var(--type-body-small); }
 .ward-scenarios__xaxis { margin: .35rem 0 0 3rem; position: relative; height: 1.5rem; font-size: var(--type-body-small); }
 .ward-scenarios__xaxis > span { position: absolute; transform: translateX(-50%); }
+.ward-scenarios__xaxis > span:first-child { transform: none; }
+.ward-scenarios__xaxis > span:last-child { transform: translateX(-100%); }
 .ward-scenarios__xlabel { text-align: center; font-size: var(--type-body-small); }

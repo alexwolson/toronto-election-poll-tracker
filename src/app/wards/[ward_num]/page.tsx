@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WardPollContext } from "@/components/ward-poll-context";
+import { WardPolls } from "@/components/ward-polls";
 import { notFound } from "next/navigation";
 import { CandidateHistoryItem, CandidateLinksNote } from "@/components/candidate-history";
 import { CandidateEndorsements, EndorsementsNote } from "@/components/candidate-endorsements";
@@ -13,7 +13,7 @@ import {
   ownHistorySignals,
   raceHistorySignals,
 } from "@/lib/council-signals";
-import { formatDate, formatSharePct } from "@/lib/format";
+import { formatSharePct } from "@/lib/format";
 import type { CouncilCandidate, CouncilRaceCard, WardPollBenchmark } from "@/types/feeds";
 
 const ATTENTION_LABEL: Record<AttentionLevel, string> = {
@@ -211,38 +211,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
         )}
       </section>
 
-      {card.ward_polls.length > 0 && (
-        <section className="ward-detail-section">
-          <h2>Ward polls</h2>
-          {card.ward_polls.map((poll) => poll.modelled_context && benchmark ? (
-            <WardPollContext key={poll.poll_id} poll={poll} benchmark={benchmark} />
-          ) : (
-            <div key={poll.poll_id} style={{ marginBottom: "1rem" }}>
-              <p className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-faint)" }}>
-                {poll.firm} · {formatDate(poll.date_conducted)}
-                {poll.sample_size !== null && <> · sample {poll.sample_size}</>}
-                {poll.undecided_share !== null && (
-                  <> · {formatSharePct(poll.undecided_share)} undecided</>
-                )}
-              </p>
-              <ul style={{ listStyle: "none", padding: 0, margin: "0.35rem 0 0" }}>
-                {poll.candidates.map((c) => (
-                  <li
-                    key={c.candidate_id}
-                    className="font-mono"
-                    style={{ fontSize: "0.78rem", padding: "0.15rem 0" }}
-                  >
-                    {formatSharePct(c.share)} — {c.candidate_name}
-                    {c.is_incumbent && (
-                      <span className="candidate-row__tag">incumbent</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      )}
+      <WardPolls polls={card.ward_polls} benchmark={benchmark} />
     </main>
   );
 }

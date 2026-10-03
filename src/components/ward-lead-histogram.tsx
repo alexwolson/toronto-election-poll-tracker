@@ -64,27 +64,29 @@ export function WardLeadHistogram({
         Illustrative scenarios among poll-named candidates, combining two error
         models equally. Unreported candidates are outside the model.
       </figcaption>
-      <table className="sr-only">
-        <caption>
-          Scenario distribution for {name}’s lead, among named candidates
-        </caption>
-        <thead>
-          <tr>
-            <th>Lead in percentage points</th>
-            <th>Share of scenarios</th>
-          </tr>
-        </thead>
-        <tbody>
-          {scenarios.bins.map((bin) => (
-            <tr key={bin.left}>
-              <td>
-                {bin.left.toFixed(0)} to {bin.right.toFixed(0)}
-              </td>
-              <td>{(bin.fraction * 100).toFixed(1)}%</td>
+      <div className="sr-only">
+        <table>
+          <caption>
+            Scenario distribution for {name}’s lead, among named candidates
+          </caption>
+          <thead>
+            <tr>
+              <th>Lead in percentage points</th>
+              <th>Share of scenarios</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {scenarios.bins.map((bin) => (
+              <tr key={bin.left}>
+                <td>
+                  {bin.left.toFixed(0)} to {bin.right.toFixed(0)}
+                </td>
+                <td>{(bin.fraction * 100).toFixed(1)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

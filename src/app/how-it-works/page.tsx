@@ -606,66 +606,70 @@ export default async function HowItWorksPage() {
       <QuestionSection
         id="ward-polls"
         title="How much weight should I put on a ward poll?"
-        answer="A reported lead can disappear under plausible polling error. These polls do not settle who will win."
+        answer={<p>Ward polls offer a rough snapshot, not reliable odds of winning.</p>}
       >
-        <p>
-          The ward charts model votes among the candidates each poll names. We divide
-          each named candidate’s share by the total for those names, and compare the
-          same group in past election results. Other stays in the original toplines;
-          it is not assigned to anyone or treated as the eventual unnamed vote.
-        </p>
-        <p>
-          A joint statistical model learns how far these relative shares have moved
-          between a poll and the result. Each simulated result totals 100% across the
-          named candidates. The chart follows the poll’s leader against the strongest other named
-          candidate in each simulation. Negative values put another candidate ahead;
-          zero is a tie. Bar heights count the fraction of simulated outcomes in each
-          five-point interval, not a candidate’s chance of winning the whole ward.
-        </p>
-        {benchmark && <p>
-          The evidence is {benchmark.contest_count} ward races from one pollster in
-          2022, polled three to six weeks before voting. We withheld each ward in turn
-          and predicted its result. Large misses remained, particularly in Parkdale–High Park.
-          All six reported leaders stayed ahead within the matched candidate sets, even
-          when their leads were badly misstated. The scenarios use vote-share errors,
-          not an observed rate of leaders losing. Six tests from one election cannot
-          establish reliable future coverage.
-        </p>}
-        <p>
-          The latest Forum polls mix telephone interviewing with a non-random online
-          panel and weight responses by age and gender. The decided/leaning base is
-          smaller than the headline sample, and effective sample size is unknown.
-          We transfer the total historical error without shrinking it for today’s
-          larger samples. That transfer across survey methods and elections is an assumption.
-        </p>
-        <p>
-          These ranges depend on the model’s assumptions. We also check different
-          error priors and a different distribution for vote shares. {benchmark && <>The
-          alternative distribution moves some range endpoints by up to {Math.ceil(benchmark.model.shape_sensitivity_max_endpoint_difference * 100)} percentage
-          points, so treat these as rough estimates. </>}Candidates
-          missing from the poll have no individual estimate; these charts do not
-          predict who will win the whole ward.
-        </p>
-        {benchmark && <MethodDisclosure title="Model and historical sources" description="Joint shares, whole-ward checks, and audited poll tables">
+        <div className="how-prose how-ward-polls-copy">
           <p>
-            The first error model uses a Dirichlet distribution centred on each poll’s named-set
-            shares, with an uncertain concentration that can vary by ward. Concentration
-            measures total poll-to-result error, not respondent count. Each ward is
-            one joint observation. We integrate both the typical concentration and
-            its variation across wards, rather than fixing either at a best estimate. The second model, logistic-normal,
-            applies uncertain errors to relative log vote shares. It allows a different
-            pattern of misses, especially for small shares. The histogram combines equal
-            numbers of draws from both models. Equal weights are a modelling judgment;
-            six historical wards cannot determine reliable model weights.
+            The latest Forum polls have small samples and combine phone interviews
+            with an online panel that does not randomly select voters.
+            {benchmark && <> To judge how wrong they could be, we have just {benchmark.contest_count} ward
+            races from 2022: one pollster, one election.</>}
           </p>
           <p>
-            Historical sampling error, campaign changes and survey bias are combined;
-            six polls cannot separate them. Repeated samples cannot add independent
-            election outcomes. A larger named field adds within-ward contrasts, not
-            additional historical races. Source percentages remain available unchanged.
+            The chart shows how far the poll’s leader could be ahead of or behind
+            their strongest rival. Left of zero means a rival is ahead; right means
+            the leader is ahead. Taller bars contain more simulated scenarios.
           </p>
-          <ul>{benchmark.sources.map((source) => <li key={source.sample_id}><a href={source.retrieved_url ?? source.source_url}>{source.pollster}, Ward {source.ward}, {formatDate(source.fieldwork_end)}</a></li>)}</ul>
-        </MethodDisclosure>}
+          <p>
+            Only candidates named in the poll are modelled. “Other” stays in the
+            published results. The chart cannot tell us whether a candidate outside
+            that group will win.
+          </p>
+        </div>
+        {benchmark && <div className="how-disclosures">
+          <MethodDisclosure
+            title="Model and historical sources"
+            description="What we assumed, what we checked, and the polls we used."
+          >
+            <div className="how-prose how-ward-polls-copy">
+              <p>
+                We compare each named candidate’s poll share with their share of
+                votes cast for the same group at the actual election. Candidates
+                outside that group are excluded from both sides of the comparison.
+              </p>
+              <p>
+                We fit two error models to those {benchmark.contest_count} comparisons:
+                Dirichlet and logistic-normal. Both allow polling error to vary
+                between wards, with uncertainty about its typical size. The chart
+                combines equal numbers of simulations from each. That equal
+                weighting is our judgment; the historical evidence is too limited
+                to determine reliable weights.
+              </p>
+              <p>
+                We checked each ward by fitting the models to the other wards and
+                predicting the omitted result. Large misses remained, especially
+                in Parkdale–High Park. All {benchmark.contest_count} poll leaders
+                stayed ahead among the matched candidates, so these results do not
+                directly show how often a leader loses.
+              </p>
+              <p>
+                The historical errors combine sampling, survey bias and campaign
+                changes. We do not reduce them because a newer poll has more
+                respondents. Applying those errors across elections and survey
+                methods is already an assumption. Today’s Forum polls weight by
+                age and gender, but the number of decided or leaning respondents
+                is smaller than the headline sample. Effective sample size is not
+                published.
+              </p>
+              <p>
+                Changing the statistical distribution moves some range endpoints
+                by up to {Math.ceil(benchmark.model.shape_sensitivity_max_endpoint_difference * 100)} percentage
+                points. Treat these scenarios as rough estimates.
+              </p>
+              <ul>{benchmark.sources.map((source) => <li key={source.sample_id}><a href={source.retrieved_url ?? source.source_url}>{source.pollster}, Ward {source.ward}, {formatDate(source.fieldwork_end)}</a></li>)}</ul>
+            </div>
+          </MethodDisclosure>
+        </div>}
       </QuestionSection>
     </main>
   );

@@ -1,3 +1,4 @@
+import { ContentSection } from "@/components/content-section";
 import { MayorTabs } from "@/components/mayor-tabs";
 import { PageHero } from "@/components/page-hero";
 import { PollArchive } from "@/components/poll-archive";
@@ -77,7 +78,7 @@ export default async function PollsPage() {
 
       {polling.polls.length > 0 ? (
         <>
-          <section className="page-section page-section--lead" aria-labelledby="trend-heading">
+          <ContentSection className="page-section page-section--lead" aria-labelledby="trend-heading">
             <SectionHeading headingId="trend-heading" title="Polling support over time">
               <PollingScopeNote />
             </SectionHeading>
@@ -96,10 +97,10 @@ export default async function PollsPage() {
                 </p>
               )}
             />
-          </section>
+          </ContentSection>
 
           {historyTrends && (
-            <section className="page-section" aria-labelledby="forecast-history-heading">
+            <ContentSection className="page-section" aria-labelledby="forecast-history-heading">
               <SectionHeading
                 headingId="forecast-history-heading"
                 title="How the forecast has moved with each poll"
@@ -119,10 +120,10 @@ export default async function PollsPage() {
                 allSummaryRows={forecastHistorySummaryRows(forecast, historySeries)}
                 recentSummaryRows={forecastHistorySummaryRows(recentForecast, historySeries)}
               />
-            </section>
+            </ContentSection>
           )}
 
-          <section className="page-section" aria-labelledby="archive-heading">
+          <ContentSection className="page-section" aria-labelledby="archive-heading">
             <SectionHeading headingId="archive-heading" title="Poll archive">
               <p>
                 “Other reported choices” totals only responses the poll lists outside the forecast
@@ -131,9 +132,9 @@ export default async function PollsPage() {
               </p>
             </SectionHeading>
             <PollArchive polls={pollsByFieldwork(polling)} field={forecastField} />
-          </section>
+          </ContentSection>
 
-          <section className="page-section" aria-labelledby="firms-heading">
+          <ContentSection className="page-section" aria-labelledby="firms-heading">
             <SectionHeading headingId="firms-heading" title="Pollsters in the archive" />
             <ul className="compact-source-list font-mono">
               {registry.map((r) => (
@@ -142,7 +143,7 @@ export default async function PollsPage() {
                 </li>
               ))}
             </ul>
-          </section>
+          </ContentSection>
         </>
       ) : (
         <p className="forecast-unavailable">No public mayoral polls are available yet.</p>

@@ -1,3 +1,4 @@
+import { ContentSection } from "@/components/content-section";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MethodFlow } from "@/components/method-flow";
@@ -31,13 +32,13 @@ function QuestionSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="how-section" aria-labelledby={`${id}-heading`}>
+    <ContentSection id={id} className="how-section" aria-labelledby={`${id}-heading`}>
       <header className="how-section__heading">
         <h2 id={`${id}-heading`}>{title}</h2>
         <div className="how-section__answer">{answer}</div>
       </header>
       {children}
-    </section>
+    </ContentSection>
   );
 }
 

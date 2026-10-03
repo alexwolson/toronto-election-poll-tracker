@@ -24,11 +24,13 @@ export function PageHero({
   className,
 }: PageHeroProps) {
   return (
-    <section className={cn("race-hero page-hero", className)} aria-labelledby={headingId}>
-      <h1 id={headingId}>{title}</h1>
-      {description && <p className="race-hero-dek">{description}</p>}
-      {meta && <p className="race-hero-meta font-mono">{meta}</p>}
-      {children}
+    <section className={cn("hero race-hero page-hero", className)} aria-labelledby={headingId}>
+      <div className="wrap">
+        <h1 id={headingId}>{title}</h1>
+        {description && <p className="race-hero-dek">{description}</p>}
+        {meta && <p className="race-hero-meta font-mono">{meta}</p>}
+        {children}
+      </div>
     </section>
   );
 }

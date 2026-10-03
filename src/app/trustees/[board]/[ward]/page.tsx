@@ -1,3 +1,4 @@
+import { ContentSection } from "@/components/content-section";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -58,12 +59,12 @@ export default async function TrusteeWardPage({
     return (
       <main id="main-content" className="np-shell">
         <TrusteeBoardTabs activeBoard={boardId} />
-        <section className="ward-detail-section">
+        <ContentSection className="ward-detail-section">
           <h1>{fallback.shortName} Ward {wardId}</h1>
           <p className="forecast-unavailable">
             Trustee race information is not available yet.
           </p>
-        </section>
+        </ContentSection>
       </main>
     );
   }
@@ -77,14 +78,14 @@ export default async function TrusteeWardPage({
 
   return (
     <main id="main-content" className="np-shell ward-profile-shell">
-      <p className="np-kicker">
+      <p className="breadcrumb">
         <Link href={`/trustees/${board.board_id}`} className="text-link">
           {board.display_name}
         </Link>
       </p>
       <TrusteeBoardTabs activeBoard={boardId} />
 
-      <section className="race-hero trustee-ward-hero">
+      <ContentSection className="race-hero trustee-ward-hero">
         <h1>{ward.district_name}</h1>
         <TrusteeRaceContextTag category={ward.race_context.category} />
         {!coverageRepeatsHeading && (
@@ -94,10 +95,10 @@ export default async function TrusteeWardPage({
             className="trustee-ward-area"
           />
         )}
-      </section>
+      </ContentSection>
 
       {prior && (
-        <section className="ward-detail-section">
+        <ContentSection className="ward-detail-section">
           <h2>Last comparable election ({prior.year})</h2>
           <dl className="prior-result-grid">
             <div>
@@ -115,10 +116,10 @@ export default async function TrusteeWardPage({
               <dd>{prior.field_size}</dd>
             </div>
           </dl>
-        </section>
+        </ContentSection>
       )}
 
-      <section className="ward-detail-section">
+      <ContentSection className="ward-detail-section">
         <h2>Candidates on the certified ballot ({ward.candidates.length})</h2>
         {feed.coverage.methodology_note && (
           <p className="candidate-coverage-note">{feed.coverage.methodology_note}</p>
@@ -146,7 +147,7 @@ export default async function TrusteeWardPage({
         {ward.candidates.some((candidate) => candidate.campaign_url) && (
           <CandidateLinksNote />
         )}
-      </section>
+      </ContentSection>
     </main>
   );
 }

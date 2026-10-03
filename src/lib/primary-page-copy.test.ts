@@ -26,6 +26,7 @@ const WARD_DETAIL = read("src/app/wards/[ward_num]/page.tsx");
 const HERO = read("src/components/forecast-hero.tsx");
 const MASTHEAD = read("src/components/masthead-nav.tsx");
 const LAYOUT = read("src/app/layout.tsx");
+const FOOTER = read("src/components/site-footer.tsx");
 const ARCHIVE = read("src/components/poll-archive.tsx");
 const WARDS_BROWSER = read("src/components/wards-browser.tsx");
 
@@ -88,7 +89,7 @@ describe("primary pages drop retired methodology copy", () => {
   });
 
   it("keeps route names and runtime dates out of the global masthead descriptor", () => {
-    expect(LAYOUT).toContain("Evidence-first municipal election guide");
+    expect(FOOTER).toContain("Evidence-first municipal election guide");
     expect(LAYOUT).not.toContain("Mayoral forecast · Polls · Council · Trustees");
     expect(LAYOUT).not.toContain("monthYear");
   });

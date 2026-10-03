@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContentSection } from "@/components/content-section";
 import { ForecastTabs } from "@/components/forecast/forecast-tabs";
 import { MarginOutcomes } from "@/components/forecast/margin-outcomes";
 import { UncertaintyRange } from "@/components/forecast/uncertainty-range";
@@ -42,7 +43,7 @@ export function ForecastHero({
 
   if (!lead || !margin || !shares || !forecastAvailable(feed)) {
     return (
-      <section className="forecast-lead" aria-labelledby="forecast-heading">
+      <ContentSection className="forecast-lead" aria-labelledby="forecast-heading">
         <h1 id="forecast-heading">The forecast isn&rsquo;t available yet</h1>
         <div className="forecast-unavailable">
           <p>
@@ -51,7 +52,7 @@ export function ForecastHero({
             once both do.
           </p>
         </div>
-      </section>
+      </ContentSection>
     );
   }
 
@@ -66,7 +67,7 @@ export function ForecastHero({
   );
   return (
     <>
-      <section className="forecast-lead" aria-labelledby="forecast-heading">
+      <ContentSection className="forecast-lead" aria-labelledby="forecast-heading">
         <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
         <p className="forecast-lede">
           {margin.leader.surname} finishes ahead of {margin.challenger.surname} in{" "}
@@ -76,67 +77,70 @@ export function ForecastHero({
           Forecast for election day, {formatDate(feed.election_date)}.
           {asOfDate ? ` Evidence through ${formatDate(asOfDate)}.` : ""}
         </p>
-      </section>
+      </ContentSection>
 
-      <section className="forecast-margin" aria-labelledby="forecast-margin-heading">
+      <ContentSection tint className="forecast-margin" aria-labelledby="forecast-margin-heading">
         <SectionHeading
           headingId="forecast-margin-heading"
           title={`How far apart ${margin.leader.surname} and ${margin.challenger.surname} are likely to finish`}
         />
         <MarginOutcomes view={margin} />
-      </section>
+      </ContentSection>
 
-      {breakdown ? (
-        <ForecastTabs
-          label="More on the forecast"
-          tabs={[
-            { id: "shares", label: "What the vote could look like", content: voteRanges },
-            {
-              id: "uncertainty",
-              label: "Where the uncertainty comes from",
-              content: (
-                <>
-                  <p className="forecast-tabs__intro">
-                    Each row applies one source of doubt, on its own, to today&rsquo;s gap between{" "}
-                    {breakdown.leader.surname} and {breakdown.challenger.surname}. The last row is
-                    all three together: the forecast.
-                  </p>
-                  <UncertaintyRange view={breakdown} />
-                  <p className="forecast-caption">
-                    The number at the right is each source&rsquo;s share of the uncertainty; the
-                    three add up to 100%. Bands are the middle{" "}
-                    {Math.round(breakdown.intervalMass * 100)}% of simulated outcomes, the tick the
-                    middle; the bands themselves do not add.
-                  </p>
-                </>
-              ),
-            },
-          ]}
-        />
-      ) : (
-        <section className="forecast-shares" aria-labelledby="forecast-shares-heading">
-          <SectionHeading
-            headingId="forecast-shares-heading"
-            title="What the vote could look like"
+      <ContentSection className="forecast-details" aria-labelledby="forecast-details-heading">
+        <SectionHeading headingId="forecast-details-heading" title="Explore the simulated results" />
+        {breakdown ? (
+          <ForecastTabs
+            label="More on the forecast"
+            tabs={[
+              { id: "shares", label: "What the vote could look like", content: voteRanges },
+              {
+                id: "uncertainty",
+                label: "Where the uncertainty comes from",
+                content: (
+                  <>
+                    <p className="forecast-tabs__intro">
+                      Each row applies one source of doubt, on its own, to today&rsquo;s gap between{" "}
+                      {breakdown.leader.surname} and {breakdown.challenger.surname}. The last row is
+                      all three together: the forecast.
+                    </p>
+                    <UncertaintyRange view={breakdown} />
+                    <p className="forecast-caption">
+                      The number at the right is each source&rsquo;s share of the uncertainty; the
+                      three add up to 100%. Bands are the middle{" "}
+                      {Math.round(breakdown.intervalMass * 100)}% of simulated outcomes, the tick the
+                      middle; the bands themselves do not add.
+                    </p>
+                  </>
+                ),
+              },
+            ]}
           />
-          {voteRanges}
-        </section>
-      )}
+        ) : (
+          <div className="forecast-shares">
+            <SectionHeading
+              headingId="forecast-shares-heading"
+              title="What the vote could look like"
+            />
+            {voteRanges}
+          </div>
+        )}
 
-      <details className="forecast-method">
-        <summary>What is behind these numbers</summary>
-        <p>
-          One statistical model, fitted to the {feed.final_field_samples.length} published polls of
-          the certified field and to seven past Toronto mayoral campaigns, produces {draws}{" "}
-          simulated elections. Every number above is a summary of those same simulations.
-        </p>
-        <p>Other candidates: {residualPoolNote(feed)}</p>
-        <p>
-          <Link href="/how-it-works#mayoral-forecast" className="text-link">
-            How the forecast is built →
-          </Link>
-        </p>
-      </details>
+        <details className="forecast-method">
+          <summary>What is behind these numbers</summary>
+          <p>
+            One statistical model, fitted to the {feed.final_field_samples.length} published polls of
+            the certified field and to seven past Toronto mayoral campaigns, produces {draws}{" "}
+            simulated elections. Every number above is a summary of those same simulations.
+          </p>
+          <p>Other candidates: {residualPoolNote(feed)}</p>
+          <p>
+            <Link href="/how-it-works#mayoral-forecast" className="text-link">
+              How the forecast is built →
+            </Link>
+          </p>
+        </details>
+      </ContentSection>
     </>
   );
 }

@@ -66,3 +66,27 @@ the primary routes, detail pages and all four trustee boards without document
 overflow at phone width. `kickers-removed-desktop.jpg` and
 `kickers-removed-mobile.jpg` show the revised homepage; the desktop `-top` crop
 and `kickers-removed-wards-mobile.jpg` provide closer views.
+
+## Corrected preview data selection
+
+The original design preview explicitly built with `FEED_LOCAL_DIR=./fixtures`.
+That made the newest visible poll August 21 despite newer production data. The
+static polls-page metadata reproduced the exact symptom; it now passes the same
+date check after rebuilding from the live site's exact release chain:
+
+- Backend: `backend-2026-10-02.3`.
+- Results: `results-2026-09-30.2`.
+- Polling: `polling-2026-10-02.2`.
+
+The supported resolver checked upstream manifest pins and every feed checksum.
+All five resolved feed provenance records and hashes match the live site's source
+manifest. The production build exports 68 pages. The preview shows 27 public polls,
+latest from Mainstreet Research conducted September 29 and published October 2.
+The forecast includes that sample and displays September 29 as its evidence date.
+Browser inspection confirms the archive row, recent trend series and denominator
+controls. `current-release-polls.jpg` and `current-release-home.jpg` show the result.
+
+This was a preview-input configuration error; the source data and UI filtering
+were intact. No new ingestion, model fit, release publication or deployment was
+needed. Fixtures remain test artifacts. The local preview server now disables
+browser caching so rebuilds are visible reliably.

@@ -1,0 +1,1578 @@
+{
+ "source": "City of Toronto zeroed test feed, fetched 2026-10-05; seq 1790647481807",
+ "races": [
+  {
+   "id": "1-0",
+   "officeId": 1,
+   "office": "Mayor",
+   "level": "mayor",
+   "num": 0,
+   "units": 1431,
+   "electors": 2143771,
+   "candidates": [
+    "Imad Abdulkadir",
+    "Bahira Abdulsalam",
+    "Chris Alexander",
+    "Jamie Atkinson",
+    "Brad Bradford",
+    "Darrell Brown",
+    "Brian Buffey",
+    "Braeden Chow",
+    "Olivia Chow",
+    "Logan Choy",
+    "Kevin Clarke",
+    "Paul Collins",
+    "Alex Cruze",
+    "Roberto Curto",
+    "Laura Dean",
+    "Habiba Desai",
+    "Cory Deville",
+    "Wincess Dorville",
+    "Laura Ellis",
+    "Martin Fraser",
+    "Alton Frederick",
+    "Edward Gong",
+    "Faizan Haider",
+    "Thomas Hall",
+    "Peter Handjis",
+    "Jack Hartley",
+    "Heather He",
+    "Mohamad Kaaki",
+    "Georgios Kalkounis",
+    "Isidoros Kyrlangitses",
+    "Michael Lamoureux",
+    "Rick Lee",
+    "Reagan Levermany",
+    "Eddie Mayanja",
+    "Sarah McVie",
+    "Francis Mercieca",
+    "Joseph Osuji",
+    "Odessa Paloma Parker",
+    "Gus Prokos",
+    "Faisal Razi",
+    "Amy Rosen",
+    "Lyall Sanders",
+    "Naomi Sayers",
+    "Robert Shusterman",
+    "Sandeep Srivastava",
+    "Weizhen Tang",
+    "Joshua Thompson",
+    "Kuo Yu Tong",
+    "Jeffery Tunney",
+    "Jack Weenen",
+    "Henoke Yohannes",
+    "Leila Yohannes",
+    "Mostafa Zandkarimi"
+   ],
+   "title": "Mayor",
+   "wards": [
+    {
+     "num": 1,
+     "name": "Etobicoke North",
+     "units": 46,
+     "electors": 78411
+    },
+    {
+     "num": 2,
+     "name": "Etobicoke Centre",
+     "units": 67,
+     "electors": 97554
+    },
+    {
+     "num": 3,
+     "name": "Etobicoke-Lakeshore",
+     "units": 82,
+     "electors": 116485
+    },
+    {
+     "num": 4,
+     "name": "Parkdale-High Park",
+     "units": 67,
+     "electors": 88529
+    },
+    {
+     "num": 5,
+     "name": "York South-Weston",
+     "units": 62,
+     "electors": 83515
+    },
+    {
+     "num": 6,
+     "name": "York Centre",
+     "units": 50,
+     "electors": 79015
+    },
+    {
+     "num": 7,
+     "name": "Humber River-Black Creek",
+     "units": 45,
+     "electors": 73832
+    },
+    {
+     "num": 8,
+     "name": "Eglinton-Lawrence",
+     "units": 61,
+     "electors": 89581
+    },
+    {
+     "num": 9,
+     "name": "Davenport",
+     "units": 53,
+     "electors": 84706
+    },
+    {
+     "num": 10,
+     "name": "Spadina-Fort York",
+     "units": 80,
+     "electors": 123597
+    },
+    {
+     "num": 11,
+     "name": "University-Rosedale",
+     "units": 72,
+     "electors": 90868
+    },
+    {
+     "num": 12,
+     "name": "Toronto-St. Paul's",
+     "units": 58,
+     "electors": 95032
+    },
+    {
+     "num": 13,
+     "name": "Toronto Centre",
+     "units": 78,
+     "electors": 101769
+    },
+    {
+     "num": 14,
+     "name": "Toronto-Danforth",
+     "units": 48,
+     "electors": 85786
+    },
+    {
+     "num": 15,
+     "name": "Don Valley West",
+     "units": 49,
+     "electors": 76936
+    },
+    {
+     "num": 16,
+     "name": "Don Valley East",
+     "units": 62,
+     "electors": 70080
+    },
+    {
+     "num": 17,
+     "name": "Don Valley North",
+     "units": 60,
+     "electors": 81623
+    },
+    {
+     "num": 18,
+     "name": "Willowdale",
+     "units": 56,
+     "electors": 84671
+    },
+    {
+     "num": 19,
+     "name": "Beaches-East York",
+     "units": 53,
+     "electors": 85048
+    },
+    {
+     "num": 20,
+     "name": "Scarborough Southwest",
+     "units": 61,
+     "electors": 82427
+    },
+    {
+     "num": 21,
+     "name": "Scarborough Centre",
+     "units": 49,
+     "electors": 80557
+    },
+    {
+     "num": 22,
+     "name": "Scarborough-Agincourt",
+     "units": 47,
+     "electors": 75224
+    },
+    {
+     "num": 23,
+     "name": "Scarborough North",
+     "units": 37,
+     "electors": 66760
+    },
+    {
+     "num": 24,
+     "name": "Scarborough-Guildwood",
+     "units": 48,
+     "electors": 72345
+    },
+    {
+     "num": 25,
+     "name": "Scarborough-Rouge Park",
+     "units": 40,
+     "electors": 79420
+    }
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-1",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 1,
+   "units": 46,
+   "electors": 78411,
+   "candidates": [
+    "Abraham Abbey",
+    "Ala'a Adib",
+    "Saima Babar",
+    "Chloe Brown",
+    "Vincent Crisanti",
+    "Norman Hamilton",
+    "Joseph Martino",
+    "Nathen Masri",
+    "Hard Parmar",
+    "Kristian Santos"
+   ],
+   "title": "Ward 1 Etobicoke North",
+   "wardName": "Etobicoke North",
+   "cityWards": [
+    1
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-2",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 2,
+   "units": 67,
+   "electors": 97554,
+   "candidates": [
+    "Jennifer Alexander",
+    "Katie Andrachuk",
+    "Stephen Holyday"
+   ],
+   "title": "Ward 2 Etobicoke Centre",
+   "wardName": "Etobicoke Centre",
+   "cityWards": [
+    2
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-3",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 3,
+   "units": 82,
+   "electors": 116485,
+   "candidates": [
+    "Mihaela Andrei",
+    "Anthony Internicola",
+    "Amber Morley",
+    "Ted Opitz"
+   ],
+   "title": "Ward 3 Etobicoke-Lakeshore",
+   "wardName": "Etobicoke-Lakeshore",
+   "cityWards": [
+    3
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-4",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 4,
+   "units": 67,
+   "electors": 88529,
+   "candidates": [
+    "Michael Corcoran",
+    "Nadia Guerrera",
+    "Debbie King",
+    "Diana Chan McNally",
+    "Bridget Ogundipe",
+    "Adam Pham",
+    "Andy Potega",
+    "Vanessa Raponi",
+    "Holly Weber",
+    "Steve Yuen"
+   ],
+   "title": "Ward 4 Parkdale-High Park",
+   "wardName": "Parkdale-High Park",
+   "cityWards": [
+    4
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-5",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 5,
+   "units": 62,
+   "electors": 83515,
+   "candidates": [
+    "Sharmarke Ali",
+    "Matthew Boateng",
+    "Daniel Di Giorgio",
+    "Maryama Farah",
+    "Ahmed Mawel",
+    "Frances Nunziata",
+    "Nekpen Obasogie",
+    "Chiara Padovani",
+    "Sileen Phillips"
+   ],
+   "title": "Ward 5 York South-Weston",
+   "wardName": "York South-Weston",
+   "cityWards": [
+    5
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-6",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 6,
+   "units": 50,
+   "electors": 79015,
+   "candidates": [
+    "Alexander Artamonov",
+    "Conroy Irving",
+    "James Pasternak"
+   ],
+   "title": "Ward 6 York Centre",
+   "wardName": "York Centre",
+   "cityWards": [
+    6
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-7",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 7,
+   "units": 45,
+   "electors": 73832,
+   "candidates": [
+    "Lorna Antwi",
+    "Amanda Coombs",
+    "Anthony Perruzza"
+   ],
+   "title": "Ward 7 Humber River-Black Creek",
+   "wardName": "Humber River-Black Creek",
+   "cityWards": [
+    7
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-8",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 8,
+   "units": 61,
+   "electors": 89581,
+   "candidates": [
+    "Mike Colle",
+    "Liz Grade",
+    "Domenico Maiolo",
+    "Jason McDonald",
+    "Enzo Torrone",
+    "Daniel Trayes"
+   ],
+   "title": "Ward 8 Eglinton-Lawrence",
+   "wardName": "Eglinton-Lawrence",
+   "cityWards": [
+    8
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-9",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 9,
+   "units": 53,
+   "electors": 84706,
+   "candidates": [
+    "Alejandra Bravo",
+    "Ashley Jansen",
+    "Marco Martins",
+    "Neil Simon"
+   ],
+   "title": "Ward 9 Davenport",
+   "wardName": "Davenport",
+   "cityWards": [
+    9
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-10",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 10,
+   "units": 80,
+   "electors": 123597,
+   "candidates": [
+    "Ian Cunningham",
+    "Xue Ding",
+    "Andi Hoàng-Lefranc",
+    "Bashar Kassir",
+    "Ausma Malik",
+    "Paul Nash",
+    "Husain Neemuchwala",
+    "Aanchal Vashistha"
+   ],
+   "title": "Ward 10 Spadina-Fort York",
+   "wardName": "Spadina-Fort York",
+   "cityWards": [
+    10
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-11",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 11,
+   "units": 72,
+   "electors": 90868,
+   "candidates": [
+    "Keenan Courtis",
+    "Terri Hawkes",
+    "Mike Layton",
+    "Karina Lemke",
+    "Alice Li",
+    "Huy Lieu",
+    "Gian Pileri",
+    "Paul Viret",
+    "Diana Yoon"
+   ],
+   "title": "Ward 11 University-Rosedale",
+   "wardName": "University-Rosedale",
+   "cityWards": [
+    11
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-12",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 12,
+   "units": 58,
+   "electors": 95032,
+   "candidates": [
+    "David Cottrell",
+    "Jenny Kalimbet",
+    "Ahmed Kamal",
+    "Josh Matlow",
+    "Bob Murphy",
+    "Mina Nadimi"
+   ],
+   "title": "Ward 12 Toronto-St. Paul's",
+   "wardName": "Toronto-St. Paul's",
+   "cityWards": [
+    12
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-13",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 13,
+   "units": 78,
+   "electors": 101769,
+   "candidates": [
+    "Joe Cadeau",
+    "Tom Cai",
+    "Victoria Davis",
+    "Morgan Harris",
+    "Walied Khogali Ali",
+    "Norman MacLeod",
+    "Cleveland Marshall",
+    "Chris Moise",
+    "Curran Stikuts",
+    "Daniel Tate",
+    "Nicki Ward"
+   ],
+   "title": "Ward 13 Toronto Centre",
+   "wardName": "Toronto Centre",
+   "cityWards": [
+    13
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-14",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 14,
+   "units": 48,
+   "electors": 85786,
+   "candidates": [
+    "Maqsood Ahmad",
+    "Susan Chapelle",
+    "Michael Connor",
+    "Dennis Corcoran",
+    "Robb Dagenais",
+    "Peter De Marco",
+    "Sara Ehrhardt",
+    "George Fawcett",
+    "Mary Fragedakis",
+    "John Kladitis",
+    "Michael Mitchell",
+    "Caryma Sa'd",
+    "Dianne Saxe",
+    "Devyn Stackhouse",
+    "Jason Stevens",
+    "Christiane Tetreault",
+    "Maria Voutsinas",
+    "Denise Walcott"
+   ],
+   "title": "Ward 14 Toronto-Danforth",
+   "wardName": "Toronto-Danforth",
+   "cityWards": [
+    14
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-15",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 15,
+   "units": 49,
+   "electors": 76936,
+   "candidates": [
+    "Rachel Chernos Lin",
+    "Sheena Sharp",
+    "Denis Tsang"
+   ],
+   "title": "Ward 15 Don Valley West",
+   "wardName": "Don Valley West",
+   "cityWards": [
+    15
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-16",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 16,
+   "units": 62,
+   "electors": 70080,
+   "candidates": [
+    "Jon Burnside",
+    "Sinan Erdemir",
+    "Didi Moffat",
+    "Stacey Moffatt"
+   ],
+   "title": "Ward 16 Don Valley East",
+   "wardName": "Don Valley East",
+   "cityWards": [
+    16
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-17",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 17,
+   "units": 60,
+   "electors": 81623,
+   "candidates": [
+    "Jeffery Adamson",
+    "Shelley Carroll",
+    "Jethro Adir Kavod",
+    "Hassan Mubarak Noor Mohamed",
+    "Roy Samathanam",
+    "Hong Xiao",
+    "Sabrina Zuniga"
+   ],
+   "title": "Ward 17 Don Valley North",
+   "wardName": "Don Valley North",
+   "cityWards": [
+    17
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-18",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 18,
+   "units": 56,
+   "electors": 84671,
+   "candidates": [
+    "Lily Cheng",
+    "Nicole Daneshvar",
+    "David Magazzinich",
+    "Hamid Shakeri",
+    "Nathan Yusifov",
+    "Ardeshir Zarezade"
+   ],
+   "title": "Ward 18 Willowdale",
+   "wardName": "Willowdale",
+   "cityWards": [
+    18
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-19",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 19,
+   "units": 53,
+   "electors": 85048,
+   "candidates": [
+    "Syeda Jaana Ali",
+    "James Dann",
+    "Nate Erskine-Smith",
+    "Fatima Ibrahimi",
+    "Natalie Johnson",
+    "Kevin Morrison",
+    "Karsten Riedel",
+    "Mohammad Shabani",
+    "Adam Smith",
+    "Austin Vieira",
+    "Jeff Wahl",
+    "Devin Wilkins",
+    "Jennie Worden"
+   ],
+   "title": "Ward 19 Beaches-East York",
+   "wardName": "Beaches-East York",
+   "cityWards": [
+    19
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-20",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 20,
+   "units": 61,
+   "electors": 82427,
+   "candidates": [
+    "Laikul Choudhury",
+    "Naser Kaid",
+    "Parthi Kandavel",
+    "Ariel-Rachel Karokis",
+    "Luigi Lisciandro",
+    "Sharmina Nasrin",
+    "Mohammad Ali Reza",
+    "Kevin Rupasinghe"
+   ],
+   "title": "Ward 20 Scarborough Southwest",
+   "wardName": "Scarborough Southwest",
+   "cityWards": [
+    20
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-21",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 21,
+   "units": 49,
+   "electors": 80557,
+   "candidates": [
+    "Taiba Ahmed",
+    "Bahareh Barahmand",
+    "Patience Evbagharu",
+    "Uthish Ganesh",
+    "Stella Kargiannakis",
+    "Akina Lalla",
+    "Nisha Kumari",
+    "Willie Reodica",
+    "Madura Shanmugaratnam",
+    "Michael Thompson",
+    "Krissan Veerasingam"
+   ],
+   "title": "Ward 21 Scarborough Centre",
+   "wardName": "Scarborough Centre",
+   "cityWards": [
+    21
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-22",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 22,
+   "units": 47,
+   "electors": 75224,
+   "candidates": [
+    "Madhuri Azad",
+    "Bill Chan",
+    "Jackson Ho",
+    "Serge Khatchadourian",
+    "Rakhee Kotecha",
+    "Aaron Lal",
+    "Dan Lovell",
+    "Nick Mantas",
+    "Donny Morgan",
+    "Sindia Vijayarajan"
+   ],
+   "title": "Ward 22 Scarborough-Agincourt",
+   "wardName": "Scarborough-Agincourt",
+   "cityWards": [
+    22
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-23",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 23,
+   "units": 37,
+   "electors": 66760,
+   "candidates": [
+    "Shaun Chen",
+    "Han Dong",
+    "Sajawal Javed",
+    "Kevin Li",
+    "Jamaal Myers",
+    "John-Mark Oleh",
+    "Ronald Phen",
+    "Piravena Sathiyanantham"
+   ],
+   "title": "Ward 23 Scarborough North",
+   "wardName": "Scarborough North",
+   "cityWards": [
+    23
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-24",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 24,
+   "units": 48,
+   "electors": 72345,
+   "candidates": [
+    "Paul Ainslie",
+    "Robert Bazil",
+    "Jithender Mulamalla",
+    "Nachi Ramasamy",
+    "Arun Sivanandan",
+    "An Wu"
+   ],
+   "title": "Ward 24 Scarborough-Guildwood",
+   "wardName": "Scarborough-Guildwood",
+   "cityWards": [
+    24
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "2-25",
+   "officeId": 2,
+   "office": "Councillor",
+   "level": "council",
+   "num": 25,
+   "units": 40,
+   "electors": 79420,
+   "candidates": [
+    "Shawn Allen",
+    "Dharshan Casinathen",
+    "Ashan Fernando",
+    "Somas Kaneshapillai",
+    "Jannette Lumley",
+    "Zakir Patel",
+    "Dianna Robinson",
+    "Neethan Shan",
+    "Kannan S'ree Jr",
+    "Vane Stavrev"
+   ],
+   "title": "Ward 25 Scarborough-Rouge Park",
+   "wardName": "Scarborough-Rouge Park",
+   "cityWards": [
+    25
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-1",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 1,
+   "units": 91,
+   "electors": 78411,
+   "candidates": [
+    "Rosemarie Bryan",
+    "Antonius Clarke",
+    "Matias de Dovitiis",
+    "Dennis Hastings",
+    "Amberley Ryan Henry",
+    "Lakhan Kang"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 1",
+   "district": "Ward 1 — Etobicoke North; Humber River-Black Creek",
+   "cityWards": [
+    1,
+    7
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-2",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 2,
+   "units": 149,
+   "electors": 97554,
+   "candidates": [
+    "Timothy Ellis",
+    "Ivan Voitsytskyi",
+    "Matthew Zaffino"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 2",
+   "district": "Ward 2 — Etobicoke Centre; Etobicoke-Lakeshore",
+   "cityWards": [
+    2,
+    3
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-3",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 3,
+   "units": 120,
+   "electors": 116485,
+   "candidates": [
+    "Matt Banninga",
+    "Daniel Choi",
+    "Alexis Dawson",
+    "Christina Gural",
+    "Fatin Ishraq",
+    "Justin Mensah",
+    "Andrew Waters",
+    "Jennifer Webster"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 3",
+   "district": "Ward 3 — Parkdale-High Park; Davenport",
+   "cityWards": [
+    4,
+    9
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-4",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 4,
+   "units": 106,
+   "electors": 88529,
+   "candidates": [
+    "Ivanna Andrusyak",
+    "Brandon Choi",
+    "Anthony Delpero",
+    "Weidong Pei"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 4",
+   "district": "Ward 4 — York Centre; Willowdale",
+   "cityWards": [
+    6,
+    18
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-5",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 5,
+   "units": 128,
+   "electors": 83515,
+   "candidates": [
+    "Elina Feyginberg",
+    "Andrene Gregory",
+    "David Gulyas",
+    "Jared Kolb",
+    "Maureen Larkin",
+    "Andrew Massey",
+    "Gus Stefanis",
+    "Janine Viret",
+    "Jennifer Volk"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 5",
+   "district": "Ward 5 — Spadina-Fort York; Toronto-Danforth",
+   "cityWards": [
+    10,
+    14
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-6",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 6,
+   "units": 123,
+   "electors": 79015,
+   "candidates": [
+    "Stacey Cline",
+    "Saherla Osman",
+    "Sarah Smithies",
+    "John Vassal"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 6",
+   "district": "Ward 6 — York South-Weston; Eglinton-Lawrence",
+   "cityWards": [
+    5,
+    8
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-7",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 7,
+   "units": 208,
+   "electors": 73832,
+   "candidates": [
+    "Axel Arvizu",
+    "Gladstone Cherrington",
+    "Adam Golding",
+    "Tasha Kheiriddin",
+    "Nasir Mohammad",
+    "Shaffni Nalir",
+    "Theo Nazary",
+    "Deborah Williams"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 7",
+   "district": "Ward 7 — University-Rosedale; Toronto-St. Paul's; Toronto Centre",
+   "cityWards": [
+    11,
+    12,
+    13
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-8",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 8,
+   "units": 111,
+   "electors": 89581,
+   "candidates": [
+    "Tracey Haddleton",
+    "Ibrahim Hatia",
+    "Spiros Kapoglis",
+    "Imran Khan",
+    "Dewitt Lee III",
+    "Christine McGirr",
+    "Farzana Rajwani"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 8",
+   "district": "Ward 8 — Don Valley West; Don Valley East",
+   "cityWards": [
+    15,
+    16
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-9",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 9,
+   "units": 107,
+   "electors": 84706,
+   "candidates": [
+    "Carey De Pass",
+    "Christopher Mammoliti",
+    "Bill Wu",
+    "Sonny Yeung"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 9",
+   "district": "Ward 9 — Don Valley North; Scarborough-Agincourt",
+   "cityWards": [
+    17,
+    22
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-10",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 10,
+   "units": 114,
+   "electors": 123597,
+   "candidates": [
+    "Malik Ahmad",
+    "Azim Dewan",
+    "Karen Emerson",
+    "Ahnaaf Hassan",
+    "Md Sazibul Islam",
+    "Glenn Kremp",
+    "Shawn Li",
+    "Jocelyne Poirier",
+    "Marisa Sterling"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 10",
+   "district": "Ward 10 — Beaches-East York; Scarborough Southwest",
+   "cityWards": [
+    19,
+    20
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-11",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 11,
+   "units": 86,
+   "electors": 90868,
+   "candidates": [
+    "Dedan Deus",
+    "Angus Grant",
+    "Dameon Halstead",
+    "Curtis Jack",
+    "Abdul Azeem Mohammed",
+    "Ravicha Ravinthiran"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 11",
+   "district": "Ward 11 — Scarborough Centre; Scarborough North",
+   "cityWards": [
+    21,
+    23
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "3-12",
+   "officeId": 3,
+   "office": "Toronto District School Board",
+   "level": "trustee",
+   "num": 12,
+   "units": 88,
+   "electors": 95032,
+   "candidates": [
+    "Safiya Ansari",
+    "Darren Frake",
+    "Aria Garcia",
+    "Gary McBean",
+    "Vimuththan Nantheeswarar",
+    "Ketan Purohit",
+    "Anu Sriskandarajah",
+    "Sherri Williams",
+    "Marcia Wilson"
+   ],
+   "board": "TDSB",
+   "boardName": "Toronto District School Board",
+   "title": "TDSB Ward 12",
+   "district": "Ward 12 — Scarborough-Guildwood; Scarborough-Rouge Park",
+   "cityWards": [
+    24,
+    25
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-1",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 1,
+   "units": 46,
+   "electors": 78411,
+   "candidates": [
+    "Jennifer Di Francesco",
+    "Maria Dias",
+    "Robert Pella"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 1",
+   "district": "Ward 1 — Etobicoke North",
+   "cityWards": [
+    1
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-2",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 2,
+   "units": 67,
+   "electors": 97554,
+   "candidates": [
+    "Sara Concordia",
+    "Markus de Domenico"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 2",
+   "district": "Ward 2 — Etobicoke Centre",
+   "cityWards": [
+    2
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-3",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 3,
+   "units": 45,
+   "electors": 116485,
+   "candidates": [
+    "Ida Li Preti",
+    "Susel Munoz Plasencia"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 3",
+   "district": "Ward 3 — Humber River-Black Creek",
+   "cityWards": [
+    7
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-4",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 4,
+   "units": 149,
+   "electors": 88529,
+   "candidates": [
+    "Maria Borreca",
+    "Peter Fracassi",
+    "Teresa Lubinski"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 4",
+   "district": "Ward 4 — Etobicoke-Lakeshore; Parkdale-High Park",
+   "cityWards": [
+    3,
+    4
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-5",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 5,
+   "units": 167,
+   "electors": 83515,
+   "candidates": [
+    "Gianfranco Cristiano",
+    "Maria Rizzo"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 5",
+   "district": "Ward 5 — York Centre; Eglinton-Lawrence; Willowdale",
+   "cityWards": [
+    6,
+    8,
+    18
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-6",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 6,
+   "units": 53,
+   "electors": 79015,
+   "candidates": [
+    "Frank D'Amico"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 6",
+   "district": "Ward 6 — Davenport",
+   "cityWards": [
+    9
+   ],
+   "acclaimed": true
+  },
+  {
+   "id": "4-7",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 7,
+   "units": 96,
+   "electors": 73832,
+   "candidates": [
+    "Celine DiNova",
+    "Marissa Largo",
+    "Gregory Rodriguez"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 7",
+   "district": "Ward 7 — Scarborough Centre; Scarborough-Agincourt",
+   "cityWards": [
+    21,
+    22
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-8",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 8,
+   "units": 77,
+   "electors": 89581,
+   "candidates": [
+    "Carla Allen",
+    "Mary Cury Paul",
+    "Garry Tanuan"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 8",
+   "district": "Ward 8 — Scarborough North; Scarborough-Rouge Park",
+   "cityWards": [
+    23,
+    25
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-9",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 9,
+   "units": 288,
+   "electors": 84706,
+   "candidates": [
+    "Rosina Bonavota",
+    "Renato Fallico",
+    "David Le",
+    "Jonathan Santos"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 9",
+   "district": "Ward 9 — Spadina-Fort York; University-Rosedale; Toronto-St. Paul's; Toronto Centre",
+   "cityWards": [
+    10,
+    11,
+    12,
+    13
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-10",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 10,
+   "units": 62,
+   "electors": 123597,
+   "candidates": [
+    "Rosanna Araujo",
+    "Teresa Colonna",
+    "Stephanie Loor Ruiz",
+    "Sal Piccininni",
+    "Paul Salvatori"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 10",
+   "district": "Ward 10 — York South-Weston",
+   "cityWards": [
+    5
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-11",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 11,
+   "units": 272,
+   "electors": 90868,
+   "candidates": [
+    "Angela Kennedy",
+    "Anton Perera"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 11",
+   "district": "Ward 11 — Toronto-Danforth; Don Valley West; Don Valley East; Don Valley North; Beaches-East York",
+   "cityWards": [
+    14,
+    15,
+    16,
+    17,
+    19
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "4-12",
+   "officeId": 4,
+   "office": "Toronto Catholic District School Board",
+   "level": "trustee",
+   "num": 12,
+   "units": 109,
+   "electors": 95032,
+   "candidates": [
+    "Nancy Crawford"
+   ],
+   "board": "TCDSB",
+   "boardName": "Toronto Catholic District School Board",
+   "title": "TCDSB Ward 12",
+   "district": "Ward 12 — Scarborough Southwest; Scarborough-Guildwood",
+   "cityWards": [
+    20,
+    24
+   ],
+   "acclaimed": true
+  },
+  {
+   "id": "5-2",
+   "officeId": 5,
+   "office": "Conseil scolaire Viamonde",
+   "level": "french",
+   "num": 2,
+   "units": 559,
+   "electors": 97554,
+   "candidates": [
+    "Benoit Fortin"
+   ],
+   "board": "Viamonde",
+   "boardName": "Conseil scolaire Viamonde",
+   "title": "Viamonde Ward 2",
+   "district": "Ward 2 — Est",
+   "cityWards": [
+    6,
+    15,
+    16,
+    17,
+    18,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25
+   ],
+   "acclaimed": true
+  },
+  {
+   "id": "5-3",
+   "officeId": 5,
+   "office": "Conseil scolaire Viamonde",
+   "level": "french",
+   "num": 3,
+   "units": 389,
+   "electors": 116485,
+   "candidates": [
+    "Jean-François L'Heureux",
+    "Anna-Karyna Ruszkowski"
+   ],
+   "board": "Viamonde",
+   "boardName": "Conseil scolaire Viamonde",
+   "title": "Viamonde Ward 3",
+   "district": "Ward 3 — Centre",
+   "cityWards": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    19
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "5-4",
+   "officeId": 5,
+   "office": "Conseil scolaire Viamonde",
+   "level": "french",
+   "num": 4,
+   "units": 483,
+   "electors": 88529,
+   "candidates": [
+    "Geneviève Oger"
+   ],
+   "board": "Viamonde",
+   "boardName": "Conseil scolaire Viamonde",
+   "title": "Viamonde Ward 4",
+   "district": "Ward 4 — Ouest",
+   "cityWards": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9
+   ],
+   "acclaimed": true
+  },
+  {
+   "id": "6-3",
+   "officeId": 6,
+   "office": "Conseil scolaire catholique MonAvenir",
+   "level": "french",
+   "num": 3,
+   "units": 877,
+   "electors": 116485,
+   "candidates": [
+    "Josiane Aboungono",
+    "Yelena Nichilo",
+    "Angela Ogang"
+   ],
+   "board": "MonAvenir",
+   "boardName": "Conseil scolaire catholique MonAvenir",
+   "title": "MonAvenir Ward 3",
+   "district": "Ward 3 — Toronto Ouest",
+   "cityWards": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    18
+   ],
+   "acclaimed": false
+  },
+  {
+   "id": "6-4",
+   "officeId": 6,
+   "office": "Conseil scolaire catholique MonAvenir",
+   "level": "french",
+   "num": 4,
+   "units": 554,
+   "electors": 88529,
+   "candidates": [
+    "Rhea Dechaine",
+    "Clescadine Gustave",
+    "Derek McNulty"
+   ],
+   "board": "MonAvenir",
+   "boardName": "Conseil scolaire catholique MonAvenir",
+   "title": "MonAvenir Ward 4",
+   "district": "Ward 4 — Toronto Est",
+   "cityWards": [
+    14,
+    15,
+    16,
+    17,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25
+   ],
+   "acclaimed": false
+  }
+ ]
+}

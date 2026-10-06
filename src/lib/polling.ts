@@ -87,6 +87,7 @@ export function pollMethodLabel(methodology: string): string {
   const normalized = methodology.trim().toLowerCase();
   if (normalized === "ivr") return "Interactive voice response (IVR)";
   if (normalized === "online") return "Online survey";
+  if (normalized === "mixed") return "Telephone and online survey";
   if (normalized === "ivr/online" || normalized === "online/ivr") {
     return "Interactive voice response and online";
   }
@@ -121,6 +122,7 @@ const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
   Ipsos: "https://www.ipsos.com/en-ca",
   "Liaison Strategies": "https://press.liaisonstrategies.ca/",
   "Mainstreet Research": "https://www.mainstreetresearch.ca/",
+  "Nanos Research": "https://nanos.co/",
   "Pallas Data": "https://pallas-data.ca/",
 };
 

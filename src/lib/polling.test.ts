@@ -50,6 +50,7 @@ describe("poll context", () => {
   it("expands terse method codes without rewriting unfamiliar labels", () => {
     expect(pollMethodLabel("IVR")).toBe("Interactive voice response (IVR)");
     expect(pollMethodLabel("online")).toBe("Online survey");
+    expect(pollMethodLabel("mixed")).toBe("Telephone and online survey");
     expect(pollMethodLabel("Telephone interviews")).toBe("Telephone interviews");
   });
 
@@ -198,6 +199,7 @@ describe("pollster registry", () => {
 
   it("links known firms and leaves unknown firms unlinked", () => {
     expect(pollsterWebsite("Forum Research")).toBe("https://forumresearch.com/");
+    expect(pollsterWebsite("Nanos Research")).toBe("https://nanos.co/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

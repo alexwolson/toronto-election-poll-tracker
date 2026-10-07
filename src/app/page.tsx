@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ContentSection } from "@/components/content-section";
 import { ForecastHero } from "@/components/forecast-hero";
 import { PollingScopeNote } from "@/components/polling-scope-note";
 import { PollsterLink } from "@/components/pollster-link";
 import { SectionHeading } from "@/components/section-heading";
+// PROTOTYPE (throwaway): Suspended Campaign presentation variants, ?variant=A|B|C|live
+import { MethodologyDraft } from "@/components/prototype-suspended-campaign/methodology-draft";
+import { VariantA } from "@/components/prototype-suspended-campaign/variant-a";
+import { VariantB } from "@/components/prototype-suspended-campaign/variant-b";
+import { VariantC } from "@/components/prototype-suspended-campaign/variant-c";
+import { VariantD } from "@/components/prototype-suspended-campaign/variant-d";
+import { VariantSwitch } from "@/components/prototype-suspended-campaign/variant-switch";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, formatSharePct } from "@/lib/format";
@@ -33,8 +41,8 @@ export default async function Home() {
   const denominator = latest ? denominatorPhrase(latest) : null;
   const forecastAsOf = latestReferencedPollDate(polling, forecast.final_field_samples);
 
-  return (
-    <main id="main-content" className="np-shell">
+  const live = (
+    <>
       <ForecastHero feed={forecast} asOfDate={forecastAsOf} />
 
       {ranked.length > 0 && latest && (
@@ -75,6 +83,22 @@ export default async function Home() {
           </Link>
         </ContentSection>
       )}
+    </>
+  );
+  const variants = {
+    A: <VariantA feed={forecast} polling={polling} asOfDate={forecastAsOf ?? null} />,
+    B: <VariantB feed={forecast} polling={polling} asOfDate={forecastAsOf ?? null} />,
+    C: <VariantC feed={forecast} polling={polling} asOfDate={forecastAsOf ?? null} />,
+    D: <VariantD feed={forecast} polling={polling} asOfDate={forecastAsOf ?? null} />,
+    live,
+  };
+
+  return (
+    <main id="main-content" className="np-shell">
+      <Suspense fallback={variants.A}>
+        <VariantSwitch variants={variants} />
+      </Suspense>
+      <MethodologyDraft />
 
       <section className="section home-explore" aria-labelledby="explore-heading">
         <div className="wrap home-explore__inner">

@@ -6,6 +6,9 @@ import "./globals.css";
 import { MastheadNav } from "@/components/masthead-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNotice } from "@/components/site-notice";
+// PROTOTYPE (throwaway): the notice shows only on ?variant=live
+import { Suspense } from "react";
+import { NoticeSwitch } from "@/components/prototype-suspended-campaign/variant-switch";
 
 const hanken = Hanken_Grotesk({
   variable: "--font-chw-body",
@@ -35,7 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${hanken.variable} ${schibsted.variable} ${ibmMono.variable}`}>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>
-        <SiteNotice />
+        <Suspense fallback={null}>
+          <NoticeSwitch live={<SiteNotice />} />
+        </Suspense>
         <header className="masthead site-header">
           <div className="wrap masthead__inner">
             <Link href="/" className="brand" aria-label="City Hall Watcher · Toronto Election 2026 home">

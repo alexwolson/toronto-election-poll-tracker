@@ -1,16 +1,72 @@
 import { PollsterLink } from "@/components/pollster-link";
 import { candidateName } from "@/lib/candidates";
 import { formatDate, formatSharePct } from "@/lib/format";
-import { pollMethodLabel, residualShares } from "@/lib/polling";
-import type { CSSProperties } from "react";
+import { headToHeadLabel, pollMethodLabel, residualShares } from "@/lib/polling";
+import { Fragment, type CSSProperties } from "react";
 import type { Poll } from "@/types/feeds";
 
 type PollArchiveRowStyle = CSSProperties & { "--poll-field-count": number };
 
+/** The reading's denominator, with "Chow or Bradford only" beside it when the
+ *  reading offered only those two candidates. */
+function denominatorLabel(poll: Poll, field: string[]): string {
+  const only = headToHeadLabel(poll, field);
+  if (poll.denominator && only) return `${poll.denominator} (${only})`;
+  return poll.denominator ?? only ?? "—";
+}
+
+/** The share cells every archive row carries: the field, undecided, other reported
+ *  choices, the denominator and the survey method. */
+function ReadingCells({ poll, field }: { poll: Poll; field: string[] }) {
+  const residual = residualShares(poll, field);
+  return (
+    <>
+      {field.map((id) => (
+        <td
+          key={id}
+          data-label={candidateName(id)}
+          className="poll-archive__candidate-value font-mono"
+        >
+          {id in poll.shares ? formatSharePct(poll.shares[id]) : "—"}
+        </td>
+      ))}
+      <td
+        data-label="Undecided"
+        className="poll-archive__candidate-value font-mono"
+      >
+        {residual.undecided === null ? "—" : formatSharePct(residual.undecided)}
+      </td>
+      <td
+        data-label="Other reported choices"
+        className="poll-archive__candidate-value font-mono"
+      >
+        {residual.other === null ? "—" : formatSharePct(residual.other)}
+      </td>
+      <td data-label="Denominator" className="poll-archive__denominator">
+        {denominatorLabel(poll, field)}
+      </td>
+      <td data-label="Survey method" className="poll-archive__method">
+        {pollMethodLabel(poll.methodology)}
+      </td>
+    </>
+  );
+}
+
 /** Full poll archive, newest fieldwork first (spec §/polls). Shows each poll's share for
  *  the current field, "—" where a candidate was not tested, its undecided share when
- *  its denominator keeps undecideds in, and which denominator it is. */
-export function PollArchive({ polls, field }: { polls: Poll[]; field: string[] }) {
+ *  its denominator keeps undecideds in, and which denominator it is. A poll's
+ *  Head-to-Head Reading sits indented beneath it: the same respondents, asked a
+ *  second question, so it is not counted as a separate poll. */
+export function PollArchive({
+  polls,
+  field,
+  headToHead = [],
+}: {
+  polls: Poll[];
+  field: string[];
+  headToHead?: Poll[];
+}) {
+  const style = { "--poll-field-count": Math.max(field.length + 2, 1) } as PollArchiveRowStyle;
   return (
     <div className="poll-archive">
       <table className="poll-archive__table">
@@ -33,51 +89,30 @@ export function PollArchive({ polls, field }: { polls: Poll[]; field: string[] }
         </thead>
         <tbody>
           {polls.map((poll) => {
-            const residual = residualShares(poll, field);
+            const reading = headToHead.find((entry) => entry.poll_id === poll.poll_id);
             return (
-              <tr
-                key={poll.poll_id}
-                style={{
-                  "--poll-field-count": Math.max(field.length + 2, 1),
-                } as PollArchiveRowStyle}
-              >
-              <td data-label="Conducted" className="poll-archive__date">
-                {formatDate(poll.date_conducted)}
-              </td>
-              <td data-label="Pollster" className="poll-archive__pollster">
-                <PollsterLink firm={poll.firm} />
-              </td>
-              <td data-label="Sample" className="poll-archive__sample font-mono">
-                {poll.sample_size ?? "—"}
-              </td>
-              {field.map((id) => (
-                <td
-                  key={id}
-                  data-label={candidateName(id)}
-                  className="poll-archive__candidate-value font-mono"
-                >
-                  {id in poll.shares ? formatSharePct(poll.shares[id]) : "—"}
-                </td>
-              ))}
-              <td
-                data-label="Undecided"
-                className="poll-archive__candidate-value font-mono"
-              >
-                {residual.undecided === null ? "—" : formatSharePct(residual.undecided)}
-              </td>
-              <td
-                data-label="Other reported choices"
-                className="poll-archive__candidate-value font-mono"
-              >
-                {residual.other === null ? "—" : formatSharePct(residual.other)}
-              </td>
-              <td data-label="Denominator" className="poll-archive__denominator">
-                {poll.denominator ?? "—"}
-              </td>
-              <td data-label="Survey method" className="poll-archive__method">
-                {pollMethodLabel(poll.methodology)}
-              </td>
-              </tr>
+              <Fragment key={poll.poll_id}>
+                <tr style={style}>
+                  <td data-label="Conducted" className="poll-archive__date">
+                    {formatDate(poll.date_conducted)}
+                  </td>
+                  <td data-label="Pollster" className="poll-archive__pollster">
+                    <PollsterLink firm={poll.firm} />
+                  </td>
+                  <td data-label="Sample" className="poll-archive__sample font-mono">
+                    {poll.sample_size ?? "—"}
+                  </td>
+                  <ReadingCells poll={poll} field={field} />
+                </tr>
+                {reading && (
+                  <tr className="poll-archive__row--head-to-head" style={style}>
+                    <td colSpan={3} className="poll-archive__subrow-label">
+                      <span aria-hidden="true">↳ </span>Not counted separately
+                    </td>
+                    <ReadingCells poll={reading} field={field} />
+                  </tr>
+                )}
+              </Fragment>
             );
           })}
         </tbody>

@@ -2,9 +2,29 @@
 
 These publication feeds are the **certified-state** package — the same
 feeds the data pipeline emits with `field_certified: true`, so the mayoral
-forecast publishes. `mayoral_forecast.json` is a real schema-4 build of the
-compact joint model (2026-09-21 inputs), used to develop and preview the
+forecast publishes. `mayoral_forecast.json` started as a real schema-4 build of
+the compact joint model (2026-09-21 inputs), used to develop and preview the
 margin-first presentation.
+
+## Suspended Campaign edits (hand-made, 2026-10-07)
+
+No producer had released the Suspended Campaign shapes when the frontend was
+built, so three fixtures were edited by hand to exercise every new path. Replace
+them with producer output once real releases exist.
+
+- `mayoral_forecast.json` is schema 5. It adds `election_day.other_candidates`
+  (Chris Alexander included, suspended 2026-10-06), `model.suspended_campaigns`
+  and `model.specification.exits`, and moves `analysis_cutoff` to 2026-10-07.
+  Alexander's election-day range (about 0.5%) and the Other candidates range are
+  illustrative C2-scale numbers, not draws; every other number, including every
+  win probability, is still the 2026-09-21 build. `model.kept_fraction_cases` is
+  omitted: the frontend neither reads nor checks it.
+- `mayoral_candidates.json` is Results schema 6: `campaign_suspended_on` is
+  null for every candidate except Alexander (2026-10-06).
+- `mayoral_polling.json` adds the real Mainstreet Sept. 28–29 poll and its
+  Head-to-Head Reading (`mainstreet_20260928_29_mayor_head_to_head_all`, all
+  respondents) from `polling-2026-10-06.2`, so the latest poll has one. The
+  older `forum-2025-09-04-bradford-v-chow` record carries `head_to_head: true`.
 
 Used only when `FEED_LOCAL_DIR` points here (see `.env.local.example`). Production
 builds resolve immutable GitHub Releases into the gitignored `.release-data/`

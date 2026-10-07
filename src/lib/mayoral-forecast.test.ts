@@ -11,7 +11,10 @@ import {
   forecastHistoryTrends,
   leadForecast,
   marginOutcomes,
+  otherCandidatesNote,
+  remainingField,
   residualPoolNote,
+  suspendedShareText,
   uncertaintyBreakdown,
   viableField,
   wholePercent,
@@ -60,6 +63,15 @@ describe("leadForecast and viableField", () => {
   it("keeps the viable field as the candidate_win keys", () => {
     expect(viableField(feed())).toEqual([CHOW, BRADFORD, ALEXANDER]);
   });
+  it("keeps as the remaining field the candidate_win keys not folded into Other candidates", () => {
+    expect(remainingField(feed())).toEqual([CHOW, BRADFORD]);
+    const none = feed();
+    none.election_day!.other_candidates.includes = [];
+    expect(remainingField(none)).toEqual([CHOW, BRADFORD, ALEXANDER]);
+    const dark = feed();
+    dark.election_day = null;
+    expect(remainingField(dark)).toEqual([CHOW, BRADFORD, ALEXANDER]);
+  });
   it("reports availability from the favourite gate and the election-day block", () => {
     expect(forecastAvailable(feed())).toBe(true);
     const dark = feed();
@@ -69,9 +81,25 @@ describe("leadForecast and viableField", () => {
 });
 
 describe("electionDayShares", () => {
-  it("returns percent-unit ranges for each named candidate and the pool, in feed order", () => {
+  it("shows the named candidates not in Other candidates, then the Other candidates row", () => {
     const view = electionDayShares(feed())!;
     expect(view.intervalMass).toBe(0.8);
+    // Alexander is folded into Other candidates; its range is the feed's per-draw sum.
+    expect(view.rows.map((r) => r.name)).toEqual(["Olivia Chow", "Brad Bradford", "Other candidates"]);
+    const other = feed().election_day!.other_candidates;
+    const row = view.rows[2];
+    expect(row.candidateId).toBeNull();
+    expect(row.colorVar).toBe("var(--color-disengaged)");
+    expect(row.median).toBeCloseTo(other.median * 100, 6);
+    expect(row.lower).toBeCloseTo(other.lower * 100, 6);
+    expect(row.upper).toBeCloseTo(other.upper * 100, 6);
+  });
+  it("keeps every named candidate when Other candidates includes nobody", () => {
+    const f = feed();
+    const residual = f.election_day!.residual_pool;
+    f.election_day!.other_candidates = { ...f.election_day!.other_candidates, includes: [],
+      median: residual.median, lower: residual.lower, upper: residual.upper };
+    const view = electionDayShares(f)!;
     expect(view.rows.map((r) => r.name)).toEqual([
       "Olivia Chow",
       "Brad Bradford",
@@ -97,6 +125,50 @@ describe("electionDayShares", () => {
     const dark = feed();
     dark.election_day = null;
     expect(electionDayShares(dark)).toBeNull();
+  });
+});
+
+describe("otherCandidatesNote", () => {
+  it("names each included candidate and the date the campaign ended, then the pool", () => {
+    expect(otherCandidatesNote(feed())).toBe(
+      "Other candidates, including Chris Alexander, who ended his campaign on Oct. 6: " +
+        "50 certified candidates, including Sarah McVie and Odessa Paloma Parker, modelled together.",
+    );
+  });
+  it("is the plain pool line when nobody is included", () => {
+    const f = feed();
+    f.election_day!.other_candidates.includes = [];
+    expect(otherCandidatesNote(f)).toBe(
+      "Other candidates: 50 certified candidates, including Sarah McVie and Odessa Paloma Parker, modelled together.",
+    );
+  });
+  it("is empty without an election-day block", () => {
+    const dark = feed();
+    dark.election_day = null;
+    expect(otherCandidatesNote(dark)).toBe("");
+  });
+});
+
+describe("suspendedShareText", () => {
+  const withMedian = (median: number) => {
+    const f = feed();
+    f.election_day!.candidates.find((c) => c.candidate_id === ALEXANDER)!.median = median;
+    return f;
+  };
+  it("reads the included candidate's election-day median: less than 1%, else about N%", () => {
+    expect(suspendedShareText(feed())).toBe("less than 1%");
+    expect(suspendedShareText(withMedian(0.0099))).toBe("less than 1%");
+    expect(suspendedShareText(withMedian(0.01))).toBe("about 1%");
+    expect(suspendedShareText(withMedian(0.0149))).toBe("about 1%");
+    expect(suspendedShareText(withMedian(0.026))).toBe("about 3%");
+  });
+  it("is null when no campaign is included or the block is absent", () => {
+    const none = feed();
+    none.election_day!.other_candidates.includes = [];
+    expect(suspendedShareText(none)).toBeNull();
+    const dark = feed();
+    dark.election_day = null;
+    expect(suspendedShareText(dark)).toBeNull();
   });
 });
 

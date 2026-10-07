@@ -12,7 +12,7 @@ import {
   forecastAvailable,
   leadForecast,
   marginOutcomes,
-  residualPoolNote,
+  otherCandidatesNote,
   uncertaintyBreakdown,
 } from "@/lib/mayoral-forecast";
 import type { MayoralForecastFeed } from "@/types/feeds";
@@ -133,7 +133,7 @@ export function ForecastHero({
             the certified field and to seven past Toronto mayoral campaigns, produces {draws}{" "}
             simulated elections. Every number above is a summary of those same simulations.
           </p>
-          <p>Other candidates: {residualPoolNote(feed)}</p>
+          <p>{otherCandidatesNote(feed)}</p>
           <p>
             <Link href="/how-it-works#mayoral-forecast" className="text-link">
               How the forecast is built →

@@ -3,7 +3,8 @@
  * preserving the source figures, with no modelled polling average.
  */
 
-import { isoDayNumber } from "@/lib/format";
+import { candidateName } from "@/lib/candidates";
+import { formatSharePct, formatShortDate, isoDayNumber } from "@/lib/format";
 import { type LoessPoint, loessCurve } from "@/lib/loess";
 import type { MayoralPollingFeed, Poll } from "@/types/feeds";
 
@@ -80,6 +81,46 @@ export function denominatorPhrase(poll: Poll): string | null {
   const label = poll.denominator?.trim();
   if (!label) return null;
   return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
+/** A poll's own Head-to-Head Reading (Chow or Bradford only), if the feed has one. */
+export function headToHeadReading(feed: MayoralPollingFeed, pollId: string): Poll | null {
+  return feed.head_to_head?.find((reading) => reading.poll_id === pollId) ?? null;
+}
+
+function surname(id: string): string {
+  return candidateName(id).trim().split(/\s+/).at(-1) ?? id;
+}
+
+/** The reading's named candidates, in the forecast field's order (others after, by share). */
+function namedInFieldOrder(poll: Poll, field: string[]): string[] {
+  const rank = (id: string) => (field.includes(id) ? field.indexOf(id) : field.length);
+  return Object.keys(poll.shares)
+    .filter((id) => !id.startsWith("response:"))
+    .sort((a, b) => rank(a) - rank(b) || poll.shares[b] - poll.shares[a]);
+}
+
+/** "Chow or Bradford only" for a reading flagged as a Head-to-Head Reading; null otherwise. */
+export function headToHeadLabel(poll: Poll, field: string[]): string | null {
+  if (poll.head_to_head !== true) return null;
+  const named = namedInFieldOrder(poll, field).map(surname);
+  return named.length === 2 ? `${named[0]} or ${named[1]} only` : null;
+}
+
+/** The reference sentence under the latest poll for its Head-to-Head Reading,
+ * naming that reading's own denominator (backend issue 34). */
+export function headToHeadSentence(reading: Poll, field: string[]): string {
+  const named = namedInFieldOrder(reading, field);
+  const shares = named.map((id) => `${surname(id)} ${formatSharePct(reading.shares[id])}`);
+  const undecided = reading.shares[UNDECIDED_KEY];
+  if (undecided !== undefined) shares.push(`undecided ${formatSharePct(undecided)}`);
+  const denominator = denominatorPhrase(reading) ?? "respondents";
+  return (
+    `${reading.firm}\u2019s ${formatShortDate(reading.date_conducted)} poll also asked the same ` +
+    `respondents to choose between only ${named.map(surname).join(" and ")}. ` +
+    `Of ${denominator}: ${shares.join(", ")}. ` +
+    "It is shown for reference and not counted as a separate poll."
+  );
 }
 
 /** Expand terse feed codes where a plain-language label is known. */

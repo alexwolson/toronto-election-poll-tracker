@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDate,
   formatDetailedSharePct,
+  formatShortDate,
   formatSharePct,
   isoDayNumber,
   monthStartDays,
@@ -17,6 +18,28 @@ describe("formatDate", () => {
 
   it("passes through anything unparseable", () => {
     expect(formatDate("")).toBe("");
+  });
+});
+
+describe("formatShortDate", () => {
+  it("writes a day of this year the way the approved copy does: Oct. 6, Sept. 29, June 18", () => {
+    expect(formatShortDate("2026-10-06")).toBe("Oct. 6");
+    expect(formatShortDate("2026-09-29")).toBe("Sept. 29");
+    expect(formatShortDate("2026-08-21")).toBe("Aug. 21");
+    expect(formatShortDate("2026-01-27")).toBe("Jan. 27");
+    expect(formatShortDate("2026-02-02")).toBe("Feb. 2");
+    expect(formatShortDate("2026-11-01")).toBe("Nov. 1");
+    expect(formatShortDate("2026-12-31")).toBe("Dec. 31");
+    // Short months are written out.
+    expect(formatShortDate("2026-03-08")).toBe("March 8");
+    expect(formatShortDate("2026-04-13")).toBe("April 13");
+    expect(formatShortDate("2026-05-11")).toBe("May 11");
+    expect(formatShortDate("2026-06-18")).toBe("June 18");
+    expect(formatShortDate("2026-07-29")).toBe("July 29");
+  });
+
+  it("passes through anything unparseable", () => {
+    expect(formatShortDate("soon")).toBe("soon");
   });
 });
 

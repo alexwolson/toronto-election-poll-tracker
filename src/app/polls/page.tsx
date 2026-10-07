@@ -11,7 +11,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, isoDayNumber } from "@/lib/format";
-import { forecastHistorySummaryRows, forecastHistoryTrends, viableField } from "@/lib/mayoral-forecast";
+import { forecastHistorySummaryRows, forecastHistoryTrends, remainingField, viableField } from "@/lib/mayoral-forecast";
 import { allRespondentTrends, candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
@@ -26,16 +26,19 @@ export default async function PollsPage() {
   ]);
 
   const forecastField = viableField(forecast);
+  // The default view needs only the candidates still campaigning (Chow and Bradford
+  // after Oct. 6); a pre-exit poll that also reports Alexander still qualifies.
+  const campaigningField = remainingField(forecast);
   const minorField = (forecast.election_day?.residual_pool.named_in_polls ?? [])
     .map((candidate) => candidate.candidate_id);
   const field = [...new Set([...forecastField, ...minorField])];
   const trends = candidateTrends(polling, field);
   const qualifiedTrends = candidateTrendsForPolls(
-    trends, pollsSinceNominationsClosed(polling, forecastField),
+    trends, pollsSinceNominationsClosed(polling, campaigningField),
   );
   const allRespondents = allRespondentTrends(polling, field, forecastField);
   const recentAllRespondents = candidateTrendsForPolls(allRespondents,
-    pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, forecastField),
+    pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, campaigningField),
   );
   const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
   const series: ChartSeries[] = field.map((id) => {
@@ -131,7 +134,11 @@ export default async function PollsPage() {
                 wording or respondent base.
               </p>
             </SectionHeading>
-            <PollArchive polls={pollsByFieldwork(polling)} field={forecastField} />
+            <PollArchive
+              polls={pollsByFieldwork(polling)}
+              headToHead={polling.head_to_head}
+              field={forecastField}
+            />
           </ContentSection>
 
           <ContentSection className="page-section" aria-labelledby="firms-heading">

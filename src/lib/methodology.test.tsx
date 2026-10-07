@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import { MethodFlow } from "@/components/method-flow";
 import HowItWorksPage from "@/app/how-it-works/page";
+import type { MayoralForecastFeed } from "@/types/feeds";
 import {
   forecastFlow,
   glossary,
@@ -11,10 +13,41 @@ import {
   methodologyNav,
 } from "./methodology";
 
+const mocks = vi.hoisted(() => ({ loadMayoralForecast: vi.fn() }));
+
 vi.mock("@/lib/feeds", () => ({
   loadCouncilRaceCards: async () => ({ ward_poll_benchmark: null }),
   loadManifest: async () => ({ backend_generated_at: "2026-08-21T12:00:00Z" }),
+  loadMayoralForecast: mocks.loadMayoralForecast,
 }));
+
+function forecast(alexanderMedian?: number): MayoralForecastFeed {
+  const feed = structuredClone(forecastFixture) as unknown as MayoralForecastFeed;
+  if (alexanderMedian !== undefined) {
+    feed.election_day!.candidates.find((c) => c.display_name === "Chris Alexander")!.median = alexanderMedian;
+  }
+  return feed;
+}
+
+async function pageText(feed: MayoralForecastFeed = forecast()): Promise<string> {
+  mocks.loadMayoralForecast.mockResolvedValue(feed);
+  return renderToStaticMarkup(await HowItWorksPage()).replace(/<[^>]+>/g, "");
+}
+
+const EXIT_PARAGRAPH =
+  "Chris Alexander ended his campaign on October 6. He is still on the ballot and can still receive " +
+  "votes. Polls taken on or after that date enter the model as a comparison between Chow and Bradford, " +
+  "whether or not they still name him; any share they report for him is set aside. When one poll asks " +
+  "both the full field and a question offering only Chow and Bradford, the full-field question is the " +
+  "one that counts.";
+
+const recordParagraph = (share: string) =>
+  "We found ten past cases of a Canadian mayoral candidate ending a campaign but staying on the ballot. " +
+  "Those polled beforehand kept between about 3% and 25% of the support they had in their last poll. " +
+  `The forecast draws Alexander\u2019s own election-day share from that record: ${share} today. ` +
+  "It does not assume where the rest of his support goes. It starts from a split between Chow and " +
+  "Bradford in proportion to their own support, and learns the actual split from polls taken since " +
+  "October 6.";
 
 describe("methodology content", () => {
   it("has unique navigation targets for every major section", () => {
@@ -96,7 +129,35 @@ describe("How It Works rendering", () => {
     expect(html).toContain('aria-hidden="true"');
   });
 
+  it("explains the Suspended Campaign under Which polling enters?, with his share read from the release", async () => {
+    const text = (await pageText()).replace(/\s+/g, " ");
+    const section = text.slice(text.indexOf("Which polling enters?"), text.indexOf("One model, three views"));
+    expect(section).toContain(EXIT_PARAGRAPH);
+    expect(section).toContain(recordParagraph("less than 1%"));
+    expect((await pageText(forecast(0.026))).replace(/\s+/g, " ")).toContain(recordParagraph("about 3%"));
+    expect(text).not.toContain("which would leave the odds unchanged");
+  });
+
+  it("omits the Suspended Campaign paragraphs when the release includes no such campaign", async () => {
+    const none = forecast();
+    none.election_day!.other_candidates.includes = [];
+    const text = await pageText(none);
+    expect(text).not.toContain("Chris Alexander ended his campaign");
+    expect(text).not.toContain("We found ten past cases");
+  });
+
+  it("describes the polling chart's default view as polls reporting Chow and Bradford", async () => {
+    const text = (await pageText()).replace(/\s+/g, " ");
+    expect(text).toContain(
+      "The default \u201cSince nominations closed\u201d view shows polls reporting Chow and Bradford with " +
+        "fieldwork completed after the August 21 nomination deadline. Polls taken before October 6 also " +
+        "report Alexander. \u201cAll polls\u201d includes the earlier history.",
+    );
+    expect(text).not.toContain("reporting Chow, Bradford and Alexander");
+  });
+
   it("renders question-led entry points, technical disclosures, and accessible figures", async () => {
+    mocks.loadMayoralForecast.mockResolvedValue(forecast());
     const html = renderToStaticMarkup(await HowItWorksPage());
 
     for (const item of methodologyNav) {

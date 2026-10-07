@@ -3,8 +3,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MethodFlow } from "@/components/method-flow";
 import { PageHero } from "@/components/page-hero";
-import { loadCouncilRaceCards, loadManifest } from "@/lib/feeds";
+import { loadCouncilRaceCards, loadManifest, loadMayoralForecast } from "@/lib/feeds";
 import { formatDate } from "@/lib/format";
+import { suspendedShareText } from "@/lib/mayoral-forecast";
 import {
   forecastFlow,
   glossary,
@@ -65,8 +66,14 @@ function MethodDisclosure({
 }
 
 export default async function HowItWorksPage() {
-  const [manifest, council] = await Promise.all([loadManifest(), loadCouncilRaceCards()]);
+  const [manifest, council, forecast] = await Promise.all([
+    loadManifest(),
+    loadCouncilRaceCards(),
+    loadMayoralForecast(),
+  ]);
   const benchmark = council.ward_poll_benchmark;
+  // Alexander's own election-day share, read from the release (backend issue 49).
+  const suspendedShare = suspendedShareText(forecast);
 
   return (
     <main id="main-content" className="np-shell how-shell">
@@ -121,6 +128,28 @@ export default async function HowItWorksPage() {
                   individually; the other certified candidates are one pool whose combined
                   share is learned from past races.
                 </p>
+                {suspendedShare && (
+                  <>
+                    <p>
+                      Chris Alexander ended his campaign on October 6. He is still on the
+                      ballot and can still receive votes. Polls taken on or after that date
+                      enter the model as a comparison between Chow and Bradford, whether or
+                      not they still name him; any share they report for him is set aside.
+                      When one poll asks both the full field and a question offering only
+                      Chow and Bradford, the full-field question is the one that counts.
+                    </p>
+                    <p>
+                      We found ten past cases of a Canadian mayoral candidate ending a
+                      campaign but staying on the ballot. Those polled beforehand kept
+                      between about 3% and 25% of the support they had in their last poll.
+                      The forecast draws Alexander&rsquo;s own election-day share from that
+                      record: {suspendedShare} today. It does not assume where the rest of
+                      his support goes. It starts from a split between Chow and Bradford in
+                      proportion to their own support, and learns the actual split from
+                      polls taken since October 6.
+                    </p>
+                  </>
+                )}
               </div>
               <aside className="how-note">
                 <h3>One model, three views</h3>
@@ -215,8 +244,9 @@ export default async function HowItWorksPage() {
                 </p>
                 <p>
                   The default &ldquo;Since nominations closed&rdquo; view shows polls
-                  reporting Chow, Bradford and Alexander with fieldwork completed after
+                  reporting Chow and Bradford with fieldwork completed after
                   the <a href="https://www.toronto.ca/news/municipal-election-candidate-nominations-close-tomorrow/">August 21 nomination deadline</a>.
+                  Polls taken before October 6 also report Alexander.
                   &ldquo;All polls&rdquo; includes the earlier history. Both views use
                   the same LOESS curves fitted from the full comparable polling history;
                   the default view shows only their portion since nominations closed.

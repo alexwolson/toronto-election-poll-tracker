@@ -1,5 +1,5 @@
 /**
- * Pure selectors over the schema-4 mayoral forecast feed (ADR 0054, policy
+ * Pure selectors over the schema-5 mayoral forecast feed (ADR 0054, policy
  * margin-first-joint-draws-v1).
  *
  * Every public number is a summary of the same joint election-day draws; these
@@ -12,7 +12,7 @@
  */
 
 import { candidateMeta, candidateName } from "@/lib/candidates";
-import { formatDate, isoDayNumber, percentagesToHundred } from "@/lib/format";
+import { formatDate, formatShortDate, isoDayNumber, percentagesToHundred } from "@/lib/format";
 import { loessCurve } from "@/lib/loess";
 import type { CandidateTrend } from "@/lib/polling";
 import type { MayoralForecastFeed, UncertaintyGap, UncertaintySourceKey } from "@/types/feeds";
@@ -48,6 +48,16 @@ export function viableField(feed: MayoralForecastFeed): string[] {
   return Object.keys(feed.candidate_win);
 }
 
+/** The field that remains on the campaign trail: the candidate_win keys minus any
+ * Suspended Campaign folded into Other candidates. A post-exit poll need only report
+ * these to count as reporting the field. */
+export function remainingField(feed: MayoralForecastFeed): string[] {
+  const folded = new Set(
+    (feed.election_day?.other_candidates.includes ?? []).map((c) => c.candidate_id),
+  );
+  return viableField(feed).filter((id) => !folded.has(id));
+}
+
 /** True only when the favourite publishes and the election-day block is present. */
 export function forecastAvailable(feed: MayoralForecastFeed): boolean {
   return leadForecast(feed) !== null && feed.election_day !== null;
@@ -58,7 +68,7 @@ function surnameOf(name: string): string {
 }
 
 export interface ShareRange {
-  /** null for the residual pool */
+  /** null for the Other candidates row */
   candidateId: string | null;
   name: string;
   slug: string;
@@ -68,7 +78,6 @@ export interface ShareRange {
   median: number;
   lower: number;
   upper: number;
-  winProbability: number;
 }
 
 export interface ElectionDaySharesView {
@@ -76,11 +85,16 @@ export interface ElectionDaySharesView {
   rows: ShareRange[];
 }
 
-/** Election-day full-ballot ranges: the named candidates in feed order, then the pool. */
+/** Election-day full-ballot ranges: the named candidates not folded into Other
+ * candidates, in feed order, then the Other candidates row. That row is the pool
+ * plus each included Suspended Campaign, summed draw by draw by the Backend, so
+ * it is read from the feed rather than added up here. */
 export function electionDayShares(feed: MayoralForecastFeed): ElectionDaySharesView | null {
   const day = feed.election_day;
   if (!day) return null;
-  const rows: ShareRange[] = day.candidates.map((c) => {
+  const other = day.other_candidates;
+  const folded = new Set(other.includes.map((c) => c.candidate_id));
+  const rows: ShareRange[] = day.candidates.filter((c) => !folded.has(c.candidate_id)).map((c) => {
     const meta = candidateMeta(c.candidate_id);
     return {
       candidateId: c.candidate_id,
@@ -91,20 +105,17 @@ export function electionDayShares(feed: MayoralForecastFeed): ElectionDaySharesV
       median: c.median * 100,
       lower: c.lower * 100,
       upper: c.upper * 100,
-      winProbability: c.win_probability,
     };
   });
-  const pool = day.residual_pool;
   rows.push({
     candidateId: null,
-    name: pool.label,
+    name: other.label,
     slug: "residual",
     colorVar: "var(--color-disengaged)",
     hatch: false,
-    median: pool.median * 100,
-    lower: pool.lower * 100,
-    upper: pool.upper * 100,
-    winProbability: pool.win_probability,
+    median: other.median * 100,
+    lower: other.lower * 100,
+    upper: other.upper * 100,
   });
   return { intervalMass: day.interval_mass, rows };
 }
@@ -284,6 +295,29 @@ export function residualPoolNote(feed: MayoralForecastFeed): string {
   const named = pool.named_in_polls.map((n) => n.display_name);
   const including = named.length > 0 ? `, including ${listNames(named)}` : "";
   return `${pool.candidate_count} certified candidates${including}, modelled together.`;
+}
+
+/** The "What is behind these numbers" line for the Other candidates row: it names
+ * each included Suspended Campaign and its date, then describes the pool. */
+export function otherCandidatesNote(feed: MayoralForecastFeed): string {
+  const other = feed.election_day?.other_candidates;
+  if (!other) return "";
+  const exits = other.includes.map(
+    (c) => `${c.display_name}, who ended his campaign on ${formatShortDate(c.campaign_suspended_on)}`,
+  );
+  const label = exits.length > 0 ? `${other.label}, including ${listNames(exits)}` : other.label;
+  return `${label}: ${residualPoolNote(feed)}`;
+}
+
+/** The included Suspended Campaign's own election-day share in words, read from
+ * the release: "less than 1%" below one percent, otherwise "about N%". Null when
+ * no campaign is included. */
+export function suspendedShareText(feed: MayoralForecastFeed): string | null {
+  const day = feed.election_day;
+  const included = day?.other_candidates.includes[0];
+  const candidate = day?.candidates.find((c) => c.candidate_id === included?.candidate_id);
+  if (!candidate) return null;
+  return candidate.median < 0.01 ? "less than 1%" : `about ${Math.round(candidate.median * 100)}%`;
 }
 
 /** The forecast history as the polling chart's series: one point per release and

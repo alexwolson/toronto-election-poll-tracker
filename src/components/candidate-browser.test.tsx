@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import candidatesFixture from "../../fixtures/mayoral_candidates.json";
-import { CandidateBrowser } from "@/components/candidate-browser";
+import { CandidateBrowser, candidateWallHint } from "@/components/candidate-browser";
 import type { MayoralCandidate } from "@/types/feeds";
 
 const wantedNames = new Set([
@@ -58,7 +58,8 @@ describe("CandidateBrowser", () => {
       screen.getByText(name).closest(".candidate-row")?.querySelectorAll(".candidate-row__hint");
 
     expect(hintFor("Chris Alexander")?.length).toBe(1);
-    expect(hintFor("Chris Alexander")?.[0].textContent).toBe("Former MP");
+    // A Suspended Campaign outranks every history hint; the history stays in the disclosure.
+    expect(hintFor("Chris Alexander")?.[0].textContent).toBe("Campaign suspended Oct. 6");
     expect(hintFor("Brad Bradford")?.[0].textContent).toBe("Former Councillor");
     expect(hintFor("Olivia Chow")?.[0].textContent).toBe("Incumbent mayor");
     expect(
@@ -66,6 +67,18 @@ describe("CandidateBrowser", () => {
         (row) => row.querySelectorAll(".candidate-row__hint").length <= 1,
       ),
     ).toBe(true);
+  });
+
+  it("labels a Suspended Campaign from its date, and nobody else", () => {
+    const alexander = candidates.find((candidate) => candidate.display_name === "Chris Alexander")!;
+    expect(candidateWallHint(alexander)).toBe("Campaign suspended Oct. 6");
+    expect(candidateWallHint({ ...alexander, campaign_suspended_on: "2026-09-29" })).toBe(
+      "Campaign suspended Sept. 29",
+    );
+    expect(candidateWallHint({ ...alexander, campaign_suspended_on: null })).toBe("Former MP");
+    expect(
+      candidates.filter((candidate) => candidateWallHint(candidate)?.startsWith("Campaign suspended")),
+    ).toHaveLength(1);
   });
 
   it("uses a direct link instead of an empty disclosure for website-only candidates", () => {

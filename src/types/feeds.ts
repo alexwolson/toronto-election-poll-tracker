@@ -19,7 +19,7 @@ export type Availability =
 /** Every `candidate_win` card carries `challenger_win`. */
 export type QuantityKind = "challenger_win";
 
-// ── 1. mayoral forecast (schema_version 4, margin-first-joint-draws-v1) ─────
+// ── 1. mayoral forecast (schema_version 5, margin-first-joint-draws-v1) ─────
 
 /** One candidate's full-race win probability: the fraction of joint election-day
  *  draws that candidate wins outright. `probability` is null unless
@@ -73,6 +73,26 @@ export interface ResidualPool {
   note: string;
 }
 
+/** A Suspended Campaign shown inside the "Other candidates" row. */
+export interface OtherCandidatesInclude {
+  candidate_id: string;
+  display_name: string;
+  /** YYYY-MM-DD, no later than the analysis cutoff */
+  campaign_suspended_on: string;
+}
+
+/** The display row for everyone outside the named rows: the residual pool plus
+ *  the full-ballot share of each candidate in `includes`, summed draw by draw
+ *  before the quantiles are taken. With an empty `includes` it equals the pool.
+ *  A display grouping, not a candidate: it has no win probability. */
+export interface OtherCandidates {
+  label: string;
+  median: number;
+  lower: number;
+  upper: number;
+  includes: OtherCandidatesInclude[];
+}
+
 /** Probability mass of the signed leader-minus-challenger margin in [left, right)
  *  vote-share points; the last bin's upper edge is closed. */
 export interface MarginBin {
@@ -115,6 +135,7 @@ export interface ElectionDay {
   /** same order and ids as the `candidate_win` keys */
   candidates: ElectionDayCandidate[];
   residual_pool: ResidualPool;
+  other_candidates: OtherCandidates;
   pairwise_margin: PairwiseMargin;
 }
 
@@ -155,6 +176,15 @@ export interface UncertaintyBreakdown {
   note: string;
 }
 
+/** One modelled exit. Only the id and date are read; the kept-fraction and
+ *  allocation numbers are audit metadata, never rendered or checked. */
+export interface SuspendedCampaign {
+  candidate_id: string;
+  campaign_suspended_on: string;
+  kept_fraction?: unknown;
+  allocation?: unknown;
+}
+
 export interface ForecastModelRecord {
   name: string;
   version: string;
@@ -164,6 +194,8 @@ export interface ForecastModelRecord {
   seed: number;
   /** true when the fail-closed numerical gate passed; a published feed always carries true */
   qualification_passed: boolean | null;
+  /** ids and dates equal `election_day.other_candidates.includes` */
+  suspended_campaigns: SuspendedCampaign[];
   [key: string]: unknown;
 }
 
@@ -179,7 +211,7 @@ export interface ForecastHistoryPoint {
 }
 
 export interface MayoralForecastFeed {
-  schema_version: 4;
+  schema_version: 5;
   publication_policy: "margin-first-joint-draws-v1";
   /** underscore form, e.g. "toronto_2026" */
   election_cycle_id: string;
@@ -204,7 +236,7 @@ export interface MayoralForecastFeed {
   sensitivity: unknown[];
 }
 
-// ── 2. Results-owned certified mayoral field (schema_version 5) ─────────────
+// ── 2. Results-owned certified mayoral field (schema_version 6) ─────────────
 
 export type MayoralCareerReviewStatus =
   | "reviewed"
@@ -230,10 +262,12 @@ export interface MayoralCandidate {
   review_status: MayoralCareerReviewStatus;
   review_limitations: string | null;
   past_elections: PastElection[];
+  /** YYYY-MM-DD when the candidate ended a campaign but stays on the ballot */
+  campaign_suspended_on: string | null;
 }
 
 export interface MayoralCandidatesFeed {
-  schema_version: 5;
+  schema_version: 6;
   event_id: string;
   contest_id: string;
   election_date: string;
@@ -395,6 +429,8 @@ export interface Poll {
   field_tested: string[];
   shares: Record<string, number>;
   notes: string;
+  /** true when the reading offered only two named candidates (a Head-to-Head Reading) */
+  head_to_head?: boolean;
 }
 
 export interface TrendPoint {
@@ -411,6 +447,9 @@ export interface MayoralPollingFeed {
   polls: Poll[];
   /** One published all-respondent reading per sample, with source reading IDs. */
   all_respondents?: Poll[];
+  /** Head-to-Head Readings, at most one per poll, beside that poll's own reading;
+   *  shown for reference, never counted as separate polls (trend and latest ignore them) */
+  head_to_head?: Poll[];
   latest: Poll | null;
   /** per-candidate reported share over time, chronological (oldest first) */
   trend: Record<string, TrendPoint[]>;

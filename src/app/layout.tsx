@@ -5,7 +5,6 @@ import { Hanken_Grotesk, Schibsted_Grotesk, IBM_Plex_Mono } from "next/font/goog
 import "./globals.css";
 import { MastheadNav } from "@/components/masthead-nav";
 import { SiteFooter } from "@/components/site-footer";
-import { SiteNotice } from "@/components/site-notice";
 
 const hanken = Hanken_Grotesk({
   variable: "--font-chw-body",
@@ -35,7 +34,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${hanken.variable} ${schibsted.variable} ${ibmMono.variable}`}>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>
-        <SiteNotice />
         <header className="masthead site-header">
           <div className="wrap masthead__inner">
             <Link href="/" className="brand" aria-label="City Hall Watcher · Toronto Election 2026 home">

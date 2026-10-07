@@ -10,6 +10,9 @@ import {
   candidateChoiceShares,
   denominatorPhrase,
   explicitOtherShare,
+  headToHeadLabel,
+  headToHeadReading,
+  headToHeadSentence,
   latestFieldShares,
   latestPoll,
   latestReferencedPollDate,
@@ -26,19 +29,21 @@ const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
 const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";
 const ALEXANDER = "per_345dd6a9ee645c0bb5a8ade615f91579";
 const FIELD = [CHOW, BRADFORD, ALEXANDER];
+const MCVIE = "per_95cd5c92c035574ab823643b45e8a5ae";
 
 describe("latest field shares", () => {
   it("reads the newest poll, restricted to the field", () => {
     const shares = latestFieldShares(feed, FIELD);
-    expect(shares[CHOW]).toBeCloseTo(0.5, 4);
-    expect(shares[ALEXANDER]).toBeCloseTo(0.08, 4);
+    expect(shares[CHOW]).toBeCloseTo(0.454, 4);
+    expect(shares[ALEXANDER]).toBeCloseTo(0.085, 4);
     expect("other" in shares).toBe(false);
   });
 });
 
 describe("poll context", () => {
   it("shows only explicitly reported responses outside the forecast field", () => {
-    expect(explicitOtherShare(feed.latest!, FIELD)).toBeCloseTo(0.03, 4);
+    // "Another candidate" plus the two minor candidates Mainstreet names.
+    expect(explicitOtherShare(feed.latest!, FIELD)).toBeCloseTo(0.033 + 0.024 + 0.021, 4);
 
     const incompleteWithoutResidual: Poll = {
       ...feed.latest!,
@@ -113,9 +118,10 @@ describe("candidate trends", () => {
   });
 
   it("leaves a thin series as markers only (no curve)", () => {
-    const alexander = candidateTrends(decidedFeed, FIELD).find((t) => t.id === ALEXANDER)!;
-    expect(alexander.markers.length).toBeLessThan(5); // tested in only a few polls
-    expect(alexander.curve).toBeNull();
+    const mcvie = candidateTrends(decidedFeed, [MCVIE]).find((t) => t.id === MCVIE)!;
+    expect(mcvie.markers.length).toBeGreaterThan(0);
+    expect(mcvie.markers.length).toBeLessThan(5); // tested in only a few polls
+    expect(mcvie.curve).toBeNull();
   });
 
   it("does not zero-fill a candidate not tested in a poll", () => {
@@ -218,20 +224,20 @@ describe("fieldwork order", () => {
     const ordered = pollsByFieldwork(staggered());
     const dates = ordered.map((p) => p.date_conducted);
     expect(dates).toEqual([...dates].sort().reverse());
-    expect(ordered[0].poll_id).toBe("liaison-2026-08-16");
-    expect(ordered.map((p) => p.poll_id)).toContain("pallas-2026-08-21");
+    expect(ordered[0].poll_id).toBe("pallas-2026-08-21");
+    expect(ordered.map((p) => p.poll_id)).toContain("mainstreet-2026-09-29");
     expect(ordered).toHaveLength(feed.polls.length);
   });
   it("names the latest poll by fieldwork and reads its shares", () => {
     const stale = staggered();
-    expect(latestPoll(stale)?.poll_id).toBe("liaison-2026-08-16");
-    expect(latestFieldShares(stale, FIELD)[CHOW]).toBeCloseTo(0.4851, 4);
+    expect(latestPoll(stale)?.poll_id).toBe("pallas-2026-08-21");
+    expect(latestFieldShares(stale, FIELD)[CHOW]).toBeCloseTo(0.5, 4);
     // With the fixture as published, fieldwork and publication agree.
-    expect(latestPoll(feed)?.poll_id).toBe("pallas-2026-08-21");
+    expect(latestPoll(feed)?.poll_id).toBe("mainstreet-2026-09-29");
   });
   it("breaks a fieldwork tie by publication date, then id", () => {
     const tied = structuredClone(feed);
-    tied.polls[1] = { ...tied.polls[1], date_conducted: tied.polls[0].date_conducted, date_published: "2026-08-30" };
+    tied.polls[1] = { ...tied.polls[1], date_conducted: tied.polls[0].date_conducted, date_published: "2026-10-05" };
     expect(latestPoll(tied)?.poll_id).toBe(tied.polls[1].poll_id);
   });
   it("is null for an empty feed", () => {
@@ -241,7 +247,7 @@ describe("fieldwork order", () => {
 
 describe("residual shares and denominator", () => {
   it("keeps undecided apart from the other responses outside the field", () => {
-    const decided = feed.polls[0];
+    const decided = feed.polls[1];
     expect(residualShares(decided, FIELD)).toEqual({ undecided: null, other: decided.shares["response:other"] });
     const all: Poll = {
       ...decided,
@@ -254,7 +260,7 @@ describe("residual shares and denominator", () => {
   it("phrases the denominator for mid-sentence use and is null when the feed has none", () => {
     expect(denominatorPhrase({ ...feed.polls[0], denominator: "All respondents" })).toBe("all respondents");
     expect(denominatorPhrase({ ...feed.polls[0], denominator: "Decided and leaning voters" })).toBe("decided and leaning voters");
-    expect(denominatorPhrase(feed.polls[0])).toBeNull();
+    expect(denominatorPhrase({ ...feed.polls[0], denominator: undefined })).toBeNull();
     expect(denominatorPhrase({ ...feed.polls[0], denominator: "  " })).toBeNull();
   });
 });
@@ -346,5 +352,37 @@ describe("all-respondent response dots", () => {
       expect(trend.markers).toHaveLength(8);
       expect(trend.curve).toBeNull();
     }
+  });
+});
+
+describe("Head-to-Head Readings", () => {
+  const reading = () => structuredClone(feed.head_to_head![0]);
+
+  it("finds a poll's own head-to-head reading, if it has one", () => {
+    expect(headToHeadReading(feed, "mainstreet-2026-09-29")?.poll_reading_id).toBe(
+      "mainstreet_20260928_29_mayor_head_to_head_all",
+    );
+    expect(headToHeadReading(feed, "pallas-2026-08-21")).toBeNull();
+    expect(headToHeadReading({ ...feed, head_to_head: undefined }, "mainstreet-2026-09-29")).toBeNull();
+  });
+
+  it("labels a reading flagged head_to_head by its two candidates, in field order", () => {
+    expect(headToHeadLabel(reading(), FIELD)).toBe("Chow or Bradford only");
+    // The label follows the field's order, not the shares.
+    const bradfordAhead = { ...reading(), shares: { [CHOW]: 0.4, [BRADFORD]: 0.5, "response:undecided": 0.1 } };
+    expect(headToHeadLabel(bradfordAhead, FIELD)).toBe("Chow or Bradford only");
+    expect(headToHeadLabel({ ...reading(), head_to_head: false }, FIELD)).toBeNull();
+    expect(headToHeadLabel(feed.polls[1], FIELD)).toBeNull();
+  });
+
+  it("states the reading for reference, with its own denominator", () => {
+    expect(headToHeadSentence(reading(), FIELD)).toBe(
+      "Mainstreet Research\u2019s Sept. 29 poll also asked the same respondents to choose between only " +
+        "Chow and Bradford. Of all respondents: Chow 47%, Bradford 41%, undecided 12%. " +
+        "It is shown for reference and not counted as a separate poll.",
+    );
+    const decided = { ...reading(), denominator: "Decided voters",
+      shares: { [CHOW]: 0.54, [BRADFORD]: 0.46 }, field_tested: [CHOW, BRADFORD] };
+    expect(headToHeadSentence(decided, FIELD)).toContain("Of decided voters: Chow 54%, Bradford 46%. It is shown");
   });
 });

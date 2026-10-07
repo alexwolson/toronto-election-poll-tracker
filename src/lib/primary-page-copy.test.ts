@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -86,6 +86,13 @@ describe("primary pages drop retired methodology copy", () => {
   it("incumbent explanation keeps the simple, uncaveated heading", () => {
     expect(WARD_DETAIL).toContain("Why this race draws attention");
     expect(WARD_DETAIL).not.toContain("Why this race draws attention —");
+  });
+
+  it("removes the interim Suspended Campaign notice, with nothing in its place", () => {
+    expect(LAYOUT).not.toContain("SiteNotice");
+    expect(LAYOUT).not.toContain("banner");
+    expect(existsSync(path.join(root, "src/components/site-notice.tsx"))).toBe(false);
+    expect(read("src/styles/election.css")).not.toContain("site-notice");
   });
 
   it("keeps route names and runtime dates out of the global masthead descriptor", () => {

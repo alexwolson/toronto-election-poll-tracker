@@ -1,5 +1,6 @@
 import { CandidateHistoryItem } from "@/components/candidate-history";
 import { historyHeadline } from "@/lib/council-history";
+import { formatShortDate } from "@/lib/format";
 import type { MayoralCandidate, PastElection } from "@/types/feeds";
 
 const MAYORAL_BYELECTION_DATE = "2023-06-26";
@@ -13,6 +14,10 @@ function mayoralByelectionResult(history: PastElection[]): PastElection | undefi
 }
 
 export function candidateWallHint(candidate: MayoralCandidate): string | null {
+  // A Suspended Campaign stays on the ballot; its label outranks every history hint.
+  if (candidate.campaign_suspended_on) {
+    return `Campaign suspended ${formatShortDate(candidate.campaign_suspended_on)}`;
+  }
   if (candidate.is_incumbent) return "Incumbent mayor";
 
   const headline = historyHeadline(candidate.past_elections);

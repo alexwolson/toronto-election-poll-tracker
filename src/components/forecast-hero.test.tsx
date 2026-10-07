@@ -17,8 +17,8 @@ describe("ForecastHero", () => {
     expect(html).toContain("Chow ahead by 2 or more");
     expect(html).toContain("Within 2 points either way");
     expect(html).toContain("Bradford ahead by 2 or more");
-    // one chart grammar for all three views: 3 outcome rows + 4 vote-range rows + 4 uncertainty rows
-    expect((html.match(/forecast-chart__row(?!--)/g) ?? []).length).toBe(11);
+    // one chart grammar for all three views: 3 outcome rows + 3 vote-range rows + 4 uncertainty rows
+    expect((html.match(/forecast-chart__row(?!--)/g) ?? []).length).toBe(10);
     expect((html.match(/forecast-chart__row--combined/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--outcomes/g) ?? []).length).toBe(1);
     expect((html.match(/forecast-chart--shares/g) ?? []).length).toBe(1);
@@ -54,10 +54,23 @@ describe("ForecastHero", () => {
     expect(html).toMatch(/aria-selected="false"[^>]*>Where the uncertainty comes from/);
     expect((html.match(/role="tabpanel"/g) ?? []).length).toBe(2);
     expect((html.match(/role="tabpanel"[^>]*hidden/g) ?? []).length).toBe(1);
-    // 2a. vote ranges for the three named candidates and the pool, visible first
-    expect(html).toContain("Other candidates");
-    expect(html).toContain("Sarah McVie");
+    // 2a. vote ranges: the named candidates not in Other candidates, then that row, visible first
+    const voteRanges = html.slice(html.indexOf("forecast-chart--shares"), html.indexOf("forecast-chart--uncertainty"));
+    expect([...voteRanges.matchAll(/forecast-chart__label">(?:<span[^>]*><\/span>)?([^<]+)</g)].map((m) => m[1])).toEqual([
+      "Olivia Chow",
+      "Brad Bradford",
+      "Other candidates",
+    ]);
+    // the Other candidates range is the feed's per-draw sum with Alexander, not the pool alone
+    expect(voteRanges).toContain("Other candidates: middle estimate 6.1%, central 80% range 2.6% to 14.5%");
+    expect(voteRanges).not.toContain("Chris Alexander");
     expect(html).toContain("the middle 80%");
+    // the disclosure keeps its Other candidates line, naming the included candidate and date
+    const method = html.slice(html.indexOf("What is behind these numbers"));
+    expect(method.replace(/<[^>]+>/g, "")).toContain(
+      "Other candidates, including Chris Alexander, who ended his campaign on Oct. 6: " +
+        "50 certified candidates, including Sarah McVie and Odessa Paloma Parker, modelled together.",
+    );
     // 2b. where the uncertainty comes from: three widening ranges (ADR 0056)
     expect(html).toContain("The polls today could be off");
     expect(html).toContain("Results have landed away from final polls");
@@ -77,7 +90,7 @@ describe("ForecastHero", () => {
     expect(plainHtml).not.toContain('role="tablist"');
     expect(plainHtml).not.toContain("forecast-chart--uncertainty");
     expect(plainHtml).not.toContain("The polls today could be off");
-    expect((plainHtml.match(/forecast-chart__row/g) ?? []).length).toBe(7);
+    expect((plainHtml.match(/forecast-chart__row/g) ?? []).length).toBe(6);
     // no histogram any more
     expect(html).not.toContain("forecast-margin__bin");
     // retired vocabulary

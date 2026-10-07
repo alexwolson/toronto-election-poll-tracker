@@ -10,6 +10,9 @@ import { formatDate, formatSharePct } from "@/lib/format";
 import { viableField } from "@/lib/mayoral-forecast";
 import {
   denominatorPhrase,
+  headToHeadLabel,
+  headToHeadReading,
+  headToHeadSentence,
   latestFieldShares,
   latestPoll,
   latestReferencedPollDate,
@@ -31,6 +34,13 @@ export default async function Home() {
   const latest = latestPoll(polling);
   const residual = latest ? residualShares(latest, field) : { undecided: null, other: null };
   const denominator = latest ? denominatorPhrase(latest) : null;
+  // A latest poll that offered only two candidates says so beside its denominator.
+  const onlyLabel = latest ? headToHeadLabel(latest, field) : null;
+  const basis = [denominator, onlyLabel && denominator ? `(${onlyLabel})` : onlyLabel]
+    .filter(Boolean)
+    .join(" ");
+  // Shown only when the head-to-head question belongs to the latest poll itself.
+  const headToHead = latest ? headToHeadReading(polling, latest.poll_id) : null;
   const forecastAsOf = latestReferencedPollDate(polling, forecast.final_field_samples);
 
   return (
@@ -49,7 +59,7 @@ export default async function Home() {
             <PollsterLink firm={latest.firm} />, {formatDate(latest.date_conducted)}
             {latest.sample_size ? `, ${latest.sample_size.toLocaleString()} respondents` : ""} by{" "}
             {pollMethodLabel(latest.methodology).replace(/^./, (c) => c.toLowerCase())}
-            {denominator ? `, ${denominator}` : ""}:{" "}
+            {basis ? `, ${basis}` : ""}:{" "}
             {ranked.map((id, index) => {
               const meta = candidateMeta(id);
               return (
@@ -70,6 +80,9 @@ export default async function Home() {
             )}
             .
           </p>
+          {headToHead && (
+            <p className="forecast-caption">{headToHeadSentence(headToHead, field)}</p>
+          )}
           <Link href="/polls" className="btn btn--primary">
             See all mayoral polls and the trend →
           </Link>

@@ -32,9 +32,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* Publication shell. */
 .site-header { border: 0; }
 .site-header .masthead__inner { min-height: 80px; }
-/* The banner's text sits in a plain paragraph: no link, so restate the link's type. */
-.site-notice .banner__text { margin: 0; font-size: .95rem; line-height: 1.35; }
-@media (max-width: 640px) { .site-notice .banner__text { font-size: .9rem; } }
 .site-brand { display: grid; gap: 6px; padding: 0; text-align: left; }
 .site-brand__edition { color: var(--nav-link); font-size: var(--type-data); line-height: 1.2; }
 .site-nav { display: block; border: 0; }

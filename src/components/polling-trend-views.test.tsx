@@ -81,7 +81,7 @@ describe("polling trend views", () => {
 
   it("shows an empty state when no comparable poll reports the full field", () => {
     render(<PollingTrendViews allTrends={allTrends} qualifiedTrends={[]} series={series} />);
-    expect(screen.getByText("No comparable three-candidate polls since nominations closed yet.")).toBeTruthy();
+    expect(screen.getByText("No comparable polls since nominations closed yet.")).toBeTruthy();
     expect(screen.queryByText(/Olivia Chow: 2 polls shown/)).toBeNull();
   });
 });

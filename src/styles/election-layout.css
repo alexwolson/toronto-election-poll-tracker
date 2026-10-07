@@ -757,6 +757,11 @@
 .poll-archive__method {
   color: var(--text-soft);
 }
+/* A Head-to-Head Reading sits indented beneath its own poll. */
+.poll-archive__subrow-label {
+  padding-left: 1.25rem;
+  color: var(--text-soft);
+}
 
 .forecast-unavailable {
   border: 1px solid var(--line-soft);
@@ -2062,6 +2067,14 @@
     order: 3;
     flex: 0 0 50%;
     white-space: normal;
+  }
+  .poll-archive__table tbody .poll-archive__row--head-to-head {
+    margin-left: 1rem;
+    border-top-width: 1px;
+  }
+  .poll-archive__subrow-label {
+    order: 1;
+    flex: 0 0 100%;
   }
 }
 

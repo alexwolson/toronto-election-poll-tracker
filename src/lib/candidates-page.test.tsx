@@ -31,6 +31,9 @@ describe("Candidates page", () => {
     expect(html).not.toContain("Jump by surname");
     expect(html).toContain("Olivia Chow");
     expect(html).toContain("Chris Alexander");
+    // Still listed as a ballot candidate, labelled with the date the campaign ended.
+    expect(html).toMatch(/Chris Alexander<\/span><span class="candidate-row__hint">Campaign suspended Oct\. 6</);
+    expect(html.match(/Campaign suspended/g)).toHaveLength(1);
     expect(html).toContain("Former MP · 2 past races");
     expect(html).not.toContain("Former Mayor");
     expect(html).toContain("nationwide with no year cutoff");
@@ -52,7 +55,7 @@ describe("Candidates page", () => {
 
   it("shows an honest unavailable state instead of a partial field", async () => {
     mocks.loadMayoralCandidates.mockResolvedValue({
-      schema_version: 5,
+      schema_version: 6,
       event_id: "",
       contest_id: "",
       election_date: "",

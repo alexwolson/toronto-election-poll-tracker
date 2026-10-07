@@ -66,7 +66,7 @@ export function PollingTrendViews({
         </p>
       )}
       {qualified && qualifiedCount === 0 ? (
-        <p className="forecast-unavailable">No comparable three-candidate polls since nominations closed yet.</p>
+        <p className="forecast-unavailable">No comparable polls since nominations closed yet.</p>
       ) : (
         <PollingChart
           trends={shownTrends}

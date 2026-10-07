@@ -13,6 +13,20 @@ export function formatDate(iso: string): string {
   return `${MONTHS[Number(month) - 1]} ${Number(day)}, ${year}`;
 }
 
+/** Month names as the approved prose writes them: "Oct. 6", "Sept. 29", "June 18". */
+const PROSE_MONTHS = [
+  "Jan.", "Feb.", "March", "April", "May", "June",
+  "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec.",
+];
+
+/** A day of the campaign year in running prose, without the year: "Oct. 6". */
+export function formatShortDate(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return iso;
+  const [, , month, day] = match;
+  return `${PROSE_MONTHS[Number(month) - 1]} ${Number(day)}`;
+}
+
 /** A poll share (0..1) as a whole-number percent, e.g. 0.4851 -> "49%". */
 export function formatSharePct(share: number): string {
   return `${Math.round(share * 100)}%`;

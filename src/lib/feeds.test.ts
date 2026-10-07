@@ -17,9 +17,9 @@ import {
 
 describe("validateForecast", () => {
   const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
-  it("accepts the schema-4 margin-first feed", () => {
+  it("accepts the schema-5 margin-first feed", () => {
     const feed = validateForecast(forecastFixture);
-    expect(feed?.schema_version).toBe(4);
+    expect(feed?.schema_version).toBe(5);
     expect(feed?.publication_policy).toBe("margin-first-joint-draws-v1");
     expect(feed?.election_day?.pairwise_margin.bins).toHaveLength(40);
     const outcomes = feed?.election_day?.pairwise_margin.outcomes;
@@ -33,6 +33,8 @@ describe("validateForecast", () => {
   });
 
   it("rejects earlier schemas and the retired band contract", () => {
+    expect(validateForecast({ ...forecastFixture, schema_version: 4 })).toBeNull();
+    expect(validateForecast({ ...forecastFixture, schema_version: 6 })).toBeNull();
     expect(validateForecast({ ...forecastFixture, schema_version: 3 })).toBeNull();
     expect(validateForecast({ ...forecastFixture, schema_version: 2 })).toBeNull();
     expect(validateForecast({ ...forecastFixture, schema_version: 999 })).toBeNull();
@@ -116,7 +118,7 @@ describe("validateForecast", () => {
     // Releases before ADR 0056 carry no block; that still validates.
     const without = structuredClone(forecastFixture) as Record<string, unknown>;
     delete without.uncertainty;
-    expect(validateForecast(without)?.schema_version).toBe(4);
+    expect(validateForecast(without)?.schema_version).toBe(5);
     expect(validateForecast(without)?.uncertainty).toBeUndefined();
     const cases: Array<(feed: typeof forecastFixture) => void> = [
       (f) => { f.uncertainty.sources.pop(); },
@@ -130,6 +132,113 @@ describe("validateForecast", () => {
       (f) => { delete (f.uncertainty as Record<string, unknown>).combined; },
       (f) => { f.uncertainty.sources[0].share_of_uncertainty += 0.1; },
       (f) => { f.uncertainty.variance_explained = 0; },
+    ];
+    for (const mutate of cases) {
+      const malformed = structuredClone(forecastFixture);
+      mutate(malformed);
+      expect(validateForecast(malformed), mutate.toString()).toBeNull();
+    }
+  });
+});
+
+describe("validateForecast: Other candidates and Suspended Campaigns (schema 5)", () => {
+  const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
+  const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";
+  const ALEXANDER = "per_345dd6a9ee645c0bb5a8ade615f91579";
+  type Fixture = typeof forecastFixture;
+  type Loose = Record<string, unknown>;
+  const loose = (value: unknown) => value as Loose;
+  /** Set the suspension date in both places that must agree. */
+  const suspendedOn = (f: Fixture, date: string) => {
+    f.election_day.other_candidates.includes[0].campaign_suspended_on = date;
+    f.model.suspended_campaigns[0].campaign_suspended_on = date;
+  };
+
+  it("accepts Other candidates that include Alexander, matched by the model's suspended campaigns", () => {
+    const feed = validateForecast(forecastFixture);
+    const other = feed?.election_day?.other_candidates;
+    const pool = feed?.election_day?.residual_pool;
+    expect(other?.label).toBe("Other candidates");
+    expect(other?.includes).toEqual([
+      { candidate_id: ALEXANDER, display_name: "Chris Alexander", campaign_suspended_on: "2026-10-06" },
+    ]);
+    expect(other!.lower).toBeGreaterThanOrEqual(pool!.lower);
+    expect(other!.median).toBeGreaterThanOrEqual(pool!.median);
+    expect(other!.upper).toBeGreaterThanOrEqual(pool!.upper);
+    expect(
+      feed?.model.suspended_campaigns.map((c) => [c.candidate_id, c.campaign_suspended_on]),
+    ).toEqual([[ALEXANDER, "2026-10-06"]]);
+    // He stays named in the model.
+    expect(Object.keys(feed?.candidate_win ?? {})).toContain(ALEXANDER);
+  });
+
+  it("accepts an empty includes list whose range is exactly the pool's", () => {
+    const f = structuredClone(forecastFixture);
+    const pool = f.election_day.residual_pool;
+    Object.assign(f.election_day.other_candidates, {
+      includes: [], median: pool.median, lower: pool.lower, upper: pool.upper,
+    });
+    f.model.suspended_campaigns = [];
+    expect(validateForecast(f)?.election_day?.other_candidates.includes).toEqual([]);
+  });
+
+  it("accepts a suspension dated on the analysis cutoff's own day, in the cutoff's offset", () => {
+    const f = structuredClone(forecastFixture);
+    f.analysis_cutoff = "2026-10-06T00:30:00-04:00";
+    expect(validateForecast(f)).not.toBeNull();
+    f.analysis_cutoff = "2026-10-05T23:59:00-04:00";
+    expect(validateForecast(f)).toBeNull();
+  });
+
+  it("does not check the kept-fraction, allocation or case audit numbers", () => {
+    const f = structuredClone(forecastFixture);
+    loose(f.model.suspended_campaigns[0]).kept_fraction = "not checked";
+    loose(f.model.suspended_campaigns[0]).allocation = null;
+    loose(f.model).kept_fraction_cases = "not checked";
+    expect(validateForecast(f)).not.toBeNull();
+  });
+
+  it("fails closed on every incoherent Other candidates or Suspended Campaign block", () => {
+    const cases: Array<(f: Fixture) => void> = [
+      (f) => { delete loose(f.election_day).other_candidates; },
+      (f) => { f.election_day.other_candidates.label = ""; },
+      (f) => { f.election_day.other_candidates.lower = f.election_day.other_candidates.median + 0.01; },
+      (f) => { f.election_day.other_candidates.upper = 1.2; },
+      // each bound at or above the pool's matching bound
+      (f) => { f.election_day.other_candidates.lower = f.election_day.residual_pool.lower - 0.001; },
+      (f) => { f.election_day.other_candidates.median = f.election_day.residual_pool.median - 0.001; },
+      (f) => { f.election_day.other_candidates.upper = f.election_day.residual_pool.upper - 0.001; },
+      // an empty includes list must equal the pool exactly
+      (f) => { f.election_day.other_candidates.includes = []; f.model.suspended_campaigns = []; },
+      (f) => { loose(f.election_day.other_candidates).includes = {}; },
+      // includes entries: unique, a candidate_win key and election-day entry, matching name
+      (f) => {
+        const [entry] = f.election_day.other_candidates.includes;
+        f.election_day.other_candidates.includes = [entry, { ...entry }];
+        f.model.suspended_campaigns = [f.model.suspended_campaigns[0], { ...f.model.suspended_campaigns[0] }];
+      },
+      (f) => {
+        f.election_day.other_candidates.includes[0].candidate_id = "per_nobody";
+        f.model.suspended_campaigns[0].candidate_id = "per_nobody";
+      },
+      (f) => { f.election_day.other_candidates.includes[0].display_name = "C. Alexander"; },
+      // the suspension date: an ISO calendar date no later than the analysis cutoff
+      (f) => { suspendedOn(f, "Oct 6, 2026"); },
+      (f) => { suspendedOn(f, "2026-02-30"); },
+      (f) => { suspendedOn(f, "2026-10-08"); },
+      (f) => {
+        delete loose(f.election_day.other_candidates.includes[0]).campaign_suspended_on;
+        delete loose(f.model.suspended_campaigns[0]).campaign_suspended_on;
+      },
+      // model.suspended_campaigns is required and equals includes in ids and dates
+      (f) => { delete loose(f.model).suspended_campaigns; },
+      (f) => { loose(f.model).suspended_campaigns = {}; },
+      (f) => { f.model.suspended_campaigns[0].candidate_id = CHOW; },
+      (f) => { f.model.suspended_campaigns[0].campaign_suspended_on = "2026-10-05"; },
+      (f) => {
+        f.model.suspended_campaigns.push({ ...f.model.suspended_campaigns[0], candidate_id: BRADFORD });
+      },
+      (f) => { f.model.suspended_campaigns = []; },
     ];
     for (const mutate of cases) {
       const malformed = structuredClone(forecastFixture);
@@ -169,6 +278,71 @@ describe("validatePolling", () => {
     }
   });
 
+  describe("Head-to-Head Readings", () => {
+    const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
+    const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";
+    const ALEXANDER = "per_345dd6a9ee645c0bb5a8ade615f91579";
+    type Loose = Record<string, unknown>;
+    const entry = () => structuredClone(pollingFixture.head_to_head[0]) as unknown as Loose;
+    const withEntries = (entries: unknown) => ({ ...structuredClone(pollingFixture), head_to_head: entries });
+
+    it("accepts a head-to-head reading under its own poll, and a feed without the array", () => {
+      const feed = validatePolling(pollingFixture);
+      const reading = feed?.head_to_head?.[0];
+      expect(reading?.poll_id).toBe("mainstreet-2026-09-29");
+      expect(reading?.denominator).toBe("All respondents");
+      expect(reading?.head_to_head).toBe(true);
+      expect(reading?.shares).toEqual({ [CHOW]: 0.471, [BRADFORD]: 0.409, "response:undecided": 0.12 });
+      const without = structuredClone(pollingFixture) as Loose;
+      delete without.head_to_head;
+      expect(validatePolling(without)?.head_to_head).toBeUndefined();
+      // Any non-empty denominator label is accepted.
+      expect(validatePolling(withEntries([{ ...entry(), denominator: "Decided voters" }]))).not.toBeNull();
+    });
+
+    it("rejects a reading that does not match its poll or is not a two-candidate question", () => {
+      const parent = pollingFixture.polls.find((poll) => poll.poll_id === entry().poll_id)!;
+      const other = pollingFixture.polls.find((poll) => poll.poll_id !== parent.poll_id)!;
+      const cases: Loose[][] = [
+        [{ ...entry(), poll_id: "unknown" }],
+        [entry(), { ...entry(), poll_reading_id: "another-reading" }],
+        [entry(), { ...entry(), poll_id: other.poll_id, firm: other.firm, date_conducted: other.date_conducted,
+          date_published: other.date_published, sample_size: other.sample_size, methodology: other.methodology }],
+        [{ ...entry(), firm: "Another firm" }],
+        [{ ...entry(), date_conducted: "2026-09-28" }],
+        [{ ...entry(), date_published: "2026-10-03" }],
+        [{ ...entry(), sample_size: 999 }],
+        [{ ...entry(), methodology: "online" }],
+        [{ ...entry(), denominator: "" }],
+        [{ ...entry(), denominator: undefined }],
+        [{ ...entry(), poll_reading_id: "" }],
+        [{ ...entry(), head_to_head: "yes" }],
+        [{ ...entry(), shares: { [CHOW]: 0.88, "response:undecided": 0.12 }, field_tested: [CHOW, "response:undecided"] }],
+        [{ ...entry(), shares: { [CHOW]: 0.4, [BRADFORD]: 0.4, [ALEXANDER]: 0.08, "response:undecided": 0.12 },
+          field_tested: [CHOW, BRADFORD, ALEXANDER, "response:undecided"] }],
+        [{ ...entry(), shares: { per_unknown: 0.471, [BRADFORD]: 0.409, "response:undecided": 0.12 },
+          field_tested: ["per_unknown", BRADFORD, "response:undecided"] }],
+        [{ ...entry(), shares: { [CHOW]: 0.471, [BRADFORD]: 0.409, "response:other": 0.12 },
+          field_tested: [CHOW, BRADFORD, "response:other"] }],
+        [{ ...entry(), shares: { [CHOW]: 0.471, [BRADFORD]: 0.309, "response:undecided": 0.12 } }],
+        [{ ...entry(), field_tested: [CHOW, BRADFORD] }],
+      ];
+      for (const entries of cases) {
+        expect(validatePolling(withEntries(entries)), JSON.stringify(entries)).toBeNull();
+      }
+      expect(validatePolling(withEntries({}))).toBeNull();
+    });
+
+    it("accepts an optional boolean head_to_head flag on poll records and rejects anything else", () => {
+      const flagged = structuredClone(pollingFixture);
+      (flagged.polls[1] as Loose).head_to_head = true;
+      (flagged.polls[2] as Loose).head_to_head = false;
+      expect(validatePolling(flagged)?.polls[1].head_to_head).toBe(true);
+      const malformed = structuredClone(pollingFixture);
+      (malformed.polls[1] as Loose).head_to_head = "true";
+      expect(validatePolling(malformed)).toBeNull();
+    });
+  });
 });
 
 describe("validateManifest", () => {
@@ -228,7 +402,7 @@ describe("validateManifest", () => {
 describe("validateMayoralCandidates", () => {
   it("accepts the complete certified fixture", () => {
     const feed = validateMayoralCandidates(candidatesFixture);
-    expect(feed?.schema_version).toBe(5);
+    expect(feed?.schema_version).toBe(6);
     expect(feed?.ballot_certified).toBe(true);
     expect(feed?.candidates).toHaveLength(53);
     expect(
@@ -236,13 +410,37 @@ describe("validateMayoralCandidates", () => {
     ).toMatchObject({
       display_name: "Olivia Chow",
       is_incumbent: true,
+      campaign_suspended_on: null,
     });
+    expect(
+      feed?.candidates.find((candidate) => candidate.display_name === "Chris Alexander")
+        ?.campaign_suspended_on,
+    ).toBe("2026-10-06");
+  });
+
+  it("accepts only schema 6", () => {
+    expect(validateMayoralCandidates({ ...candidatesFixture, schema_version: 5 })).toBeNull();
+    expect(validateMayoralCandidates({ ...candidatesFixture, schema_version: 7 })).toBeNull();
+  });
+
+  it("requires campaign_suspended_on on every candidate: null or an ISO date no later than election day", () => {
+    const alexander = (feed: typeof candidatesFixture) =>
+      feed.candidates.find((candidate) => candidate.display_name === "Chris Alexander")! as Record<string, unknown>;
+    const onElectionDay = structuredClone(candidatesFixture);
+    alexander(onElectionDay).campaign_suspended_on = "2026-10-26";
+    expect(validateMayoralCandidates(onElectionDay)).not.toBeNull();
+    for (const value of [undefined, "", "Oct. 6", "2026-02-30", "2026-10-27", 20261006, false]) {
+      const malformed = structuredClone(candidatesFixture);
+      if (value === undefined) delete alexander(malformed).campaign_suspended_on;
+      else alexander(malformed).campaign_suspended_on = value;
+      expect(validateMayoralCandidates(malformed), String(value)).toBeNull();
+    }
   });
 
   it("rejects malformed candidate rows", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 5,
+        schema_version: 6,
         event_id: "toronto-2026",
         contest_id: "mayor-2026",
         election_date: "2026-10-26",
@@ -256,7 +454,7 @@ describe("validateMayoralCandidates", () => {
   it("rejects a provisional feed that exposes candidates", () => {
     expect(
       validateMayoralCandidates({
-        schema_version: 5,
+        schema_version: 6,
         event_id: "toronto-2026",
         contest_id: "mayor-2026",
         election_date: "2026-10-26",

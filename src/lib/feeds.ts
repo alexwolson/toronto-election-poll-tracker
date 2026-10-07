@@ -40,6 +40,13 @@ function isShare(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
+/** A real calendar date written YYYY-MM-DD (so "2026-02-30" fails). */
+function isIsoDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 const SVG_PATH = /^M[-0-9. ]+(?: L[-0-9. ]+)+(?: Z(?: M[-0-9. ]+(?: L[-0-9. ]+)+ Z)*)$/;
 
 function validMapPoint(value: unknown, maximum: number): value is number {
@@ -140,7 +147,7 @@ const FORECAST_POLICY = "margin-first-joint-draws-v1";
 /** Development-only dark feed: the favourite is withheld and there is no
  *  election-day block, so every selector reports the forecast as unavailable. */
 const FORECAST_FALLBACK: MayoralForecastFeed = {
-  schema_version: 4,
+  schema_version: 5,
   publication_policy: FORECAST_POLICY,
   election_cycle_id: "",
   election_date: "",
@@ -156,7 +163,10 @@ const FORECAST_FALLBACK: MayoralForecastFeed = {
   },
   candidate_win: {},
   election_day: null,
-  model: { name: "", version: "", specification: {}, draws: 0, chains: 0, seed: 0, qualification_passed: null },
+  model: {
+    name: "", version: "", specification: {}, draws: 0, chains: 0, seed: 0,
+    qualification_passed: null, suspended_campaigns: [],
+  },
   sensitivity: [],
 };
 
@@ -278,11 +288,72 @@ function validElectionDay(
   return validPairwiseMargin(value.pairwise_margin, new Set(ids));
 }
 
-/** Schema 4 only; anything else fails closed (ADR 0054). */
+/**
+ * The "Other candidates" display row (schema 5): the pool plus each included
+ * Suspended Campaign, summed draw by draw, so every bound sits at or above the
+ * pool's and equals it when nothing is included. Each included candidate stays
+ * a named candidate of the model, suspended no later than the analysis cutoff.
+ */
+function validOtherCandidates(
+  value: unknown,
+  day: Record<string, unknown>,
+  candidateWin: Record<string, ForecastQuantityCard>,
+  cutoffDate: string,
+): value is { includes: Array<{ candidate_id: string; campaign_suspended_on: string }> } {
+  const pool = day.residual_pool as { lower: number; median: number; upper: number };
+  if (
+    !isRecord(value) ||
+    !isNonEmptyString(value.label) ||
+    !orderedShares(value.lower, value.median, value.upper) ||
+    !Array.isArray(value.includes)
+  ) return false;
+  const { lower, median, upper } = value as { lower: number; median: number; upper: number };
+  if (lower < pool.lower || median < pool.median || upper < pool.upper) return false;
+  if (
+    value.includes.length === 0 &&
+    (lower !== pool.lower || median !== pool.median || upper !== pool.upper)
+  ) return false;
+  const named = new Map(
+    (day.candidates as Array<{ candidate_id: string; display_name: string }>)
+      .map((c) => [c.candidate_id, c.display_name]),
+  );
+  const seen = new Set<string>();
+  for (const entry of value.includes) {
+    if (
+      !isRecord(entry) ||
+      !isNonEmptyString(entry.candidate_id) ||
+      seen.has(entry.candidate_id) ||
+      !Object.hasOwn(candidateWin, entry.candidate_id) ||
+      !named.has(entry.candidate_id) ||
+      entry.display_name !== named.get(entry.candidate_id) ||
+      !isIsoDate(entry.campaign_suspended_on) ||
+      entry.campaign_suspended_on > cutoffDate
+    ) return false;
+    seen.add(entry.candidate_id);
+  }
+  return true;
+}
+
+/** `model.suspended_campaigns` names exactly the included candidates, with the
+ * same dates. Its kept-fraction and allocation numbers are audit metadata. */
+function validSuspendedCampaigns(
+  value: unknown,
+  includes: Array<{ candidate_id: string; campaign_suspended_on: string }>,
+): boolean {
+  if (!Array.isArray(value) || value.length !== includes.length) return false;
+  const key = (entry: { candidate_id: unknown; campaign_suspended_on: unknown }) =>
+    `${String(entry.candidate_id)}@${String(entry.campaign_suspended_on)}`;
+  if (!value.every(isRecord)) return false;
+  const model = (value as Array<{ candidate_id: unknown; campaign_suspended_on: unknown }>).map(key).sort();
+  const shown = includes.map(key).sort();
+  return model.every((entry, index) => entry === shown[index]);
+}
+
+/** Schema 5 only; anything else fails closed (ADR 0054, Suspended Campaign schema bump). */
 export function validateForecast(value: unknown): MayoralForecastFeed | null {
   if (
     !isRecord(value) ||
-    value.schema_version !== 4 ||
+    value.schema_version !== 5 ||
     value.publication_policy !== FORECAST_POLICY ||
     value.election_cycle_id !== "toronto_2026" ||
     typeof value.election_date !== "string" || !ISO_DATE.test(value.election_date) ||
@@ -315,13 +386,16 @@ export function validateForecast(value: unknown): MayoralForecastFeed | null {
         !(favourite.candidate_id in value.candidate_win)
       : favourite.candidate_id !== null)
   ) return null;
-  if (!validElectionDay(value.election_day, value.candidate_win as Record<string, ForecastQuantityCard>)) {
-    return null;
-  }
+  const candidateWin = value.candidate_win as Record<string, ForecastQuantityCard>;
+  if (!validElectionDay(value.election_day, candidateWin)) return null;
+  const day = value.election_day as Record<string, unknown>;
+  // The cutoff's own calendar day, in the offset it was written with.
+  const cutoffDate = value.analysis_cutoff.slice(0, 10);
   if (
-    value.history !== undefined &&
-    !validHistory(value.history, value.candidate_win as Record<string, ForecastQuantityCard>)
+    !validOtherCandidates(day.other_candidates, day, candidateWin, cutoffDate) ||
+    !validSuspendedCampaigns(value.model.suspended_campaigns, day.other_candidates.includes)
   ) return null;
+  if (value.history !== undefined && !validHistory(value.history, candidateWin)) return null;
   if (
     value.uncertainty !== undefined &&
     !validUncertainty(
@@ -425,7 +499,7 @@ export function loadMayoralForecast(): Promise<MayoralForecastFeed> {
 // ── mayoral polling ─────────────────────────────────────────────────────────
 
 const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
-  schema_version: 5,
+  schema_version: 6,
   event_id: "",
   contest_id: "",
   election_date: "",
@@ -445,9 +519,10 @@ const MAYORAL_CANDIDATES_FALLBACK: MayoralCandidatesFeed = {
 export function validateMayoralCandidates(
   value: unknown,
 ): MayoralCandidatesFeed | null {
-  if (!isRecord(value) || value.schema_version !== 5) return null;
+  if (!isRecord(value) || value.schema_version !== 6) return null;
   if (typeof value.event_id !== "string" || typeof value.contest_id !== "string") return null;
   if (typeof value.election_date !== "string") return null;
+  const electionDate = value.election_date;
   if (typeof value.ballot_certified !== "boolean") return null;
   if (!isRecord(value.coverage)) return null;
   if (
@@ -480,7 +555,11 @@ export function validateMayoralCandidates(
       (typeof candidate.review_limitations !== "string" &&
         candidate.review_limitations !== null) ||
       !Array.isArray(candidate.past_elections) ||
-      !candidate.past_elections.every(validPastElection)
+      !candidate.past_elections.every(validPastElection) ||
+      // Required: null, or the date a campaign ended with the name still on the ballot.
+      (candidate.campaign_suspended_on !== null &&
+        !(isIsoDate(candidate.campaign_suspended_on) &&
+          candidate.campaign_suspended_on <= electionDate))
     ) return false;
     candidacyIds.add(candidate.candidacy_id);
     return true;
@@ -817,6 +896,7 @@ function validPoll(value: unknown, candidates: Set<string>): boolean {
     !isNonEmptyString(value.methodology) ||
     (value.poll_reading_id !== undefined && !isNonEmptyString(value.poll_reading_id)) ||
     (value.denominator !== undefined && typeof value.denominator !== "string") ||
+    (value.head_to_head !== undefined && typeof value.head_to_head !== "boolean") ||
     !isUniqueStringArray(value.field_tested) ||
     !isRecord(value.shares) ||
     Object.keys(value.shares).length === 0 ||
@@ -829,6 +909,51 @@ function validPoll(value: unknown, candidates: Set<string>): boolean {
     total > 0 &&
     total <= 1.01
   );
+}
+
+/**
+ * Readings that sit beside a poll's own reading (`all_respondents`, `head_to_head`):
+ * each names an existing poll, at most one per poll, with its own unique reading
+ * id, the parent's firm, dates, sample size and method, and a complete response
+ * breakdown that sums to 1 within source rounding. `basis` adds the array's rule.
+ */
+function validAlternateReadings(
+  value: unknown,
+  polls: Record<string, unknown>[],
+  candidates: Set<string>,
+  basis: (poll: Record<string, unknown>) => boolean,
+): boolean {
+  if (!Array.isArray(value)) return false;
+  const parents = new Map(polls.map((poll) => [String(poll.poll_id), poll]));
+  const alternateIds = new Set<string>();
+  const readingIds = new Set<string>();
+  for (const poll of value) {
+    if (!isRecord(poll) || !validPoll(poll, candidates) || !basis(poll) ||
+        !isNonEmptyString(poll.poll_reading_id) ||
+        !parents.has(String(poll.poll_id)) || alternateIds.has(String(poll.poll_id)) ||
+        readingIds.has(poll.poll_reading_id) ||
+        !Array.isArray(poll.field_tested) ||
+        !isRecord(poll.shares)) return false;
+    const shares = poll.shares;
+    if (Object.keys(shares).length !== poll.field_tested.length ||
+        poll.field_tested.some((id) => !Object.hasOwn(shares, id)) ||
+        Math.abs(Object.values(shares).reduce<number>((sum, share) => sum + Number(share), 0) - 1) > 0.02 + Number.EPSILON) return false;
+    const original = parents.get(String(poll.poll_id))!;
+    if (["firm", "date_conducted", "date_published", "sample_size", "methodology"]
+        .some((key) => original[key] !== poll[key])) return false;
+    alternateIds.add(String(poll.poll_id));
+    readingIds.add(poll.poll_reading_id);
+  }
+  return true;
+}
+
+/** A Head-to-Head Reading names its own denominator and offers exactly two
+ * candidates; undecided is the only other response it may report. */
+function validHeadToHeadShares(poll: Record<string, unknown>): boolean {
+  if (!isNonEmptyString(poll.denominator) || !isRecord(poll.shares)) return false;
+  const keys = Object.keys(poll.shares);
+  const named = keys.filter((id) => !id.startsWith("response:"));
+  return named.length === 2 && keys.every((id) => named.includes(id) || id === "response:undecided");
 }
 
 export function validatePolling(value: unknown): MayoralPollingFeed | null {
@@ -852,28 +977,16 @@ export function validatePolling(value: unknown): MayoralPollingFeed | null {
   if (!validPoll(value.latest, candidates) || value.latest.poll_id !== value.polls[0].poll_id) {
     return null;
   }
-  if (value.all_respondents !== undefined) {
-    if (!Array.isArray(value.all_respondents)) return null;
-    const alternateIds = new Set<string>();
-    const readingIds = new Set<string>();
-    for (const poll of value.all_respondents) {
-      if (!isRecord(poll) || !validPoll(poll, candidates) ||
-          poll.denominator !== "All respondents" || !isNonEmptyString(poll.poll_reading_id) ||
-          !pollIds.has(String(poll.poll_id)) || alternateIds.has(String(poll.poll_id)) ||
-          readingIds.has(poll.poll_reading_id) ||
-          !Array.isArray(poll.field_tested) ||
-          !isRecord(poll.shares)) return null;
-      const shares = poll.shares;
-      if (Object.keys(shares).length !== poll.field_tested.length ||
-          poll.field_tested.some((id) => !Object.hasOwn(shares, id)) ||
-          Math.abs(Object.values(shares).reduce<number>((sum, share) => sum + Number(share), 0) - 1) > 0.02 + Number.EPSILON) return null;
-      const original = value.polls.find((row) => row.poll_id === poll.poll_id);
-      if (["firm", "date_conducted", "date_published", "sample_size", "methodology"]
-          .some((key) => original[key] !== poll[key])) return null;
-      alternateIds.add(String(poll.poll_id));
-      readingIds.add(poll.poll_reading_id);
-    }
-  }
+  const polls = value.polls as Record<string, unknown>[];
+  if (
+    value.all_respondents !== undefined &&
+    !validAlternateReadings(value.all_respondents, polls, candidates,
+      (poll) => poll.denominator === "All respondents")
+  ) return null;
+  if (
+    value.head_to_head !== undefined &&
+    !validAlternateReadings(value.head_to_head, polls, candidates, validHeadToHeadShares)
+  ) return null;
   if (Object.keys(value.trend).length !== candidates.size) return null;
   for (const [candidateId, points] of Object.entries(value.trend)) {
     if (

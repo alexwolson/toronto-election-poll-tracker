@@ -54,6 +54,42 @@ describe("Polls page", () => {
     expect(history).not.toContain("Parker");
   });
 
+  it("shows post-exit polls reporting only Chow and Bradford by default, and ends Alexander's line at his last poll", async () => {
+    const forecast = structuredClone(forecastFixture) as unknown as MayoralForecastFeed;
+    const polling = structuredClone(pollingFixture) as unknown as MayoralPollingFeed;
+    const [chow, bradford, alexander] = [
+      "per_a4291ca7539b53e2acc1c4f108bc73e6",
+      "per_d8dfddfb642358e299f4b428292666bf",
+      "per_345dd6a9ee645c0bb5a8ade615f91579",
+    ];
+    const reading = { ...polling.polls[0], denominator: "Decided and leaning voters" };
+    polling.polls = [
+      // after Oct. 6, the poll's own record offers only Chow or Bradford
+      { ...reading, poll_id: "post-exit-head-to-head", date_conducted: "2026-10-09", date_published: "2026-10-10",
+        head_to_head: true, shares: { [chow]: 0.54, [bradford]: 0.46 }, field_tested: [chow, bradford] },
+      // after Oct. 6, a full-field question that no longer names Alexander
+      { ...reading, poll_id: "post-exit-full-field", date_conducted: "2026-10-08", date_published: "2026-10-09",
+        shares: { [chow]: 0.5, [bradford]: 0.44, "response:other": 0.06 } },
+      // before Oct. 6 and after the nomination deadline: all three, as before
+      { ...reading, poll_id: "pre-exit", date_conducted: "2026-09-29",
+        shares: { [chow]: 0.454, [bradford]: 0.383, [alexander]: 0.085 } },
+      // fieldwork ending on nomination day stays out of the default view
+      { ...reading, poll_id: "nomination-day", date_conducted: "2026-08-21",
+        shares: { [chow]: 0.5, [bradford]: 0.39, [alexander]: 0.08 } },
+    ];
+    polling.latest = polling.polls[0];
+    delete polling.head_to_head;
+    mocks.loadMayoralForecast.mockResolvedValue(forecast);
+    mocks.loadMayoralPolling.mockResolvedValue(polling);
+    const html = renderToStaticMarkup(await PollsPage());
+    const support = html.split('aria-labelledby="trend-heading"')[1].split("</section>")[0];
+    expect(support).toContain("3 polls since nominations closed.");
+    expect(support).toContain("Olivia Chow: 3 polls shown");
+    expect(support).toContain("Brad Bradford: 3 polls shown");
+    // His line ends at the last poll that reported him; nothing is inferred after it.
+    expect(support).toContain("Chris Alexander: 1 poll shown at 8.5%");
+  });
+
   it("explains the common basis, identifies excluded polls and preserves the source archive", async () => {
     const polling = structuredClone(pollingFixture) as unknown as MayoralPollingFeed;
     const chow = "per_a4291ca7539b53e2acc1c4f108bc73e6";
@@ -90,6 +126,20 @@ describe("Polls page", () => {
     expect(html).not.toContain("4 releases.");
     expect(html.match(/Poll releases shown in the forecast history chart/g)).toHaveLength(1);
   });
+  it("shows a poll's head-to-head reading beneath it and labels Chow-or-Bradford-only records", async () => {
+    mocks.loadMayoralForecast.mockResolvedValue(forecastFixture);
+    mocks.loadMayoralPolling.mockResolvedValue(pollingFixture);
+    const html = renderToStaticMarkup(await PollsPage());
+    const archive = html.split('aria-labelledby="archive-heading"')[1].split("</section>")[0];
+    expect((archive.match(/poll-archive__row--head-to-head/g) ?? []).length).toBe(1);
+    expect(archive).toContain("Not counted separately");
+    expect(archive).toContain(">All respondents (Chow or Bradford only)<");
+    // The older fixture carries a pre-exit Chow-or-Bradford reading as its own record.
+    expect(archive).toContain(">Chow or Bradford only<");
+    // A Head-to-Head Reading is not a separate poll.
+    expect(html).toContain(`${pollingFixture.polls.length} public polls`);
+  });
+
   it("shows one empty state without empty archive or source scaffolding", async () => {
     const polling = structuredClone(pollingFixture) as unknown as MayoralPollingFeed;
     polling.polls = [];

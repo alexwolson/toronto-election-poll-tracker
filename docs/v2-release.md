@@ -23,6 +23,11 @@ applies the producer-to-feed mapping checks that JSON Schema cannot express.
 
 For a new 2026 mayoral poll, follow the complete
 [poll ingestion and release runbook](https://github.com/alexwolson/toronto-election-poll-tracker-data/blob/main/docs/runbooks/add-2026-mayoral-poll.md).
+The compact model publishes mayoral forecast feed schema 5, and Results publishes
+the candidates feed at schema 6; both are independent of deployment
+source-manifest schema v2. Its current-cycle model reading is
+selected independently of the public archive reading. An ordinary poll update
+does not require copying resolved feeds into fixtures or changing frontend code.
 
 ## Access and preflight
 
@@ -81,13 +86,36 @@ BACKEND_RELEASE_MODE=latest npm run vercel-build
 
 Do not configure `BACKEND_RELEASE_MODE=latest` for Production. A production
 deployment must use the exact Backend tag already verified during preflight.
+That tag need not be GitHub's latest stable release.
 
 Before promotion, inspect the static build at `/`, `/polls/`, `/candidates/`,
 `/wards/`, and `/how-it-works/`. A poll release also requires checking the latest
-poll metadata and shares, forecast evidence date, and the three forecast views
-(leader margin, vote ranges, win chances) against the feed's numbers.
+poll metadata, denominator label and exact shares; forecast evidence date and
+included samples; margin outcomes, vote ranges, win probabilities, uncertainty
+breakdown and forecast history against the resolved schema-5 feed. History points
+are recomputed with the current model by poll publication date, so a late release
+of older fieldwork enters history on its publication date.
 
 ## Deploy and smoke test
+
+Update the persistent Vercel Production `BACKEND_RELEASE_TAG` to the exact tag
+verified above before running the wrapper (and Preview when previewing it).
+Exporting the tag in a local shell does not update the Vercel project setting.
+Ensure Production has no `BACKEND_RELEASE_MODE`; do not persist
+`DEPLOY_BACKEND_RELEASE_TAG`.
+
+`BACKEND_RELEASE_TAG` is a Sensitive variable, and `vercel env update` refuses to
+change it ("You cannot change the key of a Sensitive Environment Variable").
+Overwrite it in place instead, which keeps it Sensitive and leaves no window
+without a value:
+
+```bash
+vercel env add BACKEND_RELEASE_TAG production --value backend-YYYY-MM-DD.N --sensitive --force --yes
+```
+
+Vercel answers "Overrode Environment Variable BACKEND_RELEASE_TAG". A Sensitive
+value cannot be read back, so the production build's tag-intent check is what
+confirms it: the build fails closed if the variable and the wrapper's tag differ.
 
 ```bash
 npm run deploy:production -- "$BACKEND_RELEASE_TAG"
@@ -108,10 +136,15 @@ After Vercel reports `READY`, verify the production alias at:
 - `/how-it-works`
 - `/data/source-manifest.json`
 
-The public source manifest must name the same three-release chain inspected
-before deployment. It is byte-for-byte identical to
-`.release-data/source_manifest.json` and `.release-data/manifest.json`. Record
-the Vercel deployment URL in the release notes or PR.
+The public source manifest must name the same three-release chain, source commits,
+manifest hashes and feed hashes inspected before deployment. Within the deployed
+build it is byte-for-byte identical to `.release-data/source_manifest.json` and
+`.release-data/manifest.json`. Vercel resolves the chain again during its build,
+so its `resolved_at` can differ from local preflight; `backend_generated_at`
+still comes from the pinned Backend release. Record the Vercel deployment URL in
+the release notes or PR. Use the deployed manifest to establish the current
+production chain before the next update; local producer `dist/` bundles and
+`.release-data/` may be stale.
 
 ## Source-manifest compatibility
 
@@ -128,7 +161,9 @@ fresh schema v2 manifest from the pinned releases.
 Promote the prior known-good Vercel production deployment. Do not overwrite
 GitHub Release assets or reuse a Results, Polling, or Backend tag. If producer
 data was wrong, publish corrected artifacts under new tags, rebuild Backend with
-the corrected pins, then run the frontend preflight and deployment again.
+the corrected pins, then run the frontend preflight and deployment again. Before
+the next forward deployment, set the persistent Vercel tag to the exact verified
+Backend release being promoted.
 
 ## Local feed options
 

@@ -165,6 +165,7 @@ const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
   "Mainstreet Research": "https://www.mainstreetresearch.ca/",
   "Nanos Research": "https://nanos.co/",
   "Pallas Data": "https://pallas-data.ca/",
+  "Scope Research": "https://scoperesearch.ca/",
 };
 
 export function pollsterWebsite(firm: string): string | null {

@@ -129,6 +129,10 @@ export function pollMethodLabel(methodology: string): string {
   if (normalized === "ivr") return "Interactive voice response (IVR)";
   if (normalized === "online") return "Online survey";
   if (normalized === "mixed") return "Telephone and online survey";
+  if (normalized === "smart-ivr") return "Interactive voice response (Smart IVR)";
+  if (normalized === "sms-online-and-ivr") {
+    return "Text-to-online survey and interactive voice response";
+  }
   if (normalized === "ivr/online" || normalized === "online/ivr") {
     return "Interactive voice response and online";
   }
@@ -158,7 +162,7 @@ export interface PollsterCount {
  * firm deliberately stays unlinked until its destination can be verified. */
 const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
   "Abacus Data": "https://abacusdata.ca/",
-  "Canada Pulse Insights/CityNews": "https://canadapulseinsights.com/",
+  "Canada Pulse Insights": "https://canadapulseinsights.com/",
   "Forum Research": "https://forumresearch.com/",
   Ipsos: "https://www.ipsos.com/en-ca",
   "Liaison Strategies": "https://press.liaisonstrategies.ca/",

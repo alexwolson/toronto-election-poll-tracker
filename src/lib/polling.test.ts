@@ -56,6 +56,10 @@ describe("poll context", () => {
     expect(pollMethodLabel("IVR")).toBe("Interactive voice response (IVR)");
     expect(pollMethodLabel("online")).toBe("Online survey");
     expect(pollMethodLabel("mixed")).toBe("Telephone and online survey");
+    expect(pollMethodLabel("smart-ivr")).toBe("Interactive voice response (Smart IVR)");
+    expect(pollMethodLabel("sms-online-and-ivr")).toBe(
+      "Text-to-online survey and interactive voice response",
+    );
     expect(pollMethodLabel("Telephone interviews")).toBe("Telephone interviews");
   });
 
@@ -206,6 +210,8 @@ describe("pollster registry", () => {
   it("links known firms and leaves unknown firms unlinked", () => {
     expect(pollsterWebsite("Forum Research")).toBe("https://forumresearch.com/");
     expect(pollsterWebsite("Nanos Research")).toBe("https://nanos.co/");
+    // The feed's firm name, as Polling releases publish it.
+    expect(pollsterWebsite("Canada Pulse Insights")).toBe("https://canadapulseinsights.com/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

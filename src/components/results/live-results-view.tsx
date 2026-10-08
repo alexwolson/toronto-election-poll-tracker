@@ -5,6 +5,9 @@
  * wording). Pure: the poller supplies the state and the clock.
  */
 
+import type { ReactNode } from "react";
+import { ContentSection } from "@/components/content-section";
+import { PageHero } from "@/components/page-hero";
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { LiveProgress, LiveRace } from "@/types/live";
@@ -30,37 +33,37 @@ function raceTitle(race: LiveRace): string {
   return `${board?.shortName ?? "Trustee"} Ward ${race.num}`;
 }
 
+/** The thin Reporting Progress bar: the one piece with no CHW or site component. */
 function ProgressLine({ progress }: { progress: LiveProgress }) {
   const fraction = progress.total > 0 ? Math.min(1, progress.received / progress.total) : 0;
   return (
-    <p className="live-progress">
+    <p className="live-progress t-meta">
       <span className="live-progress__track" aria-hidden="true">
         <span className="live-progress__fill" style={{ width: `${fraction * 100}%` }} />
       </span>
-      <span className="font-mono">
-        {progress.received} of {progress.total} voting areas in
-      </span>
+      {progress.received} of {progress.total} voting areas in
     </p>
   );
 }
 
+/** The Live Tally, in the ward poll results table (`ward-polls.tsx`). */
 function Tally({ race }: { race: LiveRace }) {
   return (
-    <table className="live-tally">
+    <table className="ward-poll-results">
       <caption className="sr-only">{raceTitle(race)} count</caption>
       <thead>
         <tr>
           <th scope="col">Candidate</th>
-          <th scope="col" className="live-num">Votes</th>
-          <th scope="col" className="live-num">Share</th>
+          <th scope="col">Votes</th>
+          <th scope="col">Share</th>
         </tr>
       </thead>
       <tbody>
         {race.candidates.map((candidate) => (
           <tr key={candidate.key}>
             <th scope="row">{candidate.full_name}</th>
-            <td className="live-num">{candidate.votes?.toLocaleString("en-CA") ?? "–"}</td>
-            <td className="live-num">{candidate.share === null ? "–" : `${candidate.share.toFixed(1)}%`}</td>
+            <td>{candidate.votes?.toLocaleString("en-CA") ?? "–"}</td>
+            <td>{candidate.share === null ? "–" : `${candidate.share.toFixed(1)}%`}</td>
           </tr>
         ))}
       </tbody>
@@ -68,40 +71,40 @@ function Tally({ race }: { race: LiveRace }) {
   );
 }
 
+function Status({ children }: { children: ReactNode }) {
+  return <p className="t-body-small">{children}</p>;
+}
+
 function RaceBody({ race }: { race: LiveRace }) {
   switch (race.state) {
     case "before_results":
       return (
         <>
-          <p className="live-race__status">Results from 8 p.m.</p>
-          <ul className="live-ballot">
-            {race.candidates.map((candidate) => (
-              <li key={candidate.key}>{candidate.full_name}</li>
-            ))}
-          </ul>
+          <Status>Results from 8 p.m.</Status>
+          <p className="t-body-small">{race.candidates.map((candidate) => candidate.full_name).join(" · ")}</p>
         </>
       );
     case "acclaimed":
       // The bundle lists exactly one candidate for an acclaimed race (docs/payload.md).
       return (
-        <p className="live-race__status">
+        <Status>
           {`${race.candidates[0]?.full_name} was acclaimed: the only candidate, so there is no vote.`}
-        </p>
+        </Status>
       );
     case "no_figures":
-      return <p className="live-race__status">No figures from the City for this race right now</p>;
+      return <Status>No figures from the City for this race right now</Status>;
     case "no_units_in":
-      return <p className="live-race__status">No voting areas have reported yet</p>;
+      return <Status>No voting areas have reported yet</Status>;
     case "counting":
     case "all_units_in":
       return (
         <>
           {race.state === "all_units_in" ? (
-            <p className="live-race__status">All voting areas in</p>
+            <Status>All voting areas in</Status>
           ) : race.progress ? (
             <ProgressLine progress={race.progress} />
           ) : (
-            <p className="live-race__status">Voting areas: not available</p>
+            <Status>Voting areas: not available</Status>
           )}
           <Tally race={race} />
         </>
@@ -109,41 +112,69 @@ function RaceBody({ race }: { race: LiveRace }) {
   }
 }
 
+function Shell({ status, children }: { status: ReactNode; children?: ReactNode }) {
+  return (
+    <>
+      <PageHero headingId="results-heading" title="Election night results">
+        <div className="grid">{status}</div>
+      </PageHero>
+      {children && (
+        <ContentSection aria-labelledby="results-races-heading">
+          <h2 id="results-races-heading">Every race</h2>
+          <div className="grid">{children}</div>
+        </ContentSection>
+      )}
+    </>
+  );
+}
+
+/** The whole page, in CHW components (PageHero, Callout, Badge, Card, `.grid`,
+ *  `.t-*`): page status on the hero's paper ground, where a tint Callout shows,
+ *  and a Card per race in the section below. */
 export function LiveResultsView({ state, now }: { state: LiveClientState; now: number }) {
   const unreachable = showsUnreachableNotice(state) && (
-    <p className="live-notice" role="status">
+    <p className="callout" role="status">
       Can&apos;t reach live results; retrying
     </p>
   );
   const results = state.results;
   if (results === null) {
-    return unreachable || <p className="live-loading">Loading live results…</p>;
+    return <Shell status={unreachable || <p className="t-meta">Loading live results…</p>} />;
   }
 
   const { payload, heartbeat } = results;
   const counting = payload.state === "results";
   const cityCountAt = Math.min(payload.seq.all_office, payload.seq.ward_by_ward);
 
-  return (
-    <div className="live-results">
-      {payload.rehearsal && <p className="live-rehearsal">Rehearsal: not real results</p>}
+  const status = (
+    <>
+      {payload.rehearsal && (
+        <p>
+          <span className="badge badge--soon">Rehearsal: not real results</span>
+        </p>
+      )}
       {now - heartbeat > STALE_AFTER_MS && (
-        <p className="live-stale" role="status">
+        <p className="callout" role="status">
           We haven&apos;t been able to read the City&apos;s results since {clockTime(heartbeat)} The count below
           may be out of date.
         </p>
       )}
       {unreachable}
-      <p className="live-status font-mono">
+      <p className="t-meta">
         {counting && <>City count as of {clockTime(cityCountAt)} · </>}
         Refreshes every minute · City of Toronto unofficial results
       </p>
+    </>
+  );
+
+  return (
+    <Shell status={status}>
       {payload.races.map((race) => (
-        <section key={race.id} className="live-race" aria-labelledby={`live-race-${race.id}`}>
+        <section key={race.id} className="card" aria-labelledby={`live-race-${race.id}`}>
           <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
           <RaceBody race={race} />
         </section>
       ))}
-    </div>
+    </Shell>
   );
 }

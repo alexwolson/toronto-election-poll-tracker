@@ -304,19 +304,8 @@ button:disabled { cursor: default; opacity: 0.6; }
   .race-index-card:hover, .race-index-card:focus-visible { transform: none; }
 }
 
-/* Election-night live results (#30): the minimal /results/ page. */
-.live-rehearsal { margin: 0 0 16px; padding: 8px 14px; background: var(--soon-bg); color: var(--soon-ink); font: 700 var(--type-data)/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; }
-.live-stale, .live-notice { max-width: 70ch; margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--rule); background: var(--tint); color: var(--ink); font-size: var(--type-body-small); }
-.live-status, .live-loading { margin: 0 0 8px; color: var(--muted); font-size: var(--type-data); }
-.live-race { padding-block: 20px; border-bottom: 1px solid var(--rule); }
-.live-race h3 { margin: 0 0 8px; font-size: var(--type-title); }
-.live-race__status { margin: 0 0 8px; color: var(--body); font-size: var(--type-body-small); }
-.live-ballot { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 0; list-style: none; color: var(--ink); font-size: var(--type-body-small); }
-.live-progress { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--muted); font-size: var(--type-data); }
-.live-progress__track { flex: none; width: 90px; height: 4px; overflow: hidden; border-radius: 2px; background: var(--rule-soft); }
+/* Election-night live results (#30). Everything else on /results/ is CHW
+   components; the Reporting Progress bar has no CHW or site equivalent. */
+.live-progress { display: flex; align-items: center; gap: var(--space-sm); color: var(--muted); }
+.live-progress__track { flex: none; width: 90px; height: 4px; overflow: hidden; border-radius: var(--r-pill); background: var(--rule-soft); }
 .live-progress__fill { display: block; height: 100%; background: var(--ink); }
-.live-tally { width: 100%; max-width: 40rem; border-collapse: collapse; font-size: var(--type-body-small); }
-.live-tally th, .live-tally td { padding: 6px 0; border-bottom: 1px solid var(--rule-soft); text-align: left; font-weight: 400; }
-.live-tally thead th { color: var(--muted); font: 500 var(--type-label)/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; }
-.live-tally tbody th { color: var(--ink); padding-right: 12px; }
-.live-tally .live-num { padding-left: 12px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }

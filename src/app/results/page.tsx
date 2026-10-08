@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { ContentSection } from "@/components/content-section";
-import { PageHero } from "@/components/page-hero";
 import { LiveResultsPoller } from "@/components/results/live-results-poller";
 
 export const metadata: Metadata = {
@@ -13,11 +11,7 @@ export const metadata: Metadata = {
 export default function ResultsPage() {
   return (
     <main id="main-content" className="np-shell">
-      <PageHero headingId="results-heading" title="Election night results" />
-      <ContentSection aria-labelledby="results-races-heading">
-        <h2 id="results-races-heading">Every race</h2>
-        <LiveResultsPoller />
-      </ContentSection>
+      <LiveResultsPoller />
     </main>
   );
 }

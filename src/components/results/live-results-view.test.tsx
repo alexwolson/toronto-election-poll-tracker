@@ -60,6 +60,9 @@ describe("LiveResultsView", () => {
     expect(html).toContain("6,800");
     expect(html).toContain("41.2%");
     expect(html).toContain("No voting areas have reported yet");
+    // CHW and repo components only: a Card per race, the ward-poll results table.
+    expect(count(html, '<section class="card"')).toBe(65);
+    expect(html).toContain('<table class="ward-poll-results">');
     expect(html).toContain("Benoit Fortin was acclaimed: the only candidate, so there is no vote.");
     expect(html).not.toContain("Results from 8 p.m.");
     expect(html).not.toContain("Rehearsal: not real results");
@@ -94,6 +97,7 @@ describe("LiveResultsView", () => {
     expect(stale).toContain(
       "We haven&#x27;t been able to read the City&#x27;s results since 9:46 p.m. The count below may be out of date.",
     );
+    expect(stale).toMatch(/<p class="callout" role="status">We haven/);
     // The count stays on the page.
     expect(stale).toContain("51 of 55 voting areas in");
   });
@@ -102,14 +106,14 @@ describe("LiveResultsView", () => {
     const payload = golden("council-counting-2022.json");
     expect(render(payload)).not.toContain("Rehearsal: not real results");
     const rehearsal = { ...payload, election_desc: "2026 Municipal Election REHEARSAL", rehearsal: true };
-    expect(render(rehearsal)).toContain("Rehearsal: not real results");
+    expect(render(rehearsal)).toContain('<span class="badge badge--soon">Rehearsal: not real results</span>');
   });
 
   it("after three failed polls, says so and keeps the last count", () => {
     const payload = golden("council-counting-2022.json");
     expect(render(payload, { failures: 2 })).not.toContain("Can&#x27;t reach live results");
     const html = render(payload, { failures: 3 });
-    expect(html).toContain("Can&#x27;t reach live results; retrying");
+    expect(html).toContain('<p class="callout" role="status">Can&#x27;t reach live results; retrying</p>');
     expect(html).toContain("51 of 55 voting areas in");
   });
 

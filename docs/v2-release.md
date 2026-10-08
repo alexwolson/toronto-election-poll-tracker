@@ -165,6 +165,37 @@ the corrected pins, then run the frontend preflight and deployment again. Before
 the next forward deployment, set the persistent Vercel tag to the exact verified
 Backend release being promoted.
 
+## The live results route
+
+On the `election-night` branch, `/live/results.json` serves the night's payload
+from Upstash Redis, with ISR every 15 s. The functions run in `iad1` (`vercel.json`).
+The Vercel Marketplace sets the route's two variables, `KV_REST_API_URL` and
+`KV_REST_API_READ_ONLY_TOKEN`. Preview reads the Rehearsal store
+(`election-rehearsal`) and Production reads the Night store (`election-night`).
+
+The route prerenders during every build, and it throws, failing the build, unless
+the store holds a schema-1 `payload` and at least one of `heartbeat:fly` and
+`heartbeat:do` (epoch milliseconds). The pipelines write these keys (`docs/store.md`
+in toronto-election-live-projection). **Seed the store before any build that targets
+it:** the Rehearsal store before a Preview, and the Night store before Production.
+From that repo, with the store's `rediss://` URL in `REDIS_URL`:
+
+```bash
+uv run python -c '
+import os, pathlib, time, redis
+from election_night.store import Store, PIPELINES
+client = redis.Redis.from_url(os.environ["REDIS_URL"])
+store = Store(client)
+print("stored:", store.publish(pathlib.Path("goldens/payload/before-results-2026.json").read_bytes()))
+for name in PIPELINES: store.heartbeat(name, int(time.time() * 1000))
+'
+```
+
+`publish` stores only a newer `seq` pair, so seeding never replaces a newer payload.
+To build locally against the Rehearsal store, pull its variables first:
+`vercel env pull .env.rehearsal --environment=preview`, then
+`set -a; . ./.env.rehearsal; set +a` before `npm run build`. Never commit that file.
+
 ## Local feed options
 
 - `FEED_LOCAL_DIR=./fixtures npm run dev` uses committed development fixtures.

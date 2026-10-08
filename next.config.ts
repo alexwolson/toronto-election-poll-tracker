@@ -6,10 +6,10 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   turbopack: { root: projectRoot },
-  // Static export (spec §Static export): `next build` emits an `out/` of
-  // HTML/CSS/JS. Server components render at build time, reading the feeds then.
-  output: "export",
-  // next/image's default loader needs a server; a static export must opt out.
+  // No static export: `/live/results.json` is an ISR route (election-night
+  // branch, #17 S8). Every page still prerenders at build time, reading the feeds
+  // then. Leave `cacheComponents` off: it rejects the `dynamicParams` exports.
+  // Unoptimized images keep billable Image Optimization off.
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -20,7 +20,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Emit `/wards/index.html` etc. so any static host serves clean paths.
+  // Clean `/wards/` paths. Paths with a file extension are exempt, so
+  // `/live/results.json` serves directly.
   trailingSlash: true,
 };
 

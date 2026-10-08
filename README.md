@@ -19,7 +19,7 @@ Fixtures are development/test artifacts and are never promoted to production.
 
 For a design preview intended to reflect the current election, read the live
 site's `/data/source-manifest.json`, then resolve its exact Backend tag with
-`BACKEND_RELEASE_TAG=backend-YYYY-MM-DD.N npm run vercel-build` and serve `out/`.
+`BACKEND_RELEASE_TAG=backend-YYYY-MM-DD.N npm run vercel-build`, then `npm start`.
 This verifies and consumes the complete pinned release chain. A fixture preview
 can omit newer polls and other released information; use it only for deliberate
 offline or test scenarios. See the release guide below for provenance checks.

@@ -1,10 +1,10 @@
 /**
- * Server-only feed source resolution (spec §Data layer). Runs at build time in
- * the static export. Reads a local fixtures dir when FEED_LOCAL_DIR is set
+ * Server-only feed source resolution (spec §Data layer). Runs at build time,
+ * while every page prerenders. Reads a local fixtures dir when FEED_LOCAL_DIR is set
  * (development fixtures or release-resolution output). The API and legacy
  * GitHub-raw paths are compatibility fallbacks for development only. Production
  * runs `npm run vercel-build`, which resolves verified releases into
- * `.release-data` and sets FEED_LOCAL_DIR for the static build.
+ * `.release-data` and sets FEED_LOCAL_DIR for the build.
  *
  * Only import this from server components — it touches the filesystem.
  */
@@ -33,7 +33,7 @@ async function readRaw(file: string): Promise<unknown> {
     if (!/^[a-z0-9_]+\.json$/.test(file)) {
       throw new Error(`invalid feed filename: ${file}`);
     }
-    // Local feeds are consumed only while producing the static export. Keeping
+    // Local feeds are consumed only while prerendering at build time. Keeping
     // them out of the runtime trace prevents Turbopack from globbing the repo.
     const abs = resolve(
       /* turbopackIgnore: true */ process.cwd(),

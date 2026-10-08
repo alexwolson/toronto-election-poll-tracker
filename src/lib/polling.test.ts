@@ -210,6 +210,8 @@ describe("pollster registry", () => {
   it("links known firms and leaves unknown firms unlinked", () => {
     expect(pollsterWebsite("Forum Research")).toBe("https://forumresearch.com/");
     expect(pollsterWebsite("Nanos Research")).toBe("https://nanos.co/");
+    // The feed's firm name, as Polling releases publish it.
+    expect(pollsterWebsite("Canada Pulse Insights")).toBe("https://canadapulseinsights.com/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

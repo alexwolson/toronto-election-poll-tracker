@@ -206,6 +206,7 @@ describe("pollster registry", () => {
   it("links known firms and leaves unknown firms unlinked", () => {
     expect(pollsterWebsite("Forum Research")).toBe("https://forumresearch.com/");
     expect(pollsterWebsite("Nanos Research")).toBe("https://nanos.co/");
+    expect(pollsterWebsite("Scope Research")).toBe("https://scoperesearch.ca/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

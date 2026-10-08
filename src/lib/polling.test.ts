@@ -212,6 +212,7 @@ describe("pollster registry", () => {
     expect(pollsterWebsite("Nanos Research")).toBe("https://nanos.co/");
     // The feed's firm name, as Polling releases publish it.
     expect(pollsterWebsite("Canada Pulse Insights")).toBe("https://canadapulseinsights.com/");
+    expect(pollsterWebsite("Scope Research")).toBe("https://scoperesearch.ca/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

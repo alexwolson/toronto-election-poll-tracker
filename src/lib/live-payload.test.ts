@@ -26,6 +26,7 @@ describe("validateLivePayload", () => {
       "mayor-counting-2023.json",
       "no-figures-2026.json",
       "no-units-in-2026.json",
+      "replay-counting-2022.json",
     ]);
     for (const [name, payload] of Object.entries(goldens)) {
       expect(validateLivePayload(payload), name).not.toBeNull();

@@ -78,6 +78,15 @@ describe("LiveResultsView", () => {
     );
   });
 
+  it("says Reporting Progress is not available when a counting race has none", () => {
+    const payload = golden("council-counting-2022.json");
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    race.progress = null;
+    const html = render(payload);
+    expect(html).toContain("Voting areas: not available");
+    expect(html).toContain("Vincent Crisanti");
+  });
+
   it("shows the staleness banner only when the newest heartbeat is over 5 minutes old", () => {
     const payload = golden("council-counting-2022.json");
     expect(render(payload, { age: 5 * MINUTE })).not.toContain("may be out of date");

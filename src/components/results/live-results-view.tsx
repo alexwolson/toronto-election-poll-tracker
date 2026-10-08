@@ -7,7 +7,7 @@
 
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
-import type { LiveCandidate, LiveProgress, LiveRace } from "@/types/live";
+import type { LiveProgress, LiveRace } from "@/types/live";
 
 /** The banner shows once the newest heartbeat is older than this (#17 § Staleness). */
 const STALE_AFTER_MS = 5 * 60_000;
@@ -18,14 +18,9 @@ const CLOCK = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
 });
 
-/** Epoch ms as Toronto wall-clock time: "9:46 p.m.". */
+/** Epoch ms as Toronto wall-clock time: "9:46 p.m.", which ends its own sentence. */
 function clockTime(ms: number): string {
   return CLOCK.format(ms);
-}
-
-/** "9:46 p.m." already ends a sentence; "21:46" would not. */
-function endSentence(text: string): string {
-  return text.endsWith(".") ? text : `${text}.`;
 }
 
 function raceTitle(race: LiveRace): string {
@@ -49,7 +44,7 @@ function ProgressLine({ progress }: { progress: LiveProgress }) {
   );
 }
 
-function Tally({ race, candidates }: { race: LiveRace; candidates: LiveCandidate[] }) {
+function Tally({ race }: { race: LiveRace }) {
   return (
     <table className="live-tally">
       <caption className="sr-only">{raceTitle(race)} count</caption>
@@ -61,7 +56,7 @@ function Tally({ race, candidates }: { race: LiveRace; candidates: LiveCandidate
         </tr>
       </thead>
       <tbody>
-        {candidates.map((candidate) => (
+        {race.candidates.map((candidate) => (
           <tr key={candidate.key}>
             <th scope="row">{candidate.full_name}</th>
             <td className="live-num">{candidate.votes?.toLocaleString("en-CA") ?? "–"}</td>
@@ -87,10 +82,10 @@ function RaceBody({ race }: { race: LiveRace }) {
         </>
       );
     case "acclaimed":
+      // The bundle lists exactly one candidate for an acclaimed race (docs/payload.md).
       return (
         <p className="live-race__status">
-          {race.candidates[0]?.full_name ?? "The only candidate"} was acclaimed: the only candidate, so there
-          is no vote.
+          {`${race.candidates[0]?.full_name} was acclaimed: the only candidate, so there is no vote.`}
         </p>
       );
     case "no_figures":
@@ -103,10 +98,12 @@ function RaceBody({ race }: { race: LiveRace }) {
         <>
           {race.state === "all_units_in" ? (
             <p className="live-race__status">All voting areas in</p>
+          ) : race.progress ? (
+            <ProgressLine progress={race.progress} />
           ) : (
-            race.progress && <ProgressLine progress={race.progress} />
+            <p className="live-race__status">Voting areas: not available</p>
           )}
-          <Tally race={race} candidates={race.candidates} />
+          <Tally race={race} />
         </>
       );
   }
@@ -132,8 +129,8 @@ export function LiveResultsView({ state, now }: { state: LiveClientState; now: n
       {payload.rehearsal && <p className="live-rehearsal">Rehearsal: not real results</p>}
       {now - heartbeat > STALE_AFTER_MS && (
         <p className="live-stale" role="status">
-          We haven&apos;t been able to read the City&apos;s results since {endSentence(clockTime(heartbeat))} The
-          count below may be out of date.
+          We haven&apos;t been able to read the City&apos;s results since {clockTime(heartbeat)} The count below
+          may be out of date.
         </p>
       )}
       {unreachable}

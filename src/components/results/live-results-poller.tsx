@@ -13,19 +13,24 @@ import { LiveResultsView } from "./live-results-view";
 
 const LIVE_URL = "/live/results.json";
 const POLL_INTERVAL_MS = 60_000;
+/** A hung request counts as a failed poll, and ends before the next one starts. */
+const POLL_TIMEOUT_MS = 20_000;
 
-/** The parsed body, or null for any network, status or JSON failure. */
+/** The parsed body, or null for any network, timeout, status or JSON failure. */
 async function fetchLive(): Promise<unknown> {
   try {
     // Skip the browser's HTTP cache; the CDN's ISR copy is what collapses load.
-    const response = await fetch(LIVE_URL, { cache: "no-store" });
+    const response = await fetch(LIVE_URL, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(POLL_TIMEOUT_MS),
+    });
     return response.ok ? await response.json() : null;
   } catch {
     return null;
   }
 }
 
-export function LiveResults() {
+export function LiveResultsPoller() {
   const [state, apply] = useReducer(acceptPoll, INITIAL_LIVE_STATE);
   // The reader's clock at the last poll, for the staleness banner.
   const [now, setNow] = useState(0);

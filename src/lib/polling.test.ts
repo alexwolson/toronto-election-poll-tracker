@@ -56,6 +56,10 @@ describe("poll context", () => {
     expect(pollMethodLabel("IVR")).toBe("Interactive voice response (IVR)");
     expect(pollMethodLabel("online")).toBe("Online survey");
     expect(pollMethodLabel("mixed")).toBe("Telephone and online survey");
+    expect(pollMethodLabel("smart-ivr")).toBe("Interactive voice response (Smart IVR)");
+    expect(pollMethodLabel("sms-online-and-ivr")).toBe(
+      "Text-to-online survey and interactive voice response",
+    );
     expect(pollMethodLabel("Telephone interviews")).toBe("Telephone interviews");
   });
 

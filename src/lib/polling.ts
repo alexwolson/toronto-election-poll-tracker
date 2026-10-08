@@ -162,7 +162,7 @@ export interface PollsterCount {
  * firm deliberately stays unlinked until its destination can be verified. */
 const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
   "Abacus Data": "https://abacusdata.ca/",
-  "Canada Pulse Insights/CityNews": "https://canadapulseinsights.com/",
+  "Canada Pulse Insights": "https://canadapulseinsights.com/",
   "Forum Research": "https://forumresearch.com/",
   Ipsos: "https://www.ipsos.com/en-ca",
   "Liaison Strategies": "https://press.liaisonstrategies.ca/",

@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { PollingChart, pollingTrendSummaryRows, type ChartSeries } from "./polling-chart";
 import { PollPeriodToggle } from "./poll-period-toggle";
 import { ALL_RESPONDENT_OTHER_ID, ALL_RESPONDENT_UNDECIDED_ID, NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
-import { isoDayNumber } from "@/lib/format";
+import { formatDate, isoDayNumber } from "@/lib/format";
 
 const RESPONSE_SERIES: ChartSeries[] = [
   { id: ALL_RESPONDENT_OTHER_ID, name: "Other candidates combined", color: "#7A6A57", hatch: false, pointsOnly: true },
@@ -18,7 +18,7 @@ export function PollingTrendViews({
   allRespondentTrends = [],
   recentAllRespondentTrends = [],
   allPollNote,
-  excludedNote,
+  excludedPolls = [],
 }: {
   allTrends: CandidateTrend[];
   qualifiedTrends: CandidateTrend[];
@@ -27,7 +27,7 @@ export function PollingTrendViews({
   recentAllRespondentTrends?: CandidateTrend[];
   allPollNote?: ReactNode;
   /** Excluded Polls are off the chart in every view, so their note always shows. */
-  excludedNote?: ReactNode;
+  excludedPolls?: { firm: string; date_conducted: string }[];
 }) {
   const [qualified, setQualified] = useState(true);
   const [allRespondents, setAllRespondents] = useState(false);
@@ -62,7 +62,14 @@ export function PollingTrendViews({
         )}
       </p>
       {!qualified && !allRespondents && allPollNote}
-      {excludedNote}
+      {excludedPolls.length > 0 && (
+        <p className="evidence-explainer">
+          Not used in the forecast and left off this chart:{" "}
+          {excludedPolls.map((poll) => `${poll.firm} (${formatDate(poll.date_conducted)})`).join("; ")}.
+          {" "}The <a href="#archive-heading">poll archive</a> lists{" "}
+          {excludedPolls.length === 1 ? "it" : "them"} and explains why.
+        </p>
+      )}
       {qualified && (
         <p className="evidence-explainer" role="status">
           {qualifiedCount} {qualifiedCount === 1 ? "poll" : "polls"} since nominations closed.

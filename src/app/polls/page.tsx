@@ -104,14 +104,7 @@ export default async function PollsPage() {
                   {" "}Original figures remain in the <a href="#archive-heading">poll archive</a>.
                 </p>
               )}
-              excludedNote={unused.length > 0 && (
-                <p className="evidence-explainer">
-                  Not used in the forecast and left off this chart:{" "}
-                  {unused.map((poll) => `${poll.firm} (${formatDate(poll.date_conducted)})`).join("; ")}.
-                  {" "}The <a href="#archive-heading">poll archive</a> lists{" "}
-                  {unused.length === 1 ? "it and explains why" : "them and explains why"}.
-                </p>
-              )}
+              excludedPolls={unused.map(({ firm, date_conducted }) => ({ firm, date_conducted }))}
             />
           </ContentSection>
 

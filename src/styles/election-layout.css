@@ -762,9 +762,15 @@
   color: var(--text-soft);
 }
 .poll-archive__unused {
-  margin-left: 0.5rem;
+  margin: 0.35rem 0 0;
   background: #f6eedc;
   color: #8a6516;
+  /* The design-system pill never wraps; here that widens the Firm column
+     until the archive overflows, so the label may break across lines, with
+     square corners that still read as one label when it does. */
+  white-space: normal;
+  border-radius: 4px;
+  line-height: 1.35;
 }
 .poll-archive__table tbody .poll-archive__row--exclusion {
   border-bottom: 1px solid var(--line-inner);

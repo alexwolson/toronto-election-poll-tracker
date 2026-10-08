@@ -37,3 +37,11 @@ Backend from Results' certified trustee artifact.
 
 **These are development and test artifacts, not production promotion inputs.**
 Do not update them merely because a new release was published.
+
+## Election-night golden payloads (`live/payload/`)
+
+Copied byte for byte from `goldens/payload/` in toronto-election-live-projection
+at `dca366d` (2026-10-07), the payload contract (#17, seam 6). They are schema 1,
+emitted by `uv run election-night goldens` from real City files, one per reachable
+state. `src/lib/live-payload.test.ts` checks that the validator accepts every one.
+Re-copy them whenever the payload's schema version changes; never edit them by hand.

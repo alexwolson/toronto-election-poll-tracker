@@ -24,6 +24,9 @@ const ATTENTION_LABEL: Record<AttentionLevel, string> = {
   open: "Open seat",
 };
 
+// Unknown wards 404 rather than render on demand (research 05 §1b).
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return Array.from({ length: 25 }, (_, i) => ({ ward_num: String(i + 1) }));
 }

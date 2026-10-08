@@ -143,6 +143,7 @@ export function pollMethodLabel(methodology: string): string {
   if (normalized === "sms-online-and-ivr") {
     return "Text-to-online survey and interactive voice response";
   }
+  if (normalized === "online-sms-invitation") return "Online survey (text-message invitation)";
   if (normalized === "ivr/online" || normalized === "online/ivr") {
     return "Interactive voice response and online";
   }

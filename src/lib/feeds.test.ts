@@ -278,6 +278,31 @@ describe("validatePolling", () => {
     }
   });
 
+  it("accepts a well-formed model exclusion and rejects a malformed one", () => {
+    const exclusion = {
+      decided_on: "2026-10-08",
+      reasons: ["methodology_confidence", "not_cric_member"],
+      explanation: "Listed for the record only.",
+    };
+    const withExclusion = (value: unknown) => {
+      const feed = structuredClone(pollingFixture) as unknown as { polls: Record<string, unknown>[] };
+      feed.polls[0].model_exclusion = value;
+      return feed;
+    };
+    expect(validatePolling(withExclusion(exclusion))?.polls[0].model_exclusion).toEqual(exclusion);
+    for (const bad of [
+      "yes",
+      { ...exclusion, decided_on: "Oct 8" },
+      { ...exclusion, reasons: [] },
+      { ...exclusion, reasons: ["methodology_confidence", "methodology_confidence"] },
+      { ...exclusion, reasons: "methodology_confidence" },
+      { ...exclusion, explanation: "" },
+      { decided_on: exclusion.decided_on, reasons: exclusion.reasons },
+    ]) {
+      expect(validatePolling(withExclusion(bad))).toBeNull();
+    }
+  });
+
   describe("Head-to-Head Readings", () => {
     const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
     const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";

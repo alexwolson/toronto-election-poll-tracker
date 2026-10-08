@@ -37,9 +37,21 @@ describe("validateLivePayload", () => {
     for (const version of [0, 2, "1", null]) {
       expect(validateLivePayload({ ...golden("no-units-in-2026.json"), schema_version: version })).toBeNull();
     }
-    const { schema_version: _dropped, ...rest } = golden("no-units-in-2026.json");
-    void _dropped;
-    expect(validateLivePayload(rest)).toBeNull();
+    const unversioned = golden("no-units-in-2026.json");
+    delete unversioned.schema_version;
+    expect(validateLivePayload(unversioned)).toBeNull();
+  });
+
+  it("accepts the odd values the pipeline passes through from the City", () => {
+    // feed.py writes a ward name the City omits as null; names and Ballot Names
+    // are any string the City writes; num is any digit string the bundle parses.
+    const payload = golden("council-counting-2022.json");
+    payload.races[0].wards[0].name = null;
+    payload.races[1].name = "";
+    payload.races[1].candidates[0].full_name = "";
+    payload.races[2].id = "councillor-02";
+    payload.races[2].num = "02";
+    expect(validateLivePayload(payload)).not.toBeNull();
   });
 
   it("rejects values that are not a payload", () => {

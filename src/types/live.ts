@@ -56,7 +56,8 @@ export interface LiveProjection {
 
 export interface LiveMayoralWard {
   num: string;
-  name: string;
+  /** Null when the City omits it. */
+  name: string | null;
   progress: LiveProgress | null;
   votes_counted: number | null;
   /** candidate key → votes, in the race's candidate order. */

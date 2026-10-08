@@ -2,8 +2,6 @@
  * The pure serving function behind `/live/results.json` (#17 § Route). It turns
  * the store's raw values into the served JSON, or throws. The route must never
  * return a non-200, which ISR would cache: a throw keeps the last good copy.
- *
- * Switches (#49) are applied here once they exist.
  */
 
 import { validateLivePayload } from "@/lib/live-payload";

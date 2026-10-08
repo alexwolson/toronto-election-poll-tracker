@@ -55,8 +55,9 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+/** Names pass through from the City as written, so an empty string is valid. */
 function isNullableString(value: unknown): value is string | null {
-  return value === null || isNonEmptyString(value);
+  return value === null || typeof value === "string";
 }
 
 function isCount(value: unknown): value is number {
@@ -71,7 +72,8 @@ function validProgress(value: unknown): value is LiveProgress | null {
   return value === null || (isRecord(value) && isCount(value.received) && isCount(value.total));
 }
 
-function validReason(value: unknown, allowed?: ReadonlySet<string>): boolean {
+/** A `{reason}` object, or null. */
+function validReasonObject(value: unknown, allowed?: ReadonlySet<string>): boolean {
   return (
     value === null ||
     (isRecord(value) &&
@@ -83,8 +85,8 @@ function validReason(value: unknown, allowed?: ReadonlySet<string>): boolean {
 function validCandidate(value: unknown): value is LiveCandidate {
   return (
     isRecord(value) &&
-    isNonEmptyString(value.key) &&
-    isNonEmptyString(value.full_name) &&
+    typeof value.key === "string" &&
+    typeof value.full_name === "string" &&
     isNullableString(value.short_label) &&
     isNullableString(value.candidacy_id) &&
     isNullableString(value.candidate_id) &&
@@ -123,7 +125,7 @@ function validWard(value: unknown, keys: readonly string[]): value is LiveMayora
   if (
     !isRecord(value) ||
     !isNonEmptyString(value.num) ||
-    !isNonEmptyString(value.name) ||
+    !isNullableString(value.name) ||
     !validProgress(value.progress) ||
     !(value.votes_counted === null || isCount(value.votes_counted))
   ) return false;
@@ -136,17 +138,18 @@ function validWard(value: unknown, keys: readonly string[]): value is LiveMayora
   );
 }
 
-/** The level and num a race id implies, or null for an unknown id. */
-function levelOfId(id: string): { level: LiveLevel; num: string } | null {
+/** The level and num a race id encodes, or null for an unknown id. The bundle
+ *  parses each num as an integer, so it is digits as the City writes them. */
+function parseRaceId(id: string): { level: LiveLevel; num: string } | null {
   if (id === "mayor") return { level: "mayor", num: "0" };
-  const match = /^([a-z]+)-([1-9]\d*)$/.exec(id);
+  const match = /^([a-z]+)-(\d+)$/.exec(id);
   if (!match || !(match[1] in ID_LEVELS)) return null;
   return { level: ID_LEVELS[match[1]], num: match[2] };
 }
 
 function validRace(value: unknown, payloadState: string): value is LiveRace {
   if (!isRecord(value) || !isNonEmptyString(value.id)) return false;
-  const implied = levelOfId(value.id);
+  const implied = parseRaceId(value.id);
   if (
     implied === null ||
     value.level !== implied.level ||
@@ -159,8 +162,8 @@ function validRace(value: unknown, payloadState: string): value is LiveRace {
     !validProgress(value.progress) ||
     !Array.isArray(value.candidates) ||
     !value.candidates.every(validCandidate) ||
-    !validReason(value.withdrawal) ||
-    !validReason(value.fault, FAULT_REASONS) ||
+    !validReasonObject(value.withdrawal) ||
+    !validReasonObject(value.fault, FAULT_REASONS) ||
     // A fault is exactly why a race has no figures.
     (value.fault !== null) !== (value.state === "no_figures") ||
     // Projections appear only while a race is counting.

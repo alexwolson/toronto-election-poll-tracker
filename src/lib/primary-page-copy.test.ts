@@ -124,7 +124,11 @@ describe("primary pages keep their facts and controls", () => {
     expect(POLLS).toContain("<PollingTrendViews");
     expect(POLLS).toContain("<ForecastHistoryViews");
     expect(POLLS).toContain("<PollArchive");
-    expect(POLLS).toContain("public polls; latest from");
+    expect(POLLS).toContain("public polls");
+    // An Excluded Poll is counted apart and never named as the latest (ADR 0062).
+    expect(POLLS).toContain("not used in the forecast)");
+    expect(POLLS).toContain('latest {unused.length > 0 ? "used " : ""}from');
+    expect(ARCHIVE).toContain("Not used in the forecast");
     expect(POLLS).toContain("Other reported choices");
     expect(ARCHIVE).toContain("Undecided");
     // The forecast-history view remains placed by publication date.

@@ -121,3 +121,34 @@ describe("PollArchive Head-to-Head Readings", () => {
     expect(html).toContain(">All respondents (Chow or Bradford only)<");
   });
 });
+
+describe("PollArchive Excluded Polls", () => {
+  const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
+  const explanation = "This poll is listed for the record but is not used in the forecast.";
+  const excluded: Poll = {
+    ...POLL,
+    poll_id: "excluded-poll",
+    model_exclusion: {
+      decided_on: "2026-10-08",
+      reasons: ["methodology_confidence"],
+      explanation,
+    },
+  };
+
+  it("marks an excluded poll and lets the reader open the reason", () => {
+    const html = renderToStaticMarkup(<PollArchive polls={[excluded]} field={[CHOW]} />);
+    expect(html).toContain("poll-archive__row--excluded");
+    expect(html).toContain("Not used in the forecast");
+    expect(html).toMatch(/<details[^>]*>\s*<summary[^>]*>[^<]*Why/);
+    expect(html).toContain(explanation);
+    // The reason row spans every column: date, firm, sample, field, four more.
+    expect(html).toMatch(/colspan="8"/i);
+  });
+
+  it("adds nothing to a poll the forecast uses", () => {
+    const html = renderToStaticMarkup(<PollArchive polls={[POLL]} field={[CHOW]} />);
+    expect(html).not.toContain("poll-archive__row--excluded");
+    expect(html).not.toContain("Not used in the forecast");
+    expect(html).not.toContain("<details");
+  });
+});

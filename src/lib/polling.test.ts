@@ -9,6 +9,7 @@ import {
   candidateTrendsForPolls,
   candidateChoiceShares,
   denominatorPhrase,
+  excludedPolls,
   explicitOtherShare,
   headToHeadLabel,
   headToHeadReading,
@@ -59,6 +60,9 @@ describe("poll context", () => {
     expect(pollMethodLabel("smart-ivr")).toBe("Interactive voice response (Smart IVR)");
     expect(pollMethodLabel("sms-online-and-ivr")).toBe(
       "Text-to-online survey and interactive voice response",
+    );
+    expect(pollMethodLabel("online-sms-invitation")).toBe(
+      "Online survey (text-message invitation)",
     );
     expect(pollMethodLabel("Telephone interviews")).toBe("Telephone interviews");
   });
@@ -212,6 +216,7 @@ describe("pollster registry", () => {
     expect(pollsterWebsite("Nanos Research")).toBe("https://nanos.co/");
     // The feed's firm name, as Polling releases publish it.
     expect(pollsterWebsite("Canada Pulse Insights")).toBe("https://canadapulseinsights.com/");
+    expect(pollsterWebsite("Scope Research")).toBe("https://scoperesearch.ca/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });
@@ -390,5 +395,55 @@ describe("Head-to-Head Readings", () => {
     const decided = { ...reading(), denominator: "Decided voters",
       shares: { [CHOW]: 0.54, [BRADFORD]: 0.46 }, field_tested: [CHOW, BRADFORD] };
     expect(headToHeadSentence(decided, FIELD)).toContain("Of decided voters: Chow 54%, Bradford 46%. It is shown");
+  });
+});
+
+describe("Excluded Polls", () => {
+  const EXCLUSION = {
+    decided_on: "2026-10-08",
+    reasons: ["methodology_confidence"],
+    explanation: "Listed for the record only.",
+  };
+  // A newest-by-fieldwork poll the maintainer excluded from the forecast.
+  const excluded: Poll = {
+    ...structuredClone(pollsByFieldwork(feed)[0]),
+    poll_id: "excluded-poll",
+    firm: "Unproven Research",
+    date_conducted: "2026-12-01",
+    date_published: "2026-12-02",
+    denominator: "Decided and leaning voters",
+    shares: { [CHOW]: 0.1, [BRADFORD]: 0.9 },
+    field_tested: [CHOW, BRADFORD],
+    model_exclusion: EXCLUSION,
+  };
+  const withExcluded: MayoralPollingFeed = {
+    ...feed,
+    polls: [excluded, ...feed.polls],
+    all_respondents: [
+      { ...excluded, denominator: "All respondents", poll_reading_id: "excluded-all" },
+      ...(feed.all_respondents ?? []),
+    ],
+  };
+
+  it("never makes an excluded poll the latest poll", () => {
+    expect(latestPoll(withExcluded)?.poll_id).toBe(latestPoll(feed)?.poll_id);
+    expect(latestFieldShares(withExcluded, FIELD)).toEqual(latestFieldShares(feed, FIELD));
+  });
+
+  it("leaves excluded polls out of both trend charts", () => {
+    const ids = (trends: { markers: { poll_id: string }[] }[]) =>
+      new Set(trends.flatMap((trend) => trend.markers.map((m) => m.poll_id)));
+    expect(ids(candidateTrends(withExcluded, FIELD)).has("excluded-poll")).toBe(false);
+    expect(ids(allRespondentTrends(withExcluded, FIELD)).has("excluded-poll")).toBe(false);
+    expect(candidateTrends(withExcluded, FIELD)).toEqual(candidateTrends(feed, FIELD));
+  });
+
+  it("lists the excluded polls, and none for a feed without exclusions", () => {
+    expect(excludedPolls(withExcluded).map((poll) => poll.poll_id)).toEqual(["excluded-poll"]);
+    expect(excludedPolls(feed)).toEqual([]);
+  });
+
+  it("keeps an excluded poll in the archive order", () => {
+    expect(pollsByFieldwork(withExcluded)[0].poll_id).toBe("excluded-poll");
   });
 });

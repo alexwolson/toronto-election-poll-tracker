@@ -883,6 +883,16 @@ const POLLING_FALLBACK: MayoralPollingFeed = {
   trend: {},
 };
 
+/** An Excluded Poll's record: a decision date, one or more reasons, an explanation. */
+function validModelExclusion(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(value.decided_on)) &&
+    isUniqueStringArray(value.reasons) &&
+    isNonEmptyString(value.explanation)
+  );
+}
+
 function validPoll(value: unknown, candidates: Set<string>): boolean {
   if (
     !isRecord(value) ||
@@ -897,6 +907,7 @@ function validPoll(value: unknown, candidates: Set<string>): boolean {
     (value.poll_reading_id !== undefined && !isNonEmptyString(value.poll_reading_id)) ||
     (value.denominator !== undefined && typeof value.denominator !== "string") ||
     (value.head_to_head !== undefined && typeof value.head_to_head !== "boolean") ||
+    (value.model_exclusion !== undefined && !validModelExclusion(value.model_exclusion)) ||
     !isUniqueStringArray(value.field_tested) ||
     !isRecord(value.shares) ||
     Object.keys(value.shares).length === 0 ||

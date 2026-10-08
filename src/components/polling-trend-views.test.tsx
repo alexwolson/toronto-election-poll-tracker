@@ -85,3 +85,23 @@ describe("polling trend views", () => {
     expect(screen.queryByText(/Olivia Chow: 2 polls shown/)).toBeNull();
   });
 });
+
+describe("Excluded Polls note", () => {
+  it("names each excluded poll in every view, from data rather than server-built markup", () => {
+    render(<PollingTrendViews allTrends={allTrends} qualifiedTrends={qualifiedTrends} series={series}
+      excludedPolls={[{ firm: "Unproven Research", date_conducted: "2026-10-06" }]} />);
+    const note = () => screen.getByText(/Not used in the forecast and left off this chart/);
+    expect(note().textContent).toBe(
+      "Not used in the forecast and left off this chart: Unproven Research (Oct 6, 2026)." +
+      " The poll archive lists it and explains why.",
+    );
+    expect(note().querySelector("a")?.getAttribute("href")).toBe("#archive-heading");
+    fireEvent.click(screen.getByRole("button", { name: "All polls" }));
+    expect(note()).toBeTruthy();
+  });
+
+  it("says nothing when no poll is excluded", () => {
+    render(<PollingTrendViews allTrends={allTrends} qualifiedTrends={qualifiedTrends} series={series} />);
+    expect(screen.queryByText(/Not used in the forecast/)).toBeNull();
+  });
+});

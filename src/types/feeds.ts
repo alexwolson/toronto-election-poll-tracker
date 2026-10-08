@@ -431,6 +431,16 @@ export interface Poll {
   notes: string;
   /** true when the reading offered only two named candidates (a Head-to-Head Reading) */
   head_to_head?: boolean;
+  /** present when the maintainer kept this poll out of the forecast (an Excluded Poll) */
+  model_exclusion?: ModelExclusion;
+}
+
+/** Why an Excluded Poll is in the record but not in the forecast (Backend ADR 0062). */
+export interface ModelExclusion {
+  decided_on: string;
+  reasons: string[];
+  /** plain-language reason the archive shows */
+  explanation: string;
 }
 
 export interface TrendPoint {

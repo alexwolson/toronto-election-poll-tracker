@@ -21,9 +21,19 @@ export function pollsByFieldwork(feed: MayoralPollingFeed): Poll[] {
   );
 }
 
-/** The poll with the most recent fieldwork; null when the feed has none. */
+/** True unless the maintainer kept the poll out of the forecast (an Excluded Poll). */
+export function isModelled(poll: Poll): boolean {
+  return poll.model_exclusion === undefined;
+}
+
+/** Excluded Polls, newest fieldwork first: in the archive, never in the forecast views. */
+export function excludedPolls(feed: MayoralPollingFeed): Poll[] {
+  return pollsByFieldwork(feed).filter((poll) => !isModelled(poll));
+}
+
+/** The forecast-used poll with the most recent fieldwork; null when there is none. */
 export function latestPoll(feed: MayoralPollingFeed): Poll | null {
-  return pollsByFieldwork(feed)[0] ?? null;
+  return pollsByFieldwork(feed).find(isModelled) ?? null;
 }
 
 /** The latest poll's shares (by fieldwork), restricted to the field. */
@@ -276,7 +286,7 @@ export function candidateTrends(
   feed: MayoralPollingFeed,
   field: string[],
 ): CandidateTrend[] {
-  return trendsForReadings(feed.polls, field, candidateChoiceShares);
+  return trendsForReadings(feed.polls.filter(isModelled), field, candidateChoiceShares);
 }
 
 export const ALL_RESPONDENT_OTHER_ID = "response:other_candidates";
@@ -290,7 +300,7 @@ export const ALL_RESPONDENT_UNDECIDED_ID = "response:undecided_or_dont_know";
 export function allRespondentTrends(
   feed: MayoralPollingFeed, field: string[], forecastField = field,
 ): CandidateTrend[] {
-  const polls = feed.all_respondents ?? [];
+  const polls = (feed.all_respondents ?? []).filter(isModelled);
   const fieldIds = new Set(forecastField);
   const candidates = trendsForReadings(polls, field, (poll) => ({
     shares: poll.shares, derived: false,

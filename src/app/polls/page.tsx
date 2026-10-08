@@ -12,7 +12,7 @@ import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
 import { formatDate, isoDayNumber } from "@/lib/format";
 import { forecastHistorySummaryRows, forecastHistoryTrends, remainingField, viableField } from "@/lib/mayoral-forecast";
-import { allRespondentTrends, candidateChoiceShares, candidateTrends, candidateTrendsForPolls, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
+import { allRespondentTrends, candidateChoiceShares, candidateTrends, candidateTrendsForPolls, excludedPolls, isModelled, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -40,7 +40,10 @@ export default async function PollsPage() {
   const recentAllRespondents = candidateTrendsForPolls(allRespondents,
     pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, campaigningField),
   );
-  const excluded = polling.polls.filter((poll) => candidateChoiceShares(poll) === null);
+  const excluded = polling.polls.filter(
+    (poll) => isModelled(poll) && candidateChoiceShares(poll) === null,
+  );
+  const unused = excludedPolls(polling);
   const series: ChartSeries[] = field.map((id) => {
     const meta = candidateMeta(id);
     // recharts renders SVG in the DOM, so the palette CSS variable resolves.
@@ -70,7 +73,9 @@ export default async function PollsPage() {
         meta={
           latest ? (
             <>
-              {polling.polls.length} public polls; latest from {latest.firm}, conducted{" "}
+              {polling.polls.length} public polls
+              {unused.length > 0 && ` (${unused.length} not used in the forecast)`};{" "}
+              latest {unused.length > 0 ? "used " : ""}from {latest.firm}, conducted{" "}
               {formatDate(latest.date_conducted)}.
             </>
           ) : undefined
@@ -97,6 +102,14 @@ export default async function PollsPage() {
                   from this chart because the denominator or complete response breakdown is
                   unavailable: {excluded.map((poll) => `${poll.firm} (${formatDate(poll.date_conducted)})`).join("; ")}.
                   {" "}Original figures remain in the <a href="#archive-heading">poll archive</a>.
+                </p>
+              )}
+              excludedNote={unused.length > 0 && (
+                <p className="evidence-explainer">
+                  Not used in the forecast and left off this chart:{" "}
+                  {unused.map((poll) => `${poll.firm} (${formatDate(poll.date_conducted)})`).join("; ")}.
+                  {" "}The <a href="#archive-heading">poll archive</a> lists{" "}
+                  {unused.length === 1 ? "it and explains why" : "them and explains why"}.
                 </p>
               )}
             />

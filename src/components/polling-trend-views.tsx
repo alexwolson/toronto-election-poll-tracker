@@ -18,6 +18,7 @@ export function PollingTrendViews({
   allRespondentTrends = [],
   recentAllRespondentTrends = [],
   allPollNote,
+  excludedNote,
 }: {
   allTrends: CandidateTrend[];
   qualifiedTrends: CandidateTrend[];
@@ -25,6 +26,8 @@ export function PollingTrendViews({
   allRespondentTrends?: CandidateTrend[];
   recentAllRespondentTrends?: CandidateTrend[];
   allPollNote?: ReactNode;
+  /** Excluded Polls are off the chart in every view, so their note always shows. */
+  excludedNote?: ReactNode;
 }) {
   const [qualified, setQualified] = useState(true);
   const [allRespondents, setAllRespondents] = useState(false);
@@ -59,6 +62,7 @@ export function PollingTrendViews({
         )}
       </p>
       {!qualified && !allRespondents && allPollNote}
+      {excludedNote}
       {qualified && (
         <p className="evidence-explainer" role="status">
           {qualifiedCount} {qualifiedCount === 1 ? "poll" : "polls"} since nominations closed.

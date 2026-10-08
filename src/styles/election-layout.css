@@ -757,6 +757,34 @@
 .poll-archive__method {
   color: var(--text-soft);
 }
+/* An Excluded Poll: muted figures, an amber badge, and its reason beneath. */
+.poll-archive__row--excluded td:not(.poll-archive__pollster) {
+  color: var(--text-soft);
+}
+.poll-archive__unused {
+  margin-left: 0.5rem;
+  background: #f6eedc;
+  color: #8a6516;
+}
+.poll-archive__table tbody .poll-archive__row--exclusion {
+  border-bottom: 1px solid var(--line-inner);
+}
+.poll-archive__exclusion {
+  padding-top: 0;
+}
+.poll-archive__why summary {
+  cursor: pointer;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+.poll-archive__why summary:hover {
+  color: var(--blue);
+}
+.poll-archive__why p {
+  margin: 0.4rem 0 0;
+  max-width: 70ch;
+  font-size: 0.9rem;
+}
 /* A Head-to-Head Reading sits indented beneath its own poll. */
 .poll-archive__subrow-label {
   padding-left: 1.25rem;
@@ -2075,6 +2103,19 @@
   .poll-archive__subrow-label {
     order: 1;
     flex: 0 0 100%;
+  }
+  .poll-archive__unused {
+    margin: 0.3rem 0 0;
+  }
+  .poll-archive__table tbody .poll-archive__row--exclusion {
+    margin-top: -1rem;
+    border-top-width: 0;
+  }
+  .poll-archive__exclusion {
+    flex: 0 0 100%;
+  }
+  .poll-archive__exclusion::before {
+    display: none;
   }
 }
 

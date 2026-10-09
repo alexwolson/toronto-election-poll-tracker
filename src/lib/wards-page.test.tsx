@@ -30,6 +30,14 @@ describe("Council ward pages", () => {
     expect(html).toContain("race-index-card ward-index-card");
   });
 
+  it("links each ward page to that ward's results", async () => {
+    const html = renderToStaticMarkup(
+      await WardPage({ params: Promise.resolve({ ward_num: "14" }) }),
+    );
+
+    expect(html).toMatch(/<a [^>]*href="\/results\/14">Ward 14 results: live from 8 p\.m\. Oct 26<\/a>/);
+  });
+
   it("uses the open-seat tag without restating it in the hero", async () => {
     const html = renderToStaticMarkup(
       await WardPage({ params: Promise.resolve({ ward_num: "4" }) }),

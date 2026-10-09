@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MastheadNav } from "@/components/masthead-nav";
 import { MayorTabs } from "@/components/mayor-tabs";
+import { SiteFooter } from "@/components/site-footer";
 import { TrusteeBoardTabs } from "@/components/trustee-board-tabs";
 
 const mocks = vi.hoisted(() => ({
@@ -30,6 +31,16 @@ describe("site navigation", () => {
     expect(html).not.toContain('href="/polls"');
   });
 
+  it("marks Results active on a ward's results page", () => {
+    mocks.pathname.mockReturnValue("/results/14");
+
+    const html = renderToStaticMarkup(<MastheadNav />);
+
+    expect(html).toContain(
+      'class="font-mono nav-link nav-link--active" aria-current="page" href="/results">Results</a>',
+    );
+  });
+
   it("keeps Mayor active on the Polls page", () => {
     mocks.pathname.mockReturnValue("/polls");
 
@@ -48,6 +59,14 @@ describe("site navigation", () => {
     expect(html).toContain('class="font-mono nav-link" href="/">Home</a>');
     expect(html).not.toContain('aria-current="page"');
     expect(html).not.toContain('href="/kids-vote-weekend"');
+  });
+});
+
+describe("site footer", () => {
+  it("links to the election night results", () => {
+    const html = renderToStaticMarkup(<SiteFooter />);
+
+    expect(html).toContain('<a href="/results">Election night results</a>');
   });
 });
 

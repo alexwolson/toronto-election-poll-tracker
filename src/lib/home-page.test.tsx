@@ -18,6 +18,14 @@ vi.mock("@/lib/feeds", () => ({
 const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
 const BRADFORD = "per_d8dfddfb642358e299f4b428292666bf";
 
+async function renderHome(): Promise<string> {
+  mocks.loadMayoralForecast.mockResolvedValue(
+    structuredClone(forecastFixture) as unknown as MayoralForecastFeed,
+  );
+  mocks.loadMayoralPolling.mockResolvedValue(polling());
+  return renderToStaticMarkup(await Home());
+}
+
 async function render(polling: MayoralPollingFeed): Promise<string> {
   mocks.loadMayoralForecast.mockResolvedValue(
     structuredClone(forecastFixture) as unknown as MayoralForecastFeed,
@@ -72,5 +80,16 @@ describe("Homepage latest poll", () => {
     expect(text).toContain(
       "decided and leaning voters (Chow or Bradford only): Olivia Chow 52%, Brad Bradford 44%, undecided 4%.",
     );
+  });
+});
+
+describe("Homepage on the way to election night", () => {
+  it("leads with the election night results panel, then the final pre-election forecast", async () => {
+    const html = await renderHome();
+    const panel = html.indexOf(">Election night results</h2>");
+    expect(panel).toBeGreaterThan(-1);
+    expect(html).toContain('href="/results"');
+    expect(panel).toBeLessThan(html.indexOf('id="forecast-heading"'));
+    expect(html).toContain("Final pre-election forecast for election day");
   });
 });

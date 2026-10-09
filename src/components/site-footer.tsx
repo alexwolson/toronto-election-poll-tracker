@@ -18,6 +18,7 @@ export function SiteFooter() {
         <nav aria-label="Election pages">
           <h4>The election</h4>
           <ul>
+            <li><Link href="/results">Election night results</Link></li>
             <li><Link href="/">Mayoral forecast</Link></li>
             <li><Link href="/polls">Mayoral polls</Link></li>
             <li><Link href="/candidates">Mayoral candidates</Link></li>

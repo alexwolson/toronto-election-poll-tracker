@@ -1,6 +1,7 @@
 import { isValidElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import councilFixture from "../../fixtures/council_race_cards.json";
+import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import trusteeFixture from "../../fixtures/trustee_race_cards.json";
 import ResultsPage from "@/app/results/page";
 import WardResultsPage, {
@@ -8,21 +9,24 @@ import WardResultsPage, {
   generateMetadata,
   generateStaticParams,
 } from "@/app/results/[ward]/page";
-import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
+import type { CouncilRaceCardsFeed, MayoralForecastFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 
 const mocks = vi.hoisted(() => ({
   loadCouncilRaceCards: vi.fn(),
   loadTrusteeRaceCards: vi.fn(),
+  loadMayoralForecast: vi.fn(),
 }));
 
 vi.mock("@/lib/feeds", () => ({
   loadCouncilRaceCards: mocks.loadCouncilRaceCards,
   loadTrusteeRaceCards: mocks.loadTrusteeRaceCards,
+  loadMayoralForecast: mocks.loadMayoralForecast,
 }));
 
 beforeEach(() => {
   mocks.loadCouncilRaceCards.mockResolvedValue(councilFixture as unknown as CouncilRaceCardsFeed);
   mocks.loadTrusteeRaceCards.mockResolvedValue(trusteeFixture as unknown as TrusteeRaceCardsFeed);
+  mocks.loadMayoralForecast.mockResolvedValue(forecastFixture as unknown as MayoralForecastFeed);
 });
 
 const params = (ward: string) => ({ params: Promise.resolve({ ward }) });
@@ -66,5 +70,16 @@ describe("Ward Ballot routes (#17 § Results pages, #13)", () => {
     const props = ((await ResultsPage()) as { props: { ballot: string[]; ward: unknown } }).props;
     expect(props.ward).toBeNull();
     expect(props.ballot).toEqual([]);
+  });
+
+  it("gives every results page the final forecast's margin outcomes, or none when it doesn't publish", async () => {
+    type Forecast = { props: { forecast: { leader: { surname: string } } | null } };
+    expect(((await ResultsPage()) as Forecast).props.forecast?.leader.surname).toBe("Chow");
+    expect(((await WardResultsPage(params("14"))) as Forecast).props.forecast?.leader.surname).toBe("Chow");
+    mocks.loadMayoralForecast.mockResolvedValue({
+      ...(forecastFixture as unknown as MayoralForecastFeed),
+      election_day: null,
+    });
+    expect(((await ResultsPage()) as Forecast).props.forecast).toBeNull();
   });
 });

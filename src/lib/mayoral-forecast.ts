@@ -197,6 +197,12 @@ export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | 
   };
 }
 
+/** The results pages' final-forecast panel: the margin outcomes, or null when
+ *  the forecast doesn't publish, as on the home page. */
+export function resultsForecast(feed: MayoralForecastFeed): MarginOutcomesView | null {
+  return forecastAvailable(feed) ? marginOutcomes(feed) : null;
+}
+
 export interface UncertaintyRow {
   key: UncertaintySourceKey | "combined";
   label: string;

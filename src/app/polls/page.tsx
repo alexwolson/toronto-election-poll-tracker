@@ -10,9 +10,9 @@ import { PollingScopeNote } from "@/components/polling-scope-note";
 import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
-import { formatDate, isoDayNumber } from "@/lib/format";
-import { forecastHistorySummaryRows, forecastHistoryTrends, remainingField, viableField } from "@/lib/mayoral-forecast";
-import { allRespondentTrends, candidateChoiceShares, candidateTrends, candidateTrendsForPolls, excludedPolls, isModelled, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsSinceNominationsClosed, pollsterRegistry } from "@/lib/polling";
+import { formatDate } from "@/lib/format";
+import { forecastHistorySummaryRows, forecastHistoryTrends, recentForecastHistoryTrends, remainingField, viableField } from "@/lib/mayoral-forecast";
+import { allRespondentTrends, allRespondentTrendsSinceNominationsClosed, candidateChoiceShares, candidateTrends, candidateTrendsSinceNominationsClosed, excludedPolls, isModelled, latestPoll, NOMINATIONS_CLOSED_DATE, pollsByFieldwork, pollsterRegistry } from "@/lib/polling";
 
 export const metadata = {
   title: "Polls — Toronto 2026",
@@ -33,12 +33,11 @@ export default async function PollsPage() {
     .map((candidate) => candidate.candidate_id);
   const field = [...new Set([...forecastField, ...minorField])];
   const trends = candidateTrends(polling, field);
-  const qualifiedTrends = candidateTrendsForPolls(
-    trends, pollsSinceNominationsClosed(polling, campaigningField),
-  );
+  // Each period view fits its own LOESS curves to the polls it shows.
+  const qualifiedTrends = candidateTrendsSinceNominationsClosed(polling, field, campaigningField);
   const allRespondents = allRespondentTrends(polling, field, forecastField);
-  const recentAllRespondents = candidateTrendsForPolls(allRespondents,
-    pollsSinceNominationsClosed({ ...polling, polls: polling.all_respondents ?? [] }, campaigningField),
+  const recentAllRespondents = allRespondentTrendsSinceNominationsClosed(
+    polling, field, forecastField, campaigningField,
   );
   const excluded = polling.polls.filter(
     (poll) => isModelled(poll) && candidateChoiceShares(poll) === null,
@@ -53,11 +52,8 @@ export default async function PollsPage() {
   const historySeries = series.filter((candidate) => forecastField.includes(candidate.id));
   const registry = pollsterRegistry(polling);
   const historyTrends = forecastHistoryTrends(forecast, forecastField);
-  // History is positioned by publication date; retain the original full-history curves.
-  const recentHistoryTrends = historyTrends?.map((trend) => ({
-    ...trend,
-    markers: trend.markers.filter((marker) => marker.x > isoDayNumber(NOMINATIONS_CLOSED_DATE)),
-  })) ?? [];
+  // History is positioned by publication date; the recent view fits its own curves.
+  const recentHistoryTrends = recentForecastHistoryTrends(forecast, forecastField) ?? [];
   const recentForecast = {
     ...forecast,
     history: forecast.history?.filter((point) => point.date > NOMINATIONS_CLOSED_DATE),

@@ -9,6 +9,7 @@ import {
   forecastAvailable,
   forecastHistorySummaryRows,
   forecastHistoryTrends,
+  recentForecastHistoryTrends,
   leadForecast,
   marginOutcomes,
   otherCandidatesNote,
@@ -286,5 +287,18 @@ describe("forecast history", () => {
     expect(rows).toEqual([
       "Olivia Chow: 68.5% after the poll published Jul 30, 2026; 70.4% after the latest, published Sep 22, 2026; 7 releases.",
     ]);
+  });
+});
+
+describe("recent forecast history", () => {
+  it("fits its own curve to releases published after nominations closed", () => {
+    const f = feed();
+    const recent = recentForecastHistoryTrends(f, [CHOW])!;
+    const [chow] = recent;
+    expect(chow.markers.length).toBeGreaterThan(0);
+    expect(chow.markers.every((m) => m.x > isoDayNumber("2026-08-21"))).toBe(true);
+    expect(chow.curve).toEqual(loessCurve(chow.markers.map(({ x, y }) => ({ x, y }))));
+    const full = forecastHistoryTrends(f, [CHOW])![0];
+    expect(chow.markers.length).toBeLessThan(full.markers.length);
   });
 });

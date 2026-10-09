@@ -73,7 +73,7 @@ export function PollingTrendViews({
       {qualified && (
         <p className="evidence-explainer" role="status">
           {qualifiedCount} {qualifiedCount === 1 ? "poll" : "polls"} since nominations closed.
-          {" "}Lines use the full polling history.
+          {" "}Lines are fitted to these polls only.
         </p>
       )}
       {qualified && qualifiedCount === 0 ? (

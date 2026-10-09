@@ -30,12 +30,12 @@ const props = { allTrends, recentTrends, series,
 afterEach(() => { cleanup(); loaded.chart.mockClear(); });
 
 describe("forecast history views", () => {
-  it("defaults to recent updates and preserves the full-history fit, probability scale and text equivalent", () => {
+  it("defaults to recent updates with their own fit, the probability scale and a text equivalent", () => {
     render(<ForecastHistoryViews {...props} />);
     const all = screen.getByRole("button", { name: "All polls" });
     const recent = screen.getByRole("button", { name: "Since nominations closed" });
     expect(recent.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("status").textContent).toBe("1 poll release published after Aug 21, 2026. Trend lines use the full forecast history.");
+    expect(screen.getByRole("status").textContent).toBe("1 poll release published after Aug 21, 2026. Trend lines are fitted to these releases only.");
     expect(screen.getByText(props.recentSummaryRows[0])).toBeTruthy();
     let chart = loaded.chart.mock.calls.at(-1)![0];
     expect(chart.trends[0].markers).toHaveLength(1);

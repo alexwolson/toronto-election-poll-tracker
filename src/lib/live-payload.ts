@@ -17,7 +17,7 @@ import type {
   LiveRace,
 } from "@/types/live";
 
-export const LIVE_SCHEMA_VERSION = 1;
+export const LIVE_SCHEMA_VERSION = 2;
 
 const PROJECTION_STATUSES = new Set(["stub", "none"]);
 const RACE_STATES = new Set([
@@ -106,9 +106,30 @@ function validBand(value: unknown): value is LiveBand {
   );
 }
 
+const VARIANT_IN_EFFECT = new Set(["forecast_weighted", "count_only"]);
+const VARIANT_OFF_REASONS = new Set([
+  "low_ess",
+  "forecast_missing",
+  "forecast_corrupt",
+  "forecast_unmatched",
+]);
+
+/** The mayor's marker of which band is in effect: the variant, or count-only and why. */
+function validVariant(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.in_effect !== "string") return false;
+  if (!VARIANT_IN_EFFECT.has(value.in_effect)) return false;
+  if (!(value.ess === null || (typeof value.ess === "number" && Number.isFinite(value.ess) && value.ess >= 0))) {
+    return false;
+  }
+  return value.in_effect === "forecast_weighted"
+    ? value.off_reason === null
+    : typeof value.off_reason === "string" && VARIANT_OFF_REASONS.has(value.off_reason);
+}
+
 function validProjection(value: unknown, level: LiveLevel, keys: ReadonlySet<string>): boolean {
   if (value === null) return true;
   if (!isRecord(value) || typeof value.stub !== "boolean" || !isRecord(value.bands)) return false;
+  if ("variant" in value && (level !== "mayor" || !validVariant(value.variant))) return false;
   const variants = Object.entries(value.bands);
   return (
     variants.length > 0 &&

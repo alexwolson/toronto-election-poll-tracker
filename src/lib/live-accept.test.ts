@@ -65,7 +65,7 @@ describe("acceptPoll", () => {
   it("never replaces a good payload with an invalid one", () => {
     const state = holding(served(ALL_OFFICE, WARD_BY_WARD));
     const wrongSchema = served(ALL_OFFICE + 60_000, WARD_BY_WARD);
-    (wrongSchema.payload as { schema_version: number }).schema_version = 2;
+    (wrongSchema.payload as { schema_version: number }).schema_version = 1;
     const noHeartbeat = { payload: served(ALL_OFFICE + 60_000, WARD_BY_WARD).payload };
     for (const bad of [null, "not json", {}, wrongSchema, noHeartbeat]) {
       const next = acceptPoll(state, bad);

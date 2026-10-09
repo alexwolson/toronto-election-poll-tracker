@@ -1,5 +1,5 @@
 /**
- * TypeScript contract for the election-night payload, schema version 1.
+ * TypeScript contract for the election-night payload, schema version 2.
  *
  * Mirrors `docs/payload.md` in toronto-election-live-projection: the one citywide
  * file each pipeline stores in Redis and `/live/results.json` serves. Shares are
@@ -48,10 +48,20 @@ export interface LiveBand {
 
 export type ProjectionVariant = "count_only" | "forecast_weighted";
 
+/** Why a modelled mayor's forecast-weighted band is not in effect at this refresh. */
+export type VariantOffReason = "low_ess" | "forecast_missing" | "forecast_corrupt" | "forecast_unmatched";
+
+/** A modelled mayor's marker of which band is in effect, before any gate or switch. */
+export type LiveVariantMarker =
+  | { in_effect: "forecast_weighted"; ess: number; off_reason: null }
+  | { in_effect: "count_only"; ess: number | null; off_reason: VariantOffReason };
+
 export interface LiveProjection {
   stub: boolean;
   /** variant → candidate key → band, in percent. */
   bands: Partial<Record<ProjectionVariant, Record<string, LiveBand>>>;
+  /** Modelled mayor only; absent on stub projections and every other level. */
+  variant?: LiveVariantMarker;
 }
 
 export interface LiveMayoralWard {
@@ -82,7 +92,7 @@ export interface LiveRace {
 }
 
 export interface LivePayload {
-  schema_version: 1;
+  schema_version: 2;
   model_version: string;
   forecast_release_tag: string | null;
   seq: { all_office: number; ward_by_ward: number };

@@ -39,7 +39,7 @@ describe("serveLive", () => {
   });
 
   it("throws on a payload that fails the validator, including its schema version", () => {
-    const wrongVersion = JSON.stringify({ ...JSON.parse(RAW), schema_version: 2 });
+    const wrongVersion = JSON.stringify({ ...JSON.parse(RAW), schema_version: 1 });
     expect(() => serveLive({ payload: wrongVersion, heartbeats: ["1793059320000", null] })).toThrow(/payload/);
     expect(() => serveLive({ payload: "{}", heartbeats: ["1793059320000", null] })).toThrow(/payload/);
   });

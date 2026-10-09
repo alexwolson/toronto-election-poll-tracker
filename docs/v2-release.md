@@ -174,8 +174,8 @@ The Vercel Marketplace sets the route's two variables, `KV_REST_API_URL` and
 (`election-rehearsal`) and Production reads the Night store (`election-night`).
 
 The route prerenders during every build, and it throws, failing the build, unless
-the store holds a schema-1 `payload` and at least one of `heartbeat:fly` and
-`heartbeat:do` (epoch milliseconds). The pipelines write these keys (`docs/store.md`
+the store holds a `payload` of the pinned schema version (`LIVE_SCHEMA_VERSION`,
+now 2) and at least one of `heartbeat:fly` and `heartbeat:do` (epoch milliseconds). The pipelines write these keys (`docs/store.md`
 in toronto-election-live-projection). **Seed the store before any build that targets
 it:** the Rehearsal store before a Preview, and the Night store before Production.
 From that repo, with the store's `rediss://` URL in `REDIS_URL`:

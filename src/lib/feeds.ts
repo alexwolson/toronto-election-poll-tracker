@@ -1166,11 +1166,31 @@ function validWardContext(poll: unknown, benchmark: unknown): boolean {
   );
 }
 
+/** Schema 11: every candidate and poll carries its Suspended Campaign fields, and the
+ * `suspended` level appears exactly when the incumbent's campaign is dated. */
+function validCouncilSuspension(card: unknown): boolean {
+  if (!isRecord(card) || !isRecord(card.attention) || !Array.isArray(card.candidates) ||
+    !Array.isArray(card.ward_polls)) return false;
+  const dated = (date: unknown) => date === null || isIsoDate(date);
+  const suspended = card.incumbent_campaign_suspended_on;
+  return (
+    dated(suspended) &&
+    (card.attention.level === "suspended") === (suspended !== null) &&
+    card.candidates.every((candidate) => isRecord(candidate) && dated(candidate.campaign_suspended_on)) &&
+    card.ward_polls.every((poll) => isRecord(poll) && typeof poll.before_incumbent_suspension === "boolean")
+  );
+}
+
 export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
-  // Schema 10 adds conditional named-set ward-poll modelling (ADR 0059).
-  if (!isRecord(value) || typeof value.schema_version !== "number" || ![8, 9, 10].includes(value.schema_version)) return null;
+  // Schema 10 adds conditional named-set ward-poll modelling (ADR 0059); schema 11
+  // adds council Suspended Campaigns (Backend ADR 0063).
+  if (!isRecord(value) || typeof value.schema_version !== "number" || ![8, 9, 10, 11].includes(value.schema_version)) return null;
   const withEndorsements = value.schema_version !== 8;
-  if (value.schema_version === 10 && !validWardBenchmark(value.ward_poll_benchmark)) return null;
+  const withSuspensions = value.schema_version === 11;
+  const levels = withSuspensions
+    ? ["open", "suspended", "high", "elevated", "quiet"]
+    : ["open", "high", "elevated", "quiet"];
+  if (value.schema_version >= 10 && !validWardBenchmark(value.ward_poll_benchmark)) return null;
   if (!isNonEmptyString(value.base_rate_note) || !isRecord(value.wards)) return null;
   const wards = value.wards;
   const expectedWards = Array.from({ length: 25 }, (_, index) => String(index + 1));
@@ -1179,14 +1199,15 @@ export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
     expectedWards.some((ward) => !(ward in wards))
   ) return null;
   for (const [ward, card] of Object.entries(wards)) {
-    if (value.schema_version === 10 && (!isRecord(card) || !Array.isArray(card.ward_polls) ||
+    if (value.schema_version >= 10 && (!isRecord(card) || !Array.isArray(card.ward_polls) ||
       !card.ward_polls.every((poll) => validWardContext(poll, value.ward_poll_benchmark)))) return null;
+    if (withSuspensions && !validCouncilSuspension(card)) return null;
     if (
       !isRecord(card) ||
       card.ward !== ward ||
       !isNonEmptyString(card.ward_name) ||
       !isRecord(card.attention) ||
-      !["open", "high", "elevated", "quiet"].includes(String(card.attention.level)) ||
+      !levels.includes(String(card.attention.level)) ||
       typeof card.attention.score !== "number" ||
       !Number.isFinite(card.attention.score) ||
       !Array.isArray(card.candidates) ||
@@ -1206,7 +1227,7 @@ export function validateCouncil(value: unknown): CouncilRaceCardsFeed | null {
     map: validateRaceMap(
       value.map,
       Object.keys(wards),
-      new Set(["open", "high", "elevated", "quiet"]),
+      new Set(levels),
       "/wards",
       "council_attention",
     ),

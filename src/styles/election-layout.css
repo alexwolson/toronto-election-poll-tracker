@@ -307,6 +307,12 @@
   --race-map-status-fg: var(--vuln-open-fg);
   --race-map-status-line: var(--vuln-open-line);
 }
+.race-map-layout--council_attention .race-map-feature--suspended {
+  --race-map-region-fill: var(--vuln-suspended-bg-hover);
+  --race-map-status-fill: var(--vuln-suspended-bg);
+  --race-map-status-fg: var(--vuln-suspended-fg);
+  --race-map-status-line: var(--vuln-suspended-line);
+}
 .race-map-layout--council_attention .race-map-feature--high {
   --race-map-region-fill: var(--vuln-high-bg-hover);
   --race-map-status-fill: var(--vuln-high-bg);
@@ -955,6 +961,7 @@
 .ward-attn-tag--elevated { color: var(--vuln-med-fg); background: var(--vuln-med-bg); }
 .ward-attn-tag--quiet { color: var(--vuln-low-fg); background: var(--vuln-low-bg); }
 .ward-attn-tag--open { color: var(--vuln-open-fg); background: var(--vuln-open-bg); }
+.ward-attn-tag--suspended { color: var(--vuln-suspended-fg); background: var(--vuln-suspended-bg); }
 
 .trigger-list { margin: 0.5rem 0 0; padding: 0; list-style: none; }
 .trigger-list li {

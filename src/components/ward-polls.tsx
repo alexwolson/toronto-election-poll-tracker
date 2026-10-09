@@ -1,6 +1,6 @@
 import { ContentSection } from "@/components/content-section";
 import { WardPollContext } from "@/components/ward-poll-context";
-import { formatDate, formatSharePct } from "@/lib/format";
+import { formatDate, formatSharePct, formatShortDate } from "@/lib/format";
 import type { WardPoll, WardPollBenchmark } from "@/types/feeds";
 
 function namedCandidates(poll: WardPoll) {
@@ -99,14 +99,21 @@ function PollReading({
   );
 }
 
+interface SuspendedIncumbent {
+  name: string;
+  on: string;
+}
+
 function PollReport({
   polls,
   benchmark,
   latest = false,
+  suspendedIncumbent = null,
 }: {
   polls: WardPoll[];
   benchmark?: WardPollBenchmark | null;
   latest?: boolean;
+  suspendedIncumbent?: SuspendedIncumbent | null;
 }) {
   // Start with the smallest published field, then label fields that add names.
   // This is a presentation order; every reading and source percentage is retained.
@@ -144,6 +151,12 @@ function PollReport({
             </>
           )}
         </p>
+        {suspendedIncumbent && poll.before_incumbent_suspension && (
+          <p className="ward-poll-report__note">
+            Conducted before {suspendedIncumbent.name}’s campaign was suspended on{" "}
+            {formatShortDate(suspendedIncumbent.on)}.
+          </p>
+        )}
       </header>
       <div
         className={
@@ -168,9 +181,11 @@ function PollReport({
 export function WardPolls({
   polls,
   benchmark,
+  suspendedIncumbent = null,
 }: {
   polls: WardPoll[];
   benchmark?: WardPollBenchmark | null;
+  suspendedIncumbent?: SuspendedIncumbent | null;
 }) {
   const ordered = [...polls].sort(
     (a, b) =>
@@ -202,7 +217,12 @@ export function WardPolls({
   return (
     <ContentSection className="ward-detail-section">
       <h2>Ward polls</h2>
-      <PollReport polls={latest} benchmark={benchmark} latest />
+      <PollReport
+        polls={latest}
+        benchmark={benchmark}
+        latest
+        suspendedIncumbent={suspendedIncumbent}
+      />
       {earlier.length > 0 && (
         <div className="ward-poll-history">
           <h3>Earlier polls</h3>
@@ -211,6 +231,7 @@ export function WardPolls({
               key={report[0].poll_id}
               polls={report}
               benchmark={benchmark}
+              suspendedIncumbent={suspendedIncumbent}
             />
           ))}
         </div>

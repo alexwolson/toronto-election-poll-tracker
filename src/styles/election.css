@@ -325,7 +325,7 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* Race cards (#38): the Live Tally reuses the forecast pages' chart rows, with
    a wider value column for the share over its votes. */
 .live-tally .forecast-chart__row { grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr) 7.5rem; }
-.live-tally__value { display: grid; justify-items: end; gap: 2px; }
+.live-tally__value { display: grid; justify-items: end; gap: var(--space-xs); }
 .live-ward-vote { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--rule); }
 .live-forecast .forecast-chart { margin-bottom: var(--space-sm); }
 .live-tile__ranges:empty { display: none; }

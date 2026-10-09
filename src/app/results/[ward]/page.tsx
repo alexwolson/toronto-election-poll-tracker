@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ResultsBallot } from "@/components/results/live-results-poller";
 import { loadCouncilRaceCards, loadMayoralForecast, loadTrusteeRaceCards } from "@/lib/feeds";
-import { resultsForecast, resultsWards, wardLabel } from "@/lib/results-wards";
+import { resultsForecast } from "@/lib/mayoral-forecast";
+import { resultsWards, wardLabel } from "@/lib/results-wards";
 import { isResultsWard, RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
 
 // Unknown wards 404 rather than render on demand (research 05 §1b).

@@ -52,6 +52,11 @@ function render(
   );
 }
 
+/** The markup's text, tags dropped. */
+function text(html: string): string {
+  return html.replace(/<[^>]*>/g, "");
+}
+
 function count(html: string, text: string): number {
   return html.split(text).length - 1;
 }
@@ -327,7 +332,7 @@ describe("LiveResultsView: the mayor card", () => {
     expect(html).toContain("Mayoral vote in Ward 1");
     expect(html).toContain("49 of 52 voting areas in");
     // Ward 1's top three by votes, as shares of its 16,744 counted.
-    expect(html).toContain("Ana Bailão 32.8% · Olivia Chow 27.5% · Mark Saunders 15.3%");
+    expect(text(html)).toContain("Ana Bailão 32.8% · Olivia Chow 27.5% · Mark Saunders 15.3%");
     expect(card(render(payload), "mayor")).not.toContain("Mayoral vote in Ward");
     expect(card(render(golden("before-results-2026.json"), { ward: "1" }), "mayor")).not.toContain(
       "Mayoral vote in Ward",
@@ -409,7 +414,12 @@ describe("LiveResultsView: names and colours (#16)", () => {
   it("label the two Chows by full name, and colour only the forecast-named candidates", () => {
     const payload = counting2026({ mayor: ["Braeden Chow", "Olivia Chow", "Brad Bradford"] });
     const html = card(render(payload, { ward: "1" }), "mayor");
-    expect(html).toMatch(/^[^]*Braeden Chow [\d.]+% · Olivia Chow [\d.]+% · Bradford [\d.]+%/);
+    expect(text(html)).toMatch(/Braeden Chow [\d.]+% · Olivia Chow [\d.]+% · Bradford [\d.]+%/);
+    // The ward line marks the forecast-named candidates too.
+    const line = html.slice(html.indexOf("Mayoral vote in Ward 1"));
+    expect(line).toMatch(/candidate-marker--chow[^]*Olivia Chow/);
+    expect(line).toMatch(/candidate-marker--bradford[^]*Bradford/);
+    expect(line.slice(0, line.indexOf("Braeden Chow"))).not.toContain("candidate-marker");
     const row = (name: string) => {
       const at = html.indexOf(`<span class="live-tally__name">${name}</span>`);
       return html.slice(html.lastIndexOf('<div class="forecast-chart__row"', at), html.indexOf("</strong>", at));

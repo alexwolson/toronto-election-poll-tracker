@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { ResultsBallot } from "@/components/results/live-results-poller";
 import { loadCouncilRaceCards, loadMayoralForecast } from "@/lib/feeds";
-import { resultsForecast, resultsWards } from "@/lib/results-wards";
+import { resultsForecast } from "@/lib/mayoral-forecast";
+import { resultsWards } from "@/lib/results-wards";
 
 export const metadata: Metadata = {
   title: "Election Night Results — Toronto Election",

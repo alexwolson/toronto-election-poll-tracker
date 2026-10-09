@@ -23,6 +23,18 @@ const MAYOR_SHOWN = 4;
 const WARD_VOTE_SHOWN = 3;
 const NEUTRAL = "var(--color-disengaged)";
 
+/** The race states' fixed reader wording (#17 § On-night reader wording). */
+const WORDING = {
+  before_results: "Results from 8 p.m.",
+  no_units_in: "No voting areas have reported yet",
+  all_units_in: "All voting areas in",
+  no_progress: "Voting areas: not available",
+} as const;
+
+function progressText(progress: LiveProgress): string {
+  return `${progress.received} of ${progress.total} voting areas in`;
+}
+
 export function raceTitle(race: LiveRace): string {
   if (race.level === "mayor") return "Mayor";
   if (race.level === "council") return race.name ? `Councillor, Ward ${race.num} ${race.name}` : `Councillor, Ward ${race.num}`;
@@ -35,11 +47,13 @@ function shortLabel(candidate: LiveCandidate): string {
   return candidate.short_label ?? candidate.full_name;
 }
 
+/** Payload shares are already percent (0..100), unlike `formatSharePct`'s fractions. */
 function percent(share: number | null): string {
   return share === null ? "–" : `${share.toFixed(1)}%`;
 }
 
-function counted(race: LiveRace): boolean {
+/** Whether the race shows its Live Tally: counting, or every voting area in. */
+function hasTally(race: LiveRace): boolean {
   return race.state === "counting" || race.state === "all_units_in";
 }
 
@@ -51,13 +65,13 @@ function ProgressLine({ progress }: { progress: LiveProgress }) {
       <span className="live-progress__track" aria-hidden="true">
         <span className="live-progress__fill" style={{ width: `${fraction * 100}%` }} />
       </span>
-      {progress.received} of {progress.total} voting areas in
+      {progressText(progress)}
     </p>
   );
 }
 
 function Progress({ progress }: { progress: LiveProgress | null }) {
-  return progress ? <ProgressLine progress={progress} /> : <Status>Voting areas: not available</Status>;
+  return progress ? <ProgressLine progress={progress} /> : <Status>{WORDING.no_progress}</Status>;
 }
 
 function Status({ children }: { children: ReactNode }) {
@@ -139,7 +153,7 @@ function RaceBody({ race }: { race: LiveRace }) {
     case "before_results":
       return (
         <>
-          <Status>Results from 8 p.m.</Status>
+          <Status>{WORDING.before_results}</Status>
           <BallotOrder race={race} />
         </>
       );
@@ -155,7 +169,7 @@ function RaceBody({ race }: { race: LiveRace }) {
     case "no_units_in":
       return (
         <>
-          <Status>No voting areas have reported yet</Status>
+          <Status>{WORDING.no_units_in}</Status>
           <BallotOrder race={race} />
         </>
       );
@@ -163,7 +177,7 @@ function RaceBody({ race }: { race: LiveRace }) {
     case "all_units_in":
       return (
         <>
-          {race.state === "all_units_in" ? <Status>All voting areas in</Status> : <Progress progress={race.progress} />}
+          {race.state === "all_units_in" ? <Status>{WORDING.all_units_in}</Status> : <Progress progress={race.progress} />}
           <Tally race={race} />
         </>
       );
@@ -177,10 +191,6 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
   const entries = Object.entries(ward.votes);
   const total = ward.votes_counted ?? entries.reduce((sum, [, votes]) => sum + votes, 0);
   const top = [...entries].sort((a, b) => b[1] - a[1]).slice(0, WARD_VOTE_SHOWN);
-  const label = (key: string) => {
-    const candidate = race.candidates.find((c) => c.key === key);
-    return candidate ? shortLabel(candidate) : key;
-  };
   return (
     <div className="live-ward-vote">
       <p className="t-body-small">
@@ -188,7 +198,17 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
       </p>
       <Progress progress={ward.progress} />
       <p className="t-body-small">
-        {top.map(([key, votes]) => `${label(key)} ${total > 0 ? percent((votes / total) * 100) : "–"}`).join(" · ")}
+        {top.map(([key, votes], i) => {
+          const candidate = race.candidates.find((c) => c.key === key);
+          const slug = candidate?.candidate_id ? candidateMeta(candidate.candidate_id).slug : null;
+          return (
+            <span key={key}>
+              {i > 0 && " · "}
+              {slug && <span className={`candidate-marker candidate-marker--${slug}`} aria-hidden="true" />}
+              {`${candidate ? shortLabel(candidate) : key} ${total > 0 ? percent((votes / total) * 100) : "–"}`}
+            </span>
+          );
+        })}
       </p>
     </div>
   );
@@ -201,13 +221,15 @@ function FinalForecast({ forecast }: { forecast: MarginOutcomesView }) {
     <div className="faq">
       <details className="live-forecast">
         <summary>The final pre-election forecast</summary>
-        <p className="t-body-small">
-          How far apart {forecast.leader.surname} and {forecast.challenger.surname} were expected to finish:
-        </p>
-        <MarginOutcomes view={forecast} />
-        <p className="forecast-caption">
-          The final pre-election forecast, kept for reference. It is not the count and not the projection.
-        </p>
+        <div className="faq__a">
+          <p className="t-body-small">
+            How far apart {forecast.leader.surname} and {forecast.challenger.surname} were expected to finish:
+          </p>
+          <MarginOutcomes view={forecast} />
+          <p className="forecast-caption">
+            The final pre-election forecast, kept for reference. It is not the count and not the projection.
+          </p>
+        </div>
       </details>
     </div>
   );
@@ -224,7 +246,7 @@ export function RaceCard({
   /** The mayor card's forecast panel; hidden once the count is complete. */
   forecast?: MarginOutcomesView | null;
 }) {
-  const wardVote = race.level === "mayor" && ward !== null && counted(race) ? race.wards?.find((w) => w.num === ward) : null;
+  const wardVote = race.level === "mayor" && ward !== null && hasTally(race) ? race.wards?.find((w) => w.num === ward) : null;
   return (
     <section className="card" aria-labelledby={`live-race-${race.id}`}>
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
@@ -242,7 +264,7 @@ export function FrenchBoards({ races }: { races: LiveRace[] }) {
     <div className="faq">
       <details className="live-french">
         <summary>Voting for a French-language board?</summary>
-        <div className="grid">
+        <div className="faq__a grid">
           {races.map((race) => (
             <RaceCard key={race.id} race={race} />
           ))}
@@ -256,24 +278,20 @@ export function FrenchBoards({ races }: { races: LiveRace[] }) {
 function tileStatus(race: LiveRace): string {
   switch (race.state) {
     case "before_results":
-      return "Results from 8 p.m.";
+    case "no_units_in":
+    case "all_units_in":
+      return WORDING[race.state];
     case "acclaimed":
       return "Acclaimed";
     case "no_figures":
       return "No figures from the City right now";
-    case "no_units_in":
-      return "No voting areas have reported yet";
-    case "all_units_in":
-      return "All voting areas in";
     case "counting":
-      return race.progress
-        ? `${race.progress.received} of ${race.progress.total} voting areas in`
-        : "Voting areas: not available";
+      return race.progress ? progressText(race.progress) : WORDING.no_progress;
   }
 }
 
 function TileBody({ race }: { race: LiveRace }) {
-  if (!counted(race)) return <p className="t-meta">{tileStatus(race)}</p>;
+  if (!hasTally(race)) return <p className="t-meta">{tileStatus(race)}</p>;
   const leader = race.candidates[0];
   return (
     <>

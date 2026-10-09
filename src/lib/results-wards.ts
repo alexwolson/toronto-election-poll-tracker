@@ -1,6 +1,5 @@
-import { forecastAvailable, marginOutcomes, type MarginOutcomesView } from "@/lib/mayoral-forecast";
 import { RESULTS_WARDS } from "@/lib/ward-ballot";
-import type { CouncilRaceCardsFeed, MayoralForecastFeed } from "@/types/feeds";
+import type { CouncilRaceCardsFeed } from "@/types/feeds";
 
 export interface ResultsWard {
   num: string;
@@ -16,10 +15,4 @@ export function resultsWards(council: CouncilRaceCardsFeed): ResultsWard[] {
 /** "Ward 14 Toronto-Danforth", or "Ward 14" when the name is missing. */
 export function wardLabel(ward: ResultsWard): string {
   return ward.name ? `Ward ${ward.num} ${ward.name}` : `Ward ${ward.num}`;
-}
-
-/** The mayor card's final-forecast panel: the forecast's margin outcomes, or
- *  null when the forecast doesn't publish, as on the home page. */
-export function resultsForecast(feed: MayoralForecastFeed): MarginOutcomesView | null {
-  return forecastAvailable(feed) ? marginOutcomes(feed) : null;
 }

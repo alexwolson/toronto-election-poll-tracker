@@ -4,7 +4,7 @@
  * return a non-200, which ISR would cache: a throw keeps the last good copy.
  */
 
-import { validateLivePayload } from "@/lib/live-payload";
+import { LIVE_SCHEMA_VERSION, validateLivePayload } from "@/lib/live-payload";
 import type { LiveResults } from "@/types/live";
 
 /** The store's raw values: `payload` and each pipeline's `heartbeat:<name>`
@@ -37,6 +37,8 @@ export function serveLive(stored: StoredLive): LiveResults {
     throw new Error("live: stored payload is not JSON");
   }
   const payload = validateLivePayload(parsed);
-  if (payload === null) throw new Error("live: stored payload fails the schema-1 validator");
+  if (payload === null) {
+    throw new Error(`live: stored payload fails the schema-${LIVE_SCHEMA_VERSION} validator`);
+  }
   return { heartbeat, payload };
 }

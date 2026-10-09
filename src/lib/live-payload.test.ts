@@ -33,9 +33,9 @@ describe("validateLivePayload", () => {
     }
   });
 
-  it("pins schema version 1", () => {
-    expect(LIVE_SCHEMA_VERSION).toBe(1);
-    for (const version of [0, 2, "1", null]) {
+  it("pins schema version 2", () => {
+    expect(LIVE_SCHEMA_VERSION).toBe(2);
+    for (const version of [1, 3, "2", null]) {
       expect(validateLivePayload({ ...golden("no-units-in-2026.json"), schema_version: version })).toBeNull();
     }
     const unversioned = golden("no-units-in-2026.json");
@@ -78,6 +78,39 @@ describe("validateLivePayload", () => {
     const race = noFigures.races.find((r: { state: string }) => r.state === "no_figures");
     race.fault = null;
     expect(validateLivePayload(noFigures)).toBeNull();
+  });
+
+  it("checks the mayor's variant marker, which says which band is in effect", () => {
+    const mayorIndex = (p: { races: { id: string }[] }) => p.races.findIndex((r) => r.id === "mayor");
+    const withVariant = (variant: unknown) => {
+      const payload = golden("replay-counting-2022.json");
+      payload.races[mayorIndex(payload)].projection.variant = variant;
+      return payload;
+    };
+    expect(golden("replay-counting-2022.json").races[mayorIndex(golden("replay-counting-2022.json"))].projection.variant).toEqual({
+      in_effect: "count_only",
+      ess: null,
+      off_reason: "forecast_missing",
+    });
+    expect(validateLivePayload(withVariant({ in_effect: "forecast_weighted", ess: 9816.6, off_reason: null }))).not.toBeNull();
+    expect(validateLivePayload(withVariant({ in_effect: "count_only", ess: 412.5, off_reason: "low_ess" }))).not.toBeNull();
+
+    for (const bad of [
+      { in_effect: "tally", ess: null, off_reason: "forecast_missing" },
+      { in_effect: "count_only", ess: null, off_reason: "because" },
+      { in_effect: "forecast_weighted", ess: 9816.6, off_reason: "low_ess" },
+      { in_effect: "count_only", ess: null, off_reason: null },
+      { in_effect: "forecast_weighted", ess: -1, off_reason: null },
+      { in_effect: "forecast_weighted", ess: "9816.6", off_reason: null },
+      "forecast_weighted",
+    ]) {
+      expect(validateLivePayload(withVariant(bad)), JSON.stringify(bad)).toBeNull();
+    }
+
+    const onCouncil = golden("council-counting-2022.json");
+    const index = onCouncil.races.findIndex((r: { projection: unknown }) => r.projection !== null);
+    onCouncil.races[index].projection.variant = { in_effect: "count_only", ess: null, off_reason: "forecast_missing" };
+    expect(validateLivePayload(onCouncil)).toBeNull();
   });
 
   it("rejects projection bands outside a counting race or for unknown candidates", () => {

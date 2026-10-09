@@ -41,7 +41,7 @@ Do not update them merely because a new release was published.
 ## Election-night golden payloads (`live/payload/`)
 
 Copied byte for byte from `goldens/payload/` in toronto-election-live-projection
-at `5fd44fe` (2026-10-08), the payload contract (#17, seam 6). They are schema 1,
+at `62f4376` (2026-10-09, PR #76), the payload contract (#17, seam 6). They are schema 2,
 emitted by `uv run election-night goldens` from real City files, one per reachable
 state, plus `replay-counting-2022.json` from a short Replay of the certified 2022
 counts (every level counting; candidates keyed by the workbooks' names, `Tory John`). `src/lib/live-payload.test.ts` checks that the validator accepts every one.

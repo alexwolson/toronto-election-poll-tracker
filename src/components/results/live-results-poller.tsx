@@ -1,15 +1,19 @@
 "use client";
 
 /**
- * The browser side of the live page (#17 § Browser): polls `/live/results.json`
+ * The browser side of the live pages (#17 § Browser): polls `/live/results.json`
  * every 60 s on the same origin, so readers on the production domain never touch
  * `*.vercel.app` (research 05 §6), and applies each poll through the pure accept
  * rule.
+ *
+ * The provider sits in the `/results/` layout, which persists across the ward
+ * pages, so opening another ward renders from the payload already held, with no
+ * fetch (#17 § Payload).
  */
 
-import { useEffect, useReducer, useState } from "react";
-import { acceptPoll, INITIAL_LIVE_STATE } from "@/lib/live-accept";
-import { LiveResultsView } from "./live-results-view";
+import { createContext, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
+import { acceptPoll, INITIAL_LIVE_STATE, type LiveClientState } from "@/lib/live-accept";
+import { LiveResultsView, type LiveResultsViewProps } from "./live-results-view";
 
 const LIVE_URL = "/live/results.json";
 const POLL_INTERVAL_MS = 60_000;
@@ -30,9 +34,16 @@ async function fetchLive(): Promise<unknown> {
   }
 }
 
-export function LiveResultsPoller() {
+interface LiveResultsContextValue {
+  state: LiveClientState;
+  /** The reader's clock at the last poll, for the staleness banner. */
+  now: number;
+}
+
+const LiveResultsContext = createContext<LiveResultsContextValue>({ state: INITIAL_LIVE_STATE, now: 0 });
+
+export function LiveResultsProvider({ children }: { children: ReactNode }) {
   const [state, apply] = useReducer(acceptPoll, INITIAL_LIVE_STATE);
-  // The reader's clock at the last poll, for the staleness banner.
   const [now, setNow] = useState(0);
 
   useEffect(() => {
@@ -51,5 +62,12 @@ export function LiveResultsPoller() {
     };
   }, []);
 
-  return <LiveResultsView state={state} now={now} />;
+  const value = useMemo(() => ({ state, now }), [state, now]);
+  return <LiveResultsContext.Provider value={value}>{children}</LiveResultsContext.Provider>;
+}
+
+/** A results page: the held payload, shown for the page's ward. */
+export function ResultsBallot(props: Omit<LiveResultsViewProps, "state" | "now">) {
+  const { state, now } = useContext(LiveResultsContext);
+  return <LiveResultsView state={state} now={now} {...props} />;
 }

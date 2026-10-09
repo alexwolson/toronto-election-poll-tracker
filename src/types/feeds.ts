@@ -613,6 +613,8 @@ export interface CouncilCandidate {
   past_elections: PastElection[];
   /** schema 9+; absent in older feeds */
   endorsements?: CandidateEndorsement[];
+  /** schema 11+: the day the candidate publicly ended the campaign; still on the ballot */
+  campaign_suspended_on?: string | null;
 }
 
 export interface PriorResult {
@@ -714,6 +716,8 @@ export interface WardPoll {
   candidates: WardPollCandidate[];
   source_url?: string | null;
   modelled_context?: WardPollModelContext | null;
+  /** schema 11+: fieldwork came before the incumbent's Suspended Campaign */
+  before_incumbent_suspension?: boolean;
 }
 
 export interface CouncilRaceCard {
@@ -727,14 +731,16 @@ export interface CouncilRaceCard {
   prior_result: PriorResult | null;
   competitiveness: Competitiveness;
   ward_polls: WardPoll[];
+  /** schema 11+: set when the incumbent is on the ballot but has suspended the campaign */
+  incumbent_campaign_suspended_on?: string | null;
   attention: {
-    level: "high" | "elevated" | "quiet" | "open";
+    level: "high" | "elevated" | "quiet" | "open" | "suspended";
     score: number;
   };
 }
 
 export interface CouncilRaceCardsFeed {
-  schema_version: 8 | 9 | 10;
+  schema_version: 8 | 9 | 10 | 11;
   ward_poll_benchmark?: WardPollBenchmark | null;
   base_rate_note: string;
   /** keyed by ward number as a string, "1".."25" */

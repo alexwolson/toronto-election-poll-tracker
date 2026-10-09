@@ -102,6 +102,12 @@
   --vuln-open-bg-hover: #d4d4d4;
   --vuln-open-line-hover: #666;
 
+  /* An incumbent's Suspended Campaign reuses the trustee two-candidate hue. */
+  --vuln-suspended-fg:    var(--trustee-two-fg);
+  --vuln-suspended-line:  var(--trustee-two-line);
+  --vuln-suspended-bg:    var(--trustee-two-bg);
+  --vuln-suspended-bg-hover: color-mix(in srgb, var(--trustee-two-line) 40%, var(--trustee-two-bg));
+
   /* ── Trustee race context (field structure, not vulnerability) ── */
   --trustee-open-fg: #744838;
   --trustee-open-line: #8f604f;

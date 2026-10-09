@@ -7,7 +7,7 @@
 import { incumbentExposureFacts } from "@/lib/council-signals";
 import type { CouncilRaceCard, CouncilRaceCardsFeed } from "@/types/feeds";
 
-export type AttentionLevel = "high" | "elevated" | "quiet" | "open";
+export type AttentionLevel = "high" | "elevated" | "quiet" | "open" | "suspended";
 
 export function wardAttentionLevel(card: CouncilRaceCard): AttentionLevel {
   return card.attention.level;

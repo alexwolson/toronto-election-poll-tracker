@@ -9,6 +9,7 @@ const ATTENTION_LABEL: Record<AttentionLevel, string> = {
   elevated: "Elevated attention",
   quiet: "Quiet race",
   open: "Open seat",
+  suspended: "Incumbent suspended campaign",
 };
 
 type Sort = "attention" | "ward";

@@ -14,7 +14,7 @@ import {
   ownHistorySignals,
   raceHistorySignals,
 } from "@/lib/council-signals";
-import { formatSharePct } from "@/lib/format";
+import { formatSharePct, formatShortDate } from "@/lib/format";
 import type { CouncilCandidate, CouncilRaceCard, WardPollBenchmark } from "@/types/feeds";
 
 const ATTENTION_LABEL: Record<AttentionLevel, string> = {
@@ -22,6 +22,7 @@ const ATTENTION_LABEL: Record<AttentionLevel, string> = {
   elevated: "Elevated attention",
   quiet: "Quiet race",
   open: "Open seat",
+  suspended: "Incumbent suspended campaign",
 };
 
 export function generateStaticParams() {
@@ -62,7 +63,15 @@ function CandidateItem({
       campaignUrl={candidate.campaign_url}
       history={history}
       currentOfficeType={isIncumbent ? "councillor" : undefined}
-      summaryPrefix={sameWardReturn?.topline}
+      summaryPrefix={
+        [
+          candidate.campaign_suspended_on &&
+            `Campaign suspended ${formatShortDate(candidate.campaign_suspended_on)}`,
+          sameWardReturn?.topline,
+        ]
+          .filter(Boolean)
+          .join(" · ") || undefined
+      }
       hasAdditionalDetails={Boolean(sameWardReturn) || signals.length > 0 || endorsements.length > 0}
       leadDetail={endorsements.length > 0 ? <CandidateEndorsements endorsements={endorsements} /> : undefined}
     >
@@ -118,6 +127,12 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
               <dt>Councillor</dt>
               <dd>{inc.name}</dd>
             </div>
+            {card.incumbent_campaign_suspended_on && (
+              <div>
+                <dt>Campaign</dt>
+                <dd>Suspended {formatShortDate(card.incumbent_campaign_suspended_on)}</dd>
+              </div>
+            )}
             <div>
               <dt>Council victories</dt>
               <dd>{inc.council_wins}</dd>
@@ -212,7 +227,15 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
         )}
       </ContentSection>
 
-      <WardPolls polls={card.ward_polls} benchmark={benchmark} />
+      <WardPolls
+        polls={card.ward_polls}
+        benchmark={benchmark}
+        suspendedIncumbent={
+          card.incumbent_campaign_suspended_on
+            ? { name: inc.name, on: card.incumbent_campaign_suspended_on }
+            : null
+        }
+      />
     </main>
   );
 }

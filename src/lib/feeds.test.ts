@@ -717,3 +717,56 @@ describe("schema 10 historical ward comparisons", () => {
     expect(validateCouncil({ ...missing, schema_version: "10" })).toBeNull();
   });
 });
+
+describe("schema 11 council Suspended Campaigns", () => {
+  function suspendedFeed() {
+    const fixture = structuredClone(councilFixture);
+    return { ...fixture, schema_version: 11, ward_poll_benchmark: benchmark,
+      wards: Object.fromEntries(Object.entries(fixture.wards).map(([ward, card]) => {
+        const suspended = ward === "5" ? "2026-10-09" : null;
+        return [ward, {
+          ...card,
+          incumbent_campaign_suspended_on: suspended,
+          attention: suspended ? { level: "suspended", score: 4000 } : card.attention,
+          candidates: card.candidates.map((candidate) => ({
+            ...candidate,
+            campaign_suspended_on:
+              suspended && candidate.display_name === card.incumbent.name ? suspended : null,
+          })),
+          ward_polls: card.ward_polls.map((reading) => ({
+            ...reading, modelled_context: null, before_incumbent_suspension: suspended !== null,
+          })),
+        }];
+      })),
+      map: null,
+    };
+  }
+
+  it("accepts an incumbent's Suspended Campaign as its own attention level", () => {
+    const valid = validateCouncil(suspendedFeed());
+    expect(valid?.wards["5"].attention.level).toBe("suspended");
+    expect(valid?.wards["5"].incumbent_campaign_suspended_on).toBe("2026-10-09");
+  });
+
+  it("rejects a suspended level without a date, a bad date, or missing fields", () => {
+    const undated = suspendedFeed();
+    undated.wards["5"].incumbent_campaign_suspended_on = null;
+    expect(validateCouncil(undated)).toBeNull();
+
+    const badDate = suspendedFeed();
+    badDate.wards["5"].candidates[0].campaign_suspended_on = "Oct 9";
+    expect(validateCouncil(badDate)).toBeNull();
+
+    const noCandidateField = suspendedFeed();
+    delete (noCandidateField.wards["1"].candidates[0] as Record<string, unknown>).campaign_suspended_on;
+    expect(validateCouncil(noCandidateField)).toBeNull();
+
+    const noPollFlag = suspendedFeed();
+    delete (noPollFlag.wards["5"].ward_polls[0] as Record<string, unknown>).before_incumbent_suspension;
+    expect(validateCouncil(noPollFlag)).toBeNull();
+  });
+
+  it("does not accept the suspended level from an older schema", () => {
+    expect(validateCouncil({ ...suspendedFeed(), schema_version: 10 })).toBeNull();
+  });
+});

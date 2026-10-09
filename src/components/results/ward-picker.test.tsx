@@ -27,6 +27,7 @@ function renderPage(ward: string | null = null) {
       wards={WARDS}
       ward={WARDS.find((w) => w.num === ward) ?? null}
       ballot={[]}
+      forecast={null}
     />,
   );
 }

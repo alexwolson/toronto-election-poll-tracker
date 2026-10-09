@@ -175,7 +175,7 @@ The Vercel Marketplace sets the route's two variables, `KV_REST_API_URL` and
 
 The route prerenders during every build, and it throws, failing the build, unless
 the store holds a `payload` of the pinned schema version (`LIVE_SCHEMA_VERSION`,
-now 2) and at least one of `heartbeat:fly` and `heartbeat:do` (epoch milliseconds). The pipelines write these keys (`docs/store.md`
+now 3) and at least one of `heartbeat:fly` and `heartbeat:do` (epoch milliseconds). The pipelines write these keys (`docs/store.md`
 in toronto-election-live-projection). **Seed the store before any build that targets
 it:** the Rehearsal store before a Preview, and the Night store before Production.
 From that repo, with the store's `rediss://` URL in `REDIS_URL`:
@@ -195,7 +195,7 @@ for name in PIPELINES: store.heartbeat(name, int(time.time() * 1000))
 It also rejects an equal pair. After a schema bump, while the City's files keep the
 pair already stored, `publish` can't store the new version: build the payload from
 those same files with the bumped code, check that its pair equals `payload:seq`, and
-`SET payload` directly (done for schema 2 on the Rehearsal store, 2026-10-09).
+`SET payload` directly (done for schemas 2 and 3 on the Rehearsal store, 2026-10-09).
 To build locally against the Rehearsal store, pull its variables first:
 `vercel env pull .env.rehearsal --environment=preview`, then
 `set -a; . ./.env.rehearsal; set +a` before `npm run build`. Never commit that file.

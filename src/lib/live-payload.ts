@@ -17,9 +17,18 @@ import type {
   LiveRace,
 } from "@/types/live";
 
-export const LIVE_SCHEMA_VERSION = 2;
+export const LIVE_SCHEMA_VERSION = 3;
 
-const PROJECTION_STATUSES = new Set(["stub", "none"]);
+/** A level's projection status (#45): live, or why it shows the tally. */
+const PROJECTION_STATUSES = new Set([
+  "live",
+  "gate_failed",
+  "version_mismatch",
+  "gate_missing",
+  "stub",
+  "ungated",
+  "none",
+]);
 const RACE_STATES = new Set([
   "before_results",
   "no_units_in",
@@ -130,15 +139,36 @@ function validProjection(value: unknown, level: LiveLevel, keys: ReadonlySet<str
   if (value === null) return true;
   if (!isRecord(value) || typeof value.stub !== "boolean" || !isRecord(value.bands)) return false;
   if ("variant" in value && (level !== "mayor" || !validVariant(value.variant))) return false;
+  // The band the page draws: one the race carries, or none (the approved mayor below its ESS
+  // floor carries no band at all, ADR 0002). Stub projections name none.
+  if ("shown" in value) {
+    if (value.shown !== null && !(typeof value.shown === "string" && value.shown in value.bands)) return false;
+  } else if (!value.stub) {
+    return false;
+  }
   const variants = Object.entries(value.bands);
   return (
-    variants.length > 0 &&
+    (variants.length > 0 || value.shown === null) &&
     variants.every(
       ([variant, bands]) =>
         LEVEL_VARIANTS[level].has(variant) &&
         isRecord(bands) &&
         Object.entries(bands).every(([key, band]) => keys.has(key) && validBand(band)),
     )
+  );
+}
+
+/** The Possible Range (ADR 0002): the race's own candidates, each 0 <= low <= high <= 100. */
+function validPossible(value: unknown, keys: ReadonlySet<string>): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  return Object.entries(value).every(
+    ([key, range]) =>
+      keys.has(key) &&
+      isRecord(range) &&
+      isPercent(range.low) &&
+      isPercent(range.high) &&
+      range.low <= range.high,
   );
 }
 
@@ -187,13 +217,16 @@ function validRace(value: unknown, payloadState: string): value is LiveRace {
     !validReasonObject(value.fault, FAULT_REASONS) ||
     // A fault is exactly why a race has no figures.
     (value.fault !== null) !== (value.state === "no_figures") ||
-    // Projections appear only while a race is counting.
-    (value.projection !== null && value.state !== "counting")
+    // Projections and Possible Ranges appear only while a race is counting.
+    (value.projection !== null && value.state !== "counting") ||
+    !("possible" in value) ||
+    (value.possible !== null && value.state !== "counting")
   ) return false;
 
   const keys = value.candidates.map((candidate) => candidate.key);
   if (new Set(keys).size !== keys.length) return false;
   if (!validProjection(value.projection, implied.level, new Set(keys))) return false;
+  if (!validPossible(value.possible, new Set(keys))) return false;
 
   if (implied.level !== "mayor") return !("wards" in value);
   return Array.isArray(value.wards) && value.wards.every((ward) => validWard(ward, keys));
@@ -205,6 +238,7 @@ function validLevels(value: unknown): boolean {
   return (
     statusOf(value.mayor) &&
     PROJECTION_STATUSES.has(String((value.mayor as Record<string, unknown>).variant)) &&
+    typeof (value.mayor as Record<string, unknown>).approved === "boolean" &&
     statusOf(value.council) &&
     statusOf(value.trustee) &&
     statusOf(value.french_trustee)

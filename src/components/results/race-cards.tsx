@@ -15,7 +15,17 @@ import { candidateMeta } from "@/lib/candidates";
 import type { MarginOutcomesView } from "@/lib/mayoral-forecast";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
-import type { LiveCandidate, LiveMayoralWard, LiveProgress, LiveRace } from "@/types/live";
+import type {
+  LiveBand,
+  LiveCandidate,
+  LiveMayoralWard,
+  LivePayload,
+  LiveProgress,
+  LiveRace,
+  LiveRange,
+} from "@/types/live";
+
+type Levels = LivePayload["levels"];
 
 /** The counted mayoral field shows this many, then "N other candidates" (#7). */
 const MAYOR_SHOWN = 4;
@@ -30,6 +40,51 @@ const WORDING = {
   all_units_in: "All voting areas in",
   no_progress: "Voting areas: not available",
 } as const;
+
+/** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
+const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
+  mayor: "the mayor's race",
+  council: "council races",
+  trustee: "school board trustee races",
+};
+
+/** DRAFT wording for Alex's pass (#54): the two ranges, the mayor's record (ADR 0002), the
+ *  gate notes and the French-language boards' note. */
+const RANGE_WORDING = {
+  estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
+  possible: "Possible: from none to all of the votes still to be counted.",
+  mayorRecord:
+    "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
+  french: "No projection for the French-language boards: there are no past results by voting area to test one against.",
+} as const;
+
+function gateNote(level: "mayor" | "council" | "trustee", status: string): string | null {
+  const words = LEVEL_WORDS[level];
+  if (status === "gate_failed") {
+    return `No projection for ${words} tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count as the City reports it.`;
+  }
+  if (status === "version_mismatch" || status === "gate_missing") {
+    return `Projection paused for ${words}. The count below is as the City reports it.`;
+  }
+  return null;
+}
+
+/** A level's projection status from the payload, or null when there is no payload level. */
+function levelStatus(levels: Levels | null, level: LiveRace["level"]): string | null {
+  if (!levels || level === "french_trustee") return null;
+  return levels[level].projection;
+}
+
+/** The race's Estimated Range per candidate: the band the payload says to draw, if any. */
+function estimated(race: LiveRace): Record<string, LiveBand> | null {
+  const shown = race.projection?.shown;
+  return shown ? (race.projection!.bands[shown] ?? null) : null;
+}
+
+/** Whole percents for a range: "42–47%". */
+function rangeText(low: number, high: number): string {
+  return `${Math.round(low)}–${Math.round(high)}%`;
+}
 
 function progressText(progress: LiveProgress): string {
   return `${progress.received} of ${progress.total} voting areas in`;
@@ -80,6 +135,9 @@ function Status({ children }: { children: ReactNode }) {
 
 interface TallyRow {
   key: string;
+  /** The Estimated and Possible Ranges; null on the folded row and where none shows. */
+  band: LiveBand | null;
+  possible: LiveRange | null;
   name: string;
   /** The forecast pages' marker, on forecast-named mayoral rows only. */
   slug: string | null;
@@ -88,10 +146,12 @@ interface TallyRow {
   share: number | null;
 }
 
-function tallyRow(candidate: LiveCandidate): TallyRow {
+function tallyRow(candidate: LiveCandidate, race: LiveRace): TallyRow {
   const meta = candidate.candidate_id ? candidateMeta(candidate.candidate_id) : null;
   return {
     key: candidate.key,
+    band: estimated(race)?.[candidate.key] ?? null,
+    possible: race.possible?.[candidate.key] ?? null,
     name: candidate.full_name,
     slug: meta?.slug ?? null,
     color: meta?.colorVar ?? NEUTRAL,
@@ -103,7 +163,7 @@ function tallyRow(candidate: LiveCandidate): TallyRow {
 /** The race's rows: the mayor's counted field folds to its top four and one
  *  "N other candidates" row, unless that row would stand for a single name. */
 function tallyRows(race: LiveRace): TallyRow[] {
-  const rows = race.candidates.map(tallyRow);
+  const rows = race.candidates.map((candidate) => tallyRow(candidate, race));
   if (race.level !== "mayor" || rows.length <= MAYOR_SHOWN + 1) return rows;
   const rest = race.candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
@@ -111,6 +171,8 @@ function tallyRows(race: LiveRace): TallyRow[] {
     ...rows.slice(0, MAYOR_SHOWN),
     {
       key: "other-candidates",
+      band: null,
+      possible: null,
       name: `${rest.length} other candidates`,
       slug: null,
       color: NEUTRAL,
@@ -118,6 +180,37 @@ function tallyRows(race: LiveRace): TallyRow[] {
       share: sum(rest.map((c) => c.share)),
     },
   ];
+}
+
+/** "Estimated final 42–47% · possible 30–60%", or whichever of the two shows. */
+function rangeLine(row: TallyRow): string {
+  const parts = [];
+  if (row.band) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
+  if (row.possible) parts.push(`${row.band ? "possible" : "Possible"} ${rangeText(row.possible.low, row.possible.high)}`);
+  return parts.join(" · ");
+}
+
+/** Under a counting race's tally: the ranges' legend, the mayor's record while it is live on
+ *  approval (ADR 0002), and why a level shows the count. */
+function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
+  if (race.state !== "counting") return null;
+  const hasRanges = estimated(race) !== null || race.possible !== null;
+  const status = levelStatus(levels, race.level);
+  const note = status && race.level !== "french_trustee" ? gateNote(race.level, status) : null;
+  const record = race.level === "mayor" && levels?.mayor.approved && estimated(race) !== null;
+  if (!hasRanges && !note) return null;
+  return (
+    <>
+      {note && <Status>{note}</Status>}
+      {hasRanges && (
+        <p className="forecast-caption">
+          {estimated(race) && <>{RANGE_WORDING.estimated} </>}
+          {race.possible && RANGE_WORDING.possible}
+        </p>
+      )}
+      {record && <p className="forecast-caption">{RANGE_WORDING.mayorRecord}</p>}
+    </>
+  );
 }
 
 /** The Live Tally: the forecast pages' chart rows, a counted-share bar on a
@@ -130,9 +223,25 @@ function Tally({ race }: { race: LiveRace }) {
           <span className="forecast-chart__label">
             {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
             <span className="live-tally__name">{row.name}</span>
+            {(row.band || row.possible) && <span className="t-meta live-tally__range">{rangeLine(row)}</span>}
           </span>
           <span className="forecast-chart__track" aria-hidden="true">
             <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
+            {row.possible && (
+              <span
+                className="forecast-chart__band forecast-chart__band--hatched"
+                style={{ left: `${row.possible.low}%`, width: `${row.possible.high - row.possible.low}%`, background: row.color }}
+              />
+            )}
+            {row.band && (
+              <>
+                <span
+                  className="forecast-chart__band"
+                  style={{ left: `${row.band.low}%`, width: `${row.band.high - row.band.low}%`, background: row.color }}
+                />
+                <span className="forecast-chart__tick" style={{ left: `${row.band.mid}%`, background: "var(--ink)" }} />
+              </>
+            )}
           </span>
           <span className="live-tally__value">
             <strong className="forecast-chart__value">{percent(row.share)}</strong>
@@ -148,7 +257,7 @@ function BallotOrder({ race }: { race: LiveRace }) {
   return <p className="t-body-small">{race.candidates.map((candidate) => candidate.full_name).join(" · ")}</p>;
 }
 
-function RaceBody({ race }: { race: LiveRace }) {
+function RaceBody({ race, levels }: { race: LiveRace; levels: Levels | null }) {
   switch (race.state) {
     case "before_results":
       return (
@@ -179,6 +288,7 @@ function RaceBody({ race }: { race: LiveRace }) {
         <>
           {race.state === "all_units_in" ? <Status>{WORDING.all_units_in}</Status> : <Progress progress={race.progress} />}
           <Tally race={race} />
+          <RangeNotes race={race} levels={levels} />
         </>
       );
   }
@@ -237,10 +347,13 @@ function FinalForecast({ forecast }: { forecast: MarginOutcomesView }) {
 
 export function RaceCard({
   race,
+  levels = null,
   ward = null,
   forecast = null,
 }: {
   race: LiveRace;
+  /** The payload's level statuses, for the gate notes and the mayor's record (#45). */
+  levels?: Levels | null;
   /** The page's ward, for the mayor card's ward vote. */
   ward?: string | null;
   /** The mayor card's forecast panel; hidden once the count is complete. */
@@ -250,7 +363,7 @@ export function RaceCard({
   return (
     <section className="card" aria-labelledby={`live-race-${race.id}`}>
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
-      <RaceBody race={race} />
+      <RaceBody race={race} levels={levels} />
       {wardVote && <WardVote race={race} ward={wardVote} />}
       {race.level === "mayor" && forecast && race.state !== "all_units_in" && <FinalForecast forecast={forecast} />}
     </section>
@@ -265,6 +378,7 @@ export function FrenchBoards({ races }: { races: LiveRace[] }) {
       <details className="live-french">
         <summary>Voting for a French-language board?</summary>
         <div className="faq__a grid">
+          <p className="t-body-small">{RANGE_WORDING.french}</p>
           {races.map((race) => (
             <RaceCard key={race.id} race={race} />
           ))}
@@ -290,7 +404,21 @@ function tileStatus(race: LiveRace): string {
   }
 }
 
-function TileBody({ race }: { race: LiveRace }) {
+/** A council tile's range line: its top two candidates' Estimated Ranges, or "Count only"
+ *  while council shows the count (#17 § On-night reader wording). */
+function tileRanges(race: LiveRace, levels: Levels | null): string | null {
+  if (race.state !== "counting") return null;
+  const status = levelStatus(levels, race.level);
+  if (status && gateNote("council", status)) return "Count only";
+  const bands = estimated(race);
+  if (!bands) return null;
+  return race.candidates
+    .slice(0, 2)
+    .flatMap((c) => (bands[c.key] ? [`${shortLabel(c)} ${rangeText(bands[c.key].low, bands[c.key].high)}`] : []))
+    .join(" · ");
+}
+
+function TileBody({ race, levels }: { race: LiveRace; levels: Levels | null }) {
   if (!hasTally(race)) return <p className="t-meta">{tileStatus(race)}</p>;
   const leader = race.candidates[0];
   return (
@@ -299,8 +427,9 @@ function TileBody({ race }: { race: LiveRace }) {
         <p className="t-body-small live-tile__leader">{`${shortLabel(leader)} ${percent(leader.share)}`}</p>
       )}
       {race.state === "counting" && race.progress ? <ProgressLine progress={race.progress} /> : <p className="t-meta">{tileStatus(race)}</p>}
-      {/* The top two candidates' ranges go here (#45). */}
-      <p className="live-tile__ranges" data-ranges="" />
+      <p className="t-meta live-tile__ranges" data-ranges="">
+        {tileRanges(race, levels)}
+      </p>
     </>
   );
 }
@@ -308,7 +437,15 @@ function TileBody({ race }: { race: LiveRace }) {
 /** "Council across the city": a link per ward, in the /wards index's cards. A
  *  tap opens that ward from the payload already held; it never changes the
  *  remembered ward. */
-export function CouncilTiles({ wards, races }: { wards: ResultsWard[]; races: LiveRace[] }) {
+export function CouncilTiles({
+  wards,
+  races,
+  levels = null,
+}: {
+  wards: ResultsWard[];
+  races: LiveRace[];
+  levels?: Levels | null;
+}) {
   return (
     <ContentSection aria-labelledby="results-council-heading">
       <h2 id="results-council-heading">Council across the city</h2>
@@ -327,7 +464,7 @@ export function CouncilTiles({ wards, races }: { wards: ResultsWard[]; races: Li
                     </>
                   )}
                 </h3>
-                {race && <TileBody race={race} />}
+                {race && <TileBody race={race} levels={levels} />}
               </Link>
             </li>
           );

@@ -1,5 +1,5 @@
 /**
- * TypeScript contract for the election-night payload, schema version 2.
+ * TypeScript contract for the election-night payload, schema version 3.
  *
  * Mirrors `docs/payload.md` in toronto-election-live-projection: the one citywide
  * file each pipeline stores in Redis and `/live/results.json` serves. Shares are
@@ -8,8 +8,15 @@
 
 export type LiveLevel = "mayor" | "council" | "trustee" | "french_trustee";
 
-/** Later tickets add the gated statuses, with a schema bump. */
-export type ProjectionStatus = "stub" | "none";
+/** A level's projection status (#45): live, or why the level shows the tally. */
+export type ProjectionStatus =
+  | "live"
+  | "gate_failed"
+  | "version_mismatch"
+  | "gate_missing"
+  | "stub"
+  | "ungated"
+  | "none";
 
 export type LivePayloadState = "before_results" | "results";
 
@@ -62,6 +69,15 @@ export interface LiveProjection {
   bands: Partial<Record<ProjectionVariant, Record<string, LiveBand>>>;
   /** Modelled mayor only; absent on stub projections and every other level. */
   variant?: LiveVariantMarker;
+  /** The band the page draws, the Estimated Range; absent on stub projections. Null when
+   *  none shows: the approved mayor below its ESS floor (ADR 0002). */
+  shown?: ProjectionVariant | null;
+}
+
+/** A candidate's final share still mathematically possible, in percent (ADR 0002). */
+export interface LiveRange {
+  low: number;
+  high: number;
 }
 
 export interface LiveMayoralWard {
@@ -83,6 +99,8 @@ export interface LiveRace {
   progress: LiveProgress | null;
   candidates: LiveCandidate[];
   projection: LiveProjection | null;
+  /** The Possible Range per candidate key, while counting at mayor, council or trustee. */
+  possible: Record<string, LiveRange> | null;
   /** The machine reason a check withheld the projection; never shown to readers. */
   withdrawal: { reason: string } | null;
   /** Why the race has no figures; never shown to readers. */
@@ -92,7 +110,7 @@ export interface LiveRace {
 }
 
 export interface LivePayload {
-  schema_version: 2;
+  schema_version: 3;
   model_version: string;
   forecast_release_tag: string | null;
   seq: { all_office: number; ward_by_ward: number };
@@ -100,7 +118,8 @@ export interface LivePayload {
   rehearsal: boolean;
   state: LivePayloadState;
   levels: {
-    mayor: { projection: ProjectionStatus; variant: ProjectionStatus };
+    /** `approved`: the variant is live on Alex's approval, not a pass (ADR 0002). */
+    mayor: { projection: ProjectionStatus; variant: ProjectionStatus; approved: boolean };
     council: { projection: ProjectionStatus };
     trustee: { projection: ProjectionStatus };
     french_trustee: { projection: ProjectionStatus };

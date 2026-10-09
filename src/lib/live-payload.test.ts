@@ -23,6 +23,8 @@ describe("validateLivePayload", () => {
       "all-units-in-2018.json",
       "before-results-2026.json",
       "council-counting-2022.json",
+      "gated-live-2022.json",
+      "gated-off-2022.json",
       "mayor-counting-2023.json",
       "no-figures-2026.json",
       "no-units-in-2026.json",
@@ -33,9 +35,9 @@ describe("validateLivePayload", () => {
     }
   });
 
-  it("pins schema version 2", () => {
-    expect(LIVE_SCHEMA_VERSION).toBe(2);
-    for (const version of [1, 3, "2", null]) {
+  it("pins schema version 3", () => {
+    expect(LIVE_SCHEMA_VERSION).toBe(3);
+    for (const version of [2, 4, "3", null]) {
       expect(validateLivePayload({ ...golden("no-units-in-2026.json"), schema_version: version })).toBeNull();
     }
     const unversioned = golden("no-units-in-2026.json");
@@ -111,6 +113,49 @@ describe("validateLivePayload", () => {
     const index = onCouncil.races.findIndex((r: { projection: unknown }) => r.projection !== null);
     onCouncil.races[index].projection.variant = { in_effect: "count_only", ess: null, off_reason: "forecast_missing" };
     expect(validateLivePayload(onCouncil)).toBeNull();
+  });
+
+  it("checks the gated statuses, the shown band and the Possible Range (#45)", () => {
+    const live = golden("gated-live-2022.json");
+    expect(live.levels).toEqual({
+      mayor: { projection: "live", variant: "live", approved: true },
+      council: { projection: "live" },
+      trustee: { projection: "live" },
+      french_trustee: { projection: "none" },
+    });
+    const at = (p: { races: { id: string }[] }, id: string) => p.races.findIndex((r) => r.id === id);
+
+    const unknownStatus = golden("gated-live-2022.json");
+    unknownStatus.levels.council.projection = "paused";
+    expect(validateLivePayload(unknownStatus)).toBeNull();
+
+    const notApproved = golden("gated-live-2022.json");
+    notApproved.levels.mayor.approved = "yes";
+    expect(validateLivePayload(notApproved)).toBeNull();
+
+    // `shown` names a band the race carries, or nothing.
+    const shownMissing = golden("gated-live-2022.json");
+    shownMissing.races[at(shownMissing, "councillor-1")].projection.shown = "forecast_weighted";
+    expect(validateLivePayload(shownMissing)).toBeNull();
+    const nothingShown = golden("gated-live-2022.json");
+    nothingShown.races[at(nothingShown, "mayor")].projection.shown = null;
+    nothingShown.races[at(nothingShown, "mayor")].projection.bands = {};
+    expect(validateLivePayload(nothingShown)).not.toBeNull();
+
+    // The Possible Range: the race's own candidates, low <= high within 0..100, counting only.
+    const possible = golden("gated-live-2022.json");
+    const index = at(possible, "councillor-1");
+    const first = Object.keys(possible.races[index].possible)[0];
+    const bad = (edit: (p: ReturnType<typeof golden>) => void) => {
+      const payload = golden("gated-live-2022.json");
+      edit(payload);
+      return validateLivePayload(payload);
+    };
+    expect(bad((p) => (p.races[index].possible["Not A Candidate"] = { low: 1, high: 2 }))).toBeNull();
+    expect(bad((p) => (p.races[index].possible[first] = { low: 50, high: 40 }))).toBeNull();
+    expect(bad((p) => (p.races[index].possible[first] = { low: 10, high: 101 }))).toBeNull();
+    expect(bad((p) => ((p.races[index].state = "all_units_in"), (p.races[index].projection = null)))).toBeNull();
+    expect(bad((p) => (p.races[index].possible = null))).not.toBeNull();
   });
 
   it("rejects projection bands outside a counting race or for unknown candidates", () => {

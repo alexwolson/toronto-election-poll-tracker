@@ -185,13 +185,16 @@ describe("LiveResultsView: page status", () => {
     expect(html).toContain("51 of 55 voting areas in");
   });
 
-  it("before the first good poll, shows the picker and a loading line, then the notice after three failures", () => {
+  it("before the first good poll, shows the picker, a loading line and the tiles, then the notice after three failures", () => {
     const view = (failures: number) =>
       renderToStaticMarkup(
         <LiveResultsView state={{ results: null, failures }} now={0} wards={WARDS} ward={null} ballot={[]} />,
       );
     expect(view(0)).toContain("Loading live results");
     expect(view(0)).toContain("Your ward");
+    // The tiles come from the static ward list, not the payload.
+    expect(tileHrefs(view(0))).toEqual(RESULTS_WARDS.map((n) => `/results/${n}`));
+    expect(tileHrefs(view(3))).toHaveLength(25);
     expect(view(3)).toContain("Can&#x27;t reach live results; retrying");
   });
 });

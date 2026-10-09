@@ -312,13 +312,13 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* The ward picker (#35): CHW's .field styles text inputs but has no select. */
 .field select {
   width: 100%;
-  font-family: var(--f-body);
+  font-family: var(--font-body);
   font-size: 1rem;
   color: var(--ink);
-  background: #FCFCFA;
-  border: 1px solid #CFD3D9;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   border-radius: var(--r-sm);
   padding: 12px 14px;
 }
-.field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(39,68,144,.16); background: #fff; }
+.field select:focus { outline: none; border-color: var(--blue); box-shadow: var(--shadow-focus); background: var(--paper); }
 .results-picker { max-width: 420px; }

@@ -201,7 +201,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot }: LiveResults
   const results = state.results;
 
   let status: ReactNode = unreachable || <p className="t-meta">Loading live results…</p>;
-  let races: ReactNode = null;
+  let ballotCards: ReactNode = null;
   if (results !== null) {
     const { payload, heartbeat } = results;
     const counting = payload.state === "results";
@@ -228,18 +228,15 @@ export function LiveResultsView({ state, now, wards, ward, ballot }: LiveResults
         </p>
       </>
     );
-    races = (
-      <>
-        <ContentSection aria-labelledby="results-ballot-heading">
-          <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
-          <div className="grid">
-            {shown.map((race) => (
-              <RaceCard key={race.id} race={race} />
-            ))}
-          </div>
-        </ContentSection>
-        <CouncilTiles wards={wards} races={payload.races} />
-      </>
+    ballotCards = (
+      <ContentSection aria-labelledby="results-ballot-heading">
+        <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
+        <div className="grid">
+          {shown.map((race) => (
+            <RaceCard key={race.id} race={race} />
+          ))}
+        </div>
+      </ContentSection>
     );
   }
 
@@ -253,7 +250,9 @@ export function LiveResultsView({ state, now, wards, ward, ballot }: LiveResults
         <WardPicker wards={wards} ward={ward} />
         <div className="grid">{status}</div>
       </PageHero>
-      {races}
+      {ballotCards}
+      {/* The tiles' wards are static, so they show before the first good poll. */}
+      <CouncilTiles wards={wards} races={results?.payload.races ?? []} />
     </>
   );
 }

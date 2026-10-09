@@ -40,7 +40,7 @@ interface LiveResultsContextValue {
   now: number;
 }
 
-const LiveResultsContext = createContext<LiveResultsContextValue>({ state: INITIAL_LIVE_STATE, now: 0 });
+const LiveResultsContext = createContext<LiveResultsContextValue | null>(null);
 
 export function LiveResultsProvider({ children }: { children: ReactNode }) {
   const [state, apply] = useReducer(acceptPoll, INITIAL_LIVE_STATE);
@@ -68,6 +68,9 @@ export function LiveResultsProvider({ children }: { children: ReactNode }) {
 
 /** A results page: the held payload, shown for the page's ward. */
 export function ResultsBallot(props: Omit<LiveResultsViewProps, "state" | "now">) {
-  const { state, now } = useContext(LiveResultsContext);
+  const live = useContext(LiveResultsContext);
+  // Without the /results/ layout's provider nothing polls; fail loudly, not "Loading…" forever.
+  if (live === null) throw new Error("ResultsBallot must render inside LiveResultsProvider");
+  const { state, now } = live;
   return <LiveResultsView state={state} now={now} {...props} />;
 }

@@ -323,6 +323,13 @@ describe("validatePolling", () => {
       expect(validatePolling(without)?.head_to_head).toBeUndefined();
       // Any non-empty denominator label is accepted.
       expect(validatePolling(withEntries([{ ...entry(), denominator: "Decided voters" }]))).not.toBeNull();
+      // "Neither" may sit beside undecided (Mainstreet, Oct. 6-7, 2026).
+      const neither = { [CHOW]: 0.447, [BRADFORD]: 0.415, "response:none_of_the_above": 0.055,
+        "response:undecided": 0.083 };
+      const withNeither = withEntries([{ ...entry(), shares: neither, field_tested: Object.keys(neither) }]);
+      withNeither.candidates.push("response:none_of_the_above");
+      Object.assign(withNeither.trend, { "response:none_of_the_above": [] });
+      expect(validatePolling(withNeither)?.head_to_head?.[0].shares).toEqual(neither);
     });
 
     it("rejects a reading that does not match its poll or is not a two-candidate question", () => {

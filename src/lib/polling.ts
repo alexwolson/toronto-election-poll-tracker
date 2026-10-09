@@ -63,6 +63,7 @@ export function explicitOtherShare(poll: Poll, field: string[]): number | null {
 }
 
 const UNDECIDED_KEY = "response:undecided";
+const NEITHER_KEY = "response:none_of_the_above";
 
 export interface ResidualShares {
   /** the poll's reported undecided share, when its denominator keeps undecideds in */
@@ -122,6 +123,8 @@ export function headToHeadLabel(poll: Poll, field: string[]): string | null {
 export function headToHeadSentence(reading: Poll, field: string[]): string {
   const named = namedInFieldOrder(reading, field);
   const shares = named.map((id) => `${surname(id)} ${formatSharePct(reading.shares[id])}`);
+  const neither = reading.shares[NEITHER_KEY];
+  if (neither !== undefined) shares.push(`neither ${formatSharePct(neither)}`);
   const undecided = reading.shares[UNDECIDED_KEY];
   if (undecided !== undefined) shares.push(`undecided ${formatSharePct(undecided)}`);
   const denominator = denominatorPhrase(reading) ?? "respondents";

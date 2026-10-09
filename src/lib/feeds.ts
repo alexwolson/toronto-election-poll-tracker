@@ -958,13 +958,16 @@ function validAlternateReadings(
   return true;
 }
 
+/** Residuals a Head-to-Head Reading may publish beside its two candidates. */
+const HEAD_TO_HEAD_RESIDUALS = new Set(["response:undecided", "response:none_of_the_above"]);
+
 /** A Head-to-Head Reading names its own denominator and offers exactly two
- * candidates; undecided is the only other response it may report. */
+ * candidates; undecided and "neither" are the only other responses it may report. */
 function validHeadToHeadShares(poll: Record<string, unknown>): boolean {
   if (!isNonEmptyString(poll.denominator) || !isRecord(poll.shares)) return false;
   const keys = Object.keys(poll.shares);
   const named = keys.filter((id) => !id.startsWith("response:"));
-  return named.length === 2 && keys.every((id) => named.includes(id) || id === "response:undecided");
+  return named.length === 2 && keys.every((id) => named.includes(id) || HEAD_TO_HEAD_RESIDUALS.has(id));
 }
 
 export function validatePolling(value: unknown): MayoralPollingFeed | null {

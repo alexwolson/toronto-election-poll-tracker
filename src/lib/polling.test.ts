@@ -395,6 +395,10 @@ describe("Head-to-Head Readings", () => {
     const decided = { ...reading(), denominator: "Decided voters",
       shares: { [CHOW]: 0.54, [BRADFORD]: 0.46 }, field_tested: [CHOW, BRADFORD] };
     expect(headToHeadSentence(decided, FIELD)).toContain("Of decided voters: Chow 54%, Bradford 46%. It is shown");
+    const neither = { ...reading(), shares: { [CHOW]: 0.447, [BRADFORD]: 0.415,
+      "response:none_of_the_above": 0.055, "response:undecided": 0.083 } };
+    expect(headToHeadSentence(neither, FIELD)).toContain(
+      "Of all respondents: Chow 45%, Bradford 42%, neither 6%, undecided 8%. It is shown");
   });
 });
 

@@ -14,7 +14,7 @@
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { formatDate, formatShortDate, isoDayNumber, percentagesToHundred } from "@/lib/format";
 import { loessCurve } from "@/lib/loess";
-import type { CandidateTrend } from "@/lib/polling";
+import { NOMINATIONS_CLOSED_DATE, type CandidateTrend } from "@/lib/polling";
 import type { MayoralForecastFeed, UncertaintyGap, UncertaintySourceKey } from "@/types/feeds";
 
 /** Whole-percent chance with guarded tails: "<1%", "63%", ">99%". */
@@ -340,6 +340,18 @@ export function forecastHistoryTrends(
       }));
     return { id, markers, curve: loessCurve(markers.map(({ x, y }) => ({ x, y }))) };
   });
+}
+
+/** The forecast history's "Since nominations closed" view: releases published after
+ * nominations closed, with LOESS curves fitted to those releases only. */
+export function recentForecastHistoryTrends(
+  feed: MayoralForecastFeed,
+  field: string[],
+): CandidateTrend[] | null {
+  return forecastHistoryTrends(
+    { ...feed, history: feed.history?.filter((point) => point.date > NOMINATIONS_CLOSED_DATE) },
+    field,
+  );
 }
 
 /** Screen-reader rows for the forecast-history chart. */

@@ -6,7 +6,8 @@ import {
   ALL_RESPONDENT_OTHER_ID,
   ALL_RESPONDENT_UNDECIDED_ID,
   candidateTrends,
-  candidateTrendsForPolls,
+  allRespondentTrendsSinceNominationsClosed,
+  candidateTrendsSinceNominationsClosed,
   candidateChoiceShares,
   denominatorPhrase,
   excludedPolls,
@@ -24,6 +25,8 @@ import {
   pollsterWebsite,
   residualShares,
 } from "./polling";
+import { isoDayNumber } from "./format";
+import { loessCurve } from "./loess";
 
 const feed = pollingFixture as unknown as MayoralPollingFeed;
 const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
@@ -81,22 +84,29 @@ describe("candidate trends", () => {
   const decidedFeed = { ...feed, polls: feed.polls.map((poll) => ({
     ...poll, denominator: "Decided voters",
   })) };
-  it("selects post-nomination full-field markers while preserving the full-history fit", () => {
+  it("fits the post-nomination view to its own full-field polls only", () => {
     const recentFeed = { ...decidedFeed, polls: decidedFeed.polls.map((poll, index) =>
       index < 3 ? { ...poll, date_conducted: `2026-09-0${5 + index}` } : poll,
     ) };
     const polls = pollsSinceNominationsClosed(recentFeed, FIELD);
     const allTrends = candidateTrends(recentFeed, FIELD);
-    const qualified = candidateTrendsForPolls(allTrends, polls);
+    const qualified = candidateTrendsSinceNominationsClosed(recentFeed, FIELD, FIELD);
     expect(polls).toHaveLength(3);
     for (const trend of qualified) {
       expect(trend.markers.map((point) => point.poll_id).sort())
         .toEqual(polls.map((poll) => poll.poll_id).sort());
-      expect(trend.curve).toBe(allTrends.find((full) => full.id === trend.id)!.curve);
     }
-    // A refit on just these three polls would lose the curve entirely.
-    expect(qualified[0].curve).not.toBeNull();
-    expect(allTrends[0].markers.length).toBeGreaterThan(qualified[0].markers.length);
+    // Three recent polls are too few for a defensible LOESS fit, whatever the full history holds.
+    expect(allTrends[0].curve).not.toBeNull();
+    expect(qualified[0].curve).toBeNull();
+    // With five recent polls the view gets its own curve, spanning only those polls.
+    const fiveRecent = { ...decidedFeed, polls: decidedFeed.polls.map((poll, index) =>
+      index < 5 ? { ...poll, date_conducted: `2026-09-0${5 + index}` } : poll,
+    ) };
+    const [chow] = candidateTrendsSinceNominationsClosed(fiveRecent, FIELD, FIELD);
+    expect(chow.markers).toHaveLength(5);
+    expect(chow.curve).toEqual(loessCurve(chow.markers.map(({ x, y }) => ({ x, y }))));
+    expect(chow.curve![0].x).toBe(isoDayNumber("2026-09-05"));
     const zero = { ...decidedFeed.polls[0], date_conducted: "2026-08-22",
       shares: { [CHOW]: 0.5, [BRADFORD]: 0.4, [ALEXANDER]: 0 } };
     const missing = { ...zero, shares: { [CHOW]: 0.5, [ALEXANDER]: 0.1 } };
@@ -278,7 +288,7 @@ describe("residual shares and denominator", () => {
 
 
 describe("all-respondent chart basis", () => {
-  it("preserves published shares, fits its own full-history LOESS and retains it in the recent view", () => {
+  it("preserves published shares and fits the full history and the recent view separately", () => {
     const readings: Poll[] = Array.from({ length: 8 }, (_, index) => ({
       ...feed.polls[0], poll_id: `sample-${index}`, poll_reading_id: `reading-${index}`,
       date_conducted: `2026-0${index < 4 ? 7 : 9}-${String(index + 1).padStart(2, "0")}`,
@@ -293,9 +303,15 @@ describe("all-respondent chart basis", () => {
     expect(trends[0].markers.every((point) => point.derived === false)).toBe(true);
     expect(trends[0].curve).not.toBeNull();
     expect(trends[0].curve).not.toEqual(candidateTrends(polling, FIELD)[0].curve);
-    const recent = candidateTrendsForPolls(trends, pollsSinceNominationsClosed(polling, FIELD));
+    const recent = allRespondentTrendsSinceNominationsClosed(polling, FIELD, FIELD, FIELD);
     expect(recent[0].markers).toHaveLength(4);
-    expect(recent[0].curve).toBe(trends[0].curve);
+    // Four recent readings: too few for the recent view's own LOESS fit.
+    expect(recent[0].curve).toBeNull();
+    const fiveRecent = readings.map((poll, index) =>
+      index === 3 ? { ...poll, date_conducted: "2026-09-02" } : poll);
+    const refit = allRespondentTrendsSinceNominationsClosed(
+      { ...polling, polls: fiveRecent, all_respondents: fiveRecent }, FIELD, FIELD, FIELD);
+    expect(refit[0].curve).toEqual(loessCurve(refit[0].markers.map(({ x, y }) => ({ x, y }))));
     expect(readings).toEqual(source);
   });
 

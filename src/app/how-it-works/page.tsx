@@ -247,15 +247,15 @@ export default async function HowItWorksPage() {
                   reporting Chow and Bradford with fieldwork completed after
                   the <a href="https://www.toronto.ca/news/municipal-election-candidate-nominations-close-tomorrow/">August 21 nomination deadline</a>.
                   Polls taken before October 6 also report Alexander.
-                  &ldquo;All polls&rdquo; includes the earlier history. Both views use
-                  the same LOESS curves fitted from the full comparable polling history;
-                  the default view shows only their portion since nominations closed.
+                  &ldquo;All polls&rdquo; includes the earlier history. Each view fits its
+                  own LOESS curves: the default to polls since nominations closed,
+                  &ldquo;All polls&rdquo; to the full comparable history.
                 </p>
                 <p>
                   The forecast-history chart uses the same toggle and defaults to
                   updates published since nominations closed. Its dots use publication
                   dates, when each poll could first affect the forecast, rather than
-                  fieldwork dates. Its two views share the full-history LOESS curves.
+                  fieldwork dates. Each of its views fits its own curves too.
                 </p>
                 <p>
                   Each candidate is fitted independently. If a poll did not test a

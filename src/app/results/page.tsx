@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ResultsBallot } from "@/components/results/live-results-poller";
-import { loadCouncilRaceCards } from "@/lib/feeds";
-import { resultsWards } from "@/lib/results-wards";
+import { loadCouncilRaceCards, loadMayoralForecast } from "@/lib/feeds";
+import { resultsForecast, resultsWards } from "@/lib/results-wards";
 
 export const metadata: Metadata = {
   title: "Election Night Results — Toronto Election",
@@ -12,6 +12,6 @@ export const metadata: Metadata = {
 /** Before a ward is picked: the picker, the citywide mayor card, then the 25
  *  council tiles. No default ward (#13). The count arrives in the browser. */
 export default async function ResultsPage() {
-  const council = await loadCouncilRaceCards();
-  return <ResultsBallot wards={resultsWards(council)} ward={null} ballot={[]} />;
+  const [council, forecast] = await Promise.all([loadCouncilRaceCards(), loadMayoralForecast()]);
+  return <ResultsBallot wards={resultsWards(council)} ward={null} ballot={[]} forecast={resultsForecast(forecast)} />;
 }

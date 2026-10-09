@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ResultsBallot } from "@/components/results/live-results-poller";
-import { loadCouncilRaceCards, loadTrusteeRaceCards } from "@/lib/feeds";
-import { resultsWards, wardLabel } from "@/lib/results-wards";
+import { loadCouncilRaceCards, loadMayoralForecast, loadTrusteeRaceCards } from "@/lib/feeds";
+import { resultsForecast, resultsWards, wardLabel } from "@/lib/results-wards";
 import { isResultsWard, RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
 
 // Unknown wards 404 rather than render on demand (research 05 §1b).
@@ -33,6 +33,17 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 /** One ward's ballot: the mayor, its councillor and its trustee areas, then the
  *  council tiles. The City ward alone fixes the races (#13). */
 export default async function WardResultsPage(props: Props) {
-  const [{ wards, current }, trustees] = await Promise.all([pageWard(props), loadTrusteeRaceCards()]);
-  return <ResultsBallot wards={wards} ward={current} ballot={wardBallotRaceIds(current.num, trustees)} />;
+  const [{ wards, current }, trustees, forecast] = await Promise.all([
+    pageWard(props),
+    loadTrusteeRaceCards(),
+    loadMayoralForecast(),
+  ]);
+  return (
+    <ResultsBallot
+      wards={wards}
+      ward={current}
+      ballot={wardBallotRaceIds(current.num, trustees)}
+      forecast={resultsForecast(forecast)}
+    />
+  );
 }

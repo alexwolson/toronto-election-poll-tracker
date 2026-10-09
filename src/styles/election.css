@@ -322,3 +322,17 @@ button:disabled { cursor: default; opacity: 0.6; }
 }
 .field select:focus { outline: none; border-color: var(--blue); box-shadow: var(--shadow-focus); background: var(--paper); }
 .results-picker { max-width: 420px; }
+/* Race cards (#38): the Live Tally reuses the forecast pages' chart rows, with
+   a wider value column for the share over its votes. */
+.live-tally .forecast-chart__row { grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr) 7.5rem; }
+.live-tally__value { display: grid; justify-items: end; gap: 2px; }
+.live-ward-vote { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--rule); }
+.live-forecast .forecast-chart { margin-bottom: var(--space-sm); }
+.live-tile__ranges:empty { display: none; }
+.live-tiles .live-progress { flex-direction: column; align-items: flex-start; gap: var(--space-xs); }
+@media (max-width: 620px) {
+  .race-index-list.live-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .live-tally .forecast-chart__row { grid-template-columns: minmax(0, 1fr) 7.5rem; }
+}

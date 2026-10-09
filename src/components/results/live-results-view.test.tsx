@@ -478,14 +478,13 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(count(text(card(html, "councillor-1")), "Estimated: where")).toBe(1);
   });
 
-  it("shows only the Possible Range when the approved mayor has no Estimated Range at a refresh", () => {
-    const payload = golden("gated-live-2022.json");
-    const mayor = payload.races.find((r) => r.id === "mayor")!;
-    mayor.projection = { ...mayor.projection!, shown: null, bands: {} };
-    const html = card(render(payload, { ward: "1" }), "mayor");
+  it("shows only the Possible Range, and still the 2023 record, below the approved mayor's ESS floor", () => {
+    const html = card(render(golden("gated-low-ess-2022.json"), { ward: "1" }), "mayor");
     expect(text(html)).toContain("Possible 9–94%");
     expect(text(html)).not.toContain("Estimated final");
+    expect(text(html)).not.toContain("Estimated: where");
     expect(row(html, "Tory John")).not.toMatch(/class="forecast-chart__band" /);
+    expect(text(html)).toContain("worse than expected in the 2023 by-election");
   });
 
   it("gives council tiles their top two candidates' Estimated Ranges", () => {

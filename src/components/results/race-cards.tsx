@@ -23,6 +23,7 @@ import type {
   LiveProgress,
   LiveRace,
   LiveRange,
+  ProjectionStatus,
 } from "@/types/live";
 
 type Levels = LivePayload["levels"];
@@ -58,19 +59,23 @@ const RANGE_WORDING = {
   french: "No projection for the French-language boards: there are no past results by voting area to test one against.",
 } as const;
 
-function gateNote(level: "mayor" | "council" | "trustee", status: string): string | null {
+/** Whether a level shows the count in place of its projection: its gate failed, or the
+ *  projection is paused (a version mismatch or a missing Gate Result). */
+function showsCountOnly(status: ProjectionStatus | null): boolean {
+  return status === "gate_failed" || status === "version_mismatch" || status === "gate_missing";
+}
+
+function gateNote(level: "mayor" | "council" | "trustee", status: ProjectionStatus): string | null {
+  if (!showsCountOnly(status)) return null;
   const words = LEVEL_WORDS[level];
   if (status === "gate_failed") {
     return `No projection for ${words} tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count as the City reports it.`;
   }
-  if (status === "version_mismatch" || status === "gate_missing") {
-    return `Projection paused for ${words}. The count below is as the City reports it.`;
-  }
-  return null;
+  return `Projection paused for ${words}. The count below is as the City reports it.`;
 }
 
 /** A level's projection status from the payload, or null when there is no payload level. */
-function levelStatus(levels: Levels | null, level: LiveRace["level"]): string | null {
+function levelStatus(levels: Levels | null, level: LiveRace["level"]): ProjectionStatus | null {
   if (!levels || level === "french_trustee") return null;
   return levels[level].projection;
 }
@@ -193,18 +198,18 @@ function rangeLine(row: TallyRow): string {
 /** Under a counting race's tally: the ranges' legend, the mayor's record while it is live on
  *  approval (ADR 0002), and why a level shows the count. */
 function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
-  if (race.state !== "counting") return null;
-  const hasRanges = estimated(race) !== null || race.possible !== null;
+  if (race.state !== "counting" || race.level === "french_trustee") return null;
+  const bands = estimated(race);
   const status = levelStatus(levels, race.level);
-  const note = status && race.level !== "french_trustee" ? gateNote(race.level, status) : null;
-  const record = race.level === "mayor" && levels?.mayor.approved && estimated(race) !== null;
-  if (!hasRanges && !note) return null;
+  const note = status ? gateNote(race.level, status) : null;
+  // The mayor's record shows for as long as it is live on approval, band or not (ADR 0002).
+  const record = race.level === "mayor" && levels?.mayor.approved === true;
   return (
     <>
       {note && <Status>{note}</Status>}
-      {hasRanges && (
+      {(bands || race.possible) && (
         <p className="forecast-caption">
-          {estimated(race) && <>{RANGE_WORDING.estimated} </>}
+          {bands && <>{RANGE_WORDING.estimated} </>}
           {race.possible && RANGE_WORDING.possible}
         </p>
       )}
@@ -230,15 +235,16 @@ function Tally({ race }: { race: LiveRace }) {
             {row.possible && (
               <span
                 className="forecast-chart__band forecast-chart__band--hatched"
-                style={{ left: `${row.possible.low}%`, width: `${row.possible.high - row.possible.low}%`, background: row.color }}
+                style={{ left: `${row.possible.low}%`, width: `${Math.max(row.possible.high - row.possible.low, 0)}%`, background: row.color }}
               />
             )}
             {row.band && (
               <>
                 <span
                   className="forecast-chart__band"
-                  style={{ left: `${row.band.low}%`, width: `${row.band.high - row.band.low}%`, background: row.color }}
+                  style={{ left: `${row.band.low}%`, width: `${Math.max(row.band.high - row.band.low, 0)}%`, background: row.color }}
                 />
+                {/* Ink, not the candidate's colour: the tick sits on their counted-share bar. */}
                 <span className="forecast-chart__tick" style={{ left: `${row.band.mid}%`, background: "var(--ink)" }} />
               </>
             )}
@@ -408,8 +414,7 @@ function tileStatus(race: LiveRace): string {
  *  while council shows the count (#17 § On-night reader wording). */
 function tileRanges(race: LiveRace, levels: Levels | null): string | null {
   if (race.state !== "counting") return null;
-  const status = levelStatus(levels, race.level);
-  if (status && gateNote("council", status)) return "Count only";
+  if (showsCountOnly(levelStatus(levels, race.level))) return "Count only";
   const bands = estimated(race);
   if (!bands) return null;
   return race.candidates

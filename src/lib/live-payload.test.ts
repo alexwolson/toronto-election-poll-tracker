@@ -24,6 +24,7 @@ describe("validateLivePayload", () => {
       "before-results-2026.json",
       "council-counting-2022.json",
       "gated-live-2022.json",
+      "gated-low-ess-2022.json",
       "gated-off-2022.json",
       "mayor-counting-2023.json",
       "no-figures-2026.json",

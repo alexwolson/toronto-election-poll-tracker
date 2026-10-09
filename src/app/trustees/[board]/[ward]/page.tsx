@@ -9,7 +9,6 @@ import { TrusteeWardCoverage } from "@/components/trustee-ward-coverage";
 import { loadCouncilRaceCards, loadTrusteeRaceCards } from "@/lib/feeds";
 import { formatSharePct } from "@/lib/format";
 import {
-  cityWardAreaNames,
   isExpectedTrusteeWard,
   isTrusteeBoardId,
   TRUSTEE_BOARD_NAV,
@@ -70,11 +69,6 @@ export default async function TrusteeWardPage({
   }
 
   const prior = ward.comparable_prior_result;
-  const areaNames = cityWardAreaNames(ward.city_wards, council);
-  const normalizedDistrictName = ward.district_name.toLocaleLowerCase();
-  const coverageRepeatsHeading =
-    areaNames.length === ward.city_wards.length &&
-    areaNames.every((area) => normalizedDistrictName.includes(area.toLocaleLowerCase()));
 
   return (
     <main id="main-content" className="np-shell ward-profile-shell">
@@ -88,13 +82,14 @@ export default async function TrusteeWardPage({
       <ContentSection className="race-hero trustee-ward-hero">
         <h1>{ward.district_name}</h1>
         <TrusteeRaceContextTag category={ward.race_context.category} />
-        {!coverageRepeatsHeading && (
-          <TrusteeWardCoverage
-            cityWards={ward.city_wards}
-            council={council}
-            className="trustee-ward-area"
-          />
-        )}
+        {/* Shown even when the heading names the same areas: it is the way to
+            each City ward's results (#39). */}
+        <TrusteeWardCoverage
+          cityWards={ward.city_wards}
+          council={council}
+          className="trustee-ward-area"
+          linkResults
+        />
       </ContentSection>
 
       {prior && (

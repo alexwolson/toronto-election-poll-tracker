@@ -54,6 +54,8 @@ button:disabled { cursor: default; opacity: 0.6; }
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 .site-nav .nav-link:hover, .site-nav .nav-link--active { background: var(--veil); color: var(--paper); box-shadow: none; }
+/* The menu's Results item carries CHW's LIVE badge from 8 p.m. (#39); flex drops the text space. */
+.site-nav .nav-link .badge { margin-left: 6px; }
 .masthead :focus-visible { outline-color: var(--paper); }
 .site-nav__toggle { display: none; }
 .foot { margin-top: 0; }

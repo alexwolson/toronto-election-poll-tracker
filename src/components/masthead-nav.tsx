@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useResultsLive } from "@/lib/results-clock";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
+  { href: "/results", label: "Results", showsLiveBadge: true },
   { href: "/candidates", label: "Mayor", activePaths: ["/candidates", "/polls"] },
   { href: "/wards", label: "Council" },
   { href: "/trustees", label: "Trustees" },
@@ -14,6 +16,7 @@ const NAV_LINKS = [
 
 export function MastheadNav() {
   const pathname = usePathname();
+  const live = useResultsLive();
   const [expanded, setExpanded] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
   const navigation = useRef<HTMLElement>(null);
@@ -67,6 +70,12 @@ export function MastheadNav() {
               onClick={() => setExpanded(false)}
             >
               {link.label}
+              {link.showsLiveBadge && live && (
+                <>
+                  {" "}
+                  <span className="badge badge--live">Live</span>
+                </>
+              )}
             </Link>
           );
         })}

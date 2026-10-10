@@ -678,6 +678,18 @@ describe("LiveResultsView: Night Close (#51)", () => {
     expect(html).not.toContain("may be out of date");
   });
 
+  it("names no final count time before results, and still drops the refresh line", () => {
+    const html = text(render(golden("before-results-2026.json"), { closed: true }));
+    expect(html).not.toContain("Final unofficial count");
+    expect(html).not.toContain("Refreshes every minute");
+  });
+
+  it("keeps a tile's label when the leader's share is missing", () => {
+    const payload = golden("all-units-in-2018.json");
+    payload.races.find((r) => r.id === "councillor-1")!.candidates[0].share = null;
+    expect(text(tile(render(payload, { closed: true }), "1"))).toContain("Michael Ford · Elected (unofficial)");
+  });
+
   it("hides the final forecast at Night Close", () => {
     expect(render(golden("mayor-counting-2023.json"), { closed: true })).not.toContain("The final pre-election forecast");
   });

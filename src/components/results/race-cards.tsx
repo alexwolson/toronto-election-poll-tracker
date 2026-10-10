@@ -250,7 +250,7 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
           <span className="forecast-chart__label">
             {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
             <span className="live-tally__name">{row.name}</span>
-            {row.elected && <span className="badge badge--paid">{WORDING.elected}</span>}
+            {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
             {(row.band || row.possible) && <span className="t-meta live-tally__range">{rangeLine(row)}</span>}
           </span>
           <span className="forecast-chart__track" aria-hidden="true">
@@ -452,11 +452,17 @@ function tileRanges(race: LiveRace, levels: Levels | null): string | null {
 function TileBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
   if (!hasTally(race)) return <p className="t-meta">{tileStatus(race)}</p>;
   const leader = race.candidates[0];
-  const elected = electedKey(race, closed) !== null ? ` · ${WORDING.elected}` : "";
+  const elected = electedKey(race, closed) !== null;
   return (
     <>
-      {leader && leader.share !== null && (
-        <p className="t-body-small live-tile__leader">{`${shortLabel(leader)} ${percent(leader.share)}${elected}`}</p>
+      {/* A null share hides the share, never the label. */}
+      {leader && (leader.share !== null || elected) && (
+        <p className="t-body-small live-tile__leader">
+          {[
+            leader.share === null ? shortLabel(leader) : `${shortLabel(leader)} ${percent(leader.share)}`,
+            ...(elected ? [WORDING.elected] : []),
+          ].join(" · ")}
+        </p>
       )}
       {race.state === "counting" && race.progress ? <ProgressLine progress={race.progress} /> : <p className="t-meta">{tileStatus(race)}</p>}
       <p className="t-meta live-tile__ranges" data-ranges="">

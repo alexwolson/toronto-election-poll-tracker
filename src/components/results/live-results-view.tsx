@@ -89,7 +89,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
         <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
         <div className="grid">
           {main.map((race) => (
-            <RaceCard key={race.id} race={race} ward={ward?.num ?? null} forecast={forecast} />
+            <RaceCard key={race.id} race={race} levels={payload.levels} ward={ward?.num ?? null} forecast={forecast} />
           ))}
           <FrenchBoards races={french} />
         </div>
@@ -109,7 +109,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
       </PageHero>
       {ballotCards}
       {/* The tiles' wards are static, so they show before the first good poll. */}
-      <CouncilTiles wards={wards} races={results?.payload.races ?? []} />
+      <CouncilTiles wards={wards} races={results?.payload.races ?? []} levels={results?.payload.levels ?? null} />
     </>
   );
 }

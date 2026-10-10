@@ -377,7 +377,8 @@ describe("LiveResultsView: council tiles while counting", () => {
     expect(html).toContain("Ward 1 · <span>Etobicoke North</span>");
     expect(html).toContain("Vincent Crisanti 41.2%");
     expect(html).toContain("51 of 55 voting areas in");
-    expect(html).toContain('<p class="live-tile__ranges" data-ranges=""></p>');
+    // A stub projection draws no range, so the tile's range line stays empty.
+    expect(html).toContain('<p class="t-meta live-tile__ranges" data-ranges=""></p>');
   });
 
   it("show the state alone before results", () => {
@@ -444,6 +445,80 @@ describe("LiveResultsView: never shown (#7, #12)", () => {
     ]) {
       const html = render(golden(name), { ward: "1" });
       expect(html, name).not.toMatch(/chance|favou?red|odds|likely to win/i);
+    }
+  });
+});
+
+describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 0002)", () => {
+  /** A tally row's markup, from its name to its value. */
+  function row(cardHtml: string, name: string): string {
+    const at = cardHtml.indexOf(`<span class="live-tally__name">${name}</span>`);
+    expect(at, name).toBeGreaterThan(-1);
+    return cardHtml.slice(cardHtml.lastIndexOf('<div class="forecast-chart__row"', at), cardHtml.indexOf("</strong>", at));
+  }
+
+  it("draws each candidate's Estimated and Possible Ranges over their counted-share bar", () => {
+    const mayor = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
+    expect(text(mayor)).toContain("Estimated final 59–65% · possible 9–94%");
+    const tory = row(mayor, "Tory John");
+    expect(tory).toContain('class="forecast-chart__band forecast-chart__band--hatched" style="left:9.4%;width:84.94');
+    expect(tory).toMatch(/class="forecast-chart__band" style="left:58.84%;width:6.6/);
+    expect(tory).toContain('class="forecast-chart__tick" style="left:62.33%');
+    // The folded row stands for many candidates and carries no range.
+    expect(row(mayor, "27 other candidates")).not.toContain("forecast-chart__band");
+  });
+
+  it("explains both ranges once per card, and the mayor's 2023 record while it is live on approval", () => {
+    const html = render(golden("gated-live-2022.json"), { ward: "1" });
+    const mayor = text(card(html, "mayor"));
+    expect(mayor).toContain("Estimated: where the final share lands in 9 of 10 simulated finishes.");
+    expect(mayor).toContain("Possible: from none to all of the votes still to be counted.");
+    expect(mayor).toContain("worse than expected in the 2023 by-election");
+    expect(text(card(html, "councillor-1"))).not.toContain("2023 by-election");
+    expect(count(text(card(html, "councillor-1")), "Estimated: where")).toBe(1);
+  });
+
+  it("shows only the Possible Range, and still the 2023 record, below the approved mayor's ESS floor", () => {
+    const html = card(render(golden("gated-low-ess-2022.json"), { ward: "1" }), "mayor");
+    expect(text(html)).toContain("Possible 9–94%");
+    expect(text(html)).not.toContain("Estimated final");
+    expect(text(html)).not.toContain("Estimated: where");
+    expect(row(html, "Tory John")).not.toMatch(/class="forecast-chart__band" /);
+    expect(text(html)).toContain("worse than expected in the 2023 by-election");
+  });
+
+  it("gives council tiles their top two candidates' Estimated Ranges", () => {
+    const html = tile(render(golden("gated-live-2022.json")), "1");
+    expect(text(html)).toContain("Crisanti Vincent 37–43% · Minhas Avtar 20–25%");
+  });
+
+  it("says why a level shows the count: its gate failed, or the projection is paused", () => {
+    const html = render(golden("gated-off-2022.json"), { ward: "1" });
+    expect(text(card(html, "councillor-1"))).toContain(
+      "No projection for council races tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count as the City reports it.",
+    );
+    expect(text(card(html, "mayor"))).toContain("No projection for the mayor&#x27;s race tonight.");
+    const trustee = card(html, html.match(/id="live-race-(tdsb-\d+)"/)![1]);
+    expect(text(trustee)).toContain(
+      "Projection paused for school board trustee races. The count below is as the City reports it.",
+    );
+    expect(text(card(html, "councillor-1"))).not.toContain("Estimated final");
+    // The Possible Range is arithmetic on the count and stays.
+    expect(text(card(html, "councillor-1"))).toContain("Possible 4–93%");
+    expect(text(tile(html, "1"))).toContain("Count only");
+  });
+
+  it("notes that the French-language boards are never projected", () => {
+    const html = render(golden("no-units-in-2026.json"), { ward: "1" });
+    expect(text(html)).toContain(
+      "No projection for the French-language boards: there are no past results by voting area to test one against.",
+    );
+  });
+
+  it("never shows a win probability on a gated night", () => {
+    for (const name of ["gated-live-2022.json", "gated-off-2022.json"]) {
+      const html = render(golden(name), { ward: "1" });
+      expect(html, name).not.toMatch(/chance|favou?red|odds|likely to win|probabilit/i);
     }
   });
 });

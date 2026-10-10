@@ -29,12 +29,15 @@ export async function GET(): Promise<Response> {
     // Raw strings: the validator, not the client, decides what the bytes mean.
     automaticDeserialization: false,
   });
-  // One call: the payload, both heartbeats and the switches (docs/store.md).
-  const [payload, fly, digitalOcean, ...flags] = await redis.mget<(string | null)[]>(
+  // One call: the payload, both heartbeats, Night Close and the switches (docs/store.md).
+  const [payload, fly, digitalOcean, nightClose, ...flags] = await redis.mget<(string | null)[]>(
     "payload",
     "heartbeat:fly",
     "heartbeat:do",
+    "night_close",
     ...SWITCHES.map((name) => `switch:${name}`),
   );
-  return Response.json(serveLive({ payload, heartbeats: [fly, digitalOcean], switches: switchesFrom(flags) }));
+  return Response.json(
+    serveLive({ payload, heartbeats: [fly, digitalOcean], switches: switchesFrom(flags), nightClose }),
+  );
 }

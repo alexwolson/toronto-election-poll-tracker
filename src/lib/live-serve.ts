@@ -5,7 +5,8 @@
  *
  * It applies the switches (#49; docs/store.md § Switches): store flags, never read
  * by the pipelines, that remove a level's projections, the mayor's variant, every
- * projection, or pause the page.
+ * projection, or pause the page. It also passes Night Close (#51; docs/store.md §
+ * Night Close), the flag Alex declares once the count stops changing.
  */
 
 import { LIVE_SCHEMA_VERSION, validateLivePayload } from "@/lib/live-payload";
@@ -22,6 +23,8 @@ export interface StoredLive {
   payload: string | null;
   heartbeats: (string | null)[];
   switches: Record<SwitchName, string | null>;
+  /** `night_close`; missing (null or absent) is open. */
+  nightClose?: string | null;
 }
 
 /** The switches from their store values, in `SWITCHES` order. */
@@ -111,6 +114,9 @@ export function serveLive(stored: StoredLive): LiveResults {
   return {
     heartbeat,
     paused: isOff(stored.switches.page),
+    // Exactly `closed`: a typo is open, the opposite of the switches, so it never puts up
+    // "Elected (unofficial)".
+    closed: stored.nightClose === "closed",
     payload: applySwitches(payload, stored.switches),
   };
 }

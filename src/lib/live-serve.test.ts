@@ -152,3 +152,20 @@ describe("serveLive: the switches (#49)", () => {
     expect(() => serve({ page: "off" }, "{}")).toThrow(/payload/);
   });
 });
+
+describe("serveLive: Night Close (#51)", () => {
+  const serve = (nightClose?: string | null) =>
+    serveLive({ payload: RAW, heartbeats: ["1793059320000", null], switches: NO_SWITCHES, nightClose });
+
+  it("passes Night Close only when the flag reads exactly 'closed'", () => {
+    expect(serve("closed").closed).toBe(true);
+    expect(serve(null).closed).toBe(false);
+    expect(serve().closed).toBe(false);
+    // A typo is open, the opposite of the switches: it must never put up "Elected (unofficial)".
+    for (const typo of ["Closed", "close", "on", ""]) expect(serve(typo).closed, typo).toBe(false);
+  });
+
+  it("leaves the payload as stored", () => {
+    expect(serve("closed").payload).toEqual(JSON.parse(RAW));
+  });
+});

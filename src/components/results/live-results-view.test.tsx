@@ -39,12 +39,13 @@ function render(
     failures = 0,
     forecast = FORECAST as MarginOutcomesView | null,
     paused = false,
+    closed = false,
   } = {},
 ) {
   const heartbeat = Math.max(payload.seq.all_office, payload.seq.ward_by_ward);
   return renderToStaticMarkup(
     <LiveResultsView
-      state={{ results: { heartbeat, paused, payload }, failures }}
+      state={{ results: { heartbeat, paused, closed, payload }, failures }}
       now={heartbeat + age}
       wards={WARDS}
       ward={WARDS.find((w) => w.num === ward) ?? null}
@@ -634,5 +635,50 @@ describe("LiveResultsView: the switches (#49)", () => {
     // A paused Rehearsal still says it is one.
     const rehearsal = render({ ...payload, rehearsal: true }, { paused: true });
     expect(rehearsal).toContain("Rehearsal: not real results");
+  });
+});
+
+describe("LiveResultsView: Night Close (#51)", () => {
+  const ELECTED = "Elected (unofficial)";
+
+  it("labels each fully reported race's leader 'Elected (unofficial)' only at Night Close", () => {
+    const payload = golden("all-units-in-2018.json");
+    expect(render(payload, { ward: "1" })).not.toContain(ELECTED);
+    const html = render(payload, { ward: "1", closed: true });
+    for (const [race, leader, runnerUp] of [
+      ["mayor", "John Tory", "Jennifer Keesmaat"],
+      ["councillor-1", "Michael Ford", "Vincent Crisanti"],
+    ]) {
+      const rows = text(card(html, race));
+      expect(count(rows, ELECTED), race).toBe(1);
+      expect(rows.indexOf(ELECTED)).toBeGreaterThan(rows.indexOf(leader));
+      expect(rows.indexOf(ELECTED)).toBeLessThan(rows.indexOf(runnerUp));
+    }
+    expect(text(tile(html, "1"))).toMatch(/Ford [\d.]+% · Elected \(unofficial\)/);
+  });
+
+  it("never labels a race still counting, or a tie at the top, even at Night Close", () => {
+    const counting = render(golden("council-counting-2022.json"), { ward: "1", closed: true });
+    expect(counting).not.toContain(ELECTED);
+    const payload = golden("all-units-in-2018.json");
+    const ward1 = payload.races.find((r) => r.id === "councillor-1")!;
+    ward1.candidates[1].votes = ward1.candidates[0].votes;
+    const tied = render(payload, { ward: "1", closed: true });
+    expect(card(tied, "councillor-1")).not.toContain(ELECTED);
+    expect(tile(tied, "1")).not.toContain(ELECTED);
+    expect(card(tied, "mayor")).toContain(ELECTED);
+  });
+
+  it("says 'Final unofficial count as of …' with no refresh line and no staleness banner", () => {
+    const payload = golden("council-counting-2022.json");
+    const html = render(payload, { ward: "1", closed: true, age: 3 * 60 * MINUTE });
+    expect(text(html)).toContain("Final unofficial count as of 9:46 p.m. · City of Toronto unofficial results");
+    expect(html).not.toContain("City count as of");
+    expect(html).not.toContain("Refreshes every minute");
+    expect(html).not.toContain("may be out of date");
+  });
+
+  it("hides the final forecast at Night Close", () => {
+    expect(render(golden("mayor-counting-2023.json"), { closed: true })).not.toContain("The final pre-election forecast");
   });
 });

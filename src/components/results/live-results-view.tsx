@@ -32,6 +32,14 @@ function clockTime(ms: number): string {
   return CLOCK.format(ms);
 }
 
+function RehearsalBar() {
+  return (
+    <p>
+      <span className="badge badge--soon">Rehearsal: not real results</span>
+    </p>
+  );
+}
+
 export interface LiveResultsViewProps {
   state: LiveClientState;
   now: number;
@@ -61,6 +69,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
 
   let status: ReactNode = paused ? (
     <>
+      {state.results?.payload.rehearsal && <RehearsalBar />}
       <p className="callout" role="status">
         Live results are paused. See the City of Toronto&apos;s results:{" "}
         <a href={CITY_RESULTS_URL}>toronto.ca election results</a>
@@ -81,11 +90,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
 
     status = (
       <>
-        {payload.rehearsal && (
-          <p>
-            <span className="badge badge--soon">Rehearsal: not real results</span>
-          </p>
-        )}
+        {payload.rehearsal && <RehearsalBar />}
         {now - heartbeat > STALE_AFTER_MS && (
           <p className="callout" role="status">
             We haven&apos;t been able to read the City&apos;s results since {clockTime(heartbeat)} The count below

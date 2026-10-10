@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { LivePayload } from "@/types/live";
-import { serveLive, SWITCHES, type SwitchName } from "./live-serve";
+import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "./live-serve";
 
 function fixture(name: string): string {
   return readFileSync(path.resolve(__dirname, "../../fixtures/live/payload", name), "utf8");
 }
 
 const RAW = fixture("no-units-in-2026.json");
-const NO_SWITCHES = Object.fromEntries(SWITCHES.map((name) => [name, null])) as Record<SwitchName, string | null>;
+const NO_SWITCHES = switchesFrom([]);
 
 describe("serveLive", () => {
   it("serves the stored payload with the newer heartbeat", () => {

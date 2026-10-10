@@ -24,6 +24,11 @@ export interface StoredLive {
   switches: Record<SwitchName, string | null>;
 }
 
+/** The switches from their store values, in `SWITCHES` order. */
+export function switchesFrom(values: (string | null)[]): StoredLive["switches"] {
+  return Object.fromEntries(SWITCHES.map((name, i) => [name, values[i] ?? null])) as StoredLive["switches"];
+}
+
 /** A missing key or `on` is on; anything else is off, so a typo in the Upstash
  *  console fails closed. */
 function isOff(raw: string | null): boolean {
@@ -41,7 +46,8 @@ function switchedOff(status: ProjectionStatus): ProjectionStatus {
 /** The payload with switched-off projections removed. The count and the Possible Range
  *  are not projections and stay. */
 function applySwitches(payload: LivePayload, switches: StoredLive["switches"]): LivePayload {
-  const levelOff = (level: "mayor" | "council" | "trustee") => isOff(switches[level]) || isOff(switches.projections);
+  const levelOff = (level: "mayor" | "council" | "trustee") =>
+    isOff(switches[level]) || isOff(switches.projections);
   const levels = structuredClone(payload.levels);
   const races = payload.races.map((race) => ({ ...race }));
 
@@ -102,5 +108,9 @@ export function serveLive(stored: StoredLive): LiveResults {
   if (payload === null) {
     throw new Error(`live: stored payload fails the schema-${LIVE_SCHEMA_VERSION} validator`);
   }
-  return { heartbeat, paused: isOff(stored.switches.page), payload: applySwitches(payload, stored.switches) };
+  return {
+    heartbeat,
+    paused: isOff(stored.switches.page),
+    payload: applySwitches(payload, stored.switches),
+  };
 }

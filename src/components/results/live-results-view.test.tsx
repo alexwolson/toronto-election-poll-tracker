@@ -10,7 +10,7 @@ import { resultsWards, type ResultsWard } from "@/lib/results-wards";
 import { RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, MayoralForecastFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
-import { serveLive, SWITCHES, type SwitchName } from "@/lib/live-serve";
+import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "@/lib/live-serve";
 import { LiveResultsView } from "./live-results-view";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
@@ -589,8 +589,8 @@ describe("LiveResultsView: the switches (#49)", () => {
   /** A golden as the route serves it with the given switches off. */
   function switched(name: string, off: SwitchName[]) {
     const raw = readFileSync(path.resolve(__dirname, "../../../fixtures/live/payload", name), "utf8");
-    const switches = Object.fromEntries(SWITCHES.map((s) => [s, off.includes(s) ? "off" : null]));
-    return serveLive({ payload: raw, heartbeats: ["1", null], switches: switches as Record<SwitchName, string | null> });
+    const switches = switchesFrom(SWITCHES.map((s) => (off.includes(s) ? "off" : null)));
+    return serveLive({ payload: raw, heartbeats: ["1", null], switches });
   }
 
   const PAUSED = "Projection paused for council races. The count below is as the City reports it.";
@@ -631,5 +631,8 @@ describe("LiveResultsView: the switches (#49)", () => {
     expect(text(html)).not.toMatch(/Tory|Crisanti/);
     // The tiles stay as links to each ward.
     expect(tileHrefs(html)).toEqual(RESULTS_WARDS.map((n) => `/results/${n}`));
+    // A paused Rehearsal still says it is one.
+    const rehearsal = render({ ...payload, rehearsal: true }, { paused: true });
+    expect(rehearsal).toContain("Rehearsal: not real results");
   });
 });

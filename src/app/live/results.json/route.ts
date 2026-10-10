@@ -10,7 +10,7 @@
  */
 
 import { Redis } from "@upstash/redis";
-import { serveLive, SWITCHES, type SwitchName } from "@/lib/live-serve";
+import { serveLive, SWITCHES, switchesFrom } from "@/lib/live-serve";
 
 export const dynamic = "force-static";
 export const revalidate = 15;
@@ -36,6 +36,5 @@ export async function GET(): Promise<Response> {
     "heartbeat:do",
     ...SWITCHES.map((name) => `switch:${name}`),
   );
-  const switches = Object.fromEntries(SWITCHES.map((name, i) => [name, flags[i]])) as Record<SwitchName, string | null>;
-  return Response.json(serveLive({ payload, heartbeats: [fly, digitalOcean], switches }));
+  return Response.json(serveLive({ payload, heartbeats: [fly, digitalOcean], switches: switchesFrom(flags) }));
 }

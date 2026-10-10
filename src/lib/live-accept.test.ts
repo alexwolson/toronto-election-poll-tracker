@@ -16,6 +16,7 @@ const HEARTBEAT = 1793059350000;
 function served(allOffice: number, wardByWard: number, heartbeat = HEARTBEAT) {
   return {
     heartbeat,
+    paused: false,
     payload: { ...structuredClone(PAYLOAD), seq: { all_office: allOffice, ward_by_ward: wardByWard } },
   };
 }
@@ -46,8 +47,14 @@ describe("acceptPoll", () => {
   it("accepts an equal pair, so a switch flip or a fresh heartbeat reaches the reader", () => {
     const state = holding(served(ALL_OFFICE, WARD_BY_WARD));
     const flipped = served(ALL_OFFICE, WARD_BY_WARD, HEARTBEAT + 60_000);
-    flipped.payload.levels.council.projection = "none";
+    flipped.payload.levels.council.projection = "switched_off";
     expect(acceptPoll(state, flipped).results).toEqual(flipped);
+    // The page pause, and back, at the same count and the same heartbeat.
+    const paused = { ...served(ALL_OFFICE, WARD_BY_WARD), paused: true };
+    const pausedState = acceptPoll(state, paused);
+    expect(pausedState.results).toEqual(paused);
+    const resumed = served(ALL_OFFICE, WARD_BY_WARD);
+    expect(acceptPoll(pausedState, resumed).results).toEqual(resumed);
   });
 
   it("ignores an older or mixed pair and keeps the newer count", () => {
@@ -66,8 +73,11 @@ describe("acceptPoll", () => {
     const state = holding(served(ALL_OFFICE, WARD_BY_WARD));
     const wrongSchema = served(ALL_OFFICE + 60_000, WARD_BY_WARD);
     (wrongSchema.payload as { schema_version: number }).schema_version = 1;
-    const noHeartbeat = { payload: served(ALL_OFFICE + 60_000, WARD_BY_WARD).payload };
-    for (const bad of [null, "not json", {}, wrongSchema, noHeartbeat]) {
+    const noHeartbeat = { paused: false, payload: served(ALL_OFFICE + 60_000, WARD_BY_WARD).payload };
+    const noPaused: Partial<ReturnType<typeof served>> = served(ALL_OFFICE + 60_000, WARD_BY_WARD);
+    delete noPaused.paused;
+    const badPaused = { ...served(ALL_OFFICE + 60_000, WARD_BY_WARD), paused: "yes" };
+    for (const bad of [null, "not json", {}, wrongSchema, noHeartbeat, noPaused, badPaused]) {
       const next = acceptPoll(state, bad);
       expect(next.results).toBe(state.results);
       expect(next.failures).toBe(1);

@@ -10,6 +10,7 @@ import { resultsWards, type ResultsWard } from "@/lib/results-wards";
 import { RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, MayoralForecastFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
+import { serveLive, SWITCHES, type SwitchName } from "@/lib/live-serve";
 import { LiveResultsView } from "./live-results-view";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
@@ -37,12 +38,13 @@ function render(
     age = MINUTE,
     failures = 0,
     forecast = FORECAST as MarginOutcomesView | null,
+    paused = false,
   } = {},
 ) {
   const heartbeat = Math.max(payload.seq.all_office, payload.seq.ward_by_ward);
   return renderToStaticMarkup(
     <LiveResultsView
-      state={{ results: { heartbeat, payload }, failures }}
+      state={{ results: { heartbeat, paused, payload }, failures }}
       now={heartbeat + age}
       wards={WARDS}
       ward={WARDS.find((w) => w.num === ward) ?? null}
@@ -580,5 +582,54 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
     expect(monavenir).toContain("Voting areas: not available");
     expect(monavenir).not.toContain("539 of 0");
     expect(monavenir).not.toContain(WITHDRAWN);
+  });
+});
+
+describe("LiveResultsView: the switches (#49)", () => {
+  /** A golden as the route serves it with the given switches off. */
+  function switched(name: string, off: SwitchName[]) {
+    const raw = readFileSync(path.resolve(__dirname, "../../../fixtures/live/payload", name), "utf8");
+    const switches = Object.fromEntries(SWITCHES.map((s) => [s, off.includes(s) ? "off" : null]));
+    return serveLive({ payload: raw, heartbeats: ["1", null], switches: switches as Record<SwitchName, string | null> });
+  }
+
+  const PAUSED = "Projection paused for council races. The count below is as the City reports it.";
+
+  it("says a switched-off level's projection is paused, and its tiles show the count only", () => {
+    const { payload } = switched("gated-live-2022.json", ["council"]);
+    const html = render(payload, { ward: "1" });
+    expect(text(card(html, "councillor-1"))).toContain(PAUSED);
+    expect(text(card(html, "councillor-1"))).not.toContain("Estimated final");
+    expect(text(card(html, "councillor-1"))).toContain("Possible ");
+    expect(text(tile(html, "1"))).toContain("Count only");
+    expect(text(card(html, "mayor"))).not.toContain("Projection paused");
+  });
+
+  it("pauses every level with all projections off", () => {
+    const html = render(switched("gated-live-2022.json", ["projections"]).payload, { ward: "1" });
+    expect(text(card(html, "mayor"))).toContain("Projection paused for the mayor&#x27;s race.");
+    expect(text(card(html, "councillor-1"))).toContain(PAUSED);
+    const trustee = card(html, html.match(/id="live-race-(tdsb-\d+)"/)![1]);
+    expect(text(trustee)).toContain("Projection paused for school board trustee races.");
+    expect(html).not.toContain("Estimated final");
+  });
+
+  it("drops the mayor's 2023 record with its variant switched off", () => {
+    const mayor = text(card(render(switched("gated-live-2022.json", ["mayor_variant"]).payload, { ward: "1" }), "mayor"));
+    expect(mayor).toContain("Projection paused for the mayor&#x27;s race.");
+    expect(mayor).not.toContain("2023 by-election");
+    expect(mayor).not.toContain("Estimated final");
+  });
+
+  it("replaces live results with the page pause and the City's link", () => {
+    const { payload, paused } = switched("gated-live-2022.json", ["page"]);
+    const html = render(payload, { ward: "1", paused });
+    expect(text(html)).toContain("Live results are paused. See the City of Toronto&#x27;s results:");
+    expect(html).toContain('href="https://www.toronto.ca/city-government/elections/election-results-reports/election-results/"');
+    expect(cardTitles(html)).toEqual([]);
+    expect(html).not.toMatch(/Estimated final|Possible |City count as of|voting areas in/);
+    expect(text(html)).not.toMatch(/Tory|Crisanti/);
+    // The tiles stay as links to each ward.
+    expect(tileHrefs(html)).toEqual(RESULTS_WARDS.map((n) => `/results/${n}`));
   });
 });

@@ -61,9 +61,14 @@ const RANGE_WORDING = {
 } as const;
 
 /** Whether a level shows the count in place of its projection: its gate failed, or the
- *  projection is paused (a version mismatch or a missing Gate Result). */
+ *  projection is paused (a version mismatch, a missing Gate Result, or a switch, #49). */
 function showsCountOnly(status: ProjectionStatus | null): boolean {
-  return status === "gate_failed" || status === "version_mismatch" || status === "gate_missing";
+  return (
+    status === "gate_failed" ||
+    status === "version_mismatch" ||
+    status === "gate_missing" ||
+    status === "switched_off"
+  );
 }
 
 function gateNote(level: "mayor" | "council" | "trustee", status: ProjectionStatus): string | null {

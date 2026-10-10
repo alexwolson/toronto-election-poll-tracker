@@ -28,6 +28,7 @@ const PROJECTION_STATUSES = new Set([
   "stub",
   "ungated",
   "none",
+  "switched_off",
 ]);
 const RACE_STATES = new Set([
   "before_results",

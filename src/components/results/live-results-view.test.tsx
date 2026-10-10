@@ -522,3 +522,63 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     }
   });
 });
+
+describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
+  const WITHDRAWN = "No projection for this race right now. The count is as the City reports it.";
+
+  /** A ward whose Ward Ballot holds `raceId`. */
+  function wardWith(raceId: string): string {
+    const ward = RESULTS_WARDS.find((w) => wardBallotRaceIds(w, trustees).includes(raceId));
+    expect(ward, raceId).toBeDefined();
+    return ward!;
+  }
+
+  it("keeps a withdrawn race's tally and says only that there is no projection", () => {
+    const html = render(golden("withdrawals-2022.json"), { ward: "10" });
+    const ward10 = text(card(html, "councillor-10"));
+    expect(ward10).toContain(WITHDRAWN);
+    expect(ward10).toContain("45 of 94 voting areas in");
+    expect(ward10).not.toContain("Estimated final");
+    expect(ward10).toContain("Possible");
+    expect(html).not.toContain("votes_received_mismatch");
+  });
+
+  it("hides Reporting Progress that fails its check", () => {
+    const html = render(golden("withdrawals-2022.json"), { ward: "3" });
+    const ward3 = text(card(html, "councillor-3"));
+    expect(ward3).toContain("Voting areas: not available");
+    expect(ward3).toContain(WITHDRAWN);
+    expect(text(tile(render(golden("withdrawals-2022.json")), "3"))).toContain("Voting areas: not available");
+    expect(html).not.toContain("polls_received_above_polls");
+  });
+
+  it("withdraws the whole mayoral projection on a ward-row failure, keeping the tally", () => {
+    const mayor = text(card(render(golden("withdrawals-2022.json"), { ward: "1" }), "mayor"));
+    expect(mayor).toContain(WITHDRAWN);
+    expect(mayor).toContain("Tory John");
+    expect(mayor).not.toContain("Estimated final");
+  });
+
+  it("shows a name the bundle doesn't hold as written, with nothing special", () => {
+    const ward8 = text(card(render(golden("withdrawals-2022.json"), { ward: "8" }), "councillor-8"));
+    expect(ward8).toContain("Someone Unregistered");
+    expect(ward8).toContain("Estimated final");
+    expect(ward8).not.toContain(WITHDRAWN);
+  });
+
+  it("shows no Withdrawal wording where the level's gate already explains the count", () => {
+    const payload = golden("gated-off-2022.json");
+    payload.races.find((r) => r.id === "councillor-1")!.withdrawal = { reason: "votes_received_mismatch" };
+    const ward1 = text(card(render(payload, { ward: "1" }), "councillor-1"));
+    expect(ward1).toContain("No projection for council races tonight.");
+    expect(ward1).not.toContain(WITHDRAWN);
+  });
+
+  it("hides 2022's MonAvenir polls 0 Reporting Progress and keeps its count", () => {
+    const html = render(golden("council-counting-2022.json"), { ward: wardWith("monavenir-4") });
+    const monavenir = text(card(html, "monavenir-4"));
+    expect(monavenir).toContain("Voting areas: not available");
+    expect(monavenir).not.toContain("539 of 0");
+    expect(monavenir).not.toContain(WITHDRAWN);
+  });
+});

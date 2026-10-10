@@ -40,6 +40,7 @@ const WORDING = {
   no_units_in: "No voting areas have reported yet",
   all_units_in: "All voting areas in",
   no_progress: "Voting areas: not available",
+  withdrawn: "No projection for this race right now. The count is as the City reports it.",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -196,12 +197,13 @@ function rangeLine(row: TallyRow): string {
 }
 
 /** Under a counting race's tally: the ranges' legend, the mayor's record while it is live on
- *  approval (ADR 0002), and why a level shows the count. */
+ *  approval (ADR 0002), and why a level shows the count: its gate, or else a Withdrawal (#43),
+ *  whose machine reason readers never see. */
 function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
   if (race.state !== "counting" || race.level === "french_trustee") return null;
   const bands = estimated(race);
   const status = levelStatus(levels, race.level);
-  const note = status ? gateNote(race.level, status) : null;
+  const note = (status ? gateNote(race.level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
   // The mayor's record shows for as long as it is live on approval, band or not (ADR 0002).
   const record = race.level === "mayor" && levels?.mayor.approved === true;
   return (

@@ -5,7 +5,7 @@
  * - a body failing the same schema check the route runs counts as a failed poll
  *   and never replaces a good one;
  * - a newer `seq` pair (neither seq older, at least one newer) is accepted, and so
- *   is an equal pair, so a switch flip, the page pause or a fresh heartbeat
+ *   is an equal pair, so a switch flip, the page pause, Night Close or a fresh heartbeat
  *   reaches readers who already hold that count;
  * - an older or mixed pair is ignored: after a deploy, ISR restarts from the
  *   build's snapshot (research 05 §6), and no file may go backwards.
@@ -31,11 +31,11 @@ export const INITIAL_LIVE_STATE: LiveClientState = { results: null, failures: 0 
 /** The served JSON, checked as the route checked it. */
 function validateLiveResults(value: unknown): LiveResults | null {
   if (typeof value !== "object" || value === null) return null;
-  const { heartbeat, paused, payload } = value as Record<string, unknown>;
+  const { heartbeat, paused, closed, payload } = value as Record<string, unknown>;
   if (!Number.isSafeInteger(heartbeat) || Number(heartbeat) < 0) return null;
-  if (typeof paused !== "boolean") return null;
+  if (typeof paused !== "boolean" || typeof closed !== "boolean") return null;
   const valid = validateLivePayload(payload);
-  return valid === null ? null : { heartbeat: heartbeat as number, paused, payload: valid };
+  return valid === null ? null : { heartbeat: heartbeat as number, paused, closed, payload: valid };
 }
 
 /** Newer or equal under S7: neither seq goes backwards. */

@@ -2,7 +2,8 @@
  * The Ward Ballot pages (#35, on #30's simple race display): the picker, the
  * mayor card, the chosen ward's races, then the 25 council tiles, with Reporting
  * Progress, the City count time, the staleness banner, the rehearsal bar and the
- * browser's can't-reach notice (#17 § On-night reader wording). Pure apart from
+ * browser's can't-reach notice (#17 § On-night reader wording), and the final state
+ * at Night Close (#51). Pure apart from
  * the picker: the poller supplies the state and the clock, and the page the ward.
  */
 
@@ -81,7 +82,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
   );
   let ballotCards: ReactNode = null;
   if (results !== null) {
-    const { payload, heartbeat } = results;
+    const { payload, heartbeat, closed } = results;
     const counting = payload.state === "results";
     const cityCountAt = Math.min(payload.seq.all_office, payload.seq.ward_by_ward);
     const shown = ["mayor", ...ballot].flatMap((id) => payload.races.filter((race) => race.id === id));
@@ -91,7 +92,8 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
     status = (
       <>
         {payload.rehearsal && <RehearsalBar />}
-        {now - heartbeat > STALE_AFTER_MS && (
+        {/* After Night Close the apps are shut down, so an old heartbeat is expected. */}
+        {!closed && now - heartbeat > STALE_AFTER_MS && (
           <p className="callout" role="status">
             We haven&apos;t been able to read the City&apos;s results since {clockTime(heartbeat)} The count below
             may be out of date.
@@ -99,8 +101,15 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
         )}
         {unreachable}
         <p className="t-meta">
-          {counting && <>City count as of {clockTime(cityCountAt)} · </>}
-          Refreshes every minute · City of Toronto unofficial results
+          {closed && counting ? (
+            <>Final unofficial count as of {clockTime(cityCountAt)} · </>
+          ) : (
+            <>
+              {counting && <>City count as of {clockTime(cityCountAt)} · </>}
+              {!closed && <>Refreshes every minute · </>}
+            </>
+          )}
+          City of Toronto unofficial results
         </p>
       </>
     );
@@ -109,9 +118,16 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
         <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
         <div className="grid">
           {main.map((race) => (
-            <RaceCard key={race.id} race={race} levels={payload.levels} ward={ward?.num ?? null} forecast={forecast} />
+            <RaceCard
+              key={race.id}
+              race={race}
+              levels={payload.levels}
+              ward={ward?.num ?? null}
+              forecast={forecast}
+              closed={closed}
+            />
           ))}
-          <FrenchBoards races={french} />
+          <FrenchBoards races={french} closed={closed} />
         </div>
       </ContentSection>
     );
@@ -129,7 +145,12 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
       </PageHero>
       {ballotCards}
       {/* The tiles' wards are static, so they show before the first good poll. */}
-      <CouncilTiles wards={wards} races={results?.payload.races ?? []} levels={results?.payload.levels ?? null} />
+      <CouncilTiles
+        wards={wards}
+        races={results?.payload.races ?? []}
+        levels={results?.payload.levels ?? null}
+        closed={results?.closed ?? false}
+      />
     </>
   );
 }

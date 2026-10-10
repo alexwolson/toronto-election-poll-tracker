@@ -17,6 +17,7 @@ function served(allOffice: number, wardByWard: number, heartbeat = HEARTBEAT) {
   return {
     heartbeat,
     paused: false,
+    closed: false,
     payload: { ...structuredClone(PAYLOAD), seq: { all_office: allOffice, ward_by_ward: wardByWard } },
   };
 }
@@ -55,6 +56,11 @@ describe("acceptPoll", () => {
     expect(pausedState.results).toEqual(paused);
     const resumed = served(ALL_OFFICE, WARD_BY_WARD);
     expect(acceptPoll(pausedState, resumed).results).toEqual(resumed);
+    // Night Close, and cleared, at the same count (#51).
+    const closed = { ...served(ALL_OFFICE, WARD_BY_WARD), closed: true };
+    const closedState = acceptPoll(state, closed);
+    expect(closedState.results).toEqual(closed);
+    expect(acceptPoll(closedState, resumed).results).toEqual(resumed);
   });
 
   it("ignores an older or mixed pair and keeps the newer count", () => {
@@ -73,11 +79,14 @@ describe("acceptPoll", () => {
     const state = holding(served(ALL_OFFICE, WARD_BY_WARD));
     const wrongSchema = served(ALL_OFFICE + 60_000, WARD_BY_WARD);
     (wrongSchema.payload as { schema_version: number }).schema_version = 1;
-    const noHeartbeat = { paused: false, payload: served(ALL_OFFICE + 60_000, WARD_BY_WARD).payload };
+    const noHeartbeat = { paused: false, closed: false, payload: served(ALL_OFFICE + 60_000, WARD_BY_WARD).payload };
     const noPaused: Partial<ReturnType<typeof served>> = served(ALL_OFFICE + 60_000, WARD_BY_WARD);
     delete noPaused.paused;
     const badPaused = { ...served(ALL_OFFICE + 60_000, WARD_BY_WARD), paused: "yes" };
-    for (const bad of [null, "not json", {}, wrongSchema, noHeartbeat, noPaused, badPaused]) {
+    const noClosed: Partial<ReturnType<typeof served>> = served(ALL_OFFICE + 60_000, WARD_BY_WARD);
+    delete noClosed.closed;
+    const badClosed = { ...served(ALL_OFFICE + 60_000, WARD_BY_WARD), closed: "closed" };
+    for (const bad of [null, "not json", {}, wrongSchema, noHeartbeat, noPaused, badPaused, noClosed, badClosed]) {
       const next = acceptPoll(state, bad);
       expect(next.results).toBe(state.results);
       expect(next.failures).toBe(1);

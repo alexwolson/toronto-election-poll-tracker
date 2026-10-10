@@ -311,6 +311,9 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-progress { display: flex; align-items: center; gap: var(--space-sm); color: var(--muted); }
 .live-progress__track { flex: none; width: 90px; height: 4px; overflow: hidden; border-radius: var(--r-pill); background: var(--rule-soft); }
 .live-progress__fill { display: block; height: 100%; background: var(--ink); }
+/* "Elected (unofficial)" at Night Close (#51): CHW's tint/blue status pair, which it
+   ships only as the access badge .badge--paid. */
+.badge--status { background: var(--tint); color: var(--blue); }
 /* The ward picker (#35): CHW's .field styles text inputs but has no select. */
 .field select {
   width: 100%;

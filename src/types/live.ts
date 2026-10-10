@@ -131,10 +131,11 @@ export interface LivePayload {
 }
 
 /** What `/live/results.json` serves: the stored payload with switched-off projections
- *  removed, the newer pipeline heartbeat (epoch ms) for the staleness banner, and whether
- *  the page is paused (#49). */
+ *  removed, the newer pipeline heartbeat (epoch ms) for the staleness banner, whether
+ *  the page is paused (#49), and whether Night Close is declared (#51). */
 export interface LiveResults {
   heartbeat: number;
   paused: boolean;
+  closed: boolean;
   payload: LivePayload;
 }

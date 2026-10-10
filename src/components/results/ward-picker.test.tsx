@@ -22,7 +22,7 @@ const payload = JSON.parse(
 function renderPage(ward: string | null = null) {
   return render(
     <LiveResultsView
-      state={{ results: { heartbeat: payload.seq.all_office, paused: false, payload }, failures: 0 }}
+      state={{ results: { heartbeat: payload.seq.all_office, paused: false, closed: false, payload }, failures: 0 }}
       now={payload.seq.all_office}
       wards={WARDS}
       ward={WARDS.find((w) => w.num === ward) ?? null}

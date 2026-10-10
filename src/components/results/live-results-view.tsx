@@ -15,6 +15,9 @@ import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { CouncilTiles, FrenchBoards, RaceCard } from "./race-cards";
 import { WardPicker } from "./ward-picker";
 
+/** The City's own results page, for the page pause (#49). */
+const CITY_RESULTS_URL = "https://www.toronto.ca/city-government/elections/election-results-reports/election-results/";
+
 /** The banner shows once the newest heartbeat is older than this (#17 § Staleness). */
 const STALE_AFTER_MS = 5 * 60_000;
 
@@ -27,6 +30,14 @@ const CLOCK = new Intl.DateTimeFormat("en-CA", {
 /** Epoch ms as Toronto wall-clock time: "9:46 p.m.", which ends its own sentence. */
 function clockTime(ms: number): string {
   return CLOCK.format(ms);
+}
+
+function RehearsalBar() {
+  return (
+    <p>
+      <span className="badge badge--soon">Rehearsal: not real results</span>
+    </p>
+  );
 }
 
 export interface LiveResultsViewProps {
@@ -52,9 +63,22 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
       Can&apos;t reach live results; retrying
     </p>
   );
-  const results = state.results;
+  // The page pause replaces live results; the tiles stay as plain links to each ward.
+  const paused = state.results?.paused === true;
+  const results = paused ? null : state.results;
 
-  let status: ReactNode = unreachable || <p className="t-meta">Loading live results…</p>;
+  let status: ReactNode = paused ? (
+    <>
+      {state.results?.payload.rehearsal && <RehearsalBar />}
+      <p className="callout" role="status">
+        Live results are paused. See the City of Toronto&apos;s results:{" "}
+        <a href={CITY_RESULTS_URL}>toronto.ca election results</a>
+      </p>
+      {unreachable}
+    </>
+  ) : (
+    unreachable || <p className="t-meta">Loading live results…</p>
+  );
   let ballotCards: ReactNode = null;
   if (results !== null) {
     const { payload, heartbeat } = results;
@@ -66,11 +90,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
 
     status = (
       <>
-        {payload.rehearsal && (
-          <p>
-            <span className="badge badge--soon">Rehearsal: not real results</span>
-          </p>
-        )}
+        {payload.rehearsal && <RehearsalBar />}
         {now - heartbeat > STALE_AFTER_MS && (
           <p className="callout" role="status">
             We haven&apos;t been able to read the City&apos;s results since {clockTime(heartbeat)} The count below

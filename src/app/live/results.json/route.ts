@@ -10,7 +10,7 @@
  */
 
 import { Redis } from "@upstash/redis";
-import { serveLive } from "@/lib/live-serve";
+import { serveLive, SWITCHES, switchesFrom } from "@/lib/live-serve";
 
 export const dynamic = "force-static";
 export const revalidate = 15;
@@ -29,11 +29,12 @@ export async function GET(): Promise<Response> {
     // Raw strings: the validator, not the client, decides what the bytes mean.
     automaticDeserialization: false,
   });
-  // One call: the payload and both heartbeats (docs/store.md).
-  const [payload, fly, digitalOcean] = await redis.mget<(string | null)[]>(
+  // One call: the payload, both heartbeats and the switches (docs/store.md).
+  const [payload, fly, digitalOcean, ...flags] = await redis.mget<(string | null)[]>(
     "payload",
     "heartbeat:fly",
     "heartbeat:do",
+    ...SWITCHES.map((name) => `switch:${name}`),
   );
-  return Response.json(serveLive({ payload, heartbeats: [fly, digitalOcean] }));
+  return Response.json(serveLive({ payload, heartbeats: [fly, digitalOcean], switches: switchesFrom(flags) }));
 }

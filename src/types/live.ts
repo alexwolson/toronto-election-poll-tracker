@@ -16,7 +16,10 @@ export type ProjectionStatus =
   | "gate_missing"
   | "stub"
   | "ungated"
-  | "none";
+  | "none"
+  /** Written only by `/live/results.json`, never by a pipeline: the level's switch, or all
+   *  projections, is off (#49). */
+  | "switched_off";
 
 export type LivePayloadState = "before_results" | "results";
 
@@ -127,9 +130,11 @@ export interface LivePayload {
   races: LiveRace[];
 }
 
-/** What `/live/results.json` serves: the stored payload unchanged, plus the newer
- *  pipeline heartbeat (epoch ms) for the staleness banner. */
+/** What `/live/results.json` serves: the stored payload with switched-off projections
+ *  removed, the newer pipeline heartbeat (epoch ms) for the staleness banner, and whether
+ *  the page is paused (#49). */
 export interface LiveResults {
   heartbeat: number;
+  paused: boolean;
   payload: LivePayload;
 }

@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { MarginOutcomes } from "@/components/forecast/margin-outcomes";
 import { candidateMeta } from "@/lib/candidates";
+import { eliminatedKeys } from "@/lib/live-eliminated";
 import type { MarginOutcomesView } from "@/lib/mayoral-forecast";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
@@ -42,6 +43,8 @@ const WORDING = {
   no_progress: "Voting areas: not available",
   withdrawn: "No projection for this race right now. The count is as the City reports it.",
   elected: "Elected (unofficial)",
+  /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003). */
+  eliminated: "Mathematically Eliminated",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -158,6 +161,7 @@ function Status({ children }: { children: ReactNode }) {
 interface TallyRow {
   key: string;
   elected: boolean;
+  eliminated: boolean;
   /** The Estimated and Possible Ranges; null on the folded row and where none shows. */
   band: LiveBand | null;
   possible: LiveRange | null;
@@ -169,11 +173,17 @@ interface TallyRow {
   share: number | null;
 }
 
-function tallyRow(candidate: LiveCandidate, race: LiveRace, elected: string | null): TallyRow {
+function tallyRow(
+  candidate: LiveCandidate,
+  race: LiveRace,
+  elected: string | null,
+  eliminated: Set<string>,
+): TallyRow {
   const meta = candidate.candidate_id ? candidateMeta(candidate.candidate_id) : null;
   return {
     key: candidate.key,
     elected: candidate.key === elected,
+    eliminated: eliminated.has(candidate.key),
     band: estimated(race)?.[candidate.key] ?? null,
     possible: race.possible?.[candidate.key] ?? null,
     name: candidate.full_name,
@@ -188,7 +198,8 @@ function tallyRow(candidate: LiveCandidate, race: LiveRace, elected: string | nu
  *  "N other candidates" row, unless that row would stand for a single name. */
 function tallyRows(race: LiveRace, closed: boolean): TallyRow[] {
   const elected = electedKey(race, closed);
-  const rows = race.candidates.map((candidate) => tallyRow(candidate, race, elected));
+  const eliminated = eliminatedKeys(race.possible);
+  const rows = race.candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated));
   if (race.level !== "mayor" || rows.length <= MAYOR_SHOWN + 1) return rows;
   const rest = race.candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
@@ -197,6 +208,7 @@ function tallyRows(race: LiveRace, closed: boolean): TallyRow[] {
     {
       key: "other-candidates",
       elected: false,
+      eliminated: false,
       band: null,
       possible: null,
       name: `${rest.length} other candidates`,
@@ -251,6 +263,7 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
             {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
             <span className="live-tally__name">{row.name}</span>
             {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
+            {row.eliminated && <span className="badge badge--status">{WORDING.eliminated}</span>}
             {(row.band || row.possible) && <span className="t-meta live-tally__range">{rangeLine(row)}</span>}
           </span>
           <span className="forecast-chart__track" aria-hidden="true">

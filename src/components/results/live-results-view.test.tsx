@@ -490,6 +490,24 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(text(html)).toContain("worse than expected in the 2023 by-election");
   });
 
+  it("badges a candidate who cannot win even with every outstanding vote (#90)", () => {
+    const payload = golden("gated-live-2022.json");
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    const [leader, second, third] = race.candidates;
+    race.possible = {
+      ...race.possible,
+      [leader.key]: { low: 40, high: 60 },
+      [second.key]: { low: 25, high: 45 },
+      [third.key]: { low: 5, high: 25 },
+    };
+    for (const other of race.candidates.slice(3)) race.possible[other.key] = { low: 1, high: 39.99 };
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    expect(row(html, third.full_name)).toContain('<span class="badge badge--status">Mathematically Eliminated</span>');
+    expect(count(html, "Mathematically Eliminated")).toBe(1);
+    // The wide ranges of the golden's mayor eliminate no one.
+    expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically Eliminated");
+  });
+
   it("gives council tiles their top two candidates' Estimated Ranges", () => {
     const html = tile(render(golden("gated-live-2022.json")), "1");
     expect(text(html)).toContain("Crisanti Vincent 37–43% · Minhas Avtar 20–25%");

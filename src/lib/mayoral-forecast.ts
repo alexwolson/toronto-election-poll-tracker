@@ -197,10 +197,10 @@ export function marginOutcomes(feed: MayoralForecastFeed): MarginOutcomesView | 
   };
 }
 
-/** The results pages' final-forecast panel: the margin outcomes, or null when
- *  the forecast doesn't publish, as on the home page. */
-export function resultsForecast(feed: MayoralForecastFeed): MarginOutcomesView | null {
-  return forecastAvailable(feed) ? marginOutcomes(feed) : null;
+/** Whether the results pages show their final-forecast panel: the forecast publishes, as on
+ *  the home page. Only this flag reaches the page, never the outcomes themselves (#54). */
+export function resultsForecast(feed: MayoralForecastFeed): boolean {
+  return forecastAvailable(feed) && marginOutcomes(feed) !== null;
 }
 
 export interface UncertaintyRow {

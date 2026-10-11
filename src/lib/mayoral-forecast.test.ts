@@ -14,6 +14,7 @@ import {
   otherCandidatesNote,
   remainingField,
   residualPoolNote,
+  resultsForecast,
   suspendedShareText,
   uncertaintyBreakdown,
   viableField,
@@ -77,6 +78,13 @@ describe("leadForecast and viableField", () => {
     const dark = feed();
     dark.election_day = null;
     expect(forecastAvailable(dark)).toBe(false);
+  });
+
+  it("tells the results pages only whether the forecast publishes, never its outcomes (#54)", () => {
+    expect(resultsForecast(feed())).toBe(true);
+    const dark = feed();
+    dark.election_day = null;
+    expect(resultsForecast(dark)).toBe(false);
   });
 });
 

@@ -11,7 +11,6 @@ import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { PageHero } from "@/components/page-hero";
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
-import type { MarginOutcomesView } from "@/lib/mayoral-forecast";
 import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { CouncilTiles, FrenchBoards, RaceCard } from "./race-cards";
 import { WardPicker } from "./ward-picker";
@@ -50,8 +49,8 @@ export interface LiveResultsViewProps {
   ward: ResultsWard | null;
   /** The ward's payload race ids after the mayor (`wardBallotRaceIds`). */
   ballot: string[];
-  /** The final forecast's margin outcomes for the mayor card; null when it doesn't publish. */
-  forecast: MarginOutcomesView | null;
+  /** Whether the final forecast publishes, for the mayor card's pointer to it. */
+  forecast: boolean;
 }
 
 /** The whole page, in CHW components (PageHero, Callout, Badge, Card, `.grid`,

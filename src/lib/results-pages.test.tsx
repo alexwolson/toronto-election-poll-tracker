@@ -72,14 +72,16 @@ describe("Ward Ballot routes (#17 § Results pages, #13)", () => {
     expect(props.ballot).toEqual([]);
   });
 
-  it("gives every results page the final forecast's margin outcomes, or none when it doesn't publish", async () => {
-    type Forecast = { props: { forecast: { leader: { surname: string } } | null } };
-    expect(((await ResultsPage()) as Forecast).props.forecast?.leader.surname).toBe("Chow");
-    expect(((await WardResultsPage(params("14"))) as Forecast).props.forecast?.leader.surname).toBe("Chow");
+  it("tells every results page only whether the final forecast publishes, never its outcomes (#54)", async () => {
+    type Forecast = { props: { forecast: unknown } };
+    expect(((await ResultsPage()) as Forecast).props.forecast).toBe(true);
+    expect(((await WardResultsPage(params("14"))) as Forecast).props.forecast).toBe(true);
+    // The props are serialized into the page: no outcome may ride along unshown.
+    expect(JSON.stringify(((await ResultsPage()) as Forecast).props)).not.toMatch(/probability|ahead by/);
     mocks.loadMayoralForecast.mockResolvedValue({
       ...(forecastFixture as unknown as MayoralForecastFeed),
       election_day: null,
     });
-    expect(((await ResultsPage()) as Forecast).props.forecast).toBeNull();
+    expect(((await ResultsPage()) as Forecast).props.forecast).toBe(false);
   });
 });

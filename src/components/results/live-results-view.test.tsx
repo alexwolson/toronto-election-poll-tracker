@@ -516,6 +516,12 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     return cardHtml.slice(start, next === -1 ? undefined : next);
   }
 
+  /** A row's line of figures. */
+  function meta(rowHtml: string): string {
+    const start = rowHtml.indexOf('<span class="live-tally__meta">');
+    return rowHtml.slice(start, rowHtml.indexOf("</span></div>", start));
+  }
+
   /** Ward 1's race with ranges that eliminate its third candidate, and the rest still in it. */
   function thirdOut(): { payload: LivePayload; third: string } {
     const payload = golden("gated-live-2022.json");
@@ -543,6 +549,8 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(html.indexOf("live-tally__break")).toBeLessThan(html.indexOf(`<span class="live-tally__name">${third}</span>`));
     expect(html.indexOf("live-tally__break")).toBeGreaterThan(html.indexOf(`<span class="live-tally__name">${names.at(-2)}</span>`));
     expect(row(html, third)).toContain("forecast-chart__row--out");
+    // Quiet rows (#105): one line of figures; the eliminated show their votes only.
+    expect(text(meta(wholeRow(html, third)))).toMatch(/^[\d,]+ votes$/);
     // The wide ranges of the golden's mayor eliminate no one.
     expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically eliminated");
   });
@@ -556,6 +564,10 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(row(html, leader.full_name)).toContain('class="live-tally__win" style="left:42.5%"');
     expect(text(wholeRow(html, leader.full_name))).toContain("certain win 42.5%");
     expect(row(html, second.full_name)).toContain('class="live-tally__win" style="left:42.5%"');
+    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d,]+ votes · Estimated final \d+–\d+% · certain win 42\.5%$/);
+    // The Possible Range's figures are for screen readers; the whisker shows them.
+    expect(wholeRow(html, leader.full_name)).toMatch(/<span class="visually-hidden">Estimated final [^<]* · possible 40–60%<\/span>/);
+    expect(text(html)).toContain("Certain win: reach it and no one can catch up.");
     expect(row(html, third)).not.toContain("live-tally__win");
     expect(count(html, "certain win ")).toBe(race.candidates.length - 1);
   });

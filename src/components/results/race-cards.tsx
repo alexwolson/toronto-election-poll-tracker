@@ -50,7 +50,7 @@ const WORDING = {
   keyCounted: "Counted",
   keyEstimated: "Estimated final range",
   keyPossible: "Possible range",
-  keyWin: "Certain win: reach it and no one can catch up",
+  keyWin: "Certain win",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -65,6 +65,8 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
 const RANGE_WORDING = {
   estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
   possible: "Possible: from none to all of the votes still to be counted.",
+  /** The certain-win tick's meaning (#105), beside the ranges' legend. */
+  certainWin: "Certain win: reach it and no one can catch up.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
@@ -261,6 +263,9 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
         <p className="forecast-caption">
           {bands && <>{RANGE_WORDING.estimated} </>}
           {race.possible && RANGE_WORDING.possible}
+          {Object.keys(certainWinShares(race.possible, eliminatedKeys(race.possible))).length > 0 && (
+            <> {RANGE_WORDING.certainWin}</>
+          )}
         </p>
       )}
       {record && (
@@ -282,6 +287,15 @@ function span(low: number, high: number) {
   return { left: `${low}%`, width: `${Math.max(high - low, 0)}%` };
 }
 
+/** A row's one quiet line (#105): its votes, Estimated Range and certain-win share. The
+ *  Possible Range's figures go to screen readers only; its whisker shows it. */
+function rowMeta(row: TallyRow): string[] {
+  const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} votes`];
+  if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
+  if (row.win !== null) parts.push(`certain win ${row.win.toFixed(1)}%`);
+  return parts;
+}
+
 function TallyRowView({ row }: { row: TallyRow }) {
   return (
     <div className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}`} role="listitem">
@@ -289,7 +303,7 @@ function TallyRowView({ row }: { row: TallyRow }) {
         {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
         <span className="live-tally__name">{row.name}</span>
         {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
-        {(row.band || row.possible) && <span className="t-meta live-tally__range">{rangeLine(row)}</span>}
+        {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
       </span>
       <span className="forecast-chart__track" aria-hidden="true">
         {row.possible && <span className="live-tally__possible" style={span(row.possible.low, row.possible.high)} />}
@@ -304,10 +318,15 @@ function TallyRowView({ row }: { row: TallyRow }) {
         )}
         {row.win !== null && <span className="live-tally__win" style={{ left: `${row.win}%` }} />}
       </span>
-      <span className="live-tally__value">
-        <strong className="forecast-chart__value">{percent(row.share)}</strong>
-        <span className="t-meta">{row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} votes`}</span>
-        {row.win !== null && <span className="t-meta live-tally__win-text">{`certain win ${row.win.toFixed(1)}%`}</span>}
+      <strong className="forecast-chart__value live-tally__value">{percent(row.share)}</strong>
+      <span className="live-tally__meta">
+        {/* Each figure wraps whole, never "certain win" on one line and its share on the next. */}
+        {rowMeta(row).map((part, i) => (
+          <span key={part}>
+            {i > 0 && " · "}
+            <span className="live-tally__fig">{part}</span>
+          </span>
+        ))}
       </span>
     </div>
   );
@@ -318,7 +337,7 @@ function TallyKey({ rows }: { rows: TallyRow[] }) {
   const has = (pick: (row: TallyRow) => unknown) => rows.some(pick);
   if (!has((r) => r.band || r.possible)) return null;
   return (
-    <p className="live-tally__key t-meta" aria-hidden="true">
+    <p className="live-tally__key" aria-hidden="true">
       <span><i className="live-tally__glyph live-tally__glyph--counted" />{WORDING.keyCounted}</span>
       {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
       {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--possible" />{WORDING.keyPossible}</span>}
@@ -343,8 +362,8 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
         {out.length > 0 && (
           <p className="live-tally__break" role="listitem">
             <strong>{WORDING.eliminated}</strong>
-            <span className="t-meta live-tally__sep" aria-hidden="true"> · </span>
-            <span className="t-meta">{WORDING.eliminatedWhy}</span>
+            <span className="live-tally__sep" aria-hidden="true"> · </span>
+            <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
           </p>
         )}
         {out.map((row) => <TallyRowView key={row.key} row={row} />)}

@@ -10,7 +10,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
-import { MarginOutcomes } from "@/components/forecast/margin-outcomes";
 import { candidateMeta } from "@/lib/candidates";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import type { MarginOutcomesView } from "@/lib/mayoral-forecast";
@@ -44,7 +43,7 @@ const WORDING = {
   withdrawn: "No projection for this race right now. The count is as the City reports it.",
   elected: "Elected (unofficial)",
   /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003). */
-  eliminated: "Mathematically Eliminated",
+  eliminated: "Mathematically eliminated",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -54,14 +53,15 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
   trustee: "school board trustee races",
 };
 
-/** DRAFT wording for Alex's pass (#54): the two ranges, the mayor's record (ADR 0002), the
- *  gate notes and the French-language boards' note. */
+/** The ranges' legends, the mayor's record (ADR 0002) and the French-language boards' note,
+ *  as Alex approved them (#54, #97). */
 const RANGE_WORDING = {
   estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
   possible: "Possible: from none to all of the votes still to be counted.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
-  french: "No projection for the French-language boards: there are no past results by voting area to test one against.",
+  recordSummary: "How accurate is this estimate?",
+  french: "No projection for these boards: only the count and its possible range.",
 } as const;
 
 /** Whether a level shows the count in place of its projection: its gate failed, or the
@@ -228,16 +228,18 @@ function rangeLine(row: TallyRow): string {
   return parts.join(" · ");
 }
 
-/** Under a counting race's tally: the ranges' legend, the mayor's record while it is live on
- *  approval (ADR 0002), and why a level shows the count: its gate, or else a Withdrawal (#43),
- *  whose machine reason readers never see. */
+/** Under a counting race's tally: the ranges' legend, the mayor's record while its Estimated
+ *  Range is on screen (ADR 0002, #54), and why a level shows the count: its gate, or else a
+ *  Withdrawal (#43), whose machine reason readers never see. A French-language board has no
+ *  projection, so only its Possible Range's legend (#97). */
 function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
-  if (race.state !== "counting" || race.level === "french_trustee") return null;
+  if (race.state !== "counting") return null;
   const bands = estimated(race);
-  const status = levelStatus(levels, race.level);
-  const note = (status ? gateNote(race.level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
-  // The mayor's record shows for as long as it is live on approval, band or not (ADR 0002).
-  const record = race.level === "mayor" && levels?.mayor.approved === true;
+  const level = race.level === "french_trustee" ? null : race.level;
+  const status = level ? levelStatus(levels, level) : null;
+  const note = (level && status ? gateNote(level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
+  // The record describes the estimate, so it shows only beside one.
+  const record = race.level === "mayor" && levels?.mayor.approved === true && bands;
   return (
     <>
       {note && <Status>{note}</Status>}
@@ -247,7 +249,16 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
           {race.possible && RANGE_WORDING.possible}
         </p>
       )}
-      {record && <p className="forecast-caption">{RANGE_WORDING.mayorRecord}</p>}
+      {record && (
+        <div className="faq">
+          <details className="live-record">
+            <summary>{RANGE_WORDING.recordSummary}</summary>
+            <div className="faq__a">
+              <p className="forecast-caption">{RANGE_WORDING.mayorRecord}</p>
+            </div>
+          </details>
+        </div>
+      )}
     </>
   );
 }
@@ -366,18 +377,18 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
   );
 }
 
-/** The final Mayoral Forecast, collapsed and kept apart from the count (#7, #12):
- *  the forecast pages' own margin outcomes, with their own labels (#16). */
-function FinalForecast({ forecast }: { forecast: MarginOutcomesView }) {
+/** The final Mayoral Forecast, collapsed and kept apart from the count (#7, #12): a pointer
+ *  to the home page's forecast only, so none of its outcomes sits beside the count (#17's
+ *  "Not shown anywhere", #54). */
+function FinalForecast() {
   return (
     <div className="faq">
       <details className="live-forecast">
         <summary>The final pre-election forecast</summary>
         <div className="faq__a">
           <p className="t-body-small">
-            How far apart {forecast.leader.surname} and {forecast.challenger.surname} were expected to finish:
+            The forecast published before election day is on the <Link href="/">home page</Link>.
           </p>
-          <MarginOutcomes view={forecast} />
           <p className="forecast-caption">
             The final pre-election forecast, kept for reference. It is not the count and not the projection.
           </p>
@@ -410,7 +421,7 @@ export function RaceCard({
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
       <RaceBody race={race} levels={levels} closed={closed} />
       {wardVote && <WardVote race={race} ward={wardVote} />}
-      {race.level === "mayor" && forecast && !closed && race.state !== "all_units_in" && <FinalForecast forecast={forecast} />}
+      {race.level === "mayor" && forecast && !closed && race.state !== "all_units_in" && <FinalForecast />}
     </section>
   );
 }

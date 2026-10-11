@@ -48,7 +48,7 @@ export function WardPicker({ wards, ward }: { wards: ResultsWard[]; ward: Result
             ))}
           </select>
           <p className="field__help">
-            Not sure which ward you&apos;re in? Look it up with the City&apos;s{" "}
+            Don&apos;t know your ward? Look up your address on the City&apos;s{" "}
             <a href={MYVOTE_URL}>MyVote</a> tool.
           </p>
         </div>

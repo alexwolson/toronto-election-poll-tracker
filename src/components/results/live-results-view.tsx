@@ -102,14 +102,15 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
         {unreachable}
         <p className="t-meta">
           {closed && counting ? (
-            <>Final unofficial count as of {clockTime(cityCountAt)} · </>
+            // "unofficial" once is enough (#54).
+            <>Final unofficial count as of {clockTime(cityCountAt)}</>
           ) : (
             <>
               {counting && <>City count as of {clockTime(cityCountAt)} · </>}
               {!closed && <>Refreshes every minute · </>}
+              City of Toronto unofficial results
             </>
           )}
-          City of Toronto unofficial results
         </p>
       </>
     );

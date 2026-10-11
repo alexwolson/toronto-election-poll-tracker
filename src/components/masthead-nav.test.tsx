@@ -64,4 +64,12 @@ describe("the Results menu item", () => {
     const results = screen.getByRole("link", { name: "Results Live" });
     expect(results.querySelector(".badge.badge--live")?.textContent).toBe("Live");
   });
+
+  it("drops the live badge at 12:00 EDT Oct 27 (#54)", () => {
+    at("2026-10-27T11:59:30-04:00");
+    render(<MastheadNav />);
+    expect(document.querySelector(".badge--live")).not.toBeNull();
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(document.querySelector(".badge--live")).toBeNull();
+  });
 });

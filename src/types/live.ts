@@ -139,3 +139,26 @@ export interface LiveResults {
   closed: boolean;
   payload: LivePayload;
 }
+
+/** A race over the night, in columns: one entry per point in `LiveHistory.t`. */
+export interface LiveRaceHistory {
+  /** Candidate keys in the order they first appear. */
+  keys: string[];
+  /** Reporting Progress per point: [received, total], or null. */
+  p: ([number, number] | null)[];
+  /** Votes per point, per key; null before a candidate appears. */
+  v: (number | null)[][];
+  /** The shown band per point, per key, as [low, mid, high]; absent if the race never showed one. */
+  b?: ([number, number, number] | null)[][];
+  /** Mayor only: each ward's progress per point. */
+  w?: Record<string, ([number, number] | null)[]>;
+}
+
+/** What `/live/history.json` serves: the count over the night, for the Map and Count views
+ *  (live-projection #102, #103). */
+export interface LiveHistory {
+  schema_version: 1;
+  /** The City count time of each point (the older seq of its pair), epoch ms, ascending. */
+  t: number[];
+  races: Record<string, LiveRaceHistory>;
+}

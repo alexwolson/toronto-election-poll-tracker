@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ResultsBallot } from "@/components/results/live-results-poller";
-import { loadCouncilRaceCards, loadMayoralForecast } from "@/lib/feeds";
+import { loadCouncilRaceCards, loadMayoralForecast, loadTrusteeRaceCards } from "@/lib/feeds";
+import { resultsMapData } from "@/lib/results-map-data";
 import { resultsForecast } from "@/lib/mayoral-forecast";
 import { resultsWards } from "@/lib/results-wards";
 
@@ -13,6 +14,18 @@ export const metadata: Metadata = {
 /** Before a ward is picked: the picker, the citywide mayor card, then the 25
  *  council tiles. No default ward (#13). The count arrives in the browser. */
 export default async function ResultsPage() {
-  const [council, forecast] = await Promise.all([loadCouncilRaceCards(), loadMayoralForecast()]);
-  return <ResultsBallot wards={resultsWards(council)} ward={null} ballot={[]} forecast={resultsForecast(forecast)} />;
+  const [council, trustees, forecast] = await Promise.all([
+    loadCouncilRaceCards(),
+    loadTrusteeRaceCards(),
+    loadMayoralForecast(),
+  ]);
+  return (
+    <ResultsBallot
+      wards={resultsWards(council)}
+      ward={null}
+      ballot={[]}
+      forecast={resultsForecast(forecast)}
+      mapData={resultsMapData(council, trustees)}
+    />
+  );
 }

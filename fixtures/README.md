@@ -46,3 +46,12 @@ emitted by `uv run election-night goldens` from real City files, one per reachab
 state, plus `replay-counting-2022.json` from a short Replay of the certified 2022
 counts (every level counting; candidates keyed by the workbooks' names, `Tory John`). `gated-live-2022.json`, `gated-low-ess-2022.json` and `gated-off-2022.json` are that Replay on a gated night (#45, ADR 0002): every level live with the mayor on Alex's approval; the same under a constructed forecast below the ESS floor (no mayoral Estimated Range); and every level showing the count (failed or paused). Each carries its Possible Ranges. `withdrawals-2022.json` is the gated-live refresh with one fault per per-race check (#43): each faulty race keeps its tally with its projection withdrawn, and `council-counting-2022.json` carries 2022's MonAvenir 4 `polls: 0` fault with its Reporting Progress hidden. `src/lib/live-payload.test.ts` checks that the validator accepts every one.
 Re-copy them whenever the payload's schema version changes; never edit them by hand.
+
+## Simulated election night (live-projection #103, 2026-10-11)
+
+`live/mock-night/payload.json` and `live/mock-night/history.json` are a
+simulated count, not results: the live-projection Mock Feed (scenario seed 0, no faults)
+at night minute 40 (20:30 EDT), run through the real `build_payload` and `history_entry`
+with the night bundle. The entries are the store's `history` list up to that payload, as
+the pipelines write it. They drive the Map and Count view tests, and local development
+with `LIVE_DEV_FIXTURE_DIR=fixtures/live/mock-night`. They are not live-projection goldens.

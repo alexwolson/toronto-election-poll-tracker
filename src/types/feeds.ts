@@ -723,6 +723,9 @@ export interface CouncilRaceCard {
   incumbent_in_field: boolean;
   incumbency_flag_disagrees: boolean;
   incumbent: Incumbent;
+  /** The running incumbent's candidacy; null for an open seat. Absent on Backend releases
+   *  before it was published (backend #60). */
+  incumbent_candidacy_id?: string | null;
   candidates: CouncilCandidate[];
   prior_result: PriorResult | null;
   competitiveness: Competitiveness;

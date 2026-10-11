@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ResultsBallot } from "@/components/results/live-results-poller";
 import { loadCouncilRaceCards, loadMayoralForecast, loadTrusteeRaceCards } from "@/lib/feeds";
 import { resultsForecast } from "@/lib/mayoral-forecast";
+import { resultsMapData } from "@/lib/results-map-data";
 import { resultsWards, wardLabel } from "@/lib/results-wards";
 import { isResultsWard, RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
 
@@ -18,8 +19,9 @@ type Props = { params: Promise<{ ward: string }> };
 async function pageWard({ params }: Props) {
   const { ward } = await params;
   if (!isResultsWard(ward)) notFound();
-  const wards = resultsWards(await loadCouncilRaceCards());
-  return { wards, current: wards.find((w) => w.num === ward)! };
+  const council = await loadCouncilRaceCards();
+  const wards = resultsWards(council);
+  return { council, wards, current: wards.find((w) => w.num === ward)! };
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
@@ -34,7 +36,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 /** One ward's ballot: the mayor, its councillor and its trustee areas, then the
  *  council tiles. The City ward alone fixes the races (#13). */
 export default async function WardResultsPage(props: Props) {
-  const [{ wards, current }, trustees, forecast] = await Promise.all([
+  const [{ council, wards, current }, trustees, forecast] = await Promise.all([
     pageWard(props),
     loadTrusteeRaceCards(),
     loadMayoralForecast(),
@@ -45,6 +47,7 @@ export default async function WardResultsPage(props: Props) {
       ward={current}
       ballot={wardBallotRaceIds(current.num, trustees)}
       forecast={resultsForecast(forecast)}
+      mapData={resultsMapData(council, trustees)}
     />
   );
 }

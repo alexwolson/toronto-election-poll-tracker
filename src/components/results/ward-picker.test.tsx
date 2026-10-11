@@ -5,16 +5,23 @@ import path from "node:path";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import councilFixture from "../../../fixtures/council_race_cards.json";
+import trusteeFixture from "../../../fixtures/trustee_race_cards.json";
+import { resultsMapData } from "@/lib/results-map-data";
 import { resultsWards, type ResultsWard } from "@/lib/results-wards";
-import type { CouncilRaceCardsFeed } from "@/types/feeds";
+import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
 import { LiveResultsView } from "./live-results-view";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/results/",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const council = councilFixture as unknown as CouncilRaceCardsFeed;
 const WARDS: ResultsWard[] = resultsWards(council);
+const MAP = resultsMapData(council, trusteeFixture as unknown as TrusteeRaceCardsFeed);
 const payload = JSON.parse(
   readFileSync(path.resolve(__dirname, "../../../fixtures/live/payload/before-results-2026.json"), "utf8"),
 ) as LivePayload;
@@ -28,6 +35,7 @@ function renderPage(ward: string | null = null) {
       ward={WARDS.find((w) => w.num === ward) ?? null}
       ballot={[]}
       forecast={false}
+      mapData={MAP}
     />,
   );
 }

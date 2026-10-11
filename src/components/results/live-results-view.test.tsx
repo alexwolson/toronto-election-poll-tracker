@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import councilFixture from "../../../fixtures/council_race_cards.json";
 import trusteeFixture from "../../../fixtures/trustee_race_cards.json";
+import { resultsMapData } from "@/lib/results-map-data";
 import { resultsWards, type ResultsWard } from "@/lib/results-wards";
 import { RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
@@ -11,7 +12,12 @@ import type { LivePayload } from "@/types/live";
 import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "@/lib/live-serve";
 import { LiveResultsView } from "./live-results-view";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+const navigation = vi.hoisted(() => ({ view: null as string | null }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/results/",
+  useSearchParams: () => new URLSearchParams(navigation.view ? { view: navigation.view } : {}),
+}));
 
 // Seam 7 (#17): the Ward Ballot pages rendered from the golden payloads.
 function golden(name: string): LivePayload {
@@ -23,6 +29,7 @@ function golden(name: string): LivePayload {
 const council = councilFixture as unknown as CouncilRaceCardsFeed;
 const trustees = trusteeFixture as unknown as TrusteeRaceCardsFeed;
 const WARDS: ResultsWard[] = resultsWards(council);
+const MAP = resultsMapData(council, trustees);
 
 const MINUTE = 60_000;
 
@@ -48,6 +55,7 @@ function render(
       ward={WARDS.find((w) => w.num === ward) ?? null}
       ballot={ward === null ? [] : wardBallotRaceIds(ward, trustees)}
       forecast={forecast}
+      mapData={MAP}
     />,
   );
 }
@@ -210,6 +218,7 @@ describe("LiveResultsView: page status", () => {
           ward={null}
           ballot={[]}
           forecast
+          mapData={MAP}
         />,
       );
     expect(view(0)).toContain("Loading live results");

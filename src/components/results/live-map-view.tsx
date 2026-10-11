@@ -1,0 +1,508 @@
+"use client";
+
+/**
+ * The results Map (live-projection #103): the 25 wards shaded by one contest and one
+ * measure, with a panel for the chosen ward and the same figures as a table. Facts of the
+ * count only: who leads, by how much, how much is in, and whether a running incumbent
+ * leads. Never a call, and never the forecast (#12).
+ *
+ * The ward shapes and keyboard model follow `race-map.tsx`: one roving tab stop, arrow
+ * keys move to the nearest ward in that direction, Enter or Space holds a ward.
+ */
+
+import Link from "next/link";
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { candidateMeta } from "@/lib/candidates";
+import {
+  incumbentStatus,
+  leadTier,
+  mayorWardLead,
+  raceLead,
+  reportingTier,
+  type IncumbentStatus,
+  type Lead,
+  type ReportingTier,
+} from "@/lib/live-map";
+import type { ResultsMapData, ResultsMapWard } from "@/lib/results-map-data";
+import type { ResultsWard } from "@/lib/results-wards";
+import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
+import { raceTitle } from "./race-cards";
+
+type Contest = "mayor" | "council" | "tdsb" | "tcdsb";
+type Measure = "leader" | "share" | "reporting";
+
+const CONTESTS: { id: Contest; label: string }[] = [
+  { id: "mayor", label: "Mayor" },
+  { id: "council", label: "Council" },
+  { id: "tdsb", label: "TDSB" },
+  { id: "tcdsb", label: "TCDSB" },
+];
+
+/** The fill for a ward's lead: stronger for a wider lead. */
+const TIER_MIX = { narrow: 42, clear: 70, wide: 100 } as const;
+const OTHER = "var(--live-other)";
+
+const STATUS_WORDS: Record<IncumbentStatus, string> = {
+  incumbent_leading: "Incumbent leading",
+  incumbent_trailing: "Incumbent trailing",
+  tied: "Tied",
+  open_seat: "Open seat",
+  not_known: "Incumbent not known",
+  no_results: "No votes counted yet",
+};
+
+const STATUS_COLOUR: Partial<Record<IncumbentStatus, string>> = {
+  incumbent_leading: "var(--live-inc-lead)",
+  incumbent_trailing: "var(--live-inc-trail)",
+  open_seat: "var(--live-open)",
+};
+
+const REPORTING_WORDS: Record<ReportingTier, string> = {
+  none: "None in",
+  some: "Under half",
+  half: "Half or more",
+  most: "90% or more",
+  all: "All in",
+};
+
+const REPORTING_STEP: Record<ReportingTier, string | null> = {
+  none: null,
+  some: "var(--live-seq-1)",
+  half: "var(--live-seq-2)",
+  most: "var(--live-seq-3)",
+  all: "var(--live-seq-4)",
+};
+
+type WardStyle = CSSProperties & { "--ward-fill"?: string };
+
+interface Shade {
+  /** The fill, or null for the empty ground. */
+  fill: string | null;
+  hatch?: boolean;
+  /** What the shade says, in words, for the accessible name and the table. */
+  words: string;
+}
+
+interface WardFacts {
+  ward: ResultsMapWard;
+  name: string;
+  /** The race the contest shows in this ward; the mayor's citywide race for the mayor. */
+  race: LiveRace | null;
+  lead: Lead | null;
+  reported: { received: number; total: number } | null;
+  shade: Shade;
+}
+
+function mix(colour: string, percent: number): string {
+  return percent >= 100 ? colour : `color-mix(in srgb, ${colour} ${percent}%, var(--paper))`;
+}
+
+function pct(value: number | null, digits = 1): string {
+  return value === null ? "–" : `${value.toFixed(digits)}%`;
+}
+
+function nameOf(race: LiveRace | null, key: string | null): string {
+  if (key === null) return "–";
+  const candidate = race?.candidates.find((c) => c.key === key);
+  return candidate ? (candidate.short_label ?? candidate.full_name) : key;
+}
+
+/** Forecast-named mayoral candidates keep the forecast pages' colours; everyone else is neutral (#16). */
+function candidateColour(candidate: LiveCandidate | undefined): string {
+  return candidate?.candidate_id ? candidateMeta(candidate.candidate_id).colorVar : OTHER;
+}
+
+function leadWords(race: LiveRace | null, lead: Lead): string {
+  if (lead.leader === null) return "No votes counted yet";
+  if (lead.tied) return `${nameOf(race, lead.leader)} and ${nameOf(race, lead.runnerUp)} tied`;
+  return `${nameOf(race, lead.leader)} leads by ${lead.margin!.toFixed(1)} points`;
+}
+
+function wardRace(payload: LivePayload | null, data: ResultsMapData, contest: Contest, num: string): LiveRace | null {
+  if (!payload) return null;
+  const id =
+    contest === "mayor" ? "mayor" : contest === "council" ? `councillor-${num}` : data.areas[num]?.[contest] ?? null;
+  return id === null ? null : (payload.races.find((r) => r.id === id) ?? null);
+}
+
+function reportingShade(fraction: number | null): Shade {
+  const tier = reportingTier(fraction);
+  return { fill: REPORTING_STEP[tier], words: `${REPORTING_WORDS[tier]}${fraction === null ? "" : ` (${pct(100 * fraction, 0)})`}` };
+}
+
+export interface LiveMapViewProps {
+  data: ResultsMapData;
+  payload: LivePayload | null;
+  wards: ResultsWard[];
+  /** The ward whose page this is: it starts held. */
+  ward: string | null;
+}
+
+export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
+  const [contest, setContest] = useState<Contest>("mayor");
+  const [measure, setMeasure] = useState<Measure>("leader");
+  const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
+  const counting = payload?.state === "results";
+  const shareChoices = (mayor?.candidates ?? []).filter((c) => (c.votes ?? 0) > 0).slice(0, 6);
+  const [shareKey, setShareKey] = useState<string | null>(null);
+  const shareCandidate = shareChoices.find((c) => c.key === shareKey) ?? shareChoices[0];
+  const effectiveMeasure: Measure = contest !== "mayor" && measure === "share" ? "leader" : measure;
+
+  const names = new Map(wards.map((w) => [w.num, w.name]));
+
+  const facts: WardFacts[] = (() => {
+    const mayorWards = new Map((mayor?.wards ?? []).map((w) => [w.num, w]));
+    // One scale for the share layer: up to the highest ward, rounded up to 10 points.
+    const shareOf = (num: string) => {
+      const votes = mayorWards.get(num)?.votes;
+      if (!votes || !shareCandidate) return null;
+      const total = Object.values(votes).reduce((a, b) => a + b, 0);
+      return total > 0 ? (100 * (votes[shareCandidate.key] ?? 0)) / total : null;
+    };
+    const top = Math.max(10, ...data.wards.map((w) => shareOf(w.num) ?? 0));
+    const scaleMax = Math.ceil(top / 10) * 10;
+
+    return data.wards.map((shape): WardFacts => {
+      const name = names.get(shape.num) ?? "";
+      if (!counting) {
+        return { ward: shape, name, race: null, lead: null, reported: null, shade: { fill: null, words: "Results from 8 p.m." } };
+      }
+      if (contest === "mayor") {
+        const mw = mayorWards.get(shape.num);
+        const lead = mw ? mayorWardLead(mw) : null;
+        const reported = mw?.progress ?? null;
+        let shade: Shade;
+        if (effectiveMeasure === "reporting") shade = reportingShade(lead?.reported ?? null);
+        else if (effectiveMeasure === "share") {
+          const share = shareOf(shape.num);
+          shade =
+            share === null
+              ? { fill: null, words: "No votes counted yet" }
+              : {
+                  fill: mix(candidateColour(shareCandidate), Math.round(12 + (88 * share) / scaleMax)),
+                  words: `${nameOf(mayor, shareCandidate?.key ?? null)} ${pct(share)}`,
+                };
+        } else if (!lead || lead.leader === null) shade = { fill: null, words: "No votes counted yet" };
+        else if (lead.tied) shade = { fill: "var(--live-tied)", words: leadWords(mayor, lead) };
+        else {
+          const leader = mayor?.candidates.find((c) => c.key === lead.leader);
+          shade = { fill: mix(candidateColour(leader), TIER_MIX[leadTier(lead.margin!)]), words: leadWords(mayor, lead) };
+        }
+        return { ward: shape, name, race: mayor, lead, reported, shade };
+      }
+      const race = wardRace(payload, data, contest, shape.num);
+      const lead = race ? raceLead(race) : null;
+      const reported = race?.progress ?? null;
+      let shade: Shade;
+      if (!race) shade = { fill: null, words: "No race" };
+      else if (race.state === "acclaimed") shade = { fill: "var(--live-tied)", hatch: true, words: "Acclaimed" };
+      else if (effectiveMeasure === "reporting") shade = reportingShade(lead?.reported ?? null);
+      else {
+        const incumbents = contest === "council" ? data.council[shape.num] : data.trustee[race.id];
+        const status = incumbentStatus(race, incumbents ?? null);
+        const colour = STATUS_COLOUR[status];
+        const words = `${STATUS_WORDS[status]}${lead && lead.leader !== null ? `: ${leadWords(race, lead)}` : ""}`;
+        if (status === "no_results") shade = { fill: null, words: STATUS_WORDS[status] };
+        else if (status === "tied") shade = { fill: "var(--live-tied)", words };
+        else if (status === "not_known") shade = { fill: "var(--live-tied)", hatch: true, words };
+        else shade = { fill: mix(colour!, TIER_MIX[leadTier(lead!.margin!)]), words };
+      }
+      return { ward: shape, name, race, lead, reported, shade };
+    });
+  })();
+
+  const initial = ward ?? data.wards[0]?.num ?? "1";
+  const [held, setHeld] = useState(initial);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const refs = useRef<Record<string, SVGPathElement | null>>({});
+  const active = facts.find((f) => f.ward.num === (preview ?? held)) ?? facts[0];
+
+  const hold = (num: string) => {
+    setHeld(num);
+    const f = facts.find((x) => x.ward.num === num);
+    if (f) setAnnouncement(`Ward ${num} ${f.name}: ${f.shade.words}`);
+  };
+
+  const onKey = (event: KeyboardEvent<SVGPathElement>, num: string) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      hold(num);
+      return;
+    }
+    const next = nearestWard(data.wards, num, event.key);
+    if (next === null) return;
+    event.preventDefault();
+    hold(next);
+    refs.current[next]?.focus();
+  };
+
+  const measures: { id: Measure; label: string }[] =
+    contest === "mayor"
+      ? [
+          { id: "leader", label: "Leader" },
+          { id: "share", label: "Candidate share" },
+          { id: "reporting", label: "Voting areas in" },
+        ]
+      : [
+          { id: "leader", label: "Incumbent" },
+          { id: "reporting", label: "Voting areas in" },
+        ];
+
+  const legend = legendFor(contest, effectiveMeasure, mayor, facts, candidateColour(shareCandidate));
+
+  return (
+    <section className="live-map" aria-labelledby="live-map-heading">
+      <div className="live-map__head">
+        <h2 id="live-map-heading">Results by ward</h2>
+        <div className="live-map__controls">
+          <div className="ward-index-sort live-seg" role="group" aria-label="Race">
+            {CONTESTS.map((c) => (
+              <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => setContest(c.id)}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="ward-index-sort live-seg" role="group" aria-label="Show">
+            {measures.map((m) => (
+              <button key={m.id} type="button" aria-pressed={effectiveMeasure === m.id} onClick={() => setMeasure(m.id)}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+          {contest === "mayor" && effectiveMeasure === "share" && shareChoices.length > 0 && (
+            <label className="live-map__candidate">
+              <span>Candidate</span>
+              <select value={shareCandidate?.key} onChange={(e) => setShareKey(e.target.value)}>
+                {shareChoices.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      </div>
+
+      <div className="live-map__body">
+        <div className="live-map__stage">
+          {!counting && <p className="live-map__empty">The map fills in as wards report, from 8 p.m.</p>}
+          <svg viewBox={data.view_box} role="group" aria-label="Map of Toronto's 25 wards">
+            <defs>
+              <pattern id="live-map-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="8" height="8" fill="var(--rule-soft)" />
+                <line x1="0" y1="0" x2="0" y2="8" stroke="var(--live-hatch)" strokeWidth="3" />
+              </pattern>
+            </defs>
+            {facts.map((f) => (
+              <path
+                key={f.ward.num}
+                ref={(el) => {
+                  refs.current[f.ward.num] = el;
+                }}
+                d={f.ward.path}
+                className={`live-map__ward${f.ward.num === held ? " is-held" : ""}${f.ward.num === (preview ?? held) ? " is-active" : ""}${f.ward.num === ward ? " is-home" : ""}`}
+                style={{ "--ward-fill": f.shade.hatch ? "url(#live-map-hatch)" : (f.shade.fill ?? undefined) } as WardStyle}
+                role="button"
+                tabIndex={f.ward.num === held ? 0 : -1}
+                aria-label={`Ward ${f.ward.num} ${f.name}: ${f.shade.words}`}
+                aria-pressed={f.ward.num === held}
+                onMouseEnter={() => setPreview(f.ward.num)}
+                onMouseLeave={() => setPreview(null)}
+                onFocus={() => setPreview(f.ward.num)}
+                onBlur={() => setPreview(null)}
+                onClick={() => hold(f.ward.num)}
+                onKeyDown={(e) => onKey(e, f.ward.num)}
+              />
+            ))}
+            <g className="live-map__labels" aria-hidden="true">
+              {data.wards.map((w) =>
+                w.label.leader_line ? (
+                  <line key={`${w.num}-line`} {...w.label.leader_line} />
+                ) : null,
+              )}
+              {data.wards.map((w) => (
+                <text key={w.num} x={w.label.x} y={w.label.y}>
+                  {w.label.text}
+                </text>
+              ))}
+            </g>
+          </svg>
+          {legend.length > 0 && (
+            <ul className="live-map__legend" aria-label="Map legend">
+              {legend.map((item) => (
+                <li key={item.label}>
+                  <span
+                    className={`live-map__swatch${item.hatch ? " live-map__swatch--hatch" : ""}`}
+                    style={{ background: item.hatch ? undefined : (item.fill ?? "var(--rule-soft)") }}
+                    aria-hidden="true"
+                  />
+                  {item.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {active && <WardPanel facts={active} contest={contest} home={ward} />}
+      </div>
+
+      <details className="live-table-toggle">
+        <summary>Show the map as a table</summary>
+        <div className="live-table-scroll">
+          <table className="live-table">
+            <caption className="sr-only">
+              {CONTESTS.find((c) => c.id === contest)!.label} by ward
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Ward</th>
+                {contest !== "mayor" && <th scope="col">Race</th>}
+                <th scope="col">On the map</th>
+                <th scope="col">Voting areas in</th>
+              </tr>
+            </thead>
+            <tbody>
+              {facts.map((f) => (
+                <tr key={f.ward.num}>
+                  <th scope="row">
+                    {f.ward.num} {f.name}
+                  </th>
+                  {contest !== "mayor" && <td>{f.race ? raceTitle(f.race) : "–"}</td>}
+                  <td>{f.shade.words}</td>
+                  <td className="live-num">{f.reported ? `${f.reported.received} of ${f.reported.total}` : "–"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <span className="sr-only" aria-live="polite">
+        {announcement}
+      </span>
+    </section>
+  );
+}
+
+function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contest; home: string | null }) {
+  const { ward, name, race, lead, reported, shade } = facts;
+  const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
+  return (
+    <aside className="live-map__panel" aria-label={`Ward ${ward.num} details`}>
+      <h3>
+        Ward {ward.num} {name}
+      </h3>
+      {raceName && <p className="live-map__race">{raceName}</p>}
+      <p className="live-map__status">{shade.words}</p>
+      {lead && lead.leader !== null && (
+        <dl className="live-map__facts">
+          <div>
+            <dt>Leading</dt>
+            <dd>
+              {nameOf(race, lead.leader)} <span className="live-num">{pct(lead.leaderShare)}</span>
+            </dd>
+          </div>
+          {lead.runnerUp && (
+            <div>
+              <dt>Second</dt>
+              <dd>
+                {nameOf(race, lead.runnerUp)}{" "}
+                <span className="live-num">{pct(lead.leaderShare! - lead.margin!)}</span>
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt>Lead</dt>
+            <dd className="live-num">{lead.tied ? "Tied" : `${lead.margin!.toFixed(1)} pts`}</dd>
+          </div>
+          <div>
+            <dt>Votes counted</dt>
+            <dd className="live-num">{lead.counted.toLocaleString("en-CA")}</dd>
+          </div>
+        </dl>
+      )}
+      {reported && (
+        <p className="live-map__reported">
+          <span className="live-num">
+            {reported.received} of {reported.total}
+          </span>{" "}
+          voting areas in
+        </p>
+      )}
+      {home !== ward.num && (
+        <Link className="text-link live-map__link" href={`/results/${ward.num}/?view=map`}>
+          Ward {ward.num} results <span aria-hidden="true">→</span>
+        </Link>
+      )}
+    </aside>
+  );
+}
+
+interface LegendItem {
+  label: string;
+  fill: string | null;
+  hatch?: boolean;
+}
+
+function legendFor(
+  contest: Contest,
+  measure: Measure,
+  mayor: LiveRace | null,
+  facts: WardFacts[],
+  shareColour: string,
+): LegendItem[] {
+  if (facts.every((f) => f.race === null && f.lead === null)) return [];
+  const present = (words: (f: WardFacts) => boolean) => facts.some(words);
+  const items: LegendItem[] = [];
+  if (measure === "reporting") {
+    (Object.keys(REPORTING_WORDS) as ReportingTier[]).forEach((tier) =>
+      items.push({ label: REPORTING_WORDS[tier], fill: REPORTING_STEP[tier] }),
+    );
+    return items;
+  }
+  if (contest === "mayor" && measure === "share") {
+    return [
+      { label: "Lower share", fill: mix(shareColour, 20) },
+      { label: "Higher share", fill: shareColour },
+    ];
+  }
+  if (contest === "mayor") {
+    const leaders = new Set(facts.map((f) => (f.lead && !f.lead.tied ? f.lead.leader : null)));
+    for (const c of mayor?.candidates ?? []) {
+      if (c.candidate_id && leaders.has(c.key)) items.push({ label: `${c.short_label ?? c.full_name} leads`, fill: candidateColour(c) });
+    }
+    const othersLead = (mayor?.candidates ?? []).some((c) => !c.candidate_id && leaders.has(c.key));
+    if (othersLead) items.push({ label: "Another candidate leads", fill: OTHER });
+    if (present((f) => f.lead?.tied === true)) items.push({ label: "Tied", fill: "var(--live-tied)" });
+  } else {
+    items.push({ label: "Incumbent leading", fill: "var(--live-inc-lead)" });
+    items.push({ label: "Incumbent trailing", fill: "var(--live-inc-trail)" });
+    items.push({ label: "Open seat", fill: "var(--live-open)" });
+    if (present((f) => f.shade.hatch === true)) items.push({ label: "Acclaimed, or incumbent not known", fill: null, hatch: true });
+  }
+  items.push({ label: "Paler: lead under 5 points", fill: "color-mix(in srgb, var(--ink) 18%, var(--paper))" });
+  if (present((f) => f.shade.fill === null)) items.push({ label: "No votes counted yet", fill: null });
+  return items;
+}
+
+/** The ward nearest `from` in the arrow key's direction, by label position; Home/End by number. */
+function nearestWard(wards: ResultsMapWard[], from: string, key: string): string | null {
+  if (key === "Home") return wards[0]?.num ?? null;
+  if (key === "End") return wards[wards.length - 1]?.num ?? null;
+  const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[key];
+  if (!dir) return null;
+  const origin = wards.find((w) => w.num === from);
+  if (!origin) return null;
+  let best: { num: string; score: number } | null = null;
+  for (const w of wards) {
+    if (w.num === from) continue;
+    const dx = w.label.x - origin.label.x;
+    const dy = w.label.y - origin.label.y;
+    const along = dx * dir[0] + dy * dir[1];
+    if (along <= 0) continue;
+    const across = Math.abs(dx * dir[1] - dy * dir[0]);
+    const score = along + 2 * across;
+    if (!best || score < best.score) best = { num: w.num, score };
+  }
+  return best?.num ?? null;
+}

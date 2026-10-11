@@ -3,12 +3,10 @@ import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import councilFixture from "../../../fixtures/council_race_cards.json";
-import forecastFixture from "../../../fixtures/mayoral_forecast.json";
 import trusteeFixture from "../../../fixtures/trustee_race_cards.json";
-import { marginOutcomes, type MarginOutcomesView } from "@/lib/mayoral-forecast";
 import { resultsWards, type ResultsWard } from "@/lib/results-wards";
 import { RESULTS_WARDS, wardBallotRaceIds } from "@/lib/ward-ballot";
-import type { CouncilRaceCardsFeed, MayoralForecastFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
+import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
 import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "@/lib/live-serve";
 import { LiveResultsView } from "./live-results-view";
@@ -25,7 +23,6 @@ function golden(name: string): LivePayload {
 const council = councilFixture as unknown as CouncilRaceCardsFeed;
 const trustees = trusteeFixture as unknown as TrusteeRaceCardsFeed;
 const WARDS: ResultsWard[] = resultsWards(council);
-const FORECAST: MarginOutcomesView = marginOutcomes(forecastFixture as unknown as MayoralForecastFeed)!;
 
 const MINUTE = 60_000;
 
@@ -37,7 +34,7 @@ function render(
     ward = null as string | null,
     age = MINUTE,
     failures = 0,
-    forecast = FORECAST as MarginOutcomesView | null,
+    forecast = true,
     paused = false,
     closed = false,
   } = {},
@@ -212,7 +209,7 @@ describe("LiveResultsView: page status", () => {
           wards={WARDS}
           ward={null}
           ballot={[]}
-          forecast={FORECAST}
+          forecast
         />,
       );
     expect(view(0)).toContain("Loading live results");
@@ -356,7 +353,7 @@ describe("LiveResultsView: the mayor card", () => {
 
   it("hides the final forecast once the count is complete, or when there is none", () => {
     expect(render(golden("all-units-in-2018.json"))).not.toContain("The final pre-election forecast");
-    expect(render(golden("mayor-counting-2023.json"), { forecast: null })).not.toContain(
+    expect(render(golden("mayor-counting-2023.json"), { forecast: false })).not.toContain(
       "The final pre-election forecast",
     );
   });

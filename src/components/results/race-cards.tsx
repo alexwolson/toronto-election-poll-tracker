@@ -12,7 +12,6 @@ import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
 import { eliminatedKeys } from "@/lib/live-eliminated";
-import type { MarginOutcomesView } from "@/lib/mayoral-forecast";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import type {
@@ -402,7 +401,7 @@ export function RaceCard({
   race,
   levels = null,
   ward = null,
-  forecast = null,
+  forecast = false,
   closed = false,
 }: {
   race: LiveRace;
@@ -411,7 +410,7 @@ export function RaceCard({
   /** The page's ward, for the mayor card's ward vote. */
   ward?: string | null;
   /** The mayor card's forecast panel; hidden once the count is complete. */
-  forecast?: MarginOutcomesView | null;
+  forecast?: boolean;
   /** Night Close is declared (#51). */
   closed?: boolean;
 }) {

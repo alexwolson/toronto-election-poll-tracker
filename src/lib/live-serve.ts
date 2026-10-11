@@ -34,7 +34,7 @@ export function switchesFrom(values: (string | null)[]): StoredLive["switches"] 
 
 /** A missing key or `on` is on; anything else is off, so a typo in the Upstash
  *  console fails closed. */
-function isOff(raw: string | null): boolean {
+export function isOff(raw: string | null): boolean {
   return raw !== null && raw !== "on";
 }
 

@@ -11,20 +11,25 @@
  * fetch (#17 § Payload).
  */
 
-import { createContext, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { acceptPoll, INITIAL_LIVE_STATE, type LiveClientState } from "@/lib/live-accept";
+import { validateLiveHistory } from "@/lib/live-history";
+import type { LiveHistory } from "@/types/live";
 import { LiveResultsView, type LiveResultsViewProps } from "./live-results-view";
 
 const LIVE_URL = "/live/results.json";
 const POLL_INTERVAL_MS = 60_000;
 /** A hung request counts as a failed poll, and ends before the next one starts. */
 const POLL_TIMEOUT_MS = 20_000;
+/** The count over the night (live-projection #103): only while the Map or Count view is open. */
+const HISTORY_URL = "/live/history.json";
+const HISTORY_INTERVAL_MS = 120_000;
 
 /** The parsed body, or null for any network, timeout, status or JSON failure. */
-async function fetchLive(): Promise<unknown> {
+async function fetchLive(url = LIVE_URL): Promise<unknown> {
   try {
     // Skip the browser's HTTP cache; the CDN's ISR copy is what collapses load.
-    const response = await fetch(LIVE_URL, {
+    const response = await fetch(url, {
       cache: "no-store",
       signal: AbortSignal.timeout(POLL_TIMEOUT_MS),
     });
@@ -38,6 +43,10 @@ interface LiveResultsContextValue {
   state: LiveClientState;
   /** The reader's clock at the last poll, for the staleness banner. */
   now: number;
+  /** The newest valid history, kept across views and ward pages; null before the first. */
+  history: LiveHistory | null;
+  /** Registers a view that draws the history; returns its release. */
+  watchHistory: () => () => void;
 }
 
 const LiveResultsContext = createContext<LiveResultsContextValue | null>(null);
@@ -45,6 +54,29 @@ const LiveResultsContext = createContext<LiveResultsContextValue | null>(null);
 export function LiveResultsProvider({ children }: { children: ReactNode }) {
   const [state, apply] = useReducer(acceptPoll, INITIAL_LIVE_STATE);
   const [now, setNow] = useState(0);
+  const [history, setHistory] = useState<LiveHistory | null>(null);
+  const [watchers, setWatchers] = useState(0);
+  const watchHistory = useCallback(() => {
+    setWatchers((n) => n + 1);
+    return () => setWatchers((n) => n - 1);
+  }, []);
+
+  const watching = watchers > 0;
+  useEffect(() => {
+    if (!watching) return;
+    let active = true;
+    async function poll() {
+      const next = validateLiveHistory(await fetchLive(HISTORY_URL));
+      // A failed or invalid poll keeps the history already held.
+      if (active && next !== null) setHistory(next);
+    }
+    void poll();
+    const timer = setInterval(poll, HISTORY_INTERVAL_MS);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [watching]);
 
   useEffect(() => {
     let active = true;
@@ -62,7 +94,7 @@ export function LiveResultsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo(() => ({ state, now }), [state, now]);
+  const value = useMemo(() => ({ state, now, history, watchHistory }), [state, now, history, watchHistory]);
   return <LiveResultsContext.Provider value={value}>{children}</LiveResultsContext.Provider>;
 }
 
@@ -73,4 +105,13 @@ export function ResultsBallot(props: Omit<LiveResultsViewProps, "state" | "now">
   if (live === null) throw new Error("ResultsBallot must render inside LiveResultsProvider");
   const { state, now } = live;
   return <LiveResultsView state={state} now={now} {...props} />;
+}
+
+/** The count over the night, polled while the calling view is mounted. */
+export function useLiveHistory(): LiveHistory | null {
+  const live = useContext(LiveResultsContext);
+  if (live === null) throw new Error("useLiveHistory must render inside LiveResultsProvider");
+  const { history, watchHistory } = live;
+  useEffect(() => watchHistory(), [watchHistory]);
+  return history;
 }

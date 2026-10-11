@@ -11,8 +11,12 @@ import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { PageHero } from "@/components/page-hero";
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
+import type { ResultsMapData } from "@/lib/results-map-data";
 import { wardLabel, type ResultsWard } from "@/lib/results-wards";
+import { LiveCountView } from "./live-count-view";
+import { LiveMapView } from "./live-map-view";
 import { CouncilTiles, FrenchBoards, RaceCard } from "./race-cards";
+import { ResultsViews } from "./results-views";
 import { WardPicker } from "./ward-picker";
 
 /** The City's own results page, for the page pause (#49). */
@@ -51,13 +55,24 @@ export interface LiveResultsViewProps {
   ballot: string[];
   /** Whether the final forecast publishes, for the mayor card's pointer to it. */
   forecast: boolean;
+  /** The Map's ward shapes, trustee areas and incumbents (live-projection #103). */
+  mapData: ResultsMapData;
+}
+
+/** Trustee race id → the city wards it covers, from the map data's ward → area. */
+function areaWards(mapData: ResultsMapData): Record<string, string[]> {
+  const areas: Record<string, string[]> = {};
+  for (const [ward, { tdsb, tcdsb }] of Object.entries(mapData.areas)) {
+    for (const id of [tdsb, tcdsb]) if (id) (areas[id] ??= []).push(ward);
+  }
+  return areas;
 }
 
 /** The whole page, in CHW components (PageHero, Callout, Badge, Card, `.grid`,
  *  `.field`, `.pill`, `.t-*`) and the /wards index's cards: page status on the
  *  hero's paper ground, where a tint Callout shows, then the ballot's cards and
  *  the council tiles. */
-export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: LiveResultsViewProps) {
+export function LiveResultsView({ state, now, wards, ward, ballot, forecast, mapData }: LiveResultsViewProps) {
   const unreachable = showsUnreachableNotice(state) && (
     <p className="callout" role="status">
       Can&apos;t reach live results; retrying
@@ -143,13 +158,35 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast }: L
         <WardPicker wards={wards} ward={ward} />
         <div className="grid">{status}</div>
       </PageHero>
-      {ballotCards}
-      {/* The tiles' wards are static, so they show before the first good poll. */}
-      <CouncilTiles
-        wards={wards}
-        races={results?.payload.races ?? []}
-        levels={results?.payload.levels ?? null}
-        closed={results?.closed ?? false}
+      <ResultsViews
+        races={
+          <>
+            {ballotCards}
+            {/* The tiles' wards are static, so they show before the first good poll. */}
+            <CouncilTiles
+              wards={wards}
+              races={results?.payload.races ?? []}
+              levels={results?.payload.levels ?? null}
+              closed={results?.closed ?? false}
+            />
+          </>
+        }
+        map={
+          <ContentSection>
+            <LiveMapView data={mapData} payload={results?.payload ?? null} wards={wards} ward={ward?.num ?? null} />
+          </ContentSection>
+        }
+        count={
+          <ContentSection>
+            <LiveCountView
+              payload={results?.payload ?? null}
+              wards={wards}
+              ballot={ballot}
+              ward={ward?.num ?? null}
+              areas={areaWards(mapData)}
+            />
+          </ContentSection>
+        }
       />
     </>
   );

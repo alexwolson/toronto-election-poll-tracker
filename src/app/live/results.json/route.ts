@@ -10,6 +10,7 @@
  */
 
 import { Redis } from "@upstash/redis";
+import { devFixture, devFixtureDir } from "@/lib/live-dev-fixture";
 import { serveLive, SWITCHES, switchesFrom } from "@/lib/live-serve";
 
 export const dynamic = "force-static";
@@ -22,6 +23,14 @@ function requiredEnv(name: string): string {
 }
 
 export async function GET(): Promise<Response> {
+  const dir = devFixtureDir();
+  if (dir !== null) {
+    const payload = await devFixture(dir, "payload.json");
+    const flags = SWITCHES.map(() => null);
+    return Response.json(
+      serveLive({ payload, heartbeats: [String(Date.now())], switches: switchesFrom(flags), nightClose: null }),
+    );
+  }
   const redis = new Redis({
     url: requiredEnv("KV_REST_API_URL"),
     // The route only reads.

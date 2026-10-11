@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * The race cards and council tiles of the Ward Ballot pages (#38; #17 § Results
  * pages and site changes, § On-night reader wording), as #7's prototype drew
@@ -8,11 +10,12 @@
  */
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
 import { certainWinShares } from "@/lib/live-certain-win";
 import { eliminatedKeys } from "@/lib/live-eliminated";
+import { shareText } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import type {
@@ -28,10 +31,11 @@ import type {
 
 type Levels = LivePayload["levels"];
 
-/** The counted mayoral field shows this many, then "N other candidates" (#7). */
-const MAYOR_SHOWN = 4;
+/** The counted mayoral field shows this many, then "N other candidates", which expands to
+ *  everyone (#7). Two since Alexander's exit (2026-10-11): the count's top two, not named. */
+const MAYOR_SHOWN = 2;
 /** Each ward's mayoral line names this many. */
-const WARD_VOTE_SHOWN = 3;
+const WARD_VOTE_SHOWN = 2;
 const NEUTRAL = "var(--color-disengaged)";
 
 /** The race states' fixed reader wording (#17 § On-night reader wording). */
@@ -126,9 +130,10 @@ function shortLabel(candidate: LiveCandidate): string {
   return candidate.short_label ?? candidate.full_name;
 }
 
-/** Payload shares are already percent (0..100), unlike `formatSharePct`'s fractions. */
-function percent(share: number | null): string {
-  return share === null ? "–" : `${share.toFixed(1)}%`;
+/** Payload shares are already percent (0..100), unlike `formatSharePct`'s fractions; never
+ *  "0.0%" (`shareText`). */
+function percent(share: number | null, votes?: number | null): string {
+  return shareText(share, votes);
 }
 
 /** The one winner wording (#17): at Night Close only, in a race with every voting area in,
@@ -207,15 +212,21 @@ function tallyRow(
   };
 }
 
+/** Whether the race's counted field folds: the mayor's, unless the folded row would stand for
+ *  a single name. */
+function folds(race: LiveRace): boolean {
+  return race.level === "mayor" && race.candidates.length > MAYOR_SHOWN + 1;
+}
+
 /** The race's rows: the mayor's counted field folds to its top four and one
  *  "N other candidates" row, unless that row would stand for a single name. The folded row
  *  counts as eliminated when everyone in it is (#105). */
-function tallyRows(race: LiveRace, closed: boolean): TallyRow[] {
+function tallyRows(race: LiveRace, closed: boolean, expanded = false): TallyRow[] {
   const elected = electedKey(race, closed);
   const eliminated = eliminatedKeys(race.possible);
   const wins = certainWinShares(race.possible, eliminated);
   const rows = race.candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated, wins));
-  if (race.level !== "mayor" || rows.length <= MAYOR_SHOWN + 1) return rows;
+  if (expanded || !folds(race)) return rows;
   const rest = race.candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
   return [
@@ -290,7 +301,7 @@ function span(low: number, high: number) {
 /** A row's one quiet line (#105): its votes, Estimated Range and certain-win share. The
  *  Possible Range's figures go to screen readers only; its whisker shows it. */
 function rowMeta(row: TallyRow): string[] {
-  const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} votes`];
+  const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} ${row.votes === 1 ? "vote" : "votes"}`];
   if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
   if (row.win !== null) parts.push(`certain win ${row.win.toFixed(1)}%`);
   return parts;
@@ -318,7 +329,7 @@ function TallyRowView({ row }: { row: TallyRow }) {
         )}
         {row.win !== null && <span className="live-tally__win" style={{ left: `${row.win}%` }} />}
       </span>
-      <strong className="forecast-chart__value live-tally__value">{percent(row.share)}</strong>
+      <strong className="forecast-chart__value live-tally__value">{percent(row.share, row.votes)}</strong>
       <span className="live-tally__meta">
         {/* Each figure wraps whole, never "certain win" on one line and its share on the next. */}
         {rowMeta(row).map((part, i) => (
@@ -351,13 +362,15 @@ function TallyKey({ rows }: { rows: TallyRow[] }) {
  *  the candidate's certain-win share as a dashed tick. Candidates who cannot win sit under one
  *  break, greyed. Phone widths put each name above its bar. */
 function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
-  const rows = tallyRows(race, closed);
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+  const rows = tallyRows(race, closed, expanded);
   const inIt = rows.filter((row) => !row.eliminated);
   const out = rows.filter((row) => row.eliminated);
   return (
     <>
       <TallyKey rows={rows} />
-      <div className="forecast-chart live-tally" role="list" aria-label={`${raceTitle(race)} count`}>
+      <div className="forecast-chart live-tally" role="list" id={listId} aria-label={`${raceTitle(race)} count`}>
         {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
         {out.length > 0 && (
           <p className="live-tally__break" role="listitem">
@@ -375,6 +388,22 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
           </div>
         )}
       </div>
+      {folds(race) && (
+        <button
+          type="button"
+          className="live-tally__more"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={(event) => {
+            const button = event.currentTarget;
+            setExpanded(!expanded);
+            // Folding a long field back would leave the reader far below the card.
+            if (expanded) requestAnimationFrame(() => button.scrollIntoView?.({ block: "nearest" }));
+          }}
+        >
+          {expanded ? "Show fewer" : `Show all ${race.candidates.length} candidates`}
+        </button>
+      )}
     </>
   );
 }
@@ -441,7 +470,7 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
             <span key={key}>
               {i > 0 && " · "}
               {slug && <span className={`candidate-marker candidate-marker--${slug}`} aria-hidden="true" />}
-              {`${candidate ? shortLabel(candidate) : key} ${total > 0 ? percent((votes / total) * 100) : "–"}`}
+              {`${candidate ? shortLabel(candidate) : key} ${total > 0 ? percent((votes / total) * 100, votes) : "–"}`}
             </span>
           );
         })}

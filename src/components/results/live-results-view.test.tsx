@@ -310,24 +310,27 @@ describe("LiveResultsView: the tally", () => {
 });
 
 describe("LiveResultsView: the mayor card", () => {
-  it("folds the counted field to the top four and 'N other candidates'", () => {
+  it("folds the counted field to the top two and 'N other candidates', with a button to show everyone", () => {
     const payload = golden("mayor-counting-2023.json");
     const mayor = payload.races[0];
     const html = card(render(payload), "mayor");
-    expect(tallyNames(html)).toEqual([...mayor.candidates.slice(0, 4).map((c) => c.full_name), "98 other candidates"]);
-    expect(html).not.toContain(mayor.candidates[4].full_name);
-    const rest = mayor.candidates.slice(4);
+    const n = mayor.candidates.length;
+    expect(tallyNames(html)).toEqual([...mayor.candidates.slice(0, 2).map((c) => c.full_name), `${n - 2} other candidates`]);
+    expect(html).not.toContain(mayor.candidates[2].full_name);
+    const rest = mayor.candidates.slice(2);
     const restVotes = rest.reduce((sum, c) => sum + c.votes!, 0);
     expect(html).toContain(`${restVotes.toLocaleString("en-CA")} votes`);
+    expect(html).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>Show all ${n} candidates</button>`));
   });
 
-  it("shows a field of five whole, and folds six to four and '2 other candidates'", () => {
-    const five = golden("mayor-counting-2023.json");
-    five.races[0].candidates = five.races[0].candidates.slice(0, 5);
-    expect(tallyNames(card(render(five), "mayor"))).toHaveLength(5);
-    const six = golden("mayor-counting-2023.json");
-    six.races[0].candidates = six.races[0].candidates.slice(0, 6);
-    expect(tallyNames(card(render(six), "mayor")).at(-1)).toBe("2 other candidates");
+  it("shows a field of three whole, and folds four to two and '2 other candidates'", () => {
+    const three = golden("mayor-counting-2023.json");
+    three.races[0].candidates = three.races[0].candidates.slice(0, 3);
+    expect(tallyNames(card(render(three), "mayor"))).toHaveLength(3);
+    expect(card(render(three), "mayor")).not.toContain("Show all");
+    const four = golden("mayor-counting-2023.json");
+    four.races[0].candidates = four.races[0].candidates.slice(0, 4);
+    expect(tallyNames(card(render(four), "mayor")).at(-1)).toBe("2 other candidates");
   });
 
   it("never folds before results", () => {
@@ -341,8 +344,9 @@ describe("LiveResultsView: the mayor card", () => {
     const html = card(render(payload, { ward: "1" }), "mayor");
     expect(html).toContain("Mayoral vote in Ward 1");
     expect(html).toContain("49 of 52 voting areas in");
-    // Ward 1's top three by votes, as shares of its 16,744 counted.
-    expect(text(html)).toContain("Ana Bailão 32.8% · Olivia Chow 27.5% · Mark Saunders 15.3%");
+    // Ward 1's top two by votes, as shares of its 16,744 counted.
+    expect(text(html)).toContain("Ana Bailão 32.8% · Olivia Chow 27.5%");
+    expect(text(html)).not.toContain("Mark Saunders 15.3%");
     expect(card(render(payload), "mayor")).not.toContain("Mayoral vote in Ward");
     expect(card(render(golden("before-results-2026.json"), { ward: "1" }), "mayor")).not.toContain(
       "Mayoral vote in Ward",
@@ -425,27 +429,43 @@ describe("LiveResultsView: names and colours (#16)", () => {
   });
 
   it("label the two Chows by full name, and colour only the forecast-named candidates", () => {
-    const payload = counting2026({ mayor: ["Braeden Chow", "Olivia Chow", "Brad Bradford"] });
-    const html = card(render(payload, { ward: "1" }), "mayor");
-    expect(text(html)).toMatch(/Braeden Chow [\d.]+% · Olivia Chow [\d.]+% · Bradford [\d.]+%/);
-    // The ward line marks the forecast-named candidates too.
-    const line = html.slice(html.indexOf("Mayoral vote in Ward 1"));
+    // The two Chows on top: each by full name, in the tally and the ward line.
+    const chows = card(render(counting2026({ mayor: ["Braeden Chow", "Olivia Chow"] }), { ward: "1" }), "mayor");
+    expect(text(chows)).toMatch(/Braeden Chow [\d.]+% · Olivia Chow [\d.]+%/);
+    const line = chows.slice(chows.indexOf("Mayoral vote in Ward 1"));
     expect(line).toMatch(/candidate-marker--chow[^]*Olivia Chow/);
-    expect(line).toMatch(/candidate-marker--bradford[^]*Bradford/);
     expect(line.slice(0, line.indexOf("Braeden Chow"))).not.toContain("candidate-marker");
-    const row = (name: string) => {
+    const row = (html: string, name: string) => {
       const at = html.indexOf(`<span class="live-tally__name">${name}</span>`);
-      return html.slice(html.lastIndexOf('<div class="forecast-chart__row"', at), html.indexOf("</strong>", at));
+      return html.slice(html.lastIndexOf('<div class="forecast-chart__row', at), html.indexOf("</strong>", at));
     };
-    expect(row("Olivia Chow")).toContain("candidate-marker--chow");
-    expect(row("Olivia Chow")).toContain("background:var(--color-chow)");
-    expect(row("Brad Bradford")).toContain("background:var(--color-bradford)");
-    expect(row("Braeden Chow")).not.toContain("candidate-marker");
-    expect(row("Braeden Chow")).toContain("background:var(--color-disengaged)");
+    expect(row(chows, "Olivia Chow")).toContain("candidate-marker--chow");
+    expect(row(chows, "Olivia Chow")).toContain("background:var(--color-chow)");
+    expect(row(chows, "Braeden Chow")).not.toContain("candidate-marker");
+    expect(row(chows, "Braeden Chow")).toContain("background:var(--color-disengaged)");
+    // Bradford's colour and marker, in the tally and the ward line.
+    const bradford = card(render(counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] }), { ward: "1" }), "mayor");
+    expect(row(bradford, "Brad Bradford")).toContain("background:var(--color-bradford)");
+    expect(bradford.slice(bradford.indexOf("Mayoral vote in Ward 1"))).toMatch(/candidate-marker--bradford[^]*Bradford/);
   });
 });
 
 describe("LiveResultsView: never shown (#7, #12)", () => {
+  it("never shows a share as '0.0%': '<0.1%' with votes, '0%' with none", () => {
+    for (const name of ["council-counting-2022.json", "mayor-counting-2023.json", "all-units-in-2018.json", "gated-live-2022.json"]) {
+      const html = text(render(golden(name), { ward: "1" }));
+      expect(html, name).not.toMatch(/(?<![\d.])0\.0%/);
+    }
+    const payload = golden("council-counting-2022.json");
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    const last = race.candidates.at(-1)!;
+    last.votes = 1;
+    last.share = 0;
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    const lastRow = text(html).slice(text(html).indexOf(last.full_name));
+    expect(lastRow).toMatch(/^[^·]*&lt;0\.1%1 vote ·/);
+  });
+
   it("has no chance-to-win wording in any reader state", () => {
     for (const name of [
       "before-results-2026.json",
@@ -478,8 +498,9 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(tory).toMatch(/class="live-tally__estimate" style="left:58.84%;width:6.6/);
     expect(tory).toMatch(/class="live-tally__mid" style="left:5\d\.\d+%"/);
     // The folded row stands for many candidates and carries no range.
-    expect(row(mayor, "27 other candidates")).not.toContain("live-tally__possible");
-    expect(row(mayor, "27 other candidates")).not.toContain("live-tally__estimate");
+    const others = `${golden("gated-live-2022.json").races[0].candidates.length - 2} other candidates`;
+    expect(row(mayor, others)).not.toContain("live-tally__possible");
+    expect(row(mayor, others)).not.toContain("live-tally__estimate");
     // One key per card names the marks.
     expect(count(mayor, 'class="live-tally__key')).toBe(1);
     expect(text(mayor)).toContain("Certain win: reach it and no one can catch up");

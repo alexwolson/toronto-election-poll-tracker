@@ -39,6 +39,21 @@ describe("the home page's election night results panel", () => {
     expect(screen.getByText("Live results")).toBeTruthy();
   });
 
+  it("says unofficial results from 12:00 EDT Oct 27, and no longer live (#54)", () => {
+    at("2026-10-27T12:00:00-04:00");
+    render(<ResultsHomePanel />);
+    expect(screen.getByText("Unofficial results")).toBeTruthy();
+    expect(screen.queryByText("Live results")).toBeNull();
+  });
+
+  it("switches to unofficial at the cut-off on a page left open", () => {
+    at("2026-10-27T11:59:30-04:00");
+    render(<ResultsHomePanel />);
+    expect(screen.getByText("Live results")).toBeTruthy();
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText("Unofficial results")).toBeTruthy();
+  });
+
   it("prerenders the before-8 p.m. wording, whatever the build's clock", () => {
     at("2026-10-27T01:00:00-04:00");
     const html = renderToStaticMarkup(<ResultsHomePanel />);

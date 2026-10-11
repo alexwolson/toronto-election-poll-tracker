@@ -113,7 +113,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
         </span>
         <p className="race-hero-meta">
           <Link href={`/results/${card.ward}`} className="text-link">
-            Ward {card.ward} results: live from 8 p.m. Oct 26
+            Ward {card.ward} election night results
           </Link>
         </p>
       </ContentSection>

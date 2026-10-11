@@ -104,6 +104,7 @@ describe("LiveResultsView: /results/ before a ward is picked", () => {
     expect(html).not.toMatch(/<option value="\d+"[^>]*selected/);
     expect(html).toContain('href="https://www.toronto.ca/city-government/elections/voter-information/myvote/"');
     expect(html.indexOf("Ward 25 Scarborough-Rouge Park")).toBeLessThan(html.indexOf("MyVote"));
+    expect(text(html)).toContain("Don&#x27;t know your ward? Look up your address on the City&#x27;s MyVote tool.");
   });
 });
 
@@ -342,12 +343,14 @@ describe("LiveResultsView: the mayor card", () => {
     );
   });
 
-  it("keeps the final forecast collapsed, labelled as neither the count nor the projection", () => {
+  it("keeps the final forecast collapsed: a link to it, labelled as neither the count nor the projection", () => {
     for (const name of ["before-results-2026.json", "mayor-counting-2023.json"]) {
       const html = card(render(golden(name)), "mayor");
       expect(html).toMatch(/<div class="faq"><details class="live-forecast"><summary>The final pre-election forecast<\/summary>/);
       expect(html).toContain("It is not the count and not the projection.");
-      expect(html).toContain("Chow ahead by 2 or more");
+      expect(html).toMatch(/<a href="\/">home page<\/a>/);
+      // #17's "Not shown anywhere": the forecast's named margin outcomes (#54).
+      expect(html).not.toMatch(/ahead by 2 or more|Within 2 points/);
     }
   });
 
@@ -471,23 +474,27 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(row(mayor, "27 other candidates")).not.toContain("forecast-chart__band");
   });
 
-  it("explains both ranges once per card, and the mayor's 2023 record while it is live on approval", () => {
+  it("explains both ranges once per card, and the mayor's 2023 record behind 'How accurate is this estimate?'", () => {
     const html = render(golden("gated-live-2022.json"), { ward: "1" });
     const mayor = text(card(html, "mayor"));
     expect(mayor).toContain("Estimated: where the final share lands in 9 of 10 simulated finishes.");
     expect(mayor).toContain("Possible: from none to all of the votes still to be counted.");
-    expect(mayor).toContain("worse than expected in the 2023 by-election");
+    expect(card(html, "mayor")).toMatch(
+      /<details class="live-record"><summary>How accurate is this estimate\?<\/summary>[^]*worse than expected in the 2023 by-election/,
+    );
     expect(text(card(html, "councillor-1"))).not.toContain("2023 by-election");
     expect(count(text(card(html, "councillor-1")), "Estimated: where")).toBe(1);
   });
 
-  it("shows only the Possible Range, and still the 2023 record, below the approved mayor's ESS floor", () => {
+  it("shows only the Possible Range, and no 2023 record, below the approved mayor's ESS floor", () => {
     const html = card(render(golden("gated-low-ess-2022.json"), { ward: "1" }), "mayor");
     expect(text(html)).toContain("Possible 9–94%");
     expect(text(html)).not.toContain("Estimated final");
     expect(text(html)).not.toContain("Estimated: where");
     expect(row(html, "Tory John")).not.toMatch(/class="forecast-chart__band" /);
-    expect(text(html)).toContain("worse than expected in the 2023 by-election");
+    // The record is about the estimate: with none on screen it has nothing to describe (#54).
+    expect(text(html)).not.toContain("How accurate is this estimate?");
+    expect(text(html)).not.toContain("2023 by-election");
   });
 
   it("badges a candidate who cannot win even with every outstanding vote (#90)", () => {
@@ -502,10 +509,10 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     };
     for (const other of race.candidates.slice(3)) race.possible[other.key] = { low: 1, high: 39.99 };
     const html = card(render(payload, { ward: "1" }), "councillor-1");
-    expect(row(html, third.full_name)).toContain('<span class="badge badge--status">Mathematically Eliminated</span>');
-    expect(count(html, "Mathematically Eliminated")).toBe(1);
+    expect(row(html, third.full_name)).toContain('<span class="badge badge--status">Mathematically eliminated</span>');
+    expect(count(html, "Mathematically eliminated")).toBe(1);
     // The wide ranges of the golden's mayor eliminate no one.
-    expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically Eliminated");
+    expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically eliminated");
   });
 
   it("gives council tiles their top two candidates' Estimated Ranges", () => {
@@ -531,9 +538,22 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
 
   it("notes that the French-language boards are never projected", () => {
     const html = render(golden("no-units-in-2026.json"), { ward: "1" });
-    expect(text(html)).toContain(
-      "No projection for the French-language boards: there are no past results by voting area to test one against.",
-    );
+    expect(text(html)).toContain("No projection for these boards: only the count and its possible range.");
+  });
+
+  it("explains a counting French-language board's Possible Range (#97)", () => {
+    const payload = golden("no-units-in-2026.json");
+    const onBallot = wardBallotRaceIds("1", trustees);
+    const race = payload.races.find(
+      (r) => r.level === "french_trustee" && r.candidates.length > 1 && onBallot.includes(r.id),
+    )!;
+    race.state = "counting";
+    race.progress = { received: 100, total: 389 };
+    race.candidates = race.candidates.map((c, i) => ({ ...c, votes: i === 0 ? 200 : 100 / (race.candidates.length - 1) }));
+    race.possible = Object.fromEntries(race.candidates.map((c) => [c.key, { low: 4, high: 92 }]));
+    const html = card(render(payload, { ward: "1" }), race.id);
+    expect(text(html)).toContain("Possible: from none to all of the votes still to be counted.");
+    expect(text(html)).not.toContain("Estimated: where");
   });
 
   it("never shows a win probability on a gated night", () => {
@@ -555,29 +575,31 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
   }
 
   it("keeps a withdrawn race's tally and says only that there is no projection", () => {
-    const html = render(golden("withdrawals-2022.json"), { ward: "10" });
-    const ward10 = text(card(html, "councillor-10"));
-    expect(ward10).toContain(WITHDRAWN);
-    expect(ward10).toContain("45 of 94 voting areas in");
-    expect(ward10).not.toContain("Estimated final");
-    expect(ward10).toContain("Possible");
-    expect(html).not.toContain("votes_received_mismatch");
+    // councillor-5's count is above its expected total: the one fault that still withdraws.
+    const html = render(golden("withdrawals-2022.json"), { ward: "5" });
+    const ward5 = text(card(html, "councillor-5"));
+    expect(ward5).toContain(WITHDRAWN);
+    expect(ward5).toContain("28 of 65 voting areas in");
+    expect(ward5).not.toContain("Estimated final");
+    expect(ward5).toContain("Possible");
+    expect(html).not.toContain("count_above_expected");
   });
 
-  it("hides Reporting Progress that fails its check", () => {
+  it("hides Reporting Progress that fails its check, and the range carries on (#97)", () => {
     const html = render(golden("withdrawals-2022.json"), { ward: "3" });
     const ward3 = text(card(html, "councillor-3"));
     expect(ward3).toContain("Voting areas: not available");
-    expect(ward3).toContain(WITHDRAWN);
+    expect(ward3).not.toContain(WITHDRAWN);
+    expect(ward3).toContain("Estimated final");
     expect(text(tile(render(golden("withdrawals-2022.json")), "3"))).toContain("Voting areas: not available");
     expect(html).not.toContain("polls_received_above_polls");
   });
 
-  it("withdraws the whole mayoral projection on a ward-row failure, keeping the tally", () => {
+  it("keeps the mayoral projection through a ward's vote-sum mismatch (#97)", () => {
     const mayor = text(card(render(golden("withdrawals-2022.json"), { ward: "1" }), "mayor"));
-    expect(mayor).toContain(WITHDRAWN);
+    expect(mayor).not.toContain(WITHDRAWN);
     expect(mayor).toContain("Tory John");
-    expect(mayor).not.toContain("Estimated final");
+    expect(mayor).toContain("Estimated final");
   });
 
   it("shows a name the bundle doesn't hold as written, with nothing special", () => {
@@ -690,7 +712,8 @@ describe("LiveResultsView: Night Close (#51)", () => {
   it("says 'Final unofficial count as of …' with no refresh line and no staleness banner", () => {
     const payload = golden("council-counting-2022.json");
     const html = render(payload, { ward: "1", closed: true, age: 3 * 60 * MINUTE });
-    expect(text(html)).toContain("Final unofficial count as of 9:46 p.m. · City of Toronto unofficial results");
+    expect(text(html)).toContain("Final unofficial count as of 9:46 p.m.");
+    expect(text(html)).not.toContain("City of Toronto unofficial results");
     expect(html).not.toContain("City count as of");
     expect(html).not.toContain("Refreshes every minute");
     expect(html).not.toContain("may be out of date");

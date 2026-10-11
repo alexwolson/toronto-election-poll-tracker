@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * The race cards and council tiles of the Ward Ballot pages (#38; #17 § Results
  * pages and site changes, § On-night reader wording), as #7's prototype drew

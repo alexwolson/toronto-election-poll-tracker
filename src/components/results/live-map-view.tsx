@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { candidateMeta } from "@/lib/candidates";
+import { shareText } from "@/lib/live-share";
 import {
   incumbentStatus,
   leadTier,
@@ -98,6 +99,8 @@ function mix(colour: string, percent: number): string {
 }
 
 function pct(value: number | null, digits = 1): string {
+  // A candidate's share, never "0.0%"; whole percents (voting areas in) stay as they are.
+  if (digits === 1) return shareText(value);
   return value === null ? "–" : `${value.toFixed(digits)}%`;
 }
 

@@ -24,6 +24,7 @@ import {
   YAxis,
 } from "recharts";
 import { candidateMeta } from "@/lib/candidates";
+import { shareText } from "@/lib/live-share";
 import { countRows, leadRows, paceBuckets, shareRows, type ShareRow } from "@/lib/live-count";
 import { mayorWardLead, raceLead, reportedFraction, type Lead } from "@/lib/live-map";
 import type { ResultsWard } from "@/lib/results-wards";
@@ -56,6 +57,8 @@ function tickClock(ms: number): string {
 }
 
 function pct(value: number | null | undefined, digits = 1): string {
+  // A candidate's share, never "0.0%"; whole percents (voting areas in) stay as they are.
+  if (digits === 1) return shareText(value);
   return value === null || value === undefined ? "–" : `${value.toFixed(digits)}%`;
 }
 

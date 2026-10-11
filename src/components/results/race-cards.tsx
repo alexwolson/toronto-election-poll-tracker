@@ -13,6 +13,7 @@ import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
 import { certainWinShares } from "@/lib/live-certain-win";
 import { eliminatedKeys } from "@/lib/live-eliminated";
+import { shareText } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import type {
@@ -127,9 +128,10 @@ function shortLabel(candidate: LiveCandidate): string {
   return candidate.short_label ?? candidate.full_name;
 }
 
-/** Payload shares are already percent (0..100), unlike `formatSharePct`'s fractions. */
-function percent(share: number | null): string {
-  return share === null ? "–" : `${share.toFixed(1)}%`;
+/** Payload shares are already percent (0..100), unlike `formatSharePct`'s fractions; never
+ *  "0.0%" (`shareText`). */
+function percent(share: number | null, votes?: number | null): string {
+  return shareText(share, votes);
 }
 
 /** The one winner wording (#17): at Night Close only, in a race with every voting area in,
@@ -297,7 +299,7 @@ function span(low: number, high: number) {
 /** A row's one quiet line (#105): its votes, Estimated Range and certain-win share. The
  *  Possible Range's figures go to screen readers only; its whisker shows it. */
 function rowMeta(row: TallyRow): string[] {
-  const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} votes`];
+  const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} ${row.votes === 1 ? "vote" : "votes"}`];
   if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
   if (row.win !== null) parts.push(`certain win ${row.win.toFixed(1)}%`);
   return parts;
@@ -325,7 +327,7 @@ function TallyRowView({ row }: { row: TallyRow }) {
         )}
         {row.win !== null && <span className="live-tally__win" style={{ left: `${row.win}%` }} />}
       </span>
-      <strong className="forecast-chart__value live-tally__value">{percent(row.share)}</strong>
+      <strong className="forecast-chart__value live-tally__value">{percent(row.share, row.votes)}</strong>
       <span className="live-tally__meta">
         {/* Each figure wraps whole, never "certain win" on one line and its share on the next. */}
         {rowMeta(row).map((part, i) => (
@@ -466,7 +468,7 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
             <span key={key}>
               {i > 0 && " · "}
               {slug && <span className={`candidate-marker candidate-marker--${slug}`} aria-hidden="true" />}
-              {`${candidate ? shortLabel(candidate) : key} ${total > 0 ? percent((votes / total) * 100) : "–"}`}
+              {`${candidate ? shortLabel(candidate) : key} ${total > 0 ? percent((votes / total) * 100, votes) : "–"}`}
             </span>
           );
         })}

@@ -451,6 +451,21 @@ describe("LiveResultsView: names and colours (#16)", () => {
 });
 
 describe("LiveResultsView: never shown (#7, #12)", () => {
+  it("never shows a share as '0.0%': '<0.1%' with votes, '0%' with none", () => {
+    for (const name of ["council-counting-2022.json", "mayor-counting-2023.json", "all-units-in-2018.json", "gated-live-2022.json"]) {
+      const html = text(render(golden(name), { ward: "1" }));
+      expect(html, name).not.toMatch(/(?<![\d.])0\.0%/);
+    }
+    const payload = golden("council-counting-2022.json");
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    const last = race.candidates.at(-1)!;
+    last.votes = 1;
+    last.share = 0;
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    const lastRow = text(html).slice(text(html).indexOf(last.full_name));
+    expect(lastRow).toMatch(/^[^·]*&lt;0\.1%1 vote ·/);
+  });
+
   it("has no chance-to-win wording in any reader state", () => {
     for (const name of [
       "before-results-2026.json",

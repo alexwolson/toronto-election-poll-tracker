@@ -341,8 +341,40 @@ button:disabled { cursor: default; opacity: 0.6; }
 @media (max-width: 620px) {
   .race-index-list.live-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* The tally's marks (#105): a solid counted bar, the Estimated Range as an outlined bracket with
+   a middle tick, the Possible Range as a capped whisker, and each contender's certain-win share
+   as a dashed tick. One key per card; the eliminated sit under one break, greyed. */
+.live-tally__key { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); margin: var(--space-sm) 0 0; }
+.live-tally__key > span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.live-tally__glyph { display: inline-block; width: 20px; height: 10px; }
+.live-tally__glyph--counted { background: var(--ink); }
+.live-tally__glyph--estimate { height: 14px; border: 2px solid var(--ink); }
+.live-tally__glyph--possible { height: 2px; background: var(--muted); }
+.live-tally__glyph--win { width: 0; height: 14px; border-left: 2px dashed var(--ink); }
+.live-tally .forecast-chart__track { overflow: visible; }
+.live-tally__possible { position: absolute; top: calc(50% - 1px); height: 2px; background: var(--muted); }
+.live-tally__possible::before,
+.live-tally__possible::after { content: ""; position: absolute; top: -4px; width: 2px; height: 10px; background: var(--muted); }
+.live-tally__possible::before { left: 0; }
+.live-tally__possible::after { right: 0; }
+.live-tally__estimate { position: absolute; top: -3px; bottom: -3px; min-width: 6px; border: 2px solid var(--ink); background: color-mix(in srgb, var(--paper) 35%, transparent); }
+.live-tally__mid { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--ink); }
+.live-tally__win { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--ink); }
+.live-tally__win-text { white-space: nowrap; color: var(--ink); }
+.live-tally__break { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.25rem; margin: var(--space-sm) 0 0; padding: 0.5rem 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule-soft); color: var(--ink); }
+.forecast-chart__row--out { opacity: 0.55; }
+.live-tally__axis { grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr) 7.5rem; border-bottom: 0; }
+.live-tally__axis .forecast-chart__axis-track { font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) {
-  .live-tally .forecast-chart__row { grid-template-columns: minmax(0, 1fr) 7.5rem; }
+  /* The name and figures share the first line, so the bar keeps the card's full width. */
+  .live-tally .forecast-chart__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "track track"; }
+  .live-tally .forecast-chart__label { grid-column: auto; grid-area: label; }
+  .live-tally .forecast-chart__track { grid-area: track; }
+  .live-tally__value { grid-area: value; }
+  .live-tally__axis { grid-template-columns: minmax(0, 1fr); }
+  .live-tally__break { flex-direction: column; }
+  .live-tally__sep { display: none; }
+  .live-tally__axis > span:not(.forecast-chart__axis-track) { display: none; }
 }
 
 /* Election-night Map and Count views (live-projection #103). Data colours are validated

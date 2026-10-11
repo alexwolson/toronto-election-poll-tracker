@@ -466,18 +466,23 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
   function row(cardHtml: string, name: string): string {
     const at = cardHtml.indexOf(`<span class="live-tally__name">${name}</span>`);
     expect(at, name).toBeGreaterThan(-1);
-    return cardHtml.slice(cardHtml.lastIndexOf('<div class="forecast-chart__row"', at), cardHtml.indexOf("</strong>", at));
+    return cardHtml.slice(cardHtml.lastIndexOf('<div class="forecast-chart__row', at), cardHtml.indexOf("</strong>", at));
   }
 
   it("draws each candidate's Estimated and Possible Ranges over their counted-share bar", () => {
     const mayor = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
     expect(text(mayor)).toContain("Estimated final 59–65% · possible 9–94%");
     const tory = row(mayor, "Tory John");
-    expect(tory).toContain('class="forecast-chart__band forecast-chart__band--hatched" style="left:9.4%;width:84.94');
-    expect(tory).toMatch(/class="forecast-chart__band" style="left:58.84%;width:6.6/);
-    expect(tory).toContain('class="forecast-chart__tick" style="left:62.33%');
+    // Three kinds of mark (#105): a whisker for Possible, an outlined bracket with a middle tick for Estimated.
+    expect(tory).toContain('class="live-tally__possible" style="left:9.4%;width:84.94');
+    expect(tory).toMatch(/class="live-tally__estimate" style="left:58.84%;width:6.6/);
+    expect(tory).toMatch(/class="live-tally__mid" style="left:5\d\.\d+%"/);
     // The folded row stands for many candidates and carries no range.
-    expect(row(mayor, "27 other candidates")).not.toContain("forecast-chart__band");
+    expect(row(mayor, "27 other candidates")).not.toContain("live-tally__possible");
+    expect(row(mayor, "27 other candidates")).not.toContain("live-tally__estimate");
+    // One key per card names the marks.
+    expect(count(mayor, 'class="live-tally__key')).toBe(1);
+    expect(text(mayor)).toContain("Certain win: reach it and no one can catch up");
   });
 
   it("explains both ranges once per card, and the mayor's 2023 record behind 'How accurate is this estimate?'", () => {
@@ -497,13 +502,22 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(text(html)).toContain("Possible 9–94%");
     expect(text(html)).not.toContain("Estimated final");
     expect(text(html)).not.toContain("Estimated: where");
-    expect(row(html, "Tory John")).not.toMatch(/class="forecast-chart__band" /);
+    expect(row(html, "Tory John")).not.toContain("live-tally__estimate");
     // The record is about the estimate: with none on screen it has nothing to describe (#54).
     expect(text(html)).not.toContain("How accurate is this estimate?");
     expect(text(html)).not.toContain("2023 by-election");
   });
 
-  it("badges a candidate who cannot win even with every outstanding vote (#90)", () => {
+  /** A tally row's whole markup, to the next row or the chart's end. */
+  function wholeRow(cardHtml: string, name: string): string {
+    const at = cardHtml.indexOf(`<span class="live-tally__name">${name}</span>`);
+    const start = cardHtml.lastIndexOf('<div class="forecast-chart__row', at);
+    const next = cardHtml.indexOf('<div class="forecast-chart__row', at);
+    return cardHtml.slice(start, next === -1 ? undefined : next);
+  }
+
+  /** Ward 1's race with ranges that eliminate its third candidate, and the rest still in it. */
+  function thirdOut(): { payload: LivePayload; third: string } {
     const payload = golden("gated-live-2022.json");
     const race = payload.races.find((r) => r.id === "councillor-1")!;
     const [leader, second, third] = race.candidates;
@@ -514,11 +528,64 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
       [third.key]: { low: 5, high: 25 },
     };
     for (const other of race.candidates.slice(3)) race.possible[other.key] = { low: 1, high: 39.99 };
+    return { payload, third: third.full_name };
+  }
+
+  it("puts the candidates who cannot win under one 'Mathematically eliminated' break (#90, #105)", () => {
+    const { payload, third } = thirdOut();
     const html = card(render(payload, { ward: "1" }), "councillor-1");
-    expect(row(html, third.full_name)).toContain('<span class="badge badge--status">Mathematically eliminated</span>');
     expect(count(html, "Mathematically eliminated")).toBe(1);
+    expect(text(html)).toContain("Mathematically eliminated · can’t win even with every vote still out");
+    expect(html).not.toContain("badge--status");
+    // Contenders first, then the break, then the eliminated, greyed.
+    const names = tallyNames(html);
+    expect(names.at(-1)).toBe(third);
+    expect(html.indexOf("live-tally__break")).toBeLessThan(html.indexOf(`<span class="live-tally__name">${third}</span>`));
+    expect(html.indexOf("live-tally__break")).toBeGreaterThan(html.indexOf(`<span class="live-tally__name">${names.at(-2)}</span>`));
+    expect(row(html, third)).toContain("forecast-chart__row--out");
     // The wide ranges of the golden's mayor eliminate no one.
     expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically eliminated");
+  });
+
+  it("marks each contender's own certain-win share, and none for the eliminated (#105)", () => {
+    const { payload, third } = thirdOut();
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    const [leader, second] = race.candidates;
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    // (40 + 45) / 2 against the second; the second's strongest rival is the leader: (25 + 60) / 2.
+    expect(row(html, leader.full_name)).toContain('class="live-tally__win" style="left:42.5%"');
+    expect(text(wholeRow(html, leader.full_name))).toContain("certain win 42.5%");
+    expect(row(html, second.full_name)).toContain('class="live-tally__win" style="left:42.5%"');
+    expect(row(html, third)).not.toContain("live-tally__win");
+    expect(count(html, "certain win ")).toBe(race.candidates.length - 1);
+  });
+
+  it("folds the mayor's eliminated field under the break, and leaves a field still in it above", () => {
+    const payload = golden("gated-live-2022.json");
+    const mayor = payload.races.find((r) => r.id === "mayor")!;
+    mayor.possible = Object.fromEntries(
+      mayor.candidates.map((c, i) => [c.key, i < 2 ? { low: 30 + i, high: 40 + i } : { low: 0, high: 20 }]),
+    );
+    const html = card(render(payload, { ward: "1" }), "mayor");
+    const names = tallyNames(html);
+    expect(names.slice(0, 2)).toEqual(mayor.candidates.slice(0, 2).map((c) => c.full_name));
+    expect(names.at(-1)).toMatch(/other candidates$/);
+    expect(html).toContain("live-tally__break");
+    expect(html.indexOf("live-tally__break")).toBeLessThan(html.indexOf("other candidates"));
+    expect(html.indexOf("live-tally__break")).toBeGreaterThan(html.indexOf(names[1]));
+    // Wide ranges: no one out, no break, the folded row stays where it was.
+    const wide = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
+    expect(wide).not.toContain("live-tally__break");
+  });
+
+  it("draws no certain-win line once only one candidate is left (#51: no winner before Night Close)", () => {
+    const payload = golden("gated-live-2022.json");
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    race.possible = Object.fromEntries(race.candidates.map((c, i) => [c.key, i === 0 ? { low: 60, high: 70 } : { low: 0, high: 30 }]));
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    expect(html).toContain("live-tally__break");
+    expect(html).not.toContain("live-tally__win");
+    expect(text(html)).not.toContain("certain win ");
   });
 
   it("gives council tiles their top two candidates' Estimated Ranges", () => {

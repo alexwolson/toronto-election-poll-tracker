@@ -11,6 +11,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
+import { certainWinShares } from "@/lib/live-certain-win";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
@@ -41,8 +42,15 @@ const WORDING = {
   no_progress: "Voting areas: not available",
   withdrawn: "No projection for this race right now. The count is as the City reports it.",
   elected: "Elected (unofficial)",
-  /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003). */
+  /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003), as one
+   *  break above those candidates (#105). */
   eliminated: "Mathematically eliminated",
+  eliminatedWhy: "can’t win even with every vote still out",
+  /** The tally's key (#105). */
+  keyCounted: "Counted",
+  keyEstimated: "Estimated final range",
+  keyPossible: "Possible range",
+  keyWin: "Certain win",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -57,6 +65,8 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
 const RANGE_WORDING = {
   estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
   possible: "Possible: from none to all of the votes still to be counted.",
+  /** The certain-win tick's meaning (#105), beside the ranges' legend. */
+  certainWin: "Certain win: reach it and no one can catch up.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
@@ -164,6 +174,8 @@ interface TallyRow {
   /** The Estimated and Possible Ranges; null on the folded row and where none shows. */
   band: LiveBand | null;
   possible: LiveRange | null;
+  /** This candidate's certain-win share (#105); null when eliminated or no line shows. */
+  win: number | null;
   name: string;
   /** The forecast pages' marker, on forecast-named mayoral rows only. */
   slug: string | null;
@@ -177,6 +189,7 @@ function tallyRow(
   race: LiveRace,
   elected: string | null,
   eliminated: Set<string>,
+  wins: Record<string, number>,
 ): TallyRow {
   const meta = candidate.candidate_id ? candidateMeta(candidate.candidate_id) : null;
   return {
@@ -185,6 +198,7 @@ function tallyRow(
     eliminated: eliminated.has(candidate.key),
     band: estimated(race)?.[candidate.key] ?? null,
     possible: race.possible?.[candidate.key] ?? null,
+    win: wins[candidate.key] ?? null,
     name: candidate.full_name,
     slug: meta?.slug ?? null,
     color: meta?.colorVar ?? NEUTRAL,
@@ -194,11 +208,13 @@ function tallyRow(
 }
 
 /** The race's rows: the mayor's counted field folds to its top four and one
- *  "N other candidates" row, unless that row would stand for a single name. */
+ *  "N other candidates" row, unless that row would stand for a single name. The folded row
+ *  counts as eliminated when everyone in it is (#105). */
 function tallyRows(race: LiveRace, closed: boolean): TallyRow[] {
   const elected = electedKey(race, closed);
   const eliminated = eliminatedKeys(race.possible);
-  const rows = race.candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated));
+  const wins = certainWinShares(race.possible, eliminated);
+  const rows = race.candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated, wins));
   if (race.level !== "mayor" || rows.length <= MAYOR_SHOWN + 1) return rows;
   const rest = race.candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
@@ -207,9 +223,10 @@ function tallyRows(race: LiveRace, closed: boolean): TallyRow[] {
     {
       key: "other-candidates",
       elected: false,
-      eliminated: false,
+      eliminated: rest.every((c) => eliminated.has(c.key)),
       band: null,
       possible: null,
+      win: null,
       name: `${rest.length} other candidates`,
       slug: null,
       color: NEUTRAL,
@@ -246,6 +263,9 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
         <p className="forecast-caption">
           {bands && <>{RANGE_WORDING.estimated} </>}
           {race.possible && RANGE_WORDING.possible}
+          {Object.keys(certainWinShares(race.possible, eliminatedKeys(race.possible))).length > 0 && (
+            <> {RANGE_WORDING.certainWin}</>
+          )}
         </p>
       )}
       {record && (
@@ -262,46 +282,100 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
   );
 }
 
-/** The Live Tally: the forecast pages' chart rows, a counted-share bar on a
- *  0–100% track. Phone widths put each name above its bar. */
-function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
+/** A share as a position on the 0–100% track. */
+function span(low: number, high: number) {
+  return { left: `${low}%`, width: `${Math.max(high - low, 0)}%` };
+}
+
+/** A row's one quiet line (#105): its votes, Estimated Range and certain-win share. The
+ *  Possible Range's figures go to screen readers only; its whisker shows it. */
+function rowMeta(row: TallyRow): string[] {
+  const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} votes`];
+  if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
+  if (row.win !== null) parts.push(`certain win ${row.win.toFixed(1)}%`);
+  return parts;
+}
+
+function TallyRowView({ row }: { row: TallyRow }) {
   return (
-    <div className="forecast-chart live-tally" role="list" aria-label={`${raceTitle(race)} count`}>
-      {tallyRows(race, closed).map((row) => (
-        <div className="forecast-chart__row" role="listitem" key={row.key}>
-          <span className="forecast-chart__label">
-            {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
-            <span className="live-tally__name">{row.name}</span>
-            {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
-            {row.eliminated && <span className="badge badge--status">{WORDING.eliminated}</span>}
-            {(row.band || row.possible) && <span className="t-meta live-tally__range">{rangeLine(row)}</span>}
+    <div className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}`} role="listitem">
+      <span className="forecast-chart__label">
+        {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
+        <span className="live-tally__name">{row.name}</span>
+        {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
+        {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
+      </span>
+      <span className="forecast-chart__track" aria-hidden="true">
+        {row.possible && <span className="live-tally__possible" style={span(row.possible.low, row.possible.high)} />}
+        <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
+        {row.band && (
+          <span className="live-tally__estimate" style={span(row.band.low, row.band.high)}>
+            <span
+              className="live-tally__mid"
+              style={{ left: `${row.band.high > row.band.low ? ((row.band.mid - row.band.low) / (row.band.high - row.band.low)) * 100 : 50}%` }}
+            />
           </span>
-          <span className="forecast-chart__track" aria-hidden="true">
-            <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
-            {row.possible && (
-              <span
-                className="forecast-chart__band forecast-chart__band--hatched"
-                style={{ left: `${row.possible.low}%`, width: `${Math.max(row.possible.high - row.possible.low, 0)}%`, background: row.color }}
-              />
-            )}
-            {row.band && (
-              <>
-                <span
-                  className="forecast-chart__band"
-                  style={{ left: `${row.band.low}%`, width: `${Math.max(row.band.high - row.band.low, 0)}%`, background: row.color }}
-                />
-                {/* Ink, not the candidate's colour: the tick sits on their counted-share bar. */}
-                <span className="forecast-chart__tick" style={{ left: `${row.band.mid}%`, background: "var(--ink)" }} />
-              </>
-            )}
+        )}
+        {row.win !== null && <span className="live-tally__win" style={{ left: `${row.win}%` }} />}
+      </span>
+      <strong className="forecast-chart__value live-tally__value">{percent(row.share)}</strong>
+      <span className="live-tally__meta">
+        {/* Each figure wraps whole, never "certain win" on one line and its share on the next. */}
+        {rowMeta(row).map((part, i) => (
+          <span key={part}>
+            {i > 0 && " · "}
+            <span className="live-tally__fig">{part}</span>
           </span>
-          <span className="live-tally__value">
-            <strong className="forecast-chart__value">{percent(row.share)}</strong>
-            <span className="t-meta">{row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} votes`}</span>
-          </span>
-        </div>
-      ))}
+        ))}
+      </span>
     </div>
+  );
+}
+
+/** The tally's key: only the marks this race draws. */
+function TallyKey({ rows }: { rows: TallyRow[] }) {
+  const has = (pick: (row: TallyRow) => unknown) => rows.some(pick);
+  if (!has((r) => r.band || r.possible)) return null;
+  return (
+    <p className="live-tally__key" aria-hidden="true">
+      <span><i className="live-tally__glyph live-tally__glyph--counted" />{WORDING.keyCounted}</span>
+      {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
+      {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--possible" />{WORDING.keyPossible}</span>}
+      {has((r) => r.win !== null) && <span><i className="live-tally__glyph live-tally__glyph--win" />{WORDING.keyWin}</span>}
+    </p>
+  );
+}
+
+/** The Live Tally (#105): the forecast pages' chart rows, each a counted-share bar on a 0–100%
+ *  track with the Estimated Range as an outlined bracket, the Possible Range as a whisker and
+ *  the candidate's certain-win share as a dashed tick. Candidates who cannot win sit under one
+ *  break, greyed. Phone widths put each name above its bar. */
+function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
+  const rows = tallyRows(race, closed);
+  const inIt = rows.filter((row) => !row.eliminated);
+  const out = rows.filter((row) => row.eliminated);
+  return (
+    <>
+      <TallyKey rows={rows} />
+      <div className="forecast-chart live-tally" role="list" aria-label={`${raceTitle(race)} count`}>
+        {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
+        {out.length > 0 && (
+          <p className="live-tally__break" role="listitem">
+            <strong>{WORDING.eliminated}</strong>
+            <span className="live-tally__sep" aria-hidden="true"> · </span>
+            <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
+          </p>
+        )}
+        {out.map((row) => <TallyRowView key={row.key} row={row} />)}
+        {(race.possible || estimated(race)) && (
+          <div className="forecast-chart__axis live-tally__axis" aria-hidden="true">
+            <span />
+            <span className="forecast-chart__axis-track"><span>0</span><span>25</span><span>50</span><span>75</span><span>100%</span></span>
+            <span />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

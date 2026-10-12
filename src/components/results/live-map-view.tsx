@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { candidateMeta } from "@/lib/candidates";
+import { liveColour } from "@/lib/live-colour";
 import { shareText } from "@/lib/live-share";
 import {
   incumbentStatus,
@@ -110,9 +110,10 @@ function nameOf(race: LiveRace | null, key: string | null): string {
   return candidate ? (candidate.short_label ?? candidate.full_name) : key;
 }
 
-/** Forecast-named mayoral candidates keep the forecast pages' colours; everyone else is neutral (#16). */
+/** Forecast-named mayoral candidates keep the forecast pages' colours (#16); others take their
+ *  campaign colour where one was assigned, else the neutral. */
 function candidateColour(candidate: LiveCandidate | undefined): string {
-  return candidate?.candidate_id ? candidateMeta(candidate.candidate_id).colorVar : OTHER;
+  return liveColour(candidate, OTHER);
 }
 
 function leadWords(race: LiveRace | null, lead: Lead): string {

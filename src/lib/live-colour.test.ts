@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { liveColour, oklab, type ColourTable } from "./live-colour";
 import table from "@/data/candidate-colours.json";
+import extracted from "../../scripts/candidate-colours/extracted.json";
 
 const CHOW = "per_a4291ca7539b53e2acc1c4f108bc73e6";
 const stub: ColourTable = { races: { "councillor-1": { can_a: "#2E6FB0", can_b: "var(--color-mcvie)" } } };
@@ -53,12 +54,19 @@ describe("candidate-colours.json", () => {
     }
   });
 
-  it("keeps every two colours in a race, and each colour against the greys, clearly apart", () => {
+  it("colours everyone whose site gave a colour, never greying one for a clash", () => {
+    const coloured = new Set(races.flatMap(([, r]) => Object.keys(r)));
+    for (const [id, colours] of Object.entries(extracted as Record<string, string[]>))
+      if (colours.length) expect(coloured.has(id), id).toBe(true);
+  });
+
+  it("keeps every two colours in a race, and each colour against the greys, apart", () => {
+    // 8 is the dataviz floor for colours that also carry a label; every bar carries its name.
     for (const [id, race] of races) {
       const own = Object.values(race).filter((c) => c.startsWith("#"));
-      for (const hex of own) for (const grey of GREYS) expect(delta(hex, grey), `${id} ${hex}`).toBeGreaterThanOrEqual(15);
+      for (const hex of own) for (const grey of GREYS) expect(delta(hex, grey), `${id} ${hex}`).toBeGreaterThanOrEqual(8);
       for (let i = 0; i < own.length; i++)
-        for (let j = i + 1; j < own.length; j++) expect(delta(own[i], own[j]), `${id} ${own[i]} ${own[j]}`).toBeGreaterThanOrEqual(15);
+        for (let j = i + 1; j < own.length; j++) expect(delta(own[i], own[j]), `${id} ${own[i]} ${own[j]}`).toBeGreaterThanOrEqual(8);
     }
   });
 

@@ -14,6 +14,7 @@ import { useId, useState, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
 import { certainWinShares } from "@/lib/live-certain-win";
+import { liveColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { shareText } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
@@ -206,7 +207,7 @@ function tallyRow(
     win: wins[candidate.key] ?? null,
     name: candidate.full_name,
     slug: meta?.slug ?? null,
-    color: meta?.colorVar ?? NEUTRAL,
+    color: liveColour(candidate, NEUTRAL),
     votes: candidate.votes,
     share: candidate.share,
   };
@@ -466,10 +467,16 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
         {top.map(([key, votes], i) => {
           const candidate = race.candidates.find((c) => c.key === key);
           const slug = candidate?.candidate_id ? candidateMeta(candidate.candidate_id).slug : null;
+          const colour = slug === null || slug === "disengaged" ? liveColour(candidate, "") : "";
           return (
             <span key={key}>
               {i > 0 && " · "}
-              {slug && <span className={`candidate-marker candidate-marker--${slug}`} aria-hidden="true" />}
+              {slug && slug !== "disengaged" && (
+                <span className={`candidate-marker candidate-marker--${slug}`} aria-hidden="true" />
+              )}
+              {colour && (
+                <span className="candidate-marker" style={{ background: colour, borderRadius: "50%" }} aria-hidden="true" />
+              )}
               {`${candidate ? shortLabel(candidate) : key} ${total > 0 ? percent((votes / total) * 100, votes) : "–"}`}
             </span>
           );

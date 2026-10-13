@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { pollingChartRows, PollingChartTooltip } from "./polling-chart-graphic";
+import { percentAxisLabel, pollingChartRows, PollingChartTooltip } from "./polling-chart-graphic";
 import type { CandidateTrend } from "@/lib/polling";
 
 describe("polling chart source provenance", () => {
@@ -47,5 +47,14 @@ describe("polling chart source provenance", () => {
       payload={[{ dataKey: "raw_chow", value: 75.5 }]} />);
     expect(history).toContain("Olivia Chow: 75.5%");
     expect(history).not.toContain("Published basis");
+  });
+});
+
+describe("percent axis labels", () => {
+  it("print whole percents even when the axis domain is not round", () => {
+    // A domain widened to -0.000214 printed "-0.0002141299356646087%" (2026-10-13).
+    expect(percentAxisLabel(-0.0002141299356646087)).toBe("0%");
+    expect(percentAxisLabel(24.999839467516)).toBe("25%");
+    expect(percentAxisLabel(60)).toBe("60%");
   });
 });

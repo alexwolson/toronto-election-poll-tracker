@@ -29,6 +29,24 @@ describe("loessCurve", () => {
     expect(Math.abs(mid.y - mid.x)).toBeLessThan(1);
   });
 
+  it("never leaves the observed y-range, even where a local line overshoots", () => {
+    // Alexander's forecast win chance after his campaign ended (backend-2026-10-13.2):
+    // the local linear fit at the last grid point dipped below zero (-0.0002), which
+    // widened the chart's y-axis past 0 and printed raw decimals as tick labels.
+    const nearZero = [
+      [20690, 0.005562], [20705, 0.005], [20714, 0.006562], [20718, 0.004125],
+      [20719, 0.00475], [20721, 0.003375], [20725, 0.002563], [20726, 0.00325],
+      [20728, 0.002563], [20732, 0.000188], [20735, 0.00025], [20739, 0.000375],
+    ].map(([x, y]) => ({ x, y }));
+    const decay = [9, 5, 2.5, 1, 0.3, 0.05, 0.01, 0].map((y, x) => ({ x, y }));
+    for (const points of [nearZero, decay]) {
+      const ys = points.map((p) => p.y);
+      const curve = loessCurve(points)!;
+      expect(Math.min(...curve.map((p) => p.y))).toBeGreaterThanOrEqual(Math.min(...ys));
+      expect(Math.max(...curve.map((p) => p.y))).toBeLessThanOrEqual(Math.max(...ys));
+    }
+  });
+
   it("is deterministic for the same input and fixed config", () => {
     const pts = Array.from({ length: 10 }, (_, i) => ({ x: i, y: (i * 7) % 5 }));
     expect(loessCurve(pts)).toEqual(loessCurve(pts));

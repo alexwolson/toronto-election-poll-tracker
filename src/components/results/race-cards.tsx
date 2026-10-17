@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
+import { countedWardsBenchmark } from "@/lib/chow-2023";
 import { certainWinShares } from "@/lib/live-certain-win";
 import { liveColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
@@ -444,6 +445,7 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
         <>
           {race.state === "all_units_in" ? <Status>{WORDING.all_units_in}</Status> : <Progress progress={race.progress} />}
           <Tally race={race} closed={closed} />
+          {race.level === "mayor" && <ChowBenchmark race={race} />}
           <RangeNotes race={race} levels={levels} />
         </>
       );
@@ -483,6 +485,23 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
         })}
       </p>
     </div>
+  );
+}
+
+/** Chow's 2023 share in the wards counted so far, against her 2023 citywide share (#109): early
+ *  returns from her weakest wards can read like an upset. Facts of two counts, never an estimate. */
+function ChowBenchmark({ race }: { race: LiveRace }) {
+  const benchmark = countedWardsBenchmark(race);
+  if (!benchmark) return null;
+  const { counted2023, citywide2023 } = benchmark;
+  const gap = Math.round((counted2023 - citywide2023) * 10) / 10;
+  const relation =
+    gap === 0 ? "the same as" : `${Math.abs(gap).toFixed(1)} points ${gap < 0 ? "below" : "above"}`;
+  return (
+    <p className="t-body-small live-benchmark">
+      The wards counted so far gave Olivia Chow {shareText(counted2023)} in 2023, {relation} her{" "}
+      {shareText(citywide2023)} citywide. This allows for which wards are in, not which voting areas within them.
+    </p>
   );
 }
 

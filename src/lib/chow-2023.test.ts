@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHOW_2023, chowCandidate, chowWard } from "./chow-2023";
+import { CHOW_2023, chowCandidate, chowWard, countedWardsBenchmark } from "./chow-2023";
 import type { LiveMayoralWard, LiveRace } from "@/types/live";
 
 const race = {
@@ -53,5 +53,43 @@ describe("chowWard", () => {
     const other = { candidates: [{ key: "X", candidacy_id: "can_x" }] } as unknown as LiveRace;
     expect(chowWard(other, ward({ X: 5 }))).toEqual({ live: null, share2023: 21.22 });
     expect(chowWard(race, { ...ward({ "Olivia Chow": 5 }), num: "26" })).toBeNull();
+  });
+});
+
+describe("countedWardsBenchmark", () => {
+  /** A counting mayor race whose wards have counted the given votes (ward → [Chow, others]). */
+  const counting = (counted: Record<string, number>, state: LiveRace["state"] = "counting"): LiveRace =>
+    ({
+      ...race,
+      state,
+      wards: Array.from({ length: 25 }, (_, i) => {
+        const num = String(i + 1);
+        const total = counted[num] ?? 0;
+        return { num, name: null, progress: null, votes_counted: total, votes: { "Olivia Chow": total / 2, "Brad Bradford": total / 2 } };
+      }),
+    }) as unknown as LiveRace;
+
+  it("reads below her citywide share when Etobicoke reports first", () => {
+    const b = countedWardsBenchmark(counting({ "1": 1000, "2": 1000, "3": 1000 }))!;
+    expect(b.counted2023).toBeCloseTo((27.9 + 21.22 + 29.45) / 3, 6);
+    expect(b.citywide2023).toBe(37.17);
+    expect(b.counted2023).toBeLessThan(b.citywide2023);
+  });
+
+  it("reads above it when downtown reports first", () => {
+    const b = countedWardsBenchmark(counting({ "10": 500, "13": 500 }))!;
+    expect(b.counted2023).toBeCloseTo((49.71 + 54.6) / 2, 6);
+    expect(b.counted2023).toBeGreaterThan(b.citywide2023);
+  });
+
+  it("weights each ward by its 2026 votes counted, whatever its progress says", () => {
+    expect(countedWardsBenchmark(counting({ "1": 3000, "13": 1000 }))!.counted2023).toBeCloseTo((3 * 27.9 + 54.6) / 4, 6);
+  });
+
+  it("is null before results, before a vote is counted, and once every voting area is in", () => {
+    expect(countedWardsBenchmark(counting({}, "before_results"))).toBeNull();
+    expect(countedWardsBenchmark(counting({}, "no_units_in"))).toBeNull();
+    expect(countedWardsBenchmark(counting({}))).toBeNull();
+    expect(countedWardsBenchmark(counting({ "1": 1000 }, "all_units_in"))).toBeNull();
   });
 });

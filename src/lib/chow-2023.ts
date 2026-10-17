@@ -46,3 +46,21 @@ export function chowWard(race: LiveRace | null, ward: Pick<LiveMayoralWard, "num
   const chow = chowCandidate(race);
   return { live: chow ? wardShare(ward.votes, chow.key) : null, share2023: ward2023.share };
 }
+
+/** Chow's 2023 share across the wards counted so far, each weighted by its 2026 votes counted,
+ *  beside her 2023 citywide share (#109): how much the wards in flatter or understate her.
+ *  It allows for which wards are in, not which voting areas within them, and is never an
+ *  estimate of the citywide result. Null unless the race is counting with votes counted. */
+export function countedWardsBenchmark(race: LiveRace): { counted2023: number; citywide2023: number } | null {
+  if (race.state !== "counting") return null;
+  let weight = 0;
+  let sum = 0;
+  for (const ward of race.wards ?? []) {
+    const ward2023 = CHOW_2023.wards[ward.num];
+    const counted = Object.values(ward.votes ?? {}).reduce((a, b) => a + b, 0);
+    if (!ward2023 || counted <= 0) continue;
+    weight += counted;
+    sum += counted * ward2023.share;
+  }
+  return weight > 0 ? { counted2023: sum / weight, citywide2023: CHOW_2023.citywide.share } : null;
+}

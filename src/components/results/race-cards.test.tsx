@@ -54,3 +54,31 @@ describe("RaceCard: the mayor's folded field", () => {
     expect(third.closest(".forecast-chart__row")!.querySelector(".live-tally__win")).not.toBeNull();
   });
 });
+
+describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
+  const night = JSON.parse(
+    readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/payload.json"), "utf8"),
+  ) as LivePayload;
+  /** The night's mayor race with only Etobicoke's wards 1–3 counted. */
+  const etobicokeFirst = (): LiveRace => {
+    const race = structuredClone(night.races.find((r) => r.id === "mayor")!);
+    race.wards = race.wards!.map((w) => (["1", "2", "3"].includes(w.num) ? w : { ...w, votes_counted: 0, votes: null }));
+    return race;
+  };
+  const line = () => document.querySelector(".live-benchmark");
+
+  it("sets Chow's 2023 share in the wards counted so far against her 2023 citywide share", () => {
+    render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
+    expect(line()!.textContent).toMatch(
+      /^The wards counted so far gave Olivia Chow 2\d\.\d% in 2023, \d+\.\d points below her 37\.2% citywide\. This allows for which wards are in, not which voting areas within them\.$/,
+    );
+  });
+
+  it("is not shown once every voting area is in, nor on other races", () => {
+    render(<RaceCard race={{ ...etobicokeFirst(), state: "all_units_in" }} levels={night.levels} />);
+    expect(line()).toBeNull();
+    cleanup();
+    render(<RaceCard race={night.races.find((r) => r.id === "councillor-1")!} levels={night.levels} />);
+    expect(line()).toBeNull();
+  });
+});

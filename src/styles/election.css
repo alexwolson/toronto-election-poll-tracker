@@ -460,10 +460,13 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-map__panel h3 { margin: 0; font-size: var(--type-heading, 1.2rem); }
 .live-map__race { margin: 0; color: var(--muted); font-size: var(--type-body-small); }
 .live-map__status { margin: 0; color: var(--ink); font-weight: 700; }
-.live-map__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md) var(--space-lg); margin: 0; padding-top: var(--space-md); border-top: 1px solid var(--rule-soft); }
-.live-map__facts dt { color: var(--muted); font-size: var(--type-data); font-family: var(--font-mono); }
-.live-map__facts dd { margin: 2px 0 0; color: var(--ink); font-weight: 600; }
-.live-map__reported { margin: 0; color: var(--body); font-size: var(--type-body-small); }
+.live-map__standings { display: grid; gap: var(--space-sm); margin: 0; padding: var(--space-md) 0 0; border-top: 1px solid var(--rule-soft); list-style: none; }
+.live-map__standings li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); color: var(--ink); }
+.live-map__standings .live-num { font-weight: 600; }
+.live-map__shares { display: grid; justify-items: end; }
+.live-map__then { color: var(--muted); font-size: var(--type-body-small); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.live-map__nowrap { white-space: nowrap; }
+.live-map__reported { margin: 0; color: var(--muted); font-size: var(--type-body-small); }
 .live-map__link { justify-self: start; font-family: var(--font-body); font-size: var(--type-body-small); font-weight: 700; letter-spacing: normal; text-transform: none; }
 
 .live-table-toggle > summary { width: fit-content; min-height: var(--touch-target-min); display: flex; align-items: center; color: var(--blue); font-weight: 600; font-size: var(--type-body-small); cursor: pointer; }

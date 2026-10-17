@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { MethodFlow } from "@/components/method-flow";
 import { PageHero } from "@/components/page-hero";
 import { loadCouncilRaceCards, loadManifest, loadMayoralForecast } from "@/lib/feeds";
+import { CHOW_2023 } from "@/lib/chow-2023";
 import { formatDate } from "@/lib/format";
 import { suspendedShareText } from "@/lib/mayoral-forecast";
 import {
@@ -580,7 +581,7 @@ export default async function HowItWorksPage() {
         <div className="how-disclosures">
           <MethodDisclosure
             title="Full source register"
-            description="Five source groups and the role each one plays."
+            description="Six source groups and the role each one plays."
           >
             <div className="source-list">
               <article>
@@ -598,6 +599,17 @@ export default async function HowItWorksPage() {
               <article>
                 <h3>Councillor Defeatability Index</h3>
                 <p>Matt Elliott&rsquo;s City Hall Watcher methodology supplies the three-component incumbent comparison reconstructed and backtested for this site.</p>
+              </article>
+              <article>
+                <h3>Election-night results</h3>
+                <p>
+                  The City of Toronto&rsquo;s unofficial count on election night. The results map sets Olivia Chow&rsquo;s
+                  share in each ward beside her share there in the City&rsquo;s{" "}
+                  <a className="text-link" href={CHOW_2023.source_url}>
+                    certified results of the 2023 by-election <span aria-hidden="true">↗</span>
+                  </a>
+                  . {CHOW_2023.licence}
+                </p>
               </article>
               <article>
                 <h3>Candidate-history audit</h3>

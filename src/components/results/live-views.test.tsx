@@ -90,6 +90,40 @@ describe("LiveMapView", () => {
     const table = screen.getByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(26);
   });
+
+  it("sets Chow's share in the held ward beside her 2023 share there", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
+    const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
+    const chow = within(panel).getByText("Olivia Chow").closest("li")!;
+    expect(chow.textContent).toBe("Olivia Chow26.1%28.1% in 2023");
+    // Said once each: the lead is in the status line, her share in her row.
+    expect(within(panel).queryByText(/^Lead$/)).toBeNull();
+    expect(within(panel).getAllByText("26.1%")).toHaveLength(1);
+    expect(panel.querySelector(".live-map__reported")!.textContent).toBe("10,913 votes counted · 34 of 45 voting areas in");
+  });
+
+  it("gives Chow's 2023 share in the mayor table, with its source, and not for council", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeTruthy();
+    expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /certified results of the 2023 by-election/ }).textContent).toContain("↗");
+    expect(screen.getByText(/won 37\.2% citywide against 101 other candidates/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Council" }));
+    expect(within(screen.getByRole("table")).queryByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeNull();
+    expect(screen.queryByText(/certified results of the 2023 by-election/)).toBeNull();
+  });
+
+  it("before results, already gives Chow's 2023 share and its source", () => {
+    render(<LiveMapView data={MAP} payload={BEFORE} wards={WARDS} ward={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Ward 2 / }));
+    const panel = screen.getByRole("complementary", { name: "Ward 2 details" });
+    expect(within(panel).getByText("Olivia Chow").closest("li")!.textContent).toBe("Olivia Chow21.2% in 2023");
+    const table = screen.getByRole("table");
+    expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
+    expect(screen.getByText(/certified results of the 2023 by-election/)).toBeTruthy();
+  });
 });
 
 describe("LiveCountView", () => {

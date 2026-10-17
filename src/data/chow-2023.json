@@ -1,0 +1,139 @@
+{
+ "candidacy_id": "can_24054bba2bed56dab41293ec7d138d41",
+ "source": "City of Toronto, certified results of the 2023 by-election for mayor",
+ "source_url": "https://open.toronto.ca/dataset/elections-official-by-election-results/",
+ "licence": "Contains information licensed under the Open Government Licence – Toronto.",
+ "candidates": 102,
+ "citywide": {
+  "votes": 269372,
+  "valid": 724638,
+  "share": 37.17
+ },
+ "wards": {
+  "1": {
+   "votes": 4972,
+   "valid": 17822,
+   "share": 27.9
+  },
+  "2": {
+   "votes": 8049,
+   "valid": 37925,
+   "share": 21.22
+  },
+  "3": {
+   "votes": 12424,
+   "valid": 42189,
+   "share": 29.45
+  },
+  "4": {
+   "votes": 19569,
+   "valid": 39170,
+   "share": 49.96
+  },
+  "5": {
+   "votes": 7399,
+   "valid": 25024,
+   "share": 29.57
+  },
+  "6": {
+   "votes": 5444,
+   "valid": 22703,
+   "share": 23.98
+  },
+  "7": {
+   "votes": 4485,
+   "valid": 15936,
+   "share": 28.14
+  },
+  "8": {
+   "votes": 8183,
+   "valid": 34449,
+   "share": 23.75
+  },
+  "9": {
+   "votes": 17031,
+   "valid": 34215,
+   "share": 49.78
+  },
+  "10": {
+   "votes": 16688,
+   "valid": 33568,
+   "share": 49.71
+  },
+  "11": {
+   "votes": 16307,
+   "valid": 34804,
+   "share": 46.85
+  },
+  "12": {
+   "votes": 13468,
+   "valid": 40149,
+   "share": 33.55
+  },
+  "13": {
+   "votes": 17142,
+   "valid": 31397,
+   "share": 54.6
+  },
+  "14": {
+   "votes": 19560,
+   "valid": 37692,
+   "share": 51.89
+  },
+  "15": {
+   "votes": 8067,
+   "valid": 30858,
+   "share": 26.14
+  },
+  "16": {
+   "votes": 7358,
+   "valid": 21958,
+   "share": 33.51
+  },
+  "17": {
+   "votes": 8381,
+   "valid": 24777,
+   "share": 33.83
+  },
+  "18": {
+   "votes": 8293,
+   "valid": 23788,
+   "share": 34.86
+  },
+  "19": {
+   "votes": 15910,
+   "valid": 36944,
+   "share": 43.07
+  },
+  "20": {
+   "votes": 9981,
+   "valid": 27958,
+   "share": 35.7
+  },
+  "21": {
+   "votes": 7970,
+   "valid": 23061,
+   "share": 34.56
+  },
+  "22": {
+   "votes": 9065,
+   "valid": 22707,
+   "share": 39.92
+  },
+  "23": {
+   "votes": 8940,
+   "valid": 18960,
+   "share": 47.15
+  },
+  "24": {
+   "votes": 6448,
+   "valid": 21136,
+   "share": 30.51
+  },
+  "25": {
+   "votes": 8238,
+   "valid": 25448,
+   "share": 32.37
+  }
+ }
+}

@@ -89,6 +89,12 @@ describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
     expect(line()!.textContent).toMatch(/^Wards counted so far: O\. Chow /);
   });
 
+  it("is not shown after Night Close, even while the race still reads counting", () => {
+    render(<RaceCard race={etobicokeFirst()} levels={night.levels} closed />);
+    expect(line()).toBeNull();
+    expect(screen.queryByText("What’s this?")).toBeNull();
+  });
+
   it("is not shown once every voting area is in, nor on other races", () => {
     render(<RaceCard race={{ ...etobicokeFirst(), state: "all_units_in" }} levels={night.levels} />);
     expect(line()).toBeNull();

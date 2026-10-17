@@ -453,7 +453,8 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
         <>
           {race.state === "all_units_in" ? <Status>{WORDING.all_units_in}</Status> : <Progress progress={race.progress} />}
           <Tally race={race} closed={closed} />
-          {race.level === "mayor" && <ChowBenchmark race={race} />}
+          {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
+          {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}
           <RangeNotes race={race} levels={levels} />
         </>
       );

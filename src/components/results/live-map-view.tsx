@@ -12,6 +12,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { CHOW_2023, chowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
 import { shareText } from "@/lib/live-share";
 import {
@@ -92,6 +93,8 @@ interface WardFacts {
   lead: Lead | null;
   reported: { received: number; total: number } | null;
   shade: Shade;
+  /** Mayor only: Chow's live share in the ward beside her 2023 share there (#108). */
+  chow?: { live: number | null; share2023: number } | null;
 }
 
 function mix(colour: string, percent: number): string {
@@ -192,7 +195,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           const leader = mayor?.candidates.find((c) => c.key === lead.leader);
           shade = { fill: mix(candidateColour(leader), TIER_MIX[leadTier(lead.margin!)]), words: leadWords(mayor, lead) };
         }
-        return { ward: shape, name, race: mayor, lead, reported, shade };
+        return { ward: shape, name, race: mayor, lead, reported, shade, chow: mw ? chowWard(mayor, mw) : null };
       }
       const race = wardRace(payload, data, contest, shape.num);
       const lead = race ? raceLead(race) : null;
@@ -363,6 +366,12 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                 <th scope="col">Ward</th>
                 {contest !== "mayor" && <th scope="col">Race</th>}
                 <th scope="col">On the map</th>
+                {contest === "mayor" && (
+                  <>
+                    <th scope="col">Olivia Chow now</th>
+                    <th scope="col">Olivia Chow in 2023</th>
+                  </>
+                )}
                 <th scope="col">Voting areas in</th>
               </tr>
             </thead>
@@ -374,6 +383,12 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                   </th>
                   {contest !== "mayor" && <td>{f.race ? raceTitle(f.race) : "–"}</td>}
                   <td>{f.shade.words}</td>
+                  {contest === "mayor" && (
+                    <>
+                      <td className="live-num">{pct(f.chow?.live ?? null)}</td>
+                      <td className="live-num">{f.chow ? pct(f.chow.share2023) : "–"}</td>
+                    </>
+                  )}
                   <td className="live-num">{f.reported ? `${f.reported.received} of ${f.reported.total}` : "–"}</td>
                 </tr>
               ))}
@@ -381,6 +396,16 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           </table>
         </div>
       </details>
+      {contest === "mayor" && counting && (
+        <p className="t-meta">
+          Olivia Chow in 2023: her share of each ward&apos;s vote in the{" "}
+          <a className="text-link" href={CHOW_2023.source_url}>
+            City of Toronto&apos;s certified results of the 2023 by-election
+          </a>
+          , when she won {pct(CHOW_2023.citywide.share)} citywide against 101 other candidates.{" "}
+          {CHOW_2023.licence}
+        </p>
+      )}
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
@@ -419,6 +444,18 @@ function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contes
             <dt>Lead</dt>
             <dd className="live-num">{lead.tied ? "Tied" : `${lead.margin!.toFixed(1)} pts`}</dd>
           </div>
+          {facts.chow && (
+            <>
+              <div>
+                <dt>Olivia Chow now</dt>
+                <dd className="live-num">{pct(facts.chow.live)}</dd>
+              </div>
+              <div>
+                <dt>Olivia Chow in 2023</dt>
+                <dd className="live-num">{pct(facts.chow.share2023)}</dd>
+              </div>
+            </>
+          )}
           <div>
             <dt>Votes counted</dt>
             <dd className="live-num">{lead.counted.toLocaleString("en-CA")}</dd>

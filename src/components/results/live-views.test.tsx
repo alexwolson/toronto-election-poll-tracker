@@ -95,8 +95,7 @@ describe("LiveMapView", () => {
     render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
-    const now = within(panel).getByText("Olivia Chow now").nextElementSibling!.textContent;
-    expect(now).toMatch(/^\d+\.\d%$/);
+    expect(within(panel).getByText("Olivia Chow now").nextElementSibling!.textContent).toBe("26.1%");
     expect(within(panel).getByText("Olivia Chow in 2023").nextElementSibling!.textContent).toBe("28.1%");
   });
 
@@ -105,11 +104,22 @@ describe("LiveMapView", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeTruthy();
     expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
-    expect(screen.getByText(/certified results of the 2023 by-election/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /certified results of the 2023 by-election/ }).textContent).toContain("↗");
     expect(screen.getByText(/won 37\.2% citywide against 101 other candidates/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Council" }));
     expect(within(screen.getByRole("table")).queryByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeNull();
     expect(screen.queryByText(/certified results of the 2023 by-election/)).toBeNull();
+  });
+
+  it("before results, already gives Chow's 2023 share and its source", () => {
+    render(<LiveMapView data={MAP} payload={BEFORE} wards={WARDS} ward={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Ward 2 / }));
+    const panel = screen.getByRole("complementary", { name: "Ward 2 details" });
+    expect(within(panel).getByText("Olivia Chow in 2023").nextElementSibling!.textContent).toBe("21.2%");
+    expect(within(panel).getByText("Olivia Chow now").nextElementSibling!.textContent).toBe("–");
+    const table = screen.getByRole("table");
+    expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
+    expect(screen.getByText(/certified results of the 2023 by-election/)).toBeTruthy();
   });
 });
 

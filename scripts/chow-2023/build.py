@@ -28,7 +28,10 @@ SOURCE = "https://open.toronto.ca/dataset/elections-official-by-election-results
 # Chow's 2026 candidacy id, as the payload and the canonical results carry it: the page finds her
 # by it, never by name (another Chow is on the 2026 ballot).
 CANDIDACY_ID_2026 = "can_24054bba2bed56dab41293ec7d138d41"
+# The workbook carries no ids, so here alone she is found by her 2023 Ballot Name, which is
+# unique among its 102 candidates.
 BALLOT_NAME_2023 = "Chow Olivia"
+CANDIDATES_2023 = 102
 # The certified citywide result, as the canonical results carry it.
 CITY_VOTES, CITY_VALID = 269_372, 724_638
 
@@ -68,7 +71,7 @@ def main() -> None:
     wards = {}
     for name in wb.sheetnames[1:]:
         num, candidates = ward_totals(wb[name])
-        assert len(candidates) == 102, (num, len(candidates))
+        assert len(candidates) == CANDIDATES_2023, (num, len(candidates))
         chow, valid = candidates[BALLOT_NAME_2023], sum(candidates.values())
         wards[num] = {
             "votes": chow,
@@ -78,17 +81,16 @@ def main() -> None:
     assert list(wards) == [str(n) for n in range(1, 26)], list(wards)
     assert sum(w["votes"] for w in wards.values()) == CITY_VOTES
     assert sum(w["valid"] for w in wards.values()) == CITY_VALID
+    city_share = round(100 * CITY_VOTES / CITY_VALID, 2)
+    assert round(city_share, 1) == 37.2, city_share
 
     out = {
         "candidacy_id": CANDIDACY_ID_2026,
         "source": "City of Toronto, certified results of the 2023 by-election for mayor",
         "source_url": SOURCE,
         "licence": "Contains information licensed under the Open Government Licence – Toronto.",
-        "citywide": {
-            "votes": CITY_VOTES,
-            "valid": CITY_VALID,
-            "share": round(100 * CITY_VOTES / CITY_VALID, 2),
-        },
+        "candidates": CANDIDATES_2023,
+        "citywide": {"votes": CITY_VOTES, "valid": CITY_VALID, "share": city_share},
         "wards": wards,
     }
     OUT.write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n")

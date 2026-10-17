@@ -182,6 +182,7 @@ describe("How It Works rendering", () => {
     expect(sourceRegisterStart).toBeGreaterThan(-1);
     expect(sourceRegister).toContain("Election and candidate records");
     expect(sourceRegister).toContain("Candidate-history audit");
+    expect(sourceRegister).toContain("certified results of the 2023 by-election");
 
     expect(html).toContain("Six steps from eligible mayoral polls");
     expect(html).toContain("Example LOESS trend through individual polls");

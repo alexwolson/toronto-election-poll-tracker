@@ -10,3 +10,10 @@ export function shareText(share: number | null | undefined, votes?: number | nul
   const hasVotes = votes === undefined || votes === null ? share > 0 : votes > 0;
   return hasVotes ? "<0.1%" : "0%";
 }
+
+/** A candidate's percent of a ward's counted votes (`votes`: candidate key → votes), or null
+ *  until a vote is counted there. */
+export function wardShare(votes: Record<string, number> | null | undefined, key: string): number | null {
+  const total = Object.values(votes ?? {}).reduce((a, b) => a + b, 0);
+  return total > 0 ? (100 * (votes?.[key] ?? 0)) / total : null;
+}

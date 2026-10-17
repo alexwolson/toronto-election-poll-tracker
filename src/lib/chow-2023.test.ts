@@ -22,6 +22,7 @@ describe("CHOW_2023", () => {
   it("holds the certified 2023 by-election result for all 25 wards and citywide", () => {
     expect(Object.keys(CHOW_2023.wards)).toEqual(Array.from({ length: 25 }, (_, i) => String(i + 1)));
     expect(CHOW_2023.citywide).toEqual({ votes: 269372, valid: 724638, share: 37.17 });
+    expect(CHOW_2023.candidates).toBe(102);
     const sum = Object.values(CHOW_2023.wards).reduce((a, w) => a + w.votes, 0);
     expect(sum).toBe(CHOW_2023.citywide.votes);
   });
@@ -44,12 +45,13 @@ describe("chowWard", () => {
 
   it("has no live share before a vote is counted, but still the 2023 share", () => {
     expect(chowWard(race, ward(null))).toEqual({ live: null, share2023: 21.22 });
+    expect(chowWard(null, ward(null))).toEqual({ live: null, share2023: 21.22 });
     expect(chowWard(race, ward({ "Olivia Chow": 0, "Brad Bradford": 0 }))).toEqual({ live: null, share2023: 21.22 });
   });
 
-  it("is null when she isn't in the race or the ward isn't a City ward", () => {
+  it("has no live share when she isn't in the race, and is null for a ward that isn't a City ward", () => {
     const other = { candidates: [{ key: "X", candidacy_id: "can_x" }] } as unknown as LiveRace;
-    expect(chowWard(other, ward({ X: 5 }))).toBeNull();
+    expect(chowWard(other, ward({ X: 5 }))).toEqual({ live: null, share2023: 21.22 });
     expect(chowWard(race, { ...ward({ "Olivia Chow": 5 }), num: "26" })).toBeNull();
   });
 });

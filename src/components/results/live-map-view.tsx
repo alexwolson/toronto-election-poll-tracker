@@ -12,9 +12,9 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { CHOW_2023, chowWard } from "@/lib/chow-2023";
+import { CHOW_2023, chowWard, type ChowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
-import { shareText } from "@/lib/live-share";
+import { shareText, wardShare } from "@/lib/live-share";
 import {
   incumbentStatus,
   leadTier,
@@ -94,7 +94,7 @@ interface WardFacts {
   reported: { received: number; total: number } | null;
   shade: Shade;
   /** Mayor only: Chow's live share in the ward beside her 2023 share there (#108). */
-  chow?: { live: number | null; share2023: number } | null;
+  chow?: ChowWard | null;
 }
 
 function mix(colour: string, percent: number): string {
@@ -160,19 +160,16 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const facts: WardFacts[] = (() => {
     const mayorWards = new Map((mayor?.wards ?? []).map((w) => [w.num, w]));
     // One scale for the share layer: up to the highest ward, rounded up to 10 points.
-    const shareOf = (num: string) => {
-      const votes = mayorWards.get(num)?.votes;
-      if (!votes || !shareCandidate) return null;
-      const total = Object.values(votes).reduce((a, b) => a + b, 0);
-      return total > 0 ? (100 * (votes[shareCandidate.key] ?? 0)) / total : null;
-    };
+    const shareOf = (num: string) => (shareCandidate ? wardShare(mayorWards.get(num)?.votes, shareCandidate.key) : null);
     const top = Math.max(10, ...data.wards.map((w) => shareOf(w.num) ?? 0));
     const scaleMax = Math.ceil(top / 10) * 10;
 
     return data.wards.map((shape): WardFacts => {
       const name = names.get(shape.num) ?? "";
+      // Chow's 2023 share is static, so it shows from before results (#108).
+      const chow = contest === "mayor" ? chowWard(mayor, mayorWards.get(shape.num) ?? { num: shape.num, votes: null }) : undefined;
       if (!counting) {
-        return { ward: shape, name, race: null, lead: null, reported: null, shade: { fill: null, words: "Results from 8 p.m." } };
+        return { ward: shape, name, race: null, lead: null, reported: null, shade: { fill: null, words: "Results from 8 p.m." }, chow };
       }
       if (contest === "mayor") {
         const mw = mayorWards.get(shape.num);
@@ -195,7 +192,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           const leader = mayor?.candidates.find((c) => c.key === lead.leader);
           shade = { fill: mix(candidateColour(leader), TIER_MIX[leadTier(lead.margin!)]), words: leadWords(mayor, lead) };
         }
-        return { ward: shape, name, race: mayor, lead, reported, shade, chow: mw ? chowWard(mayor, mw) : null };
+        return { ward: shape, name, race: mayor, lead, reported, shade, chow };
       }
       const race = wardRace(payload, data, contest, shape.num);
       const lead = race ? raceLead(race) : null;
@@ -396,13 +393,13 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           </table>
         </div>
       </details>
-      {contest === "mayor" && counting && (
+      {contest === "mayor" && (
         <p className="t-meta">
           Olivia Chow in 2023: her share of each ward&apos;s vote in the{" "}
           <a className="text-link" href={CHOW_2023.source_url}>
-            City of Toronto&apos;s certified results of the 2023 by-election
+            City of Toronto&apos;s certified results of the 2023 by-election <span aria-hidden="true">↗</span>
           </a>
-          , when she won {pct(CHOW_2023.citywide.share)} citywide against 101 other candidates.{" "}
+          , when she won {pct(CHOW_2023.citywide.share)} citywide against {CHOW_2023.candidates - 1} other candidates.{" "}
           {CHOW_2023.licence}
         </p>
       )}
@@ -444,21 +441,21 @@ function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contes
             <dt>Lead</dt>
             <dd className="live-num">{lead.tied ? "Tied" : `${lead.margin!.toFixed(1)} pts`}</dd>
           </div>
-          {facts.chow && (
-            <>
-              <div>
-                <dt>Olivia Chow now</dt>
-                <dd className="live-num">{pct(facts.chow.live)}</dd>
-              </div>
-              <div>
-                <dt>Olivia Chow in 2023</dt>
-                <dd className="live-num">{pct(facts.chow.share2023)}</dd>
-              </div>
-            </>
-          )}
           <div>
             <dt>Votes counted</dt>
             <dd className="live-num">{lead.counted.toLocaleString("en-CA")}</dd>
+          </div>
+        </dl>
+      )}
+      {facts.chow && (
+        <dl className="live-map__facts">
+          <div>
+            <dt>Olivia Chow now</dt>
+            <dd className="live-num">{pct(facts.chow.live)}</dd>
+          </div>
+          <div>
+            <dt>Olivia Chow in 2023</dt>
+            <dd className="live-num">{pct(facts.chow.share2023)}</dd>
           </div>
         </dl>
       )}

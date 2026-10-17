@@ -7,6 +7,7 @@
  */
 
 import data from "@/data/chow-2023.json";
+import { wardShare } from "@/lib/live-share";
 import type { LiveCandidate, LiveMayoralWard, LiveRace } from "@/types/live";
 
 interface Result2023 {
@@ -21,6 +22,8 @@ export const CHOW_2023: {
   source: string;
   source_url: string;
   licence: string;
+  /** Candidates on the 2023 ballot, Chow included. */
+  candidates: number;
   citywide: Result2023;
   wards: Record<string, Result2023>;
 } = data;
@@ -29,16 +32,17 @@ export function chowCandidate(race: LiveRace | null): LiveCandidate | null {
   return race?.candidates.find((c) => c.candidacy_id === CHOW_2023.candidacy_id) ?? null;
 }
 
-/** Her live share of the ward's counted mayoral votes (null until one is counted) and her
- *  2023 share there; null when she isn't in the race or the ward has no 2023 figure. */
-export function chowWard(
-  race: LiveRace | null,
-  ward: LiveMayoralWard,
-): { live: number | null; share2023: number } | null {
+export interface ChowWard {
+  /** Her percent of the ward's counted mayoral votes; null until one is counted. */
+  live: number | null;
+  share2023: number;
+}
+
+/** Her live share in the ward beside her 2023 share there, which shows from before results;
+ *  null only for a ward with no 2023 figure. */
+export function chowWard(race: LiveRace | null, ward: Pick<LiveMayoralWard, "num" | "votes">): ChowWard | null {
+  const ward2023 = CHOW_2023.wards[ward.num];
+  if (!ward2023) return null;
   const chow = chowCandidate(race);
-  const then = CHOW_2023.wards[ward.num];
-  if (!chow || !then) return null;
-  const total = Object.values(ward.votes ?? {}).reduce((a, b) => a + b, 0);
-  const live = total > 0 ? (100 * (ward.votes?.[chow.key] ?? 0)) / total : null;
-  return { live, share2023: then.share };
+  return { live: chow ? wardShare(ward.votes, chow.key) : null, share2023: ward2023.share };
 }

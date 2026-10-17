@@ -3,6 +3,7 @@
  "source": "City of Toronto, certified results of the 2023 by-election for mayor",
  "source_url": "https://open.toronto.ca/dataset/elections-official-by-election-results/",
  "licence": "Contains information licensed under the Open Government Licence – Toronto.",
+ "candidates": 102,
  "citywide": {
   "votes": 269372,
   "valid": 724638,

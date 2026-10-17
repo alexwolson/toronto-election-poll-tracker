@@ -13,10 +13,11 @@ import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
+import { chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
 import { certainWinShares } from "@/lib/live-certain-win";
 import { liveColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
-import { shareText } from "@/lib/live-share";
+import { shareText, votesTotal } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import type {
@@ -76,6 +77,14 @@ const RANGE_WORDING = {
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
   french: "No projection for these boards: only the count and its possible range.",
+} as const;
+
+/** Chow's counted-wards benchmark (#109, option B as Alex chose it): a short line, with what it
+ *  is and its limit behind a disclosure. */
+const BENCHMARK_WORDING = {
+  summary: "What’s this?",
+  explain: (name: string) =>
+    `${name}’s share of the vote in the 2023 by-election, across the wards counted so far tonight (each weighted by its votes counted), beside her share citywide. Early returns from her weakest wards can look like an upset; this shows how those wards voted last time. It allows for which wards are in, not which voting areas within them, and is not an estimate of tonight’s result.`,
 } as const;
 
 /** Whether a level shows the count in place of its projection: its gate failed, or the
@@ -444,6 +453,8 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
         <>
           {race.state === "all_units_in" ? <Status>{WORDING.all_units_in}</Status> : <Progress progress={race.progress} />}
           <Tally race={race} closed={closed} />
+          {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
+          {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}
           <RangeNotes race={race} levels={levels} />
         </>
       );
@@ -455,7 +466,7 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
 function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
   if (ward.votes === null) return null;
   const entries = Object.entries(ward.votes);
-  const total = ward.votes_counted ?? entries.reduce((sum, [, votes]) => sum + votes, 0);
+  const total = ward.votes_counted ?? votesTotal(ward.votes);
   const top = [...entries].sort((a, b) => b[1] - a[1]).slice(0, WARD_VOTE_SHOWN);
   return (
     <div className="live-ward-vote">
@@ -483,6 +494,31 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
         })}
       </p>
     </div>
+  );
+}
+
+/** Chow's 2023 share in the wards counted so far, against her 2023 citywide share (#109): early
+ *  returns from her weakest wards can read like an upset. Facts of two counts, never an estimate. */
+function ChowBenchmark({ race }: { race: LiveRace }) {
+  const benchmark = countedWardsBenchmark(race);
+  const chow = chowCandidate(race);
+  if (!benchmark || !chow) return null;
+  const name = shortLabel(chow);
+  return (
+    <>
+      <p className="t-body-small live-benchmark">
+        Wards counted so far: {name} {shareText(benchmark.counted2023)} in 2023 · {shareText(benchmark.citywide2023)}{" "}
+        citywide
+      </p>
+      <div className="faq">
+        <details>
+          <summary>{BENCHMARK_WORDING.summary}</summary>
+          <div className="faq__a">
+            <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
+          </div>
+        </details>
+      </div>
+    </>
   );
 }
 

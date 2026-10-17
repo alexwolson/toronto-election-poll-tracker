@@ -95,8 +95,12 @@ describe("LiveMapView", () => {
     render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
-    expect(within(panel).getByText("Olivia Chow now").nextElementSibling!.textContent).toBe("26.1%");
-    expect(within(panel).getByText("Olivia Chow in 2023").nextElementSibling!.textContent).toBe("28.1%");
+    const chow = within(panel).getByText("Olivia Chow").closest("li")!;
+    expect(chow.textContent).toBe("Olivia Chow26.1%28.1% in 2023");
+    // Said once each: the lead is in the status line, her share in her row.
+    expect(within(panel).queryByText(/^Lead$/)).toBeNull();
+    expect(within(panel).getAllByText("26.1%")).toHaveLength(1);
+    expect(panel.querySelector(".live-map__reported")!.textContent).toBe("10,913 votes counted · 34 of 45 voting areas in");
   });
 
   it("gives Chow's 2023 share in the mayor table, with its source, and not for council", () => {
@@ -115,8 +119,7 @@ describe("LiveMapView", () => {
     render(<LiveMapView data={MAP} payload={BEFORE} wards={WARDS} ward={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Ward 2 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 2 details" });
-    expect(within(panel).getByText("Olivia Chow in 2023").nextElementSibling!.textContent).toBe("21.2%");
-    expect(within(panel).getByText("Olivia Chow now").nextElementSibling!.textContent).toBe("–");
+    expect(within(panel).getByText("Olivia Chow").closest("li")!.textContent).toBe("Olivia Chow21.2% in 2023");
     const table = screen.getByRole("table");
     expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
     expect(screen.getByText(/certified results of the 2023 by-election/)).toBeTruthy();

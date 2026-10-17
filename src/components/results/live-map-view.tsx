@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { CHOW_2023, chowWard, type ChowWard } from "@/lib/chow-2023";
+import { CHOW_2023, chowCandidate, chowWard, type ChowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
 import { shareText, wardShare } from "@/lib/live-share";
 import {
@@ -413,6 +413,23 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
 function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contest; home: string | null }) {
   const { ward, name, race, lead, reported, shade } = facts;
   const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
+  // Each figure once: the lead is in the status line, so the list is just who has what, in order.
+  // Chow's row carries her 2023 share in the ward (#108), and joins the list if she isn't top two.
+  const standings: { name: string; share: number | null; share2023?: number }[] = [];
+  if (lead && lead.leader !== null) {
+    standings.push({ name: nameOf(race, lead.leader), share: lead.leaderShare });
+    if (lead.runnerUp) standings.push({ name: nameOf(race, lead.runnerUp), share: lead.leaderShare! - lead.margin! });
+  }
+  if (facts.chow) {
+    const key = chowCandidate(race)?.key ?? null;
+    const row = key === null ? undefined : standings.find((r) => r.name === nameOf(race, key));
+    if (row) row.share2023 = facts.chow.share2023;
+    else standings.push({ name: key === null ? "Olivia Chow" : nameOf(race, key), share: facts.chow.live, share2023: facts.chow.share2023 });
+  }
+  const meta = [
+    lead && lead.leader !== null ? `${lead.counted.toLocaleString("en-CA")} votes counted` : null,
+    reported ? `${reported.received} of ${reported.total} voting areas in` : null,
+  ].filter((part) => part !== null);
   return (
     <aside className="live-map__panel" aria-label={`Ward ${ward.num} details`}>
       <h3>
@@ -420,51 +437,27 @@ function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contes
       </h3>
       {raceName && <p className="live-map__race">{raceName}</p>}
       <p className="live-map__status">{shade.words}</p>
-      {lead && lead.leader !== null && (
-        <dl className="live-map__facts">
-          <div>
-            <dt>Leading</dt>
-            <dd>
-              {nameOf(race, lead.leader)} <span className="live-num">{pct(lead.leaderShare)}</span>
-            </dd>
-          </div>
-          {lead.runnerUp && (
-            <div>
-              <dt>Second</dt>
-              <dd>
-                {nameOf(race, lead.runnerUp)}{" "}
-                <span className="live-num">{pct(lead.leaderShare! - lead.margin!)}</span>
-              </dd>
-            </div>
-          )}
-          <div>
-            <dt>Lead</dt>
-            <dd className="live-num">{lead.tied ? "Tied" : `${lead.margin!.toFixed(1)} pts`}</dd>
-          </div>
-          <div>
-            <dt>Votes counted</dt>
-            <dd className="live-num">{lead.counted.toLocaleString("en-CA")}</dd>
-          </div>
-        </dl>
+      {standings.length > 0 && (
+        <ol className="live-map__standings">
+          {standings.map((row) => (
+            <li key={row.name}>
+              <span>{row.name}</span>
+              <span className="live-map__shares">
+                {row.share !== null && <span className="live-num">{pct(row.share)}</span>}
+                {row.share2023 !== undefined && <span className="live-map__then">{pct(row.share2023)} in 2023</span>}
+              </span>
+            </li>
+          ))}
+        </ol>
       )}
-      {facts.chow && (
-        <dl className="live-map__facts">
-          <div>
-            <dt>Olivia Chow now</dt>
-            <dd className="live-num">{pct(facts.chow.live)}</dd>
-          </div>
-          <div>
-            <dt>Olivia Chow in 2023</dt>
-            <dd className="live-num">{pct(facts.chow.share2023)}</dd>
-          </div>
-        </dl>
-      )}
-      {reported && (
+      {meta.length > 0 && (
         <p className="live-map__reported">
-          <span className="live-num">
-            {reported.received} of {reported.total}
-          </span>{" "}
-          voting areas in
+          {meta.map((part, i) => (
+            <span key={part}>
+              {i > 0 && " · "}
+              <span className="live-map__nowrap">{part}</span>
+            </span>
+          ))}
         </p>
       )}
       {home !== ward.num && (

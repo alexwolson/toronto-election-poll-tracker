@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shareText, wardShare } from "./live-share";
+import { shareText, votesTotal, wardShare } from "./live-share";
 
 describe("shareText: a candidate's share, never '0.0%' (Alex, 2026-10-11)", () => {
   it("shows one decimal from 0.1% up", () => {
@@ -34,5 +34,12 @@ describe("wardShare: a candidate's percent of a ward's counted votes", () => {
   it("is null until a vote is counted", () => {
     expect(wardShare(null, "a")).toBeNull();
     expect(wardShare({ a: 0, b: 0 }, "a")).toBeNull();
+  });
+});
+
+describe("votesTotal: every candidate's counted votes in a ward", () => {
+  it("sums them, and is 0 with none", () => {
+    expect(votesTotal({ a: 600, b: 400 })).toBe(1000);
+    expect(votesTotal(null)).toBe(0);
   });
 });

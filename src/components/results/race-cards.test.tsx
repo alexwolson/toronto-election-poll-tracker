@@ -69,9 +69,24 @@ describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
 
   it("sets Chow's 2023 share in the wards counted so far against her 2023 citywide share", () => {
     render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
-    expect(line()!.textContent).toMatch(
-      /^The wards counted so far gave Olivia Chow 2\d\.\d% in 2023, \d+\.\d points below her 37\.2% citywide\. This allows for which wards are in, not which voting areas within them\.$/,
-    );
+    // Wards 1–3 weighted by their counted votes: well under her 37.2% citywide.
+    expect(line()!.textContent).toMatch(/^Wards counted so far: Olivia Chow 2\d\.\d% in 2023 · 37\.2% citywide$/);
+  });
+
+  it("explains itself, and its limit, behind a disclosure", () => {
+    render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
+    const summary = screen.getByText("What’s this?");
+    expect(summary.tagName).toBe("SUMMARY");
+    const answer = summary.closest("details")!.textContent!;
+    expect(answer).toContain("not which voting areas within them");
+    expect(answer).toContain("not an estimate of tonight’s result");
+  });
+
+  it("names her as the count does, by candidacy", () => {
+    const race = etobicokeFirst();
+    race.candidates = race.candidates.map((c) => (c.key === "Olivia Chow" ? { ...c, short_label: "O. Chow" } : c));
+    render(<RaceCard race={race} levels={night.levels} />);
+    expect(line()!.textContent).toMatch(/^Wards counted so far: O\. Chow /);
   });
 
   it("is not shown once every voting area is in, nor on other races", () => {

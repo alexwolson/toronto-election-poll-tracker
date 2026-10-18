@@ -510,14 +510,10 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
         Wards counted so far: {name} {shareText(benchmark.counted2023)} in 2023 · {shareText(benchmark.citywide2023)}{" "}
         citywide
       </p>
-      <div className="faq">
-        <details>
-          <summary>{BENCHMARK_WORDING.summary}</summary>
-          <div className="faq__a">
-            <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
-          </div>
-        </details>
-      </div>
+      <details className="live-benchmark-why">
+        <summary>{BENCHMARK_WORDING.summary}</summary>
+        <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
+      </details>
     </>
   );
 }

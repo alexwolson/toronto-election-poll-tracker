@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHOW_2023, chowCandidate, chowWard, countedWardsBenchmark } from "./chow-2023";
+import { CHOW_2023, chowCandidate, chowVs2023, chowWard, countedWardsBenchmark } from "./chow-2023";
 import type { LiveMayoralWard, LiveRace } from "@/types/live";
 
 const race = {
@@ -91,5 +91,42 @@ describe("countedWardsBenchmark", () => {
     expect(countedWardsBenchmark(counting({}, "no_units_in"))).toBeNull();
     expect(countedWardsBenchmark(counting({}))).toBeNull();
     expect(countedWardsBenchmark(counting({ "1": 1000 }, "all_units_in"))).toBeNull();
+  });
+});
+
+describe("chowVs2023", () => {
+  /** A mayor race whose wards have counted Chow's votes and everyone else's (ward → [Chow, others]). */
+  const counted = (wards: Record<string, [number, number]>, state: LiveRace["state"] = "counting"): LiveRace =>
+    ({
+      ...race,
+      state,
+      wards: Array.from({ length: 25 }, (_, i) => {
+        const num = String(i + 1);
+        const [chow, others] = wards[num] ?? [0, 0];
+        return { num, name: null, progress: null, votes_counted: chow + others, votes: { "Olivia Chow": chow, "Brad Bradford": others } };
+      }),
+    }) as unknown as LiveRace;
+
+  it("sets each counted ward's change since 2023 against her change across the wards counted", () => {
+    // Ward 1: 40% now, 27.9% in 2023; ward 13: 50% now, 54.6% in 2023. Across both: 45% now, 41.25% then.
+    const vs = chowVs2023(counted({ "1": [400, 600], "13": [500, 500] }));
+    expect(Object.keys(vs)).toEqual(["1", "13"]);
+    expect(vs["1"]).toBeCloseTo(40 - 27.9 - 3.75, 6);
+    expect(vs["13"]).toBeCloseTo(50 - 54.6 - 3.75, 6);
+  });
+
+  it("is never positive everywhere: the wards weighed by their votes counted average to zero", () => {
+    const vs = chowVs2023(counted({ "1": [300, 700], "4": [1200, 800], "13": [900, 600], "20": [100, 400] }));
+    const weights = { "1": 1000, "4": 2000, "13": 1500, "20": 500 } as Record<string, number>;
+    const mean = Object.entries(vs).reduce((a, [n, d]) => a + weights[n] * d, 0) / 5000;
+    expect(mean).toBeCloseTo(0, 9);
+  });
+
+  it("reads 0 with one ward in, still reads once every voting area is in, and is empty with none", () => {
+    expect(chowVs2023(counted({ "1": [100, 900] }))["1"]).toBeCloseTo(0, 9);
+    expect(Object.keys(chowVs2023(counted({ "1": [1, 1], "2": [1, 1] }, "all_units_in")))).toEqual(["1", "2"]);
+    expect(chowVs2023(counted({}))).toEqual({});
+    const without = { ...counted({ "1": [1, 1] }), candidates: [{ key: "X", candidacy_id: "can_x" }] } as unknown as LiveRace;
+    expect(chowVs2023(without)).toEqual({});
   });
 });

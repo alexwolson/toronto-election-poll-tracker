@@ -72,3 +72,22 @@ export function countedWardsBenchmark(race: LiveRace): CountedWardsBenchmark | n
   }
   return weight > 0 ? { counted2023: sum / weight, citywide2023: CHOW_2023.citywide.share } : null;
 }
+
+/** For each counted ward, Chow's change there since 2023 less her change across all the wards
+ *  counted (#110): the ward's lean now against its lean in 2023, in points. Never a raw
+ *  2026-minus-2023 difference, which a citywide shift would push one way everywhere; weighed by
+ *  votes counted, as `countedWardsBenchmark` weighs them, the figures average to zero. Keyed by
+ *  ward number; a ward with no votes counted is absent. */
+export function chowVs2023(race: LiveRace | null): Record<string, number> {
+  const chow = chowCandidate(race);
+  const counted: { num: string; total: number; live: number; share2023: number }[] = [];
+  for (const ward of race?.wards ?? []) {
+    const ward2023 = CHOW_2023.wards[ward.num];
+    const total = votesTotal(ward.votes);
+    if (!chow || !ward2023 || total <= 0) continue;
+    counted.push({ num: ward.num, total, live: wardShare(ward.votes, chow.key)!, share2023: ward2023.share });
+  }
+  const weight = counted.reduce((a, w) => a + w.total, 0);
+  const shift = counted.reduce((a, w) => a + w.total * (w.live - w.share2023), 0) / weight;
+  return Object.fromEntries(counted.map((w) => [w.num, w.live - w.share2023 - shift]));
+}

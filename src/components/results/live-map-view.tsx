@@ -377,7 +377,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           {legend.length > 0 && effectiveMeasure === "vs2023" && (
             <p className="t-meta live-map__key-note">
               Olivia Chow&apos;s change since 2023 in each ward, against her change across all the wards counted so far.
-              Purple: she&apos;s doing better there than that; orange: worse. Not an estimate of tonight&apos;s result.
+              Not an estimate of tonight&apos;s result.
             </p>
           )}
         </div>

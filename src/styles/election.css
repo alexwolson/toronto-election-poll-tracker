@@ -409,12 +409,12 @@ button:disabled { cursor: default; opacity: 0.6; }
   --live-seq-4: #0d366b;
   /* Diverging, for Chow's "vs 2023" (#110): purple, her colour, where she's doing better than her
      change across the counted wards; orange where worse; grey within 2 points, kept apart from
-     the unshaded ground (ColorBrewer PuOr ends). */
-  --live-div-better-2: #5e3c99;
+     the unshaded ground (ColorBrewer PuOr, ends softened; both still 3:1 on paper). */
+  --live-div-better-2: #735399;
   --live-div-better-1: #b2abd2;
   --live-div-0: #c9c4b8;
   --live-div-worse-1: #fdb863;
-  --live-div-worse-2: #e66101;
+  --live-div-worse-2: #d9792f;
 }
 .live-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .live-seg { display: inline-flex; flex-wrap: wrap; }

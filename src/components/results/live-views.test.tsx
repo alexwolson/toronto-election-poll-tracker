@@ -126,6 +126,56 @@ describe("LiveMapView", () => {
   });
 });
 
+describe("LiveMapView vs 2023", () => {
+  const show = (payload: LivePayload) => {
+    render(<LiveMapView data={MAP} payload={payload} wards={WARDS} ward={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "vs 2023" }));
+  };
+  const label = (num: string) => screen.getByRole("button", { name: new RegExp(`^Ward ${num} `) });
+
+  it("is a mayor measure only, and never the default", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    expect(screen.getByRole("button", { name: "vs 2023" }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Council" }));
+    expect(screen.queryByRole("button", { name: "vs 2023" })).toBeNull();
+  });
+
+  it("says, for each ward, how Chow's change since 2023 compares with her change across the wards counted", () => {
+    show(NIGHT);
+    // Mock night: ward 12 has moved 1.6 points her way against the counted wards, ward 10 2.0 against her.
+    expect(label("12").getAttribute("aria-label")).toMatch(/: Olivia Chow 1\.6 points better than her 2023 pattern$/);
+    expect(label("10").getAttribute("aria-label")).toMatch(/: Olivia Chow 2\.0 points worse than her 2023 pattern$/);
+    expect(label("12").getAttribute("style")).toContain("--live-div-0");
+    expect(label("10").getAttribute("style")).toContain("--live-div-worse-1");
+    const legend = screen.getByRole("list", { name: "Map legend" });
+    expect(within(legend).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      "5+ points better",
+      "2–5 points better",
+      "Within 2 points",
+      "2–5 points worse",
+      "5+ points worse",
+    ]);
+    expect(screen.getByText(/against her change across all the wards counted so far/)).toBeTruthy();
+    const row = within(screen.getByRole("table")).getByRole("rowheader", { name: /^12 / }).closest("tr")!;
+    expect(within(row).getByText("Olivia Chow 1.6 points better than her 2023 pattern")).toBeTruthy();
+  });
+
+  it("leaves a ward with no votes counted unshaded, and says so", () => {
+    const payload = structuredClone(NIGHT);
+    payload.races.find((r) => r.id === "mayor")!.wards!.find((w) => w.num === "3")!.votes = null;
+    show(payload);
+    expect(label("3").getAttribute("aria-label")).toMatch(/: No votes counted yet$/);
+    expect(label("3").getAttribute("style") ?? "").not.toContain("--ward-fill");
+    expect(within(screen.getByRole("list", { name: "Map legend" })).getByText("No votes counted yet")).toBeTruthy();
+  });
+
+  it("before results, shades nothing", () => {
+    show(BEFORE);
+    expect(label("3").getAttribute("aria-label")).toMatch(/: Results from 8 p\.m\.$/);
+    expect(screen.queryByRole("list", { name: "Map legend" })).toBeNull();
+  });
+});
+
 describe("LiveCountView", () => {
   const AREAS = {};
 

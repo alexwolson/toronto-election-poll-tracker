@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { CHOW_2023, chowCandidate, chowWard, type ChowWard } from "@/lib/chow-2023";
+import { CHOW_2023, chowCandidate, chowVs2023, chowWard, type ChowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
 import { shareText, wardShare } from "@/lib/live-share";
 import {
@@ -31,7 +31,7 @@ import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
 import { raceTitle } from "./race-cards";
 
 type Contest = "mayor" | "council" | "tdsb" | "tcdsb";
-type Measure = "leader" | "share" | "reporting";
+type Measure = "leader" | "share" | "reporting" | "vs2023";
 
 const CONTESTS: { id: Contest; label: string }[] = [
   { id: "mayor", label: "Mayor" },
@@ -74,6 +74,16 @@ const REPORTING_STEP: Record<ReportingTier, string | null> = {
   most: "var(--live-seq-3)",
   all: "var(--live-seq-4)",
 };
+
+/** The "vs 2023" steps (#110), from better for Chow than her change across the counted wards to
+ *  worse: within 2 points, 2–5, and 5 or more, each way. */
+const VS_STEPS = [
+  { label: "5+ points better", fill: "var(--live-div-better-2)" },
+  { label: "2–5 points better", fill: "var(--live-div-better-1)" },
+  { label: "Within 2 points", fill: "var(--live-div-0)" },
+  { label: "2–5 points worse", fill: "var(--live-div-worse-1)" },
+  { label: "5+ points worse", fill: "var(--live-div-worse-2)" },
+] as const;
 
 type WardStyle = CSSProperties & { "--ward-fill"?: string };
 
@@ -137,6 +147,19 @@ function reportingShade(fraction: number | null): Shade {
   return { fill: REPORTING_STEP[tier], words: `${REPORTING_WORDS[tier]}${fraction === null ? "" : ` (${pct(100 * fraction, 0)})`}` };
 }
 
+function vsShade(vs: number | undefined, name: string): Shade {
+  if (vs === undefined) return { fill: null, words: "No votes counted yet" };
+  // Stepped on the figure as shown, so a ward reading "2.0 points" never sits in the band under 2.
+  const shown = Math.round(vs * 10) / 10;
+  const size = Math.abs(shown);
+  const step = size < 2 ? 2 : shown > 0 ? (size < 5 ? 1 : 0) : size < 5 ? 3 : 4;
+  const words =
+    shown === 0
+      ? `${name} in line with her 2023 pattern`
+      : `${name} ${size.toFixed(1)} points ${shown > 0 ? "better" : "worse"} than her 2023 pattern`;
+  return { fill: VS_STEPS[step].fill, words };
+}
+
 export interface LiveMapViewProps {
   data: ResultsMapData;
   payload: LivePayload | null;
@@ -153,7 +176,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const shareChoices = (mayor?.candidates ?? []).filter((c) => (c.votes ?? 0) > 0).slice(0, 6);
   const [shareKey, setShareKey] = useState<string | null>(null);
   const shareCandidate = shareChoices.find((c) => c.key === shareKey) ?? shareChoices[0];
-  const effectiveMeasure: Measure = contest !== "mayor" && measure === "share" ? "leader" : measure;
+  const effectiveMeasure: Measure = contest !== "mayor" && (measure === "share" || measure === "vs2023") ? "leader" : measure;
 
   const names = new Map(wards.map((w) => [w.num, w.name]));
 
@@ -163,6 +186,8 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
     const shareOf = (num: string) => (shareCandidate ? wardShare(mayorWards.get(num)?.votes, shareCandidate.key) : null);
     const top = Math.max(10, ...data.wards.map((w) => shareOf(w.num) ?? 0));
     const scaleMax = Math.ceil(top / 10) * 10;
+    const vs2023 = chowVs2023(mayor);
+    const chowName = chowCandidate(mayor)?.full_name ?? "Olivia Chow";
 
     return data.wards.map((shape): WardFacts => {
       const name = names.get(shape.num) ?? "";
@@ -177,6 +202,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
         const reported = mw?.progress ?? null;
         let shade: Shade;
         if (effectiveMeasure === "reporting") shade = reportingShade(lead?.reported ?? null);
+        else if (effectiveMeasure === "vs2023") shade = vsShade(vs2023[shape.num], chowName);
         else if (effectiveMeasure === "share") {
           const share = shareOf(shape.num);
           shade =
@@ -247,6 +273,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           { id: "leader", label: "Leader" },
           { id: "share", label: "Candidate share" },
           { id: "reporting", label: "Voting areas in" },
+          { id: "vs2023", label: "vs 2023" },
         ]
       : [
           { id: "leader", label: "Incumbent" },
@@ -346,6 +373,12 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                 </li>
               ))}
             </ul>
+          )}
+          {legend.length > 0 && effectiveMeasure === "vs2023" && (
+            <p className="t-meta live-map__key-note">
+              Olivia Chow&apos;s change since 2023 in each ward, against her change across all the wards counted so far.
+              Not an estimate of tonight&apos;s result.
+            </p>
           )}
         </div>
         {active && <WardPanel facts={active} contest={contest} home={ward} />}
@@ -489,6 +522,11 @@ function legendFor(
     (Object.keys(REPORTING_WORDS) as ReportingTier[]).forEach((tier) =>
       items.push({ label: REPORTING_WORDS[tier], fill: REPORTING_STEP[tier] }),
     );
+    return items;
+  }
+  if (contest === "mayor" && measure === "vs2023") {
+    items.push(...VS_STEPS);
+    if (present((f) => f.shade.fill === null)) items.push({ label: "No votes counted yet", fill: null });
     return items;
   }
   if (contest === "mayor" && measure === "share") {

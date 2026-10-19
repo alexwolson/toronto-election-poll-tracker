@@ -1026,7 +1026,7 @@ describe("LiveResultsView: the voters' list bar", () => {
     expect(text(city)).toContain("222,550 advance voters (10.4%)");
     expect(city).toContain(`style="left:${T.city.share_2023}%"`);
     expect(city).not.toContain(`style="left:${T.city.share_2022}%"`);
-    expect(text(city)).toContain("38.4% in 2023");
+    expect(text(city)).toContain("Turnout in 2023: 38.4%");
     expect(text(city)).not.toContain("2022");
     // The City's advance figure is citywide only: a ward's bar has the marks alone.
     const ward = bar(card(render(golden("before-results-2026.json"), { ward: "9" }), "mayor"));

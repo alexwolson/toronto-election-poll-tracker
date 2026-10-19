@@ -101,7 +101,7 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
       <p className="visually-hidden">{segments.map((x) => `${x.label} ${shareText(x.share, x.people)}`).join(", ")}</p>
       <p className="live-turnout__past t-meta">
         <i className="live-turnout__swatch--mark" aria-hidden="true" />
-        {pct(area.share_2023)} in 2023
+        Turnout in 2023: {pct(area.share_2023)}
       </p>
     </figure>
   );

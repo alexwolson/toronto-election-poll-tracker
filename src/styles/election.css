@@ -394,6 +394,21 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally__then { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--ink); }
 .live-tally__glyph--then { width: 0; height: 14px; border-left: 2px dashed var(--ink); }
 .live-progress__label { min-width: 4.5rem; color: var(--ink); font-weight: 600; }
+/* The voters' list bar (turnout), kept quiet: one line, a thin bar in the rows' own colours at
+   half strength, the rest the empty track (flat grey once the count is in), a thin dashed 2023 mark. */
+.live-turnout { margin: var(--space-md) 0 var(--space-sm); }
+.live-turnout__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--space-md); margin: 0 0 0.35rem; color: var(--muted); }
+.live-turnout__figure { color: var(--ink); font-variant-numeric: tabular-nums; }
+.live-turnout__track { position: relative; display: flex; height: 0.45rem; background: color-mix(in srgb, var(--blue) 6%, var(--paper)); }
+.live-turnout__seg { height: 100%; }
+.live-turnout__seg--votes { opacity: 0.55; }
+.live-turnout__seg--advance { background: color-mix(in srgb, var(--ink) 35%, var(--paper)); }
+/* Not counted yet: the empty track, no pattern; the hatch means "out of reach" on the tallies. */
+.live-turnout__seg--pending { background: transparent; }
+.live-turnout__seg--novote { background: color-mix(in srgb, var(--muted) 22%, var(--paper)); }
+.live-turnout__mark { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 1px dashed var(--muted); }
+.live-turnout__past { display: flex; align-items: center; gap: 0.35rem; margin: 0.35rem 0 0; color: var(--muted); font-variant-numeric: tabular-nums; }
+.live-turnout__swatch--mark { display: inline-block; width: 0; height: 11px; border-left: 1px dashed var(--muted); }
 .forecast-chart__row--out { opacity: 0.55; padding-block: 0.45rem; }
 .forecast-chart__row--out .forecast-chart__track { height: 0.75rem; }
 .live-tally__axis { grid-template-columns: minmax(9rem, 17rem) minmax(0, 1fr) 4.5rem; border-bottom: 0; }

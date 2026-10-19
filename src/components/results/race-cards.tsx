@@ -522,8 +522,9 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
     <div className="live-subsection">
       <p className="kicker">{BENCHMARK_WORDING.label}</p>
       <p className="t-body-small live-benchmark">
-        Wards counted so far: {name} {shareText(benchmark.counted2023)} in 2023 · {shareText(benchmark.citywide2023)}{" "}
-        citywide
+        {/* A sentence, so it reads right wherever it wraps on a phone (Alex). */}
+        In 2023, {name} won {shareText(benchmark.counted2023)} in the wards counted so far, and{" "}
+        {shareText(benchmark.citywide2023)} citywide.
       </p>
       <details className="live-benchmark-why">
         <summary>{BENCHMARK_WORDING.summary}</summary>

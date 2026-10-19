@@ -52,8 +52,8 @@ export const WORDING = {
   elected: "Elected (unofficial)",
   /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003), as one
    *  break above those candidates (#105). */
-  eliminated: "Mathematically eliminated",
-  eliminatedWhy: "can’t win even with every vote still out",
+  eliminated: "Can’t realistically win",
+  eliminatedWhy: "can’t win even with every vote likely still out",
   /** The tally's key (#105). */
   keyCounted: "Counted",
   keyEstimated: "Estimated final range",
@@ -71,7 +71,7 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
  *  as Alex approved them (#54, #97). */
 const RANGE_WORDING = {
   estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
-  possible: "Possible: from none to all of the votes still to be counted.",
+  possible: "Possible: from none to all of the votes likely still to be counted.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",

@@ -16,6 +16,8 @@ import { acceptPoll, INITIAL_LIVE_STATE, type LiveClientState } from "@/lib/live
 import { serveHistory, validateLiveHistory } from "@/lib/live-history";
 import { serveLive, switchesFrom } from "@/lib/live-serve";
 import { REVIEW, reviewStep, type ReviewStore } from "@/lib/review-steps";
+import { capPossible } from "@/lib/review-capped";
+import type { LivePayload } from "@/types/live";
 import type { LiveHistory } from "@/types/live";
 import { LiveResultsView, type LiveResultsViewProps } from "./live-results-view";
 
@@ -37,7 +39,8 @@ async function fetchReview(kind: "results" | "history"): Promise<unknown> {
       kind === "history"
         ? serveHistory({ entries: store.history, switches })
         : serveLive({
-            payload: store.payload,
+            // Prototype (#124): the Possible Range capped by C(1.5).
+            payload: JSON.stringify(capPossible(JSON.parse(store.payload) as LivePayload)),
             heartbeats: [String(Date.now())],
             switches,
             nightClose: store.night_close,

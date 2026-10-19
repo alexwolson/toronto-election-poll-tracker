@@ -646,15 +646,19 @@ function ReportingBoard({ races, areas }: { races: LiveRace[]; areas: Record<str
 
 export interface LiveCountViewProps {
   payload: LivePayload | null;
-  wards: ResultsWard[];
   /** The ward page's ballot after the mayor (`wardBallotRaceIds`); empty on /results/. */
   ballot: string[];
   ward: string | null;
+}
+
+export interface LiveTablesViewProps {
+  payload: LivePayload | null;
+  wards: ResultsWard[];
   /** Trustee race id → the city wards it covers, for links. */
   areas: Record<string, string[]>;
 }
 
-export function LiveCountView({ payload, wards, ballot, ward, areas }: LiveCountViewProps) {
+export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
   const history = useLiveHistory();
   const [axis, setAxis] = useState<Axis>("clock");
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
@@ -728,9 +732,25 @@ export function LiveCountView({ payload, wards, ballot, ward, areas }: LiveCount
           <LeadChart race={mayor} history={history} axis={axis} />
         </div>
       )}
+    </section>
+  );
+}
 
-      {mayor?.wards && <MayorWardTable mayor={mayor} wards={wards} />}
-      <ReportingBoard races={payload.races} areas={areas} />
+/** The Tables view (#123): the mayor ward by ward, then every race by how much is in. Both read
+ *  only the payload, so they show from the first poll, with no history. */
+export function LiveTablesView({ payload, wards, areas }: LiveTablesViewProps) {
+  const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
+  return (
+    <section className="live-count" aria-labelledby="live-tables-heading">
+      <h2 id="live-tables-heading">Tables of the count</h2>
+      {!payload || payload.state !== "results" ? (
+        <p className="live-empty">Tables of the count start once the City reports results, from 8 p.m.</p>
+      ) : (
+        <>
+          {mayor?.wards && <MayorWardTable mayor={mayor} wards={wards} />}
+          <ReportingBoard races={payload.races} areas={areas} />
+        </>
+      )}
     </section>
   );
 }

@@ -932,3 +932,11 @@ describe("LiveResultsView: acclaimed races (#117)", () => {
     expect(html).not.toContain("Elected (unofficial)");
   });
 });
+
+describe("LiveResultsView: Brad Bradford in full (#121)", () => {
+  it("names him in full in the ward's mayoral vote, as Olivia Chow is", () => {
+    const html = card(render(counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] }), { ward: "9" }), "mayor");
+    const line = text(html.slice(html.indexOf(">Mayoral vote in Ward 9<")));
+    expect(line).toMatch(/Brad Bradford [\d.]+% · Olivia Chow [\d.]+%/);
+  });
+});

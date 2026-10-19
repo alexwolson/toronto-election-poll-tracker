@@ -28,6 +28,7 @@ import {
 import type { ResultsMapData, ResultsMapWard } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
+import { shortLabel } from "@/lib/live-labels";
 import { raceTitle } from "./race-cards";
 
 type Contest = "mayor" | "council" | "tdsb" | "tcdsb";
@@ -120,7 +121,7 @@ function pct(value: number | null, digits = 1): string {
 function nameOf(race: LiveRace | null, key: string | null): string {
   if (key === null) return "–";
   const candidate = race?.candidates.find((c) => c.key === key);
-  return candidate ? (candidate.short_label ?? candidate.full_name) : key;
+  return candidate ? shortLabel(candidate) : key;
 }
 
 /** Forecast-named mayoral candidates keep the forecast pages' colours (#16); others take their
@@ -538,7 +539,7 @@ function legendFor(
   if (contest === "mayor") {
     const leaders = new Set(facts.map((f) => (f.lead && !f.lead.tied ? f.lead.leader : null)));
     for (const c of mayor?.candidates ?? []) {
-      if (c.candidate_id && leaders.has(c.key)) items.push({ label: `${c.short_label ?? c.full_name} leads`, fill: candidateColour(c) });
+      if (c.candidate_id && leaders.has(c.key)) items.push({ label: `${shortLabel(c)} leads`, fill: candidateColour(c) });
     }
     const othersLead = (mayor?.candidates ?? []).some((c) => !c.candidate_id && leaders.has(c.key));
     if (othersLead) items.push({ label: "Another candidate leads", fill: OTHER });

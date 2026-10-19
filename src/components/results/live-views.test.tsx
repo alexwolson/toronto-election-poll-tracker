@@ -103,6 +103,21 @@ describe("LiveMapView", () => {
     expect(panel.querySelector(".live-map__reported")!.textContent).toBe("10,913 votes counted · 34 of 45 voting areas in");
   });
 
+  it("lists the panel's candidates alphabetically by last name, whoever leads (#122)", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    const names = (num: string) => {
+      fireEvent.click(screen.getByRole("button", { name: new RegExp(`^Ward ${num} `) }));
+      const panel = screen.getByRole("complementary", { name: `Ward ${num} details` });
+      return { names: within(panel).getAllByRole("listitem").map((li) => li.firstChild!.textContent), status: panel.querySelector(".live-map__status")!.textContent };
+    };
+    // Ward 4: Chow leads, but Bradford comes first alphabetically.
+    const four = names("4");
+    expect(four.status).toMatch(/^Olivia Chow leads by/);
+    expect(four.names).toEqual(["Brad Bradford", "Olivia Chow"]);
+    // Ward 1: Bradford leads, and the order is the same.
+    expect(names("1").names).toEqual(["Brad Bradford", "Olivia Chow"]);
+  });
+
   it("gives Chow's 2023 share in the mayor table, with its source, and not for council", () => {
     render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
     const table = screen.getByRole("table");

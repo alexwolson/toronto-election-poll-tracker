@@ -444,22 +444,35 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   );
 }
 
+/** A candidate's last name, for ordering (#122): the registry's short label where it is one
+ *  (it is the full Ballot Name when two candidates share a last name), else the name's last word. */
+function lastName(race: LiveRace | null, key: string): string {
+  const c = race?.candidates.find((candidate) => candidate.key === key);
+  if (!c) return key;
+  return c.short_label && c.short_label !== c.full_name ? c.short_label : (c.full_name.split(" ").at(-1) ?? c.full_name);
+}
+
 function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contest; home: string | null }) {
   const { ward, name, race, lead, reported, shade } = facts;
   const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
-  // Each figure once: the lead is in the status line, so the list is just who has what, in order.
-  // Chow's row carries her 2023 share in the ward (#108), and joins the list if she isn't top two.
-  const standings: { name: string; share: number | null; share2023?: number }[] = [];
+  // Each figure once: the lead is in the status line, so the list is just who has what. Its rows
+  // keep one alphabetical order by last name, whoever leads, so they don't swap places from ward
+  // to ward (#122). Chow's row carries her 2023 share in the ward (#108), and joins the list if
+  // she isn't top two.
+  const standings: { name: string; sortKey: string; share: number | null; share2023?: number }[] = [];
+  const entry = (key: string, share: number | null) => ({ name: nameOf(race, key), sortKey: lastName(race, key), share });
   if (lead && lead.leader !== null) {
-    standings.push({ name: nameOf(race, lead.leader), share: lead.leaderShare });
-    if (lead.runnerUp) standings.push({ name: nameOf(race, lead.runnerUp), share: lead.leaderShare! - lead.margin! });
+    standings.push(entry(lead.leader, lead.leaderShare));
+    if (lead.runnerUp) standings.push(entry(lead.runnerUp, lead.leaderShare! - lead.margin!));
   }
   if (facts.chow) {
     const key = chowCandidate(race)?.key ?? null;
     const row = key === null ? undefined : standings.find((r) => r.name === nameOf(race, key));
     if (row) row.share2023 = facts.chow.share2023;
-    else standings.push({ name: key === null ? "Olivia Chow" : nameOf(race, key), share: facts.chow.live, share2023: facts.chow.share2023 });
+    else if (key === null) standings.push({ name: "Olivia Chow", sortKey: "Chow", share: facts.chow.live, share2023: facts.chow.share2023 });
+    else standings.push({ ...entry(key, facts.chow.live), share2023: facts.chow.share2023 });
   }
+  standings.sort((a, b) => a.sortKey.localeCompare(b.sortKey, "en-CA") || a.name.localeCompare(b.name, "en-CA"));
   const meta = [
     lead && lead.leader !== null ? `${lead.counted.toLocaleString("en-CA")} votes counted` : null,
     reported ? `${reported.received} of ${reported.total} voting areas in` : null,

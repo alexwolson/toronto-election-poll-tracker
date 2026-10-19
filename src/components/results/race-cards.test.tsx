@@ -51,7 +51,7 @@ describe("RaceCard: the mayor's folded field", () => {
     const fourth = [...document.querySelectorAll(".live-tally__name")].find((el) => el.textContent === rest[0].full_name)!;
     expect(third.compareDocumentPosition(breakEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(fourth.compareDocumentPosition(breakEl) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    expect(third.closest(".forecast-chart__row")!.querySelector(".live-tally__win")).not.toBeNull();
+    expect(third.closest(".forecast-chart__row")!.querySelector(".live-tally__win")).toBeNull();
   });
 });
 

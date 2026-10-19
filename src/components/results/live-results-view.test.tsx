@@ -973,3 +973,39 @@ describe("LiveResultsView: Chow's 2023 share on her ward bar (#125)", () => {
     expect(chow).toContain(`class="live-tally__then" style="left:${share2023("9")}%"`);
   });
 });
+
+describe("LiveResultsView: an incumbent councillor's share in the ward's last election", () => {
+  function rowOf(html: string, name: string): string {
+    const at = html.indexOf(`<span class="live-tally__name">${name}</span>`);
+    expect(at, name).toBeGreaterThan(-1);
+    const start = html.lastIndexOf('<div class="forecast-chart__row', at);
+    const next = html.indexOf('<div class="forecast-chart__row', at);
+    return html.slice(start, next > -1 ? next : html.length);
+  }
+  const counting = () => counting2026({});
+
+  it("marks it on the incumbent's bar, in their caption and in the key", () => {
+    const html = card(render(counting(), { ward: "1" }), "councillor-1");
+    const crisanti = rowOf(html, "Vincent Crisanti");
+    expect(crisanti).toContain('class="live-tally__then" style="left:41.07%"');
+    expect(text(crisanti)).toContain("41.1% in 2022");
+    expect(text(html)).toContain("Crisanti in 2022");
+    expect(rowOf(html, "Abraham Abbey")).not.toContain("live-tally__then");
+  });
+
+  it("names a by-election as one", () => {
+    const html = card(render(counting(), { ward: "15" }), "councillor-15");
+    expect(text(rowOf(html, "Rachel Chernos Lin"))).toContain("54.8% in the 2024 by-election");
+    expect(text(html)).toContain("Chernos Lin in the 2024 by-election");
+  });
+
+  it("gives no mark to a councillor who last won another ward, or where no incumbent runs", () => {
+    expect(card(render(counting(), { ward: "14" }), "councillor-14")).not.toContain("live-tally__then");
+    expect(card(render(counting(), { ward: "4" }), "councillor-4")).not.toContain("live-tally__then");
+  });
+
+  it("shows the mark before results, on an empty bar", () => {
+    const html = card(render(golden("before-results-2026.json"), { ward: "1" }), "councillor-1");
+    expect(rowOf(html, "Vincent Crisanti")).toContain('class="live-tally__then" style="left:41.07%"');
+  });
+});

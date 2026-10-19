@@ -1,0 +1,133 @@
+{
+ "source": "Canonical Toronto election results (council contests 2022-2025), joined to 2026 candidacies",
+ "canonical_sha256": "5869a97576185355b47e6fe20683fefc359bdbec574d774f62006eeb6f93be73",
+ "joins_sha256": "c48a9cc54e305be9576d95e130bb03cd65e95db83c210612e370423b6eeffe5c",
+ "incumbents": {
+  "can_adcacf84e3005896a5c773986a552c96": {
+   "ward": "1",
+   "share": 41.07,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_47bbbdf2085553daba34e5d65c24be5b": {
+   "ward": "2",
+   "share": 72.28,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_10ee922a6726559e8a6169740c7e274c": {
+   "ward": "3",
+   "share": 46.44,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_f368a3e52d0e545bbb6ebae997fb1bdf": {
+   "ward": "5",
+   "share": 47.61,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_0aee4bd40f7c5ca99c87bf0689ba951b": {
+   "ward": "6",
+   "share": 73.53,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_8164ef2b771950ebbe2913e7c4b5e8fd": {
+   "ward": "7",
+   "share": 61.3,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_3934cc2ba6395449b323ba47fdc50951": {
+   "ward": "8",
+   "share": 70.31,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_06e9de5734dd5d97a4c2cde85a5ea016": {
+   "ward": "9",
+   "share": 70.72,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_4e5688e335d85ba38dea71c20fc80f46": {
+   "ward": "10",
+   "share": 36.55,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_f0eef9233b0c57268fe3d1a894b0dc36": {
+   "ward": "12",
+   "share": 84.65,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_d1f0d6ec825a5e8880c7a0127fb4c0cd": {
+   "ward": "13",
+   "share": 48.48,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_2bd1031bade45386afb939f58e00bc7c": {
+   "ward": "15",
+   "share": 54.76,
+   "year": 2024,
+   "by_election": true
+  },
+  "can_3d04d5bdb8ef5da8adb96314f7e9ccff": {
+   "ward": "16",
+   "share": 44.68,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_0a3c62f981215bf2a20a08b3860f4f01": {
+   "ward": "17",
+   "share": 71.79,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_43b902d7e35c5ba797370fa0395d6d7a": {
+   "ward": "18",
+   "share": 41.72,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_9fdda0e71bd5578dab7a9bab4d7f5d4d": {
+   "ward": "20",
+   "share": 27.38,
+   "year": 2023,
+   "by_election": true
+  },
+  "can_71d0b0ede70a5a45a0f3ca553a2c73b0": {
+   "ward": "21",
+   "share": 55.25,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_4c18cca55e9d5f0a9574e97613157eee": {
+   "ward": "22",
+   "share": 48.89,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_7e48ff22e1285e67b903e960711b588f": {
+   "ward": "23",
+   "share": 51.09,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_b575c3cad9c45924b9ab2fd40bf439bd": {
+   "ward": "24",
+   "share": 76.52,
+   "year": 2022,
+   "by_election": false
+  },
+  "can_a79a57064f7351fdb16759205a1efff7": {
+   "ward": "25",
+   "share": 26.86,
+   "year": 2025,
+   "by_election": true
+  }
+ }
+}

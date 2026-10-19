@@ -20,6 +20,7 @@ import { rangeText, shareText, votesTotal } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import { shortLabel } from "@/lib/live-labels";
+import { lastElection, type LastElection } from "@/lib/council-incumbents";
 import type {
   LiveBand,
   LiveCandidate,
@@ -207,6 +208,8 @@ interface TallyRow {
   waiting: boolean;
   /** A ward page's mayoral row (#125): the ward's own count, under the city's. */
   ward: WardBar | null;
+  /** An incumbent councillor's share in the ward's last election, and the key's label for it. */
+  last: (LastElection & { label: string }) | null;
   color: string;
   votes: number | null;
   share: number | null;
@@ -236,6 +239,11 @@ function wardBar(race: LiveRace, ward: string | null, candidates: LiveCandidate[
   };
 }
 
+function lastOf(race: LiveRace, candidate: LiveCandidate): TallyRow["last"] {
+  const last = lastElection(race, candidate);
+  return last && { ...last, label: `${shortLabel(candidate)} ${last.when}` };
+}
+
 function tallyRow(
   candidate: LiveCandidate,
   race: LiveRace,
@@ -253,6 +261,7 @@ function tallyRow(
     slug: meta?.slug ?? null,
     waiting: waiting(race),
     ward: null,
+    last: lastOf(race, candidate),
     color: liveColour(candidate, NEUTRAL),
     votes: candidate.votes,
     share: candidate.share,
@@ -288,6 +297,7 @@ function tallyRows(race: LiveRace, closed: boolean, expanded = false, ward: stri
       slug: null,
       waiting: waiting(race),
       ward: wardBar(race, ward, rest),
+      last: null,
       color: NEUTRAL,
       votes: sum(rest.map((c) => c.votes)),
       share: sum(rest.map((c) => c.share)),
@@ -358,10 +368,11 @@ function span(low: number, high: number) {
 /** A row's one quiet line (#105): its votes and Estimated Range. The
  *  Possible Range's figures go to screen readers only; its whisker shows it. */
 function rowMeta(row: TallyRow): string[] {
-  if (row.waiting) return [];
+  const last = row.last ? [`${row.last.share.toFixed(1)}% ${row.last.when}`] : [];
+  if (row.waiting) return last;
   const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} ${row.votes === 1 ? "vote" : "votes"}`];
   if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
-  return parts;
+  return [...parts, ...last];
 }
 
 /** A ward page's second bar for a mayoral row (#125): the ward's counted share, lighter, with
@@ -420,6 +431,7 @@ function TallyRowView({ row }: { row: TallyRow }) {
             />
           </span>
         )}
+        {row.last && <span className="live-tally__then" style={{ left: `${row.last.share}%` }} />}
       </span>
       <strong className="forecast-chart__value live-tally__value">{row.waiting ? "–" : percent(row.share, row.votes)}</strong>
       <span className="live-tally__meta">
@@ -440,7 +452,8 @@ function TallyRowView({ row }: { row: TallyRow }) {
 function TallyKey({ rows, race }: { rows: TallyRow[]; race: LiveRace }) {
   const has = (pick: (row: TallyRow) => unknown) => rows.some(pick);
   const then = has((r) => r.ward?.then !== null && r.ward?.then !== undefined);
-  if (!has((r) => r.band || r.possible) && !then) return null;
+  const last = rows.find((r) => r.last)?.last ?? null;
+  if (!has((r) => r.band || r.possible) && !then && !last) return null;
   const chow = chowCandidate(race);
   return (
     <p className="live-tally__key" aria-hidden="true">
@@ -448,6 +461,7 @@ function TallyKey({ rows, race }: { rows: TallyRow[]; race: LiveRace }) {
       {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
       {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--reach" />{WORDING.keyPossible}</span>}
       {then && chow && <span><i className="live-tally__glyph live-tally__glyph--then" />{`${shortLabel(chow)} in 2023`}</span>}
+      {last && <span><i className="live-tally__glyph live-tally__glyph--then" />{last.label}</span>}
     </p>
   );
 }

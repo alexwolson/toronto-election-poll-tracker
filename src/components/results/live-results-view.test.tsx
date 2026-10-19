@@ -11,6 +11,7 @@ import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
 import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "@/lib/live-serve";
 import { CHOW_2023 } from "@/lib/chow-2023";
+import { TURNOUT } from "@/lib/turnout";
 import { LiveResultsView } from "./live-results-view";
 
 const navigation = vi.hoisted(() => ({ view: null as string | null }));
@@ -1007,5 +1008,44 @@ describe("LiveResultsView: an incumbent councillor's share in the ward's last el
   it("shows the mark before results, on an empty bar", () => {
     const html = card(render(golden("before-results-2026.json"), { ward: "1" }), "councillor-1");
     expect(rowOf(html, "Vincent Crisanti")).toContain('class="live-tally__then" style="left:41.07%"');
+  });
+});
+
+describe("LiveResultsView: turnout", () => {
+  const T = TURNOUT;
+  const pct = (x: number) => `${x.toFixed(1)}%`;
+
+  it("before 8 p.m., gives the advance vote against 2022 and 2023, once", () => {
+    for (const ward of [null, "9"]) {
+      const html = render(golden("before-results-2026.json"), { ward });
+      expect(count(text(html), "Advance voters: 222,550, up from 115,911 in 2022 and 129,745 in 2023.")).toBe(1);
+    }
+    expect(render(golden("no-units-in-2026.json"))).not.toContain("Advance voters");
+  });
+
+  it("once a ward has every voting area in, gives its votes for mayor as a share of the voters' list", () => {
+    const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
+    const mayor = payload.races.find((r) => r.id === "mayor")!;
+    const w9 = mayor.wards!.find((w) => w.num === "9")!;
+    // Not yet: two of 40 areas in.
+    expect(text(card(render(payload, { ward: "9" }), "mayor"))).not.toContain("of the voters’ list");
+    w9.progress = { received: 40, total: 40 };
+    const html = text(card(render(payload, { ward: "9" }), "mayor"));
+    const share = (100 * w9.votes_counted!) / T.wards["9"].electors_2026;
+    expect(html).toContain(
+      `Votes for mayor in Ward 9: ${pct(share)} of the voters’ list (2022: ${pct(T.wards["9"].share_2022)}, 2023: ${pct(T.wards["9"].share_2023)})`,
+    );
+  });
+
+  it("once the whole count is in, gives the city's on /results/", () => {
+    const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
+    const mayor = payload.races.find((r) => r.id === "mayor")!;
+    expect(text(card(render(payload), "mayor"))).not.toContain("of the voters’ list");
+    mayor.state = "all_units_in";
+    mayor.progress = { received: 10, total: 10 };
+    const votes = mayor.candidates.reduce((a, c) => a + (c.votes ?? 0), 0);
+    expect(text(card(render(payload), "mayor"))).toContain(
+      `Votes for mayor: ${pct((100 * votes) / T.city.electors_2026)} of the voters’ list (2022: 29.1%, 2023: 38.4%)`,
+    );
   });
 });

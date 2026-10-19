@@ -16,6 +16,7 @@ import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { LiveCountView, LiveTablesView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
 import { CouncilTiles, FrenchBoards, RaceCard, WORDING } from "./race-cards";
+import { advanceLine } from "@/lib/turnout";
 import { ResultsViews } from "./results-views";
 import { WardPicker } from "./ward-picker";
 
@@ -116,6 +117,8 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
           </p>
         )}
         {unreachable}
+        {/* Before 8 p.m. (Alex): the advance vote, a known fact while the page waits. */}
+        {!counting && <p className="t-meta">{advanceLine()}</p>}
         <p className="t-meta">
           {closed && counting ? (
             // "unofficial" once is enough (#54).

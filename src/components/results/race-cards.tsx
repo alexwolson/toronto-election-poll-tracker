@@ -16,7 +16,7 @@ import { candidateMeta } from "@/lib/candidates";
 import { chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
-import { shareText, votesTotal } from "@/lib/live-share";
+import { rangeText, shareText, votesTotal } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import { shortLabel } from "@/lib/live-labels";
@@ -118,11 +118,6 @@ function levelStatus(levels: Levels | null, level: LiveRace["level"]): Projectio
 function estimated(race: LiveRace): Record<string, LiveBand> | null {
   const shown = race.projection?.shown;
   return shown ? (race.projection!.bands[shown] ?? null) : null;
-}
-
-/** Whole percents for a range: "42–47%". */
-function rangeText(low: number, high: number): string {
-  return `${Math.round(low)}–${Math.round(high)}%`;
 }
 
 function progressText(progress: LiveProgress): string {

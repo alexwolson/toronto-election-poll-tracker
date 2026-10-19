@@ -1,7 +1,7 @@
 /**
  * The voters' list bar (Alex, 2026-10-19): everyone on the voters' list before election day, citywide
  * or in the page's ward, split into who has been counted voting for each mayoral candidate and the
- * rest, with 2022's and 2023's share marked. Before 8 p.m. the city's advance voters (the City's
+ * rest, with 2023's share marked (only 2023's, Alex). Before 8 p.m. the city's advance voters (the City's
  * figure has no ward breakdown); while counting the rest is "not counted yet, or didn't vote", never
  * labelled as non-voters, since the two can't be told apart until the count is in; then "didn't
  * vote". Facts of the count and the list, never a projection.
@@ -95,14 +95,13 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
             style={{ ...width(x.share), ...(x.colour ? { background: x.colour } : {}) }}
           />
         ))}
-        <span className="live-turnout__mark" style={{ left: `${area.share_2022}%` }} />
         <span className="live-turnout__mark" style={{ left: `${area.share_2023}%` }} />
       </div>
       {/* The candidates' colours match the rows below, so the bar needs no legend; screen readers get it in words. */}
       <p className="visually-hidden">{segments.map((x) => `${x.label} ${shareText(x.share, x.people)}`).join(", ")}</p>
       <p className="live-turnout__past t-meta">
         <i className="live-turnout__swatch--mark" aria-hidden="true" />
-        {pct(area.share_2022)} in 2022 · {pct(area.share_2023)} in 2023
+        {pct(area.share_2023)} in 2023
       </p>
     </figure>
   );

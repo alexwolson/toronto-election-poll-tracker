@@ -1020,17 +1020,18 @@ describe("LiveResultsView: the voters' list bar", () => {
     return html.slice(at, html.indexOf("</figure>", at));
   };
 
-  it("before 8 p.m., shows the advance vote citywide, and the 2022 and 2023 marks", () => {
+  it("before 8 p.m., shows the advance vote citywide, and the 2023 mark (only 2023, Alex)", () => {
     const city = bar(card(render(golden("before-results-2026.json")), "mayor"));
     expect(city).toContain(`live-turnout__seg live-turnout__seg--advance" style="${w((100 * T.advance_voters["2026"]) / T.city.electors_2026)}`);
     expect(text(city)).toContain("222,550 advance voters (10.4%)");
-    expect(city).toContain(`style="left:${T.city.share_2022}%"`);
     expect(city).toContain(`style="left:${T.city.share_2023}%"`);
-    expect(text(city)).toContain("29.1% in 2022 · 38.4% in 2023");
+    expect(city).not.toContain(`style="left:${T.city.share_2022}%"`);
+    expect(text(city)).toContain("38.4% in 2023");
+    expect(text(city)).not.toContain("2022");
     // The City's advance figure is citywide only: a ward's bar has the marks alone.
     const ward = bar(card(render(golden("before-results-2026.json"), { ward: "9" }), "mayor"));
     expect(ward).not.toContain("--advance");
-    expect(ward).toContain(`style="left:${T.wards["9"].share_2022}%"`);
+    expect(ward).toContain(`style="left:${T.wards["9"].share_2023}%"`);
   });
 
   it("while counting, splits the counted votes by candidate and hatches the rest as not yet known", () => {

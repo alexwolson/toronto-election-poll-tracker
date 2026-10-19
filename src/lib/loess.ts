@@ -28,8 +28,10 @@ function tricube(u: number): number {
 
 /**
  * Fit a LOESS curve to `points`, evaluated on an even grid across the observed
- * x-range (no extrapolation). Returns null when there are too few distinct
- * x-values for a defensible fit.
+ * x-range (no extrapolation). Each fitted value is clamped to the observed y-range:
+ * a local line can overshoot near a series' end (a share falling to zero fitted
+ * below it), and a trend line never belongs outside its own data. Returns null when
+ * there are too few distinct x-values for a defensible fit.
  */
 export function loessCurve(
   points: LoessPoint[],
@@ -43,6 +45,8 @@ export function loessCurve(
   const minX = pts[0].x;
   const maxX = pts[n - 1].x;
   if (maxX === minX) return null;
+  const minY = Math.min(...pts.map((p) => p.y));
+  const maxY = Math.max(...pts.map((p) => p.y));
 
   // Local window size: at least 2 points, at most all of them.
   const window = Math.max(2, Math.min(n, Math.ceil(config.span * n)));
@@ -78,7 +82,7 @@ export function loessCurve(
       const intercept = (swy - slope * swx) / sw;
       yhat = intercept + slope * x0;
     }
-    curve.push({ x: x0, y: yhat });
+    curve.push({ x: x0, y: Math.min(maxY, Math.max(minY, yhat)) });
   }
   return curve;
 }

@@ -8,7 +8,7 @@ export interface PollingChartGraphicProps {
   trends: CandidateTrend[];
   series: ChartSeries[];
   yDomain?: [number, number];
-  /** Clip the full-history curve to a displayed date window, without refitting. */
+  /** Clip the curves to a displayed date window; the caller chooses which polls they were fitted to. */
   xDomain?: [number, number];
   /** "month" ticks month starts; "dayMonth" labels dates within a short range. */
   xAxis?: "monthYear" | "month" | "dayMonth";

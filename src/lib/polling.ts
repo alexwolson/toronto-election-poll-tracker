@@ -240,14 +240,21 @@ export function pollsSinceNominationsClosed(feed: MayoralPollingFeed, field: str
   );
 }
 
-/** Select displayed observations while retaining the full-history LOESS fit.
- * The chart's date domain clips the curve; this never refits the selected polls. */
-export function candidateTrendsForPolls(trends: CandidateTrend[], polls: Poll[]): CandidateTrend[] {
-  const ids = new Set(polls.map((poll) => poll.poll_id));
-  return trends.map((trend) => ({
-    ...trend,
-    markers: trend.markers.filter((marker) => ids.has(marker.poll_id)),
-  }));
+/** The "Since nominations closed" view of the candidate-choice chart: its own LOESS
+ * fit over the full-field polls conducted after nominations closed. */
+export function candidateTrendsSinceNominationsClosed(
+  feed: MayoralPollingFeed, field: string[], campaigningField: string[],
+): CandidateTrend[] {
+  return candidateTrends({ ...feed, polls: pollsSinceNominationsClosed(feed, campaigningField) }, field);
+}
+
+/** The "Since nominations closed" view of the all-respondent chart, fitted on its own. */
+export function allRespondentTrendsSinceNominationsClosed(
+  feed: MayoralPollingFeed, field: string[], forecastField: string[], campaigningField: string[],
+): CandidateTrend[] {
+  const recent = pollsSinceNominationsClosed(
+    { ...feed, polls: feed.all_respondents ?? [] }, campaigningField);
+  return allRespondentTrends({ ...feed, all_respondents: recent }, field, forecastField);
 }
 
 const NON_CHOICE_RESPONSES = new Set([

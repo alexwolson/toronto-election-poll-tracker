@@ -124,6 +124,11 @@ export const PollingChartTooltip = memo(function PollingChartTooltip({
   );
 });
 
+/** Y-axis tick label: always a whole percent, so a domain that is not round never prints raw decimals. */
+export function percentAxisLabel(value: unknown): string {
+  return `${Math.round(Number(value)) || 0}%`;
+}
+
 function legendLabel(value: unknown) {
   return <span className="polling-chart__legend-label">{String(value)}</span>;
 }
@@ -205,7 +210,7 @@ export const PollingChartGraphic = memo(function PollingChartGraphic({
         />
         <YAxis
           domain={yDomain}
-          tickFormatter={(value) => `${value}%`}
+          tickFormatter={percentAxisLabel}
           tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           axisLine={{ stroke: "var(--border)" }}
           tickLine={{ stroke: "var(--border)" }}

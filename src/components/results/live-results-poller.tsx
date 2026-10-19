@@ -13,7 +13,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { acceptPoll, INITIAL_LIVE_STATE, type LiveClientState } from "@/lib/live-accept";
-import { validateLiveHistory } from "@/lib/live-history";
+import { serveHistory, validateLiveHistory } from "@/lib/live-history";
+import { serveLive, switchesFrom } from "@/lib/live-serve";
+import { REVIEW, reviewStep, type ReviewStore } from "@/lib/review-steps";
 import type { LiveHistory } from "@/types/live";
 import { LiveResultsView, type LiveResultsViewProps } from "./live-results-view";
 
@@ -25,8 +27,30 @@ const POLL_TIMEOUT_MS = 20_000;
 const HISTORY_URL = "/live/history.json";
 const HISTORY_INTERVAL_MS = 120_000;
 
+/** Review builds: the chosen snapshot's store values, served as the routes serve them. */
+async function fetchReview(kind: "results" | "history"): Promise<unknown> {
+  try {
+    const response = await fetch(`/review/${reviewStep()}/store.json`);
+    const store = (await response.json()) as ReviewStore;
+    const switches = switchesFrom([]);
+    const body =
+      kind === "history"
+        ? serveHistory({ entries: store.history, switches })
+        : serveLive({
+            payload: store.payload,
+            heartbeats: [String(Date.now())],
+            switches,
+            nightClose: store.night_close,
+          });
+    return JSON.parse(JSON.stringify(body));
+  } catch {
+    return null;
+  }
+}
+
 /** The parsed body, or null for any network, timeout, status or JSON failure. */
 async function fetchLive(url = LIVE_URL): Promise<unknown> {
+  if (REVIEW) return fetchReview(url === HISTORY_URL ? "history" : "results");
   try {
     // Skip the browser's HTTP cache; the CDN's ISR copy is what collapses load.
     const response = await fetch(url, {

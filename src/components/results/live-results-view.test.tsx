@@ -1023,10 +1023,10 @@ describe("LiveResultsView: the voters' list bar", () => {
   it("before 8 p.m., shows the advance vote citywide, and the 2022 and 2023 marks", () => {
     const city = bar(card(render(golden("before-results-2026.json")), "mayor"));
     expect(city).toContain(`live-turnout__seg live-turnout__seg--advance" style="${w((100 * T.advance_voters["2026"]) / T.city.electors_2026)}`);
-    expect(text(city)).toContain("Advance voters 10.4%");
+    expect(text(city)).toContain("222,550 advance voters (10.4%)");
     expect(city).toContain(`style="left:${T.city.share_2022}%"`);
     expect(city).toContain(`style="left:${T.city.share_2023}%"`);
-    expect(text(city)).toMatch(/2022 29\.1%[^]*2023 38\.4%/);
+    expect(text(city)).toContain("29.1% in 2022 · 38.4% in 2023");
     // The City's advance figure is citywide only: a ward's bar has the marks alone.
     const ward = bar(card(render(golden("before-results-2026.json"), { ward: "9" }), "mayor"));
     expect(ward).not.toContain("--advance");
@@ -1042,8 +1042,8 @@ describe("LiveResultsView: the voters' list bar", () => {
     const bradford = mayor.candidates.find((c) => c.full_name === "Brad Bradford")!;
     expect(html).toContain(w((100 * w9.votes![bradford.key]) / e));
     expect(html).toContain("live-turnout__seg--pending");
-    expect(text(html)).toContain("Not counted yet, or didn’t vote");
-    expect(text(html)).not.toContain("Didn’t vote ");
+    expect(text(html)).toMatch(/[\d.]+% counted so far/);
+    expect(text(html)).not.toMatch(/[\d.]+% voted/);
     expect(card(render(payload, { ward: "9" }), "councillor-9")).not.toContain("live-turnout");
   });
 
@@ -1053,7 +1053,7 @@ describe("LiveResultsView: the voters' list bar", () => {
     w9.progress = { received: 40, total: 40 };
     const html = bar(card(render(payload, { ward: "9" }), "mayor"));
     expect(html).toContain("live-turnout__seg--novote");
-    expect(text(html)).toMatch(/Didn’t vote [\d.]+%/);
+    expect(text(html)).toMatch(/[\d.]+% voted/);
     expect(html).not.toContain("--pending");
   });
 
@@ -1066,9 +1066,12 @@ describe("LiveResultsView: the voters' list bar", () => {
     expect(bar(card(render(payload), "mayor"))).toContain("--novote");
   });
 
-  it("explains its measure once, visibly", () => {
+  it("explains its measure once, in the card's disclosures", () => {
     const html = card(render(golden("before-results-2026.json")), "mayor");
     expect(count(text(html), "Valid votes for mayor over the voters’ list before election day")).toBe(1);
+    const more = html.slice(html.indexOf('class="live-card-more"'));
+    expect(more).toContain("<summary>About turnout</summary>");
+    expect(more).toContain("Valid votes for mayor over the voters’ list before election day");
     expect(render(golden("before-results-2026.json"))).not.toContain("Advance voters:");
   });
 });

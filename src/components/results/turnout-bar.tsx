@@ -66,36 +66,58 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
     );
   }
 
-  const where = ward === null ? "Citywide" : `Ward ${ward}`;
+  // One figure for the line: what the bar shows so far.
+  const shown = segments.filter((x) => x.className === "votes" || x.className === "advance");
+  const shownShare = shown.reduce((a, x) => a + x.share, 0);
+  const shownText = shareText(shownShare, shown.reduce((a, x) => a + x.people, 0));
+  const summary =
+    race.state === "before_results"
+      ? ward === null
+        ? `${TURNOUT.advance_voters["2026"].toLocaleString("en-CA")} advance voters (${shownText})`
+        : null
+      : segments.some((x) => x.className === "novote")
+        ? `${shownText} voted`
+        : `${shownText} counted so far`;
+  const where = ward === null ? "" : ` · Ward ${ward}`;
   return (
     <figure className="live-turnout">
-      <figcaption className="kicker">
-        Voters’ list · {where} · {electors.toLocaleString("en-CA")} electors
+      <figcaption className="live-turnout__head t-meta">
+        <span>
+          Turnout{where} · {electors.toLocaleString("en-CA")} on the voters’ list
+        </span>
+        {summary && <span className="live-turnout__figure">{summary}</span>}
       </figcaption>
       <div className="live-turnout__track" aria-hidden="true">
-        {segments.map((s) => (
+        {segments.map((x) => (
           <span
-            key={s.key}
-            className={`live-turnout__seg live-turnout__seg--${s.className}`}
-            style={{ ...width(s.share), ...(s.colour ? { background: s.colour } : {}) }}
+            key={x.key}
+            className={`live-turnout__seg live-turnout__seg--${x.className}`}
+            style={{ ...width(x.share), ...(x.colour ? { background: x.colour } : {}) }}
           />
         ))}
         <span className="live-turnout__mark" style={{ left: `${area.share_2022}%` }} />
         <span className="live-turnout__mark" style={{ left: `${area.share_2023}%` }} />
       </div>
-      <p className="live-turnout__legend t-meta">
-        {segments.map((s) => (
-          <span key={s.key} className="live-turnout__item">
-            <i className={`live-turnout__swatch live-turnout__seg--${s.className}`} style={s.colour ? { background: s.colour } : undefined} />
-            {s.label} {shareText(s.share, s.people)}
-          </span>
-        ))}
-        <span className="live-turnout__item">
-          <i className="live-turnout__swatch live-turnout__swatch--mark" />
-          Votes for mayor in 2022 {pct(area.share_2022)} · 2023 {pct(area.share_2023)}
-        </span>
+      {/* The candidates' colours match the rows below, so the bar needs no legend; screen readers get it in words. */}
+      <p className="visually-hidden">{segments.map((x) => `${x.label} ${shareText(x.share, x.people)}`).join(", ")}</p>
+      <p className="live-turnout__past t-meta">
+        <i className="live-turnout__swatch--mark" aria-hidden="true" />
+        {pct(area.share_2022)} in 2022 · {pct(area.share_2023)} in 2023
       </p>
-      <p className="forecast-caption live-turnout__note">{TURNOUT_NOTE}</p>
     </figure>
+  );
+}
+
+/** What the voters' list bar measures, with the card's other disclosures (quieter pass). */
+export function AboutTurnout() {
+  return (
+    <div className="faq">
+      <details className="live-about-turnout">
+        <summary>About turnout</summary>
+        <div className="faq__a">
+          <p className="forecast-caption">{TURNOUT_NOTE}</p>
+        </div>
+      </details>
+    </div>
   );
 }

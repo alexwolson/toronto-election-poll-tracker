@@ -20,7 +20,7 @@ import { rangeText, shareText, votesTotal } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import { shortLabel } from "@/lib/live-labels";
-import { TurnoutBar } from "./turnout-bar";
+import { AboutTurnout, TurnoutBar } from "./turnout-bar";
 import { lastElection, type LastElection } from "@/lib/council-incumbents";
 import type {
   LiveBand,
@@ -654,8 +654,9 @@ export function RaceCard({
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
       <RaceBody race={race} levels={levels} closed={closed} ward={ward} />
       {/* The card's background disclosures, together at the bottom (#118). */}
-      {(record || finalForecast) && (
+      {(record || finalForecast || race.level === "mayor") && (
         <div className="live-card-more">
+          {race.level === "mayor" && <AboutTurnout />}
           {record && <MayorRecord />}
           {finalForecast && <FinalForecast />}
         </div>

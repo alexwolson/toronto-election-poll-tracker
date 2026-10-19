@@ -21,3 +21,13 @@ export function wardShare(votes: Record<string, number> | null | undefined, key:
   const total = votesTotal(votes);
   return total > 0 ? (100 * (votes?.[key] ?? 0)) / total : null;
 }
+
+/** A range as whole percents (#120): "28–42%"; "about 3%" when both ends round to the same
+ *  figure; "under 1%" when even its top rounds below 1, never "0–0%". */
+export function rangeText(low: number, high: number): string {
+  const lo = Math.round(low);
+  const hi = Math.round(high);
+  if (hi < 1) return "under 1%";
+  if (lo === hi) return `about ${hi}%`;
+  return `${lo}–${hi}%`;
+}

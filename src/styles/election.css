@@ -314,6 +314,13 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* "Elected (unofficial)" at Night Close (#51): CHW's tint/blue status pair, which it
    ships only as the access badge .badge--paid. */
 .badge--status { background: var(--tint); color: var(--blue); }
+/* An acclaimed race (#117): an outlined card on the page's tint, its one candidate with a grey
+   badge, distinct from both a counting card and "Elected (unofficial)". */
+.card.live-acclaimed { background: transparent; }
+.live-acclaimed__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin: 0; }
+.live-acclaimed__name { color: var(--ink); font-size: 1rem; }
+.badge--acclaimed { background: var(--rule-soft); color: var(--muted); }
+.live-acclaimed__note { color: var(--muted); margin: 0; }
 /* The ward picker (#35): CHW's .field styles text inputs but has no select. */
 .field select {
   width: 100%;

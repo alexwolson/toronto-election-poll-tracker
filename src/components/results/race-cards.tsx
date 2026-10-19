@@ -42,6 +42,8 @@ const NEUTRAL = "var(--color-disengaged)";
 
 /** The race states' fixed reader wording (#17 § On-night reader wording). */
 export const WORDING = {
+  acclaimed: "Acclaimed",
+  acclaimedNote: "The only candidate, so there is no vote.",
   before_results: "Results from 8 p.m.",
   no_units_in: "No voting areas have reported yet",
   all_units_in: "All voting areas in",
@@ -155,6 +157,12 @@ function electedKey(race: LiveRace, closed: boolean): string | null {
   if (!first || first.votes === null) return null;
   if (second && (second.votes === null || second.votes >= first.votes)) return null;
   return first.key;
+}
+
+/** An acclaimed race (#117): `acclaimed` once results begin, and before them a race whose bundle
+ *  lists one candidate, which the payload marks `before_results` like every race (docs/payload.md). */
+function isAcclaimed(race: LiveRace): boolean {
+  return race.state === "acclaimed" || (race.state === "before_results" && race.candidates.length === 1);
 }
 
 /** Before 8 p.m. or before the race's first voting area: its tally waits, empty (#115). */
@@ -438,18 +446,28 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
   );
 }
 
+/** The bundle lists exactly one candidate for an acclaimed race (docs/payload.md). Shown as that
+ *  candidate with a quiet badge on an outlined card (#117), never "Elected". */
+function Acclaimed({ race }: { race: LiveRace }) {
+  return (
+    <>
+      <p className="live-acclaimed__row">
+        <span className="live-acclaimed__name">{race.candidates[0]?.full_name}</span>{" "}
+        <span className="badge badge--acclaimed">{WORDING.acclaimed}</span>
+      </p>
+      <p className="t-body-small live-acclaimed__note">{WORDING.acclaimedNote}</p>
+    </>
+  );
+}
+
 function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
+  if (isAcclaimed(race)) return <Acclaimed race={race} />;
   switch (race.state) {
     // The page says "Results from 8 p.m." once (#115); the card shows the tally it will fill.
     case "before_results":
       return <Tally race={race} closed={closed} />;
     case "acclaimed":
-      // The bundle lists exactly one candidate for an acclaimed race (docs/payload.md).
-      return (
-        <Status>
-          {`${race.candidates[0]?.full_name} was acclaimed: the only candidate, so there is no vote.`}
-        </Status>
-      );
+      return <Acclaimed race={race} />;
     case "no_figures":
       return <Status>No figures from the City for this race right now</Status>;
     case "no_units_in":
@@ -570,7 +588,7 @@ export function RaceCard({
 }) {
   const wardVote = race.level === "mayor" && ward !== null && hasTally(race) ? race.wards?.find((w) => w.num === ward) : null;
   return (
-    <section className="card" aria-labelledby={`live-race-${race.id}`}>
+    <section className={isAcclaimed(race) ? "card live-acclaimed" : "card"} aria-labelledby={`live-race-${race.id}`}>
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
       <RaceBody race={race} levels={levels} closed={closed} />
       {wardVote && <WardVote race={race} ward={wardVote} />}
@@ -604,7 +622,7 @@ function tileStatus(race: LiveRace): string {
     case "all_units_in":
       return WORDING[race.state];
     case "acclaimed":
-      return "Acclaimed";
+      return WORDING.acclaimed;
     case "no_figures":
       return "No figures from the City right now";
     case "counting":

@@ -138,7 +138,8 @@ describe("LiveResultsView: a ward's page", () => {
     expect(html).toContain("41.2%");
     expect(html).toContain("0 of 1535 voting areas in");
     expect(html).toContain('class="forecast-chart live-tally"');
-    expect(html).toContain("Geneviève Oger was acclaimed: the only candidate, so there is no vote.");
+    expect(text(html)).toContain("Geneviève Oger");
+    expect(text(html)).toContain("The only candidate, so there is no vote.");
     expect(html).not.toContain("Results from 8 p.m.");
     expect(html).not.toContain("Rehearsal: not real results");
     expect(html).not.toContain("may be out of date");
@@ -870,5 +871,37 @@ describe("LiveResultsView: Night Close (#51)", () => {
 
   it("hides the final forecast at Night Close", () => {
     expect(render(golden("mayor-counting-2023.json"), { closed: true })).not.toContain("The final pre-election forecast");
+  });
+});
+
+describe("LiveResultsView: acclaimed races (#117)", () => {
+  /** A ward page whose ballot holds an acclaimed race, and that race's id. */
+  function acclaimed(name: string, closed = false): { html: string; id: string; page: string } {
+    const payload = golden(name);
+    for (const num of RESULTS_WARDS) {
+      const race = payload.races.find((r) => r.candidates.length === 1 && wardBallotRaceIds(num, trustees).includes(r.id));
+      if (race) {
+        const page = render(payload, { ward: num, closed });
+        return { html: card(page, race.id), id: race.id, page };
+      }
+    }
+    throw new Error(`no acclaimed race on any ballot in ${name}`);
+  }
+
+  it("shows the candidate as a row with an Acclaimed badge, on an outlined card", () => {
+    for (const name of ["before-results-2026.json", "no-units-in-2026.json"]) {
+      const { html, id, page } = acclaimed(name);
+      expect(page, name).toContain(`<section class="card live-acclaimed" aria-labelledby="live-race-${id}">`);
+      expect(html, name).toMatch(/<p class="live-acclaimed__row"><span class="live-acclaimed__name">[^<]+<\/span> <span class="badge badge--acclaimed">Acclaimed<\/span><\/p>/);
+      expect(text(html), name).toContain("The only candidate, so there is no vote.");
+      expect(html, name).not.toContain("was acclaimed:");
+    }
+  });
+
+  it("never carries Elected (unofficial), even after Night Close", () => {
+    const { html } = acclaimed("no-units-in-2026.json", true);
+    expect(html).toContain("badge--acclaimed");
+    expect(html).not.toContain("badge--status");
+    expect(html).not.toContain("Elected (unofficial)");
   });
 });

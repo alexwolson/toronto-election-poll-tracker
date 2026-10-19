@@ -14,7 +14,6 @@ import { useId, useState, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
 import { chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
-import { certainWinShares } from "@/lib/live-certain-win";
 import { liveColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { shareText, votesTotal } from "@/lib/live-share";
@@ -58,7 +57,6 @@ export const WORDING = {
   keyCounted: "Counted",
   keyEstimated: "Estimated final range",
   keyPossible: "Possible range",
-  keyWin: "Certain win",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -73,8 +71,6 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
 const RANGE_WORDING = {
   estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
   possible: "Possible: from none to all of the votes still to be counted.",
-  /** The certain-win tick's meaning (#105), beside the ranges' legend. */
-  certainWin: "Certain win: reach it and no one can catch up.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
@@ -211,8 +207,6 @@ interface TallyRow {
   /** The Estimated and Possible Ranges; null on the folded row and where none shows. */
   band: LiveBand | null;
   possible: LiveRange | null;
-  /** This candidate's certain-win share (#105); null when eliminated or no line shows. */
-  win: number | null;
   name: string;
   /** The forecast pages' marker, on forecast-named mayoral rows only. */
   slug: string | null;
@@ -228,7 +222,6 @@ function tallyRow(
   race: LiveRace,
   elected: string | null,
   eliminated: Set<string>,
-  wins: Record<string, number>,
 ): TallyRow {
   const meta = candidate.candidate_id ? candidateMeta(candidate.candidate_id) : null;
   return {
@@ -237,7 +230,6 @@ function tallyRow(
     eliminated: eliminated.has(candidate.key),
     band: estimated(race)?.[candidate.key] ?? null,
     possible: race.possible?.[candidate.key] ?? null,
-    win: wins[candidate.key] ?? null,
     name: candidate.full_name,
     slug: meta?.slug ?? null,
     waiting: waiting(race),
@@ -259,9 +251,8 @@ function folds(race: LiveRace): boolean {
 function tallyRows(race: LiveRace, closed: boolean, expanded = false): TallyRow[] {
   const elected = electedKey(race, closed);
   const eliminated = eliminatedKeys(race.possible);
-  const wins = certainWinShares(race.possible, eliminated);
   const candidates = tallyOrder(race);
-  const rows = candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated, wins));
+  const rows = candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated));
   if (expanded || !folds(race)) return rows;
   const rest = candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
@@ -273,7 +264,6 @@ function tallyRows(race: LiveRace, closed: boolean, expanded = false): TallyRow[
       eliminated: rest.every((c) => eliminated.has(c.key)),
       band: null,
       possible: null,
-      win: null,
       name: `${rest.length} other candidates`,
       slug: null,
       waiting: waiting(race),
@@ -311,9 +301,6 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
         <p className="forecast-caption">
           {bands && <>{RANGE_WORDING.estimated} </>}
           {race.possible && RANGE_WORDING.possible}
-          {Object.keys(certainWinShares(race.possible, eliminatedKeys(race.possible))).length > 0 && (
-            <> {RANGE_WORDING.certainWin}</>
-          )}
         </p>
       )}
       {record && (
@@ -335,13 +322,12 @@ function span(low: number, high: number) {
   return { left: `${low}%`, width: `${Math.max(high - low, 0)}%` };
 }
 
-/** A row's one quiet line (#105): its votes, Estimated Range and certain-win share. The
+/** A row's one quiet line (#105): its votes and Estimated Range. The
  *  Possible Range's figures go to screen readers only; its whisker shows it. */
 function rowMeta(row: TallyRow): string[] {
   if (row.waiting) return [];
   const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} ${row.votes === 1 ? "vote" : "votes"}`];
   if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
-  if (row.win !== null) parts.push(`certain win ${row.win.toFixed(1)}%`);
   return parts;
 }
 
@@ -365,11 +351,10 @@ function TallyRowView({ row }: { row: TallyRow }) {
             />
           </span>
         )}
-        {row.win !== null && <span className="live-tally__win" style={{ left: `${row.win}%` }} />}
       </span>
       <strong className="forecast-chart__value live-tally__value">{row.waiting ? "–" : percent(row.share, row.votes)}</strong>
       <span className="live-tally__meta">
-        {/* Each figure wraps whole, never "certain win" on one line and its share on the next. */}
+        {/* Each figure wraps whole, never a label on one line and its figure on the next. */}
         {rowMeta(row).map((part, i) => (
           <span key={part}>
             {i > 0 && " · "}
@@ -390,14 +375,13 @@ function TallyKey({ rows }: { rows: TallyRow[] }) {
       <span><i className="live-tally__glyph live-tally__glyph--counted" />{WORDING.keyCounted}</span>
       {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
       {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--possible" />{WORDING.keyPossible}</span>}
-      {has((r) => r.win !== null) && <span><i className="live-tally__glyph live-tally__glyph--win" />{WORDING.keyWin}</span>}
     </p>
   );
 }
 
 /** The Live Tally (#105): the forecast pages' chart rows, each a counted-share bar on a 0–100%
- *  track with the Estimated Range as an outlined bracket, the Possible Range as a whisker and
- *  the candidate's certain-win share as a dashed tick. Candidates who cannot win sit under one
+ *  track with the Estimated Range as an outlined bracket and the Possible Range as a whisker
+ *  (Certain win's dashed tick removed, #119). Candidates who cannot win sit under one
  *  break, greyed. Phone widths put each name above its bar. */
 function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
   const [expanded, setExpanded] = useState(false);

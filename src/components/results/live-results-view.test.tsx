@@ -495,7 +495,7 @@ describe("LiveResultsView: never shown (#7, #12)", () => {
     last.share = 0;
     const html = card(render(payload, { ward: "1" }), "councillor-1");
     const lastRow = text(html).slice(text(html).indexOf(last.full_name));
-    expect(lastRow).toMatch(/^[^·]*&lt;0\.1%1 vote ·/);
+    expect(lastRow).toMatch(/^[^·]*&lt;0\.1%1 vote(?!s)/);
   });
 
   it("has no chance-to-win wording in any reader state", () => {
@@ -535,7 +535,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(row(mayor, others)).not.toContain("live-tally__estimate");
     // One key per card names the marks.
     expect(count(mayor, 'class="live-tally__key')).toBe(1);
-    expect(text(mayor)).toContain("Certain win: reach it and no one can catch up");
+    expect(text(mayor)).not.toMatch(/certain win/i);
   });
 
   it("explains both ranges once per card, and the mayor's 2023 record behind 'How accurate is this estimate?'", () => {
@@ -608,21 +608,20 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically eliminated");
   });
 
-  it("marks each contender's own certain-win share, and none for the eliminated (#105)", () => {
+  it("shows no Certain win anywhere: no line, key, caption or legend (#119)", () => {
     const { payload, third } = thirdOut();
     const race = payload.races.find((r) => r.id === "councillor-1")!;
-    const [leader, second] = race.candidates;
+    const [leader] = race.candidates;
     const html = card(render(payload, { ward: "1" }), "councillor-1");
-    // (40 + 45) / 2 against the second; the second's strongest rival is the leader: (25 + 60) / 2.
-    expect(row(html, leader.full_name)).toContain('class="live-tally__win" style="left:42.5%"');
-    expect(text(wholeRow(html, leader.full_name))).toContain("certain win 42.5%");
-    expect(row(html, second.full_name)).toContain('class="live-tally__win" style="left:42.5%"');
-    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d,]+ votes · Estimated final \d+–\d+% · certain win 42\.5%$/);
+    expect(html).not.toContain("live-tally__win");
+    expect(html).not.toContain("glyph--win");
+    expect(text(html)).not.toMatch(/certain win/i);
+    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d,]+ votes · Estimated final \d+–\d+%$/);
     // The Possible Range's figures are for screen readers; the whisker shows them.
     expect(wholeRow(html, leader.full_name)).toMatch(/<span class="visually-hidden">Estimated final [^<]* · possible 40–60%<\/span>/);
-    expect(text(html)).toContain("Certain win: reach it and no one can catch up.");
-    expect(row(html, third)).not.toContain("live-tally__win");
-    expect(count(html, "certain win ")).toBe(race.candidates.length - 1);
+    // The Mathematically Eliminated badge stays.
+    expect(row(html, third)).toBeTruthy();
+    expect(html).toContain("live-tally__break");
   });
 
   it("folds the mayor's eliminated field under the break, and leaves a field still in it above", () => {
@@ -641,16 +640,6 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     // Wide ranges: no one out, no break, the folded row stays where it was.
     const wide = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
     expect(wide).not.toContain("live-tally__break");
-  });
-
-  it("draws no certain-win line once only one candidate is left (#51: no winner before Night Close)", () => {
-    const payload = golden("gated-live-2022.json");
-    const race = payload.races.find((r) => r.id === "councillor-1")!;
-    race.possible = Object.fromEntries(race.candidates.map((c, i) => [c.key, i === 0 ? { low: 60, high: 70 } : { low: 0, high: 30 }]));
-    const html = card(render(payload, { ward: "1" }), "councillor-1");
-    expect(html).toContain("live-tally__break");
-    expect(html).not.toContain("live-tally__win");
-    expect(text(html)).not.toContain("certain win ");
   });
 
   it("gives council tiles their top two candidates' Estimated Ranges", () => {

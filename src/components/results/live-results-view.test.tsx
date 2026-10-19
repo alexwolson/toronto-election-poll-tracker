@@ -360,7 +360,7 @@ describe("LiveResultsView: the mayor card", () => {
     };
     const order = [
       at("live-tally__axis"),
-      at("Possible: from none to all"),
+      at("Hatched: shares out of reach"),
       at("live-tally__more"),
       at(">Compared with 2023<"),
       at("in the wards counted so far"),
@@ -563,16 +563,23 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     const mayor = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
     expect(text(mayor)).toContain("Estimated final 59–65% · possible 9–94%");
     const tory = row(mayor, "Tory John");
-    // Three kinds of mark (#105): a whisker for Possible, an outlined bracket with a middle tick for Estimated.
-    expect(tory).toContain('class="live-tally__possible" style="left:9.4%;width:84.94');
+    // The Possible Range as the track it leaves out: hatched below 9.4% and above 94.34%, the low
+    // zone drawn after (over) the counted bar; no whisker. Then the Estimated bracket.
+    expect(tory).toContain('class="live-tally__reach live-tally__reach--high" style="left:94.34%;width:5.66%"');
+    expect(tory).toContain('class="live-tally__reach live-tally__reach--low" style="left:0;width:9.4%"');
+    expect(tory.indexOf("live-tally__reach--low")).toBeGreaterThan(tory.indexOf("forecast-chart__bar"));
+    expect(tory).not.toContain("live-tally__possible");
     expect(tory).toMatch(/class="live-tally__estimate" style="left:58.84%;width:6.6/);
     expect(tory).toMatch(/class="live-tally__mid" style="left:5\d\.\d+%"/);
     // The folded row stands for many candidates and carries no range.
     const others = `${golden("gated-live-2022.json").races[0].candidates.length - 2} other candidates`;
-    expect(row(mayor, others)).not.toContain("live-tally__possible");
+    expect(row(mayor, others)).not.toContain("live-tally__reach");
     expect(row(mayor, others)).not.toContain("live-tally__estimate");
     // One key per card names the marks.
     expect(count(mayor, 'class="live-tally__key')).toBe(1);
+    expect(text(mayor)).toContain("Out of reach");
+    expect(mayor).toContain("live-tally__glyph--reach");
+    expect(text(mayor)).not.toContain("Possible range");
     expect(text(mayor)).not.toMatch(/certain win/i);
   });
 
@@ -580,7 +587,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     const html = render(golden("gated-live-2022.json"), { ward: "1" });
     const mayor = text(card(html, "mayor"));
     expect(mayor).toContain("Estimated: where the final share lands in 9 of 10 simulated finishes.");
-    expect(mayor).toContain("Possible: from none to all of the votes still to be counted.");
+    expect(mayor).toContain("Hatched: shares out of reach even if a candidate gets none or all of the votes still to be counted.");
     expect(card(html, "mayor")).toMatch(
       /<details class="live-record"><summary>How accurate is this estimate\?<\/summary>[^]*worse than expected in the 2023 by-election/,
     );
@@ -717,7 +724,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     race.candidates = race.candidates.map((c, i) => ({ ...c, votes: i === 0 ? 200 : 100 / (race.candidates.length - 1) }));
     race.possible = Object.fromEntries(race.candidates.map((c) => [c.key, { low: 4, high: 92 }]));
     const html = card(render(payload, { ward: "1" }), race.id);
-    expect(text(html)).toContain("Possible: from none to all of the votes still to be counted.");
+    expect(text(html)).toContain("Hatched: shares out of reach even if a candidate gets none or all of the votes still to be counted.");
     expect(text(html)).not.toContain("Estimated: where");
   });
 

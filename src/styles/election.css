@@ -366,13 +366,15 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally__glyph { display: inline-block; width: 20px; height: 10px; }
 .live-tally__glyph--counted { background: var(--ink); }
 .live-tally__glyph--estimate { height: 14px; border: 2px solid var(--ink); }
-.live-tally__glyph--possible { height: 2px; background: var(--muted); }
+/* Out of reach (the Possible Range's complement): a dashed diagonal hatch, edged by a dashed line
+   at the range's end. Over the counted bar the hatch is light, so the candidate's colour shows. */
+.live-tally__glyph--reach,
+.live-tally__reach--high { background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--muted) 55%, transparent) 0 1.5px, transparent 1.5px 5px); }
+.live-tally__glyph--reach { height: 10px; border-left: 1px dashed var(--muted); }
+.live-tally__reach { position: absolute; top: 0; bottom: 0; }
+.live-tally__reach--high { border-left: 1px dashed var(--muted); }
+.live-tally__reach--low { background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.6) 0 1.5px, transparent 1.5px 5px); border-right: 1px dashed rgb(255 255 255 / 0.85); }
 .live-tally .forecast-chart__track { overflow: visible; }
-.live-tally__possible { position: absolute; top: calc(50% - 1px); height: 2px; background: var(--muted); }
-.live-tally__possible::before,
-.live-tally__possible::after { content: ""; position: absolute; top: -4px; width: 2px; height: 10px; background: var(--muted); }
-.live-tally__possible::before { left: 0; }
-.live-tally__possible::after { right: 0; }
 .live-tally__estimate { position: absolute; top: -3px; bottom: -3px; min-width: 6px; border: 2px solid var(--ink); background: color-mix(in srgb, var(--paper) 35%, transparent); }
 .live-tally__mid { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--ink); }
 .live-tally__break { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.25rem; margin: var(--space-sm) 0 0; padding: 0.5rem 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule-soft); color: var(--ink); font-size: 0.94rem; }

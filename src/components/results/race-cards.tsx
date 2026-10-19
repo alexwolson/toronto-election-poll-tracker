@@ -57,7 +57,7 @@ export const WORDING = {
   /** The tally's key (#105). */
   keyCounted: "Counted",
   keyEstimated: "Estimated final range",
-  keyPossible: "Possible range",
+  keyPossible: "Out of reach",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -71,7 +71,7 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
  *  as Alex approved them (#54, #97). */
 const RANGE_WORDING = {
   estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
-  possible: "Possible: from none to all of the votes still to be counted.",
+  possible: "Hatched: shares out of reach even if a candidate gets none or all of the votes still to be counted.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
@@ -317,6 +317,11 @@ function MayorRecord() {
   );
 }
 
+/** An out-of-reach zone on the 0–100% track, at 2 dp so the style stays stable. */
+function reach(from: number, to: number) {
+  return { left: from === 0 ? 0 : `${+from.toFixed(2)}%`, width: `${+(to - from).toFixed(2)}%` };
+}
+
 /** A share as a position on the 0–100% track. */
 function span(low: number, high: number) {
   return { left: `${low}%`, width: `${Math.max(high - low, 0)}%` };
@@ -341,8 +346,16 @@ function TallyRowView({ row }: { row: TallyRow }) {
         {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
       </span>
       <span className="forecast-chart__track" aria-hidden="true">
-        {row.possible && <span className="live-tally__possible" style={span(row.possible.low, row.possible.high)} />}
+        {/* The Possible Range as what it leaves out: the track above its high, and below its low,
+            hatched as out of reach. The low zone always lies under the counted bar, so it's drawn
+            after it, over it. */}
+        {row.possible && row.possible.high < 100 && (
+          <span className="live-tally__reach live-tally__reach--high" style={reach(row.possible.high, 100)} />
+        )}
         <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
+        {row.possible && row.possible.low > 0 && (
+          <span className="live-tally__reach live-tally__reach--low" style={reach(0, row.possible.low)} />
+        )}
         {row.band && (
           <span className="live-tally__estimate" style={span(row.band.low, row.band.high)}>
             <span
@@ -374,7 +387,7 @@ function TallyKey({ rows }: { rows: TallyRow[] }) {
     <p className="live-tally__key" aria-hidden="true">
       <span><i className="live-tally__glyph live-tally__glyph--counted" />{WORDING.keyCounted}</span>
       {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
-      {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--possible" />{WORDING.keyPossible}</span>}
+      {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--reach" />{WORDING.keyPossible}</span>}
     </p>
   );
 }

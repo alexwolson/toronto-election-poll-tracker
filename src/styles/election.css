@@ -345,7 +345,13 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally .forecast-chart__track { grid-area: track; align-self: center; }
 .live-tally__value { grid-area: value; }
 .live-tally__meta { grid-area: meta; font-family: var(--font-body); font-size: 0.76rem; line-height: 1.45; color: var(--muted); font-variant-numeric: tabular-nums; }
-.live-ward-vote { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--rule); }
+/* The mayor card's labelled sub-sections under the tally (#118): the 2023 benchmark and a ward's
+   mayoral vote, each under a kicker after a rule; then the disclosures together. */
+.live-subsection { margin-top: var(--space-md); padding-top: var(--space-sm); border-top: 1px solid var(--rule); }
+.live-subsection > .kicker { margin: 0 0 var(--space-xs); }
+.live-ward-vote { display: grid; gap: var(--space-sm); }
+.live-ward-vote .candidate-marker { display: inline-block; vertical-align: -0.05em; margin-right: 0.35em; }
+.live-card-more { margin-top: var(--space-md); }
 .live-forecast .forecast-chart { margin-bottom: var(--space-sm); }
 .live-tile__ranges:empty { display: none; }
 .live-tiles .live-progress { flex-direction: column; align-items: flex-start; gap: var(--space-xs); }
@@ -375,7 +381,8 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally__why { color: var(--muted); font-size: 0.76rem; }
 .live-tally__fig { white-space: nowrap; }
 /* The mayor's folded field opens to everyone (#7). */
-.live-tally__more { margin-top: var(--space-sm); min-height: var(--touch-target-min); padding: 0; border: 0; background: none; color: var(--blue); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+.live-tally__more { margin-top: var(--space-sm); min-height: var(--touch-target-min); cursor: pointer; }
+.live-tally__chevron { font-size: 0.9em; line-height: 1; }
 .live-tally__more:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 .forecast-chart__row--out { opacity: 0.55; padding-block: 0.45rem; }
 .forecast-chart__row--out .forecast-chart__track { height: 0.75rem; }

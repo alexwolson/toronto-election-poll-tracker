@@ -20,7 +20,7 @@ import { rangeText, shareText, votesTotal } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
 import { shortLabel } from "@/lib/live-labels";
-import { TURNOUT_NOTE, turnoutLine } from "@/lib/turnout";
+import { TurnoutBar } from "./turnout-bar";
 import { lastElection, type LastElection } from "@/lib/council-incumbents";
 import type {
   LiveBand,
@@ -541,27 +541,17 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
   const wardRow = ward !== null && race.level === "mayor" ? (race.wards?.find((w) => w.num === ward) ?? null) : null;
   const both = ward !== null && race.level === "mayor";
   const wardProgress = wardRow?.progress ? <ProgressLine progress={wardRow.progress} label={`Ward ${ward}`} /> : null;
-  // Turnout once the count it measures is complete: the ward's on its page, the city's otherwise.
-  const wardDone = wardRow?.progress && wardRow.progress.total > 0 && wardRow.progress.received >= wardRow.progress.total;
-  const turnout =
-    race.level !== "mayor"
-      ? null
-      : both
-        ? wardDone && wardRow?.votes
-          ? turnoutLine(wardRow.votes_counted ?? votesTotal(wardRow.votes), ward)
-          : null
-        : race.state === "all_units_in"
-          ? turnoutLine(race.candidates.reduce((a, c) => a + (c.votes ?? 0), 0), null)
-          : null;
-  const turnoutNote = turnout && (
-    <p className="t-meta live-turnout" title={TURNOUT_NOTE}>
-      {turnout}
-    </p>
-  );
+  // The voters' list bar (Alex): the mayor card's, for the page's ward or the city.
+  const turnout = race.level === "mayor" ? <TurnoutBar race={race} ward={both ? ward : null} /> : null;
   switch (race.state) {
     // The page says "Results from 8 p.m." once (#115); the card shows the tally it will fill.
     case "before_results":
-      return <Tally race={race} closed={closed} ward={both ? ward : null} />;
+      return (
+        <>
+          {turnout}
+          <Tally race={race} closed={closed} ward={both ? ward : null} />
+        </>
+      );
     case "acclaimed":
       return <Acclaimed race={race} />;
     case "no_figures":
@@ -571,6 +561,7 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
         <>
           {race.progress && <ProgressLine progress={race.progress} label={both ? WORDING.citywide : null} />}
           {both && wardProgress}
+          {turnout}
           <Tally race={race} closed={closed} ward={both ? ward : null} />
         </>
       );
@@ -586,7 +577,7 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
             <Progress progress={race.progress} />
           )}
           {both && wardProgress}
-          {turnoutNote}
+          {turnout}
           <Tally race={race} closed={closed} ward={both ? ward : null} legend={<RangeNotes race={race} levels={levels} />} />
           {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
           {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}

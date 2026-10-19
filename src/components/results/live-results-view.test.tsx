@@ -1011,41 +1011,64 @@ describe("LiveResultsView: an incumbent councillor's share in the ward's last el
   });
 });
 
-describe("LiveResultsView: turnout", () => {
+describe("LiveResultsView: the voters' list bar", () => {
   const T = TURNOUT;
-  const pct = (x: number) => `${x.toFixed(1)}%`;
+  const w = (x: number) => `width:${+x.toFixed(2)}%`;
+  const bar = (html: string) => {
+    const at = html.indexOf('class="live-turnout"');
+    expect(at, "turnout bar").toBeGreaterThan(-1);
+    return html.slice(at, html.indexOf("</figure>", at));
+  };
 
-  it("before 8 p.m., gives the advance vote against 2022 and 2023, once", () => {
-    for (const ward of [null, "9"]) {
-      const html = render(golden("before-results-2026.json"), { ward });
-      expect(count(text(html), "Advance voters: 222,550, up from 115,911 in 2022 and 129,745 in 2023.")).toBe(1);
-    }
-    expect(render(golden("no-units-in-2026.json"))).not.toContain("Advance voters");
+  it("before 8 p.m., shows the advance vote citywide, and the 2022 and 2023 marks", () => {
+    const city = bar(card(render(golden("before-results-2026.json")), "mayor"));
+    expect(city).toContain(`live-turnout__seg live-turnout__seg--advance" style="${w((100 * T.advance_voters["2026"]) / T.city.electors_2026)}`);
+    expect(text(city)).toContain("Advance voters 10.4%");
+    expect(city).toContain(`style="left:${T.city.share_2022}%"`);
+    expect(city).toContain(`style="left:${T.city.share_2023}%"`);
+    expect(text(city)).toMatch(/2022 29\.1%[^]*2023 38\.4%/);
+    // The City's advance figure is citywide only: a ward's bar has the marks alone.
+    const ward = bar(card(render(golden("before-results-2026.json"), { ward: "9" }), "mayor"));
+    expect(ward).not.toContain("--advance");
+    expect(ward).toContain(`style="left:${T.wards["9"].share_2022}%"`);
   });
 
-  it("once a ward has every voting area in, gives its votes for mayor as a share of the voters' list", () => {
+  it("while counting, splits the counted votes by candidate and hatches the rest as not yet known", () => {
     const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
     const mayor = payload.races.find((r) => r.id === "mayor")!;
-    const w9 = mayor.wards!.find((w) => w.num === "9")!;
-    // Not yet: two of 40 areas in.
-    expect(text(card(render(payload, { ward: "9" }), "mayor"))).not.toContain("of the voters’ list");
+    const w9 = mayor.wards!.find((x) => x.num === "9")!;
+    const html = bar(card(render(payload, { ward: "9" }), "mayor"));
+    const e = T.wards["9"].electors_2026;
+    const bradford = mayor.candidates.find((c) => c.full_name === "Brad Bradford")!;
+    expect(html).toContain(w((100 * w9.votes![bradford.key]) / e));
+    expect(html).toContain("live-turnout__seg--pending");
+    expect(text(html)).toContain("Not counted yet, or didn’t vote");
+    expect(text(html)).not.toContain("Didn’t vote ");
+    expect(card(render(payload, { ward: "9" }), "councillor-9")).not.toContain("live-turnout");
+  });
+
+  it("once the ward's count is complete, the rest is who didn't vote", () => {
+    const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
+    const w9 = payload.races.find((r) => r.id === "mayor")!.wards!.find((x) => x.num === "9")!;
     w9.progress = { received: 40, total: 40 };
-    const html = text(card(render(payload, { ward: "9" }), "mayor"));
-    const share = (100 * w9.votes_counted!) / T.wards["9"].electors_2026;
-    expect(html).toContain(
-      `Votes for mayor in Ward 9: ${pct(share)} of the voters’ list (2022: ${pct(T.wards["9"].share_2022)}, 2023: ${pct(T.wards["9"].share_2023)})`,
-    );
+    const html = bar(card(render(payload, { ward: "9" }), "mayor"));
+    expect(html).toContain("live-turnout__seg--novote");
+    expect(text(html)).toMatch(/Didn’t vote [\d.]+%/);
+    expect(html).not.toContain("--pending");
   });
 
-  it("once the whole count is in, gives the city's on /results/", () => {
+  it("citywide on /results/ too, complete once every voting area is in", () => {
     const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
     const mayor = payload.races.find((r) => r.id === "mayor")!;
-    expect(text(card(render(payload), "mayor"))).not.toContain("of the voters’ list");
+    expect(bar(card(render(payload), "mayor"))).toContain("--pending");
     mayor.state = "all_units_in";
     mayor.progress = { received: 10, total: 10 };
-    const votes = mayor.candidates.reduce((a, c) => a + (c.votes ?? 0), 0);
-    expect(text(card(render(payload), "mayor"))).toContain(
-      `Votes for mayor: ${pct((100 * votes) / T.city.electors_2026)} of the voters’ list (2022: 29.1%, 2023: 38.4%)`,
-    );
+    expect(bar(card(render(payload), "mayor"))).toContain("--novote");
+  });
+
+  it("explains its measure once, visibly", () => {
+    const html = card(render(golden("before-results-2026.json")), "mayor");
+    expect(count(text(html), "Valid votes for mayor over the voters’ list before election day")).toBe(1);
+    expect(render(golden("before-results-2026.json"))).not.toContain("Advance voters:");
   });
 });

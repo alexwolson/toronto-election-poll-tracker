@@ -41,7 +41,7 @@ const WARD_VOTE_SHOWN = 2;
 const NEUTRAL = "var(--color-disengaged)";
 
 /** The race states' fixed reader wording (#17 § On-night reader wording). */
-const WORDING = {
+export const WORDING = {
   before_results: "Results from 8 p.m.",
   no_units_in: "No voting areas have reported yet",
   all_units_in: "All voting areas in",
@@ -156,6 +156,19 @@ function electedKey(race: LiveRace, closed: boolean): string | null {
   return first.key;
 }
 
+/** Before 8 p.m. or before the race's first voting area: its tally waits, empty (#115). */
+function waiting(race: LiveRace): boolean {
+  return race.state === "before_results" || race.state === "no_units_in";
+}
+
+/** The race's candidates in tally order. While it waits, the forecast's named candidates (the
+ *  mayor's leader and challenger, by forecast id) come first, so the folded mayor shows them;
+ *  otherwise the payload's order (by votes once counting, ballot order before). */
+function tallyOrder(race: LiveRace): LiveCandidate[] {
+  if (!waiting(race)) return race.candidates;
+  return [...race.candidates.filter((c) => c.candidate_id), ...race.candidates.filter((c) => !c.candidate_id)];
+}
+
 /** Whether the race shows its Live Tally: counting, or every voting area in. */
 function hasTally(race: LiveRace): boolean {
   return race.state === "counting" || race.state === "all_units_in";
@@ -194,6 +207,8 @@ interface TallyRow {
   name: string;
   /** The forecast pages' marker, on forecast-named mayoral rows only. */
   slug: string | null;
+  /** Before any vote (#115): an empty row, its share a dash and no line under the name. */
+  waiting: boolean;
   color: string;
   votes: number | null;
   share: number | null;
@@ -216,6 +231,7 @@ function tallyRow(
     win: wins[candidate.key] ?? null,
     name: candidate.full_name,
     slug: meta?.slug ?? null,
+    waiting: waiting(race),
     color: liveColour(candidate, NEUTRAL),
     votes: candidate.votes,
     share: candidate.share,
@@ -235,9 +251,10 @@ function tallyRows(race: LiveRace, closed: boolean, expanded = false): TallyRow[
   const elected = electedKey(race, closed);
   const eliminated = eliminatedKeys(race.possible);
   const wins = certainWinShares(race.possible, eliminated);
-  const rows = race.candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated, wins));
+  const candidates = tallyOrder(race);
+  const rows = candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated, wins));
   if (expanded || !folds(race)) return rows;
-  const rest = race.candidates.slice(MAYOR_SHOWN);
+  const rest = candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
   return [
     ...rows.slice(0, MAYOR_SHOWN),
@@ -250,6 +267,7 @@ function tallyRows(race: LiveRace, closed: boolean, expanded = false): TallyRow[
       win: null,
       name: `${rest.length} other candidates`,
       slug: null,
+      waiting: waiting(race),
       color: NEUTRAL,
       votes: sum(rest.map((c) => c.votes)),
       share: sum(rest.map((c) => c.share)),
@@ -311,6 +329,7 @@ function span(low: number, high: number) {
 /** A row's one quiet line (#105): its votes, Estimated Range and certain-win share. The
  *  Possible Range's figures go to screen readers only; its whisker shows it. */
 function rowMeta(row: TallyRow): string[] {
+  if (row.waiting) return [];
   const parts = [row.votes === null ? "–" : `${row.votes.toLocaleString("en-CA")} ${row.votes === 1 ? "vote" : "votes"}`];
   if (row.band && !row.eliminated) parts.push(`Estimated final ${rangeText(row.band.low, row.band.high)}`);
   if (row.win !== null) parts.push(`certain win ${row.win.toFixed(1)}%`);
@@ -339,7 +358,7 @@ function TallyRowView({ row }: { row: TallyRow }) {
         )}
         {row.win !== null && <span className="live-tally__win" style={{ left: `${row.win}%` }} />}
       </span>
-      <strong className="forecast-chart__value live-tally__value">{percent(row.share, row.votes)}</strong>
+      <strong className="forecast-chart__value live-tally__value">{row.waiting ? "–" : percent(row.share, row.votes)}</strong>
       <span className="live-tally__meta">
         {/* Each figure wraps whole, never "certain win" on one line and its share on the next. */}
         {rowMeta(row).map((part, i) => (
@@ -418,19 +437,11 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
   );
 }
 
-function BallotOrder({ race }: { race: LiveRace }) {
-  return <p className="t-body-small">{race.candidates.map((candidate) => candidate.full_name).join(" · ")}</p>;
-}
-
 function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
   switch (race.state) {
+    // The page says "Results from 8 p.m." once (#115); the card shows the tally it will fill.
     case "before_results":
-      return (
-        <>
-          <Status>{WORDING.before_results}</Status>
-          <BallotOrder race={race} />
-        </>
-      );
+      return <Tally race={race} closed={closed} />;
     case "acclaimed":
       // The bundle lists exactly one candidate for an acclaimed race (docs/payload.md).
       return (
@@ -443,8 +454,8 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
     case "no_units_in":
       return (
         <>
-          <Status>{WORDING.no_units_in}</Status>
-          <BallotOrder race={race} />
+          {race.progress && <ProgressLine progress={race.progress} />}
+          <Tally race={race} closed={closed} />
         </>
       );
     case "counting":
@@ -615,6 +626,10 @@ function tileRanges(race: LiveRace, levels: Levels | null): string | null {
 }
 
 function TileBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
+  // The page says the state once (#115): before results the tile is the ward alone, and before
+  // its first voting area an empty progress line.
+  if (race.state === "before_results") return null;
+  if (race.state === "no_units_in") return race.progress ? <ProgressLine progress={race.progress} /> : null;
   if (!hasTally(race)) return <p className="t-meta">{tileStatus(race)}</p>;
   const leader = race.candidates[0];
   const elected = electedKey(race, closed) !== null;

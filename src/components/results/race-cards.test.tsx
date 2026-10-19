@@ -70,7 +70,8 @@ describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
   it("sets Chow's 2023 share in the wards counted so far against her 2023 citywide share", () => {
     render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
     // Wards 1–3 weighted by their counted votes: well under her 37.2% citywide.
-    expect(line()!.textContent).toMatch(/^Wards counted so far: Olivia Chow 2\d\.\d% in 2023 · 37\.2% citywide$/);
+    // A sentence that reads right wherever it wraps (Alex, phone): never "Wards counted so far: Olivia Chow".
+    expect(line()!.textContent).toMatch(/^In 2023, Olivia Chow won 2\d\.\d% in the wards counted so far, and 37\.2% citywide\.$/);
   });
 
   it("explains itself, and its limit, behind a disclosure", () => {
@@ -86,7 +87,7 @@ describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
     const race = etobicokeFirst();
     race.candidates = race.candidates.map((c) => (c.key === "Olivia Chow" ? { ...c, short_label: "O. Chow" } : c));
     render(<RaceCard race={race} levels={night.levels} />);
-    expect(line()!.textContent).toMatch(/^Wards counted so far: O\. Chow /);
+    expect(line()!.textContent).toMatch(/^In 2023, O\. Chow won /);
   });
 
   it("is not shown after Night Close, even while the race still reads counting", () => {

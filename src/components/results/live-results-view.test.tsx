@@ -363,7 +363,7 @@ describe("LiveResultsView: the mayor card", () => {
       at("Possible: from none to all"),
       at("live-tally__more"),
       at(">Compared with 2023<"),
-      at("Wards counted so far:"),
+      at("in the wards counted so far"),
       at(">About this comparison<"),
       at(">Mayoral vote in Ward 9<"),
       at("The final pre-election forecast"),

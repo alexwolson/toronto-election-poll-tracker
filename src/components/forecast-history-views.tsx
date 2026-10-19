@@ -31,7 +31,7 @@ export function ForecastHistoryViews({
       {recent && (
         <p className="evidence-explainer" role="status">
           {count} {count === 1 ? "poll release" : "poll releases"} published after{" "}
-          {formatDate(NOMINATIONS_CLOSED_DATE)}. Trend lines use the full forecast history.
+          {formatDate(NOMINATIONS_CLOSED_DATE)}. Trend lines are fitted to these releases only.
         </p>
       )}
       {recent && count === 0 ? (

@@ -37,7 +37,7 @@ describe("polling trend views", () => {
     expect(all.getAttribute("aria-pressed")).toBe("false");
     expect(screen.getByTestId("chart-window").textContent)
       .toBe([isoDayNumber("2026-08-22"), isoDayNumber("2026-09-24") + 0.5].join(","));
-    expect(screen.getByRole("status").textContent).toBe("1 poll since nominations closed. Lines use the full polling history.");
+    expect(screen.getByRole("status").textContent).toBe("1 poll since nominations closed. Lines are fitted to these polls only.");
     expect(screen.getByText(/Olivia Chow: 1 poll shown at 50.0%/)).toBeTruthy();
     expect(screen.queryByText(/Olivia Chow: 2 polls shown/)).toBeNull();
     expect(screen.queryByText("Unknown basis poll is excluded.")).toBeNull();

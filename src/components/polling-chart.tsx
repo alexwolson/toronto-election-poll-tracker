@@ -73,7 +73,7 @@ export function PollingChart({
   series: ChartSeries[];
   /** y-axis range in percent; defaults to the polling chart's 0–60 */
   yDomain?: [number, number];
-  /** Clip the full-history curve to a displayed date window, without refitting. */
+  /** Clip the curves to a displayed date window; the caller chooses which polls they were fitted to. */
   xDomain?: [number, number];
   /** "month" ticks month starts; "dayMonth" labels dates within a short range. */
   xAxis?: "monthYear" | "month" | "dayMonth";

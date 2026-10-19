@@ -75,7 +75,7 @@ describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
 
   it("explains itself, and its limit, behind a disclosure", () => {
     render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
-    const summary = screen.getByText("What’s this?");
+    const summary = screen.getByText("About this comparison");
     expect(summary.tagName).toBe("SUMMARY");
     const answer = summary.closest("details")!.textContent!;
     expect(answer).toContain("not which voting areas within them");
@@ -92,7 +92,7 @@ describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
   it("is not shown after Night Close, even while the race still reads counting", () => {
     render(<RaceCard race={etobicokeFirst()} levels={night.levels} closed />);
     expect(line()).toBeNull();
-    expect(screen.queryByText("What’s this?")).toBeNull();
+    expect(screen.queryByText("About this comparison")).toBeNull();
   });
 
   it("is not shown once every voting area is in, nor on other races", () => {

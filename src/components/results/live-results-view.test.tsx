@@ -342,7 +342,45 @@ describe("LiveResultsView: the mayor card", () => {
     const rest = mayor.candidates.slice(2);
     const restVotes = rest.reduce((sum, c) => sum + c.votes!, 0);
     expect(html).toContain(`${restVotes.toLocaleString("en-CA")} votes`);
-    expect(html).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>Show all ${n} candidates</button>`));
+    // An in-place toggle that looks like one (#118): the site's ghost button, with a chevron.
+    expect(html).toMatch(
+      new RegExp(`<button type="button" class="btn btn--ghost btn--sm live-tally__more" aria-expanded="false"[^>]*><span class="live-tally__chevron" aria-hidden="true">[^<]*</span>Show all ${n} candidates</button>`),
+    );
+  });
+
+  it("orders the card under the tally: legend, toggle, 2023 benchmark, ward vote, then the disclosures (#118)", () => {
+    const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
+    const mayor = payload.races.find((r) => r.id === "mayor")!;
+    mayor.possible = Object.fromEntries(mayor.candidates.map((c) => [c.key, { low: 1, high: 90 }]));
+    const html = card(render(payload, { ward: "9" }), "mayor");
+    const at = (needle: string) => {
+      const i = html.indexOf(needle);
+      expect(i, needle).toBeGreaterThan(-1);
+      return i;
+    };
+    const order = [
+      at("live-tally__axis"),
+      at("Possible: from none to all"),
+      at("live-tally__more"),
+      at(">Compared with 2023<"),
+      at("Wards counted so far:"),
+      at(">About this comparison<"),
+      at(">Mayoral vote in Ward 9<"),
+      at("The final pre-election forecast"),
+    ];
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(html).not.toContain("What’s this?");
+    expect(html).not.toContain("<strong>Mayoral vote in Ward");
+  });
+
+  it("groups the accuracy record with the pre-election forecast at the bottom (#118)", () => {
+    const html = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
+    const record = html.indexOf("How accurate is this estimate?");
+    expect(record).toBeGreaterThan(html.indexOf(">Mayoral vote in Ward 1<"));
+    expect(record).toBeLessThan(html.indexOf("The final pre-election forecast"));
+    const group = html.slice(html.indexOf('class="live-card-more"'));
+    expect(group).toContain("How accurate is this estimate?");
+    expect(group).toContain("The final pre-election forecast");
   });
 
   it("shows a field of three whole, and folds four to two and '2 other candidates'", () => {

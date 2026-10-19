@@ -81,7 +81,8 @@ const RANGE_WORDING = {
 /** Chow's counted-wards benchmark (#109, option B as Alex chose it): a short line, with what it
  *  is and its limit behind a disclosure. */
 const BENCHMARK_WORDING = {
-  summary: "What’s this?",
+  summary: "About this comparison",
+  label: "Compared with 2023",
   explain: (name: string) =>
     `${name}’s share of the vote in the 2023 by-election, across the wards counted so far tonight (each weighted by its votes counted), beside her share citywide. Early returns from her weakest wards can look like an upset; this shows how those wards voted last time. It allows for which wards are in, not which voting areas within them, and is not an estimate of tonight’s result.`,
 } as const;
@@ -292,8 +293,6 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
   const level = race.level === "french_trustee" ? null : race.level;
   const status = level ? levelStatus(levels, level) : null;
   const note = (level && status ? gateNote(level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
-  // The record describes the estimate, so it shows only beside one.
-  const record = race.level === "mayor" && levels?.mayor.approved === true && bands;
   return (
     <>
       {note && <Status>{note}</Status>}
@@ -303,17 +302,26 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
           {race.possible && RANGE_WORDING.possible}
         </p>
       )}
-      {record && (
-        <div className="faq">
-          <details className="live-record">
-            <summary>{RANGE_WORDING.recordSummary}</summary>
-            <div className="faq__a">
-              <p className="forecast-caption">{RANGE_WORDING.mayorRecord}</p>
-            </div>
-          </details>
-        </div>
-      )}
     </>
+  );
+}
+
+/** The mayor's record while its Estimated Range is on screen (ADR 0002, #54): it describes the
+ *  estimate, so it shows only beside one. Kept with the card's other disclosures (#118). */
+function hasRecord(race: LiveRace, levels: Levels | null): boolean {
+  return race.state === "counting" && race.level === "mayor" && levels?.mayor.approved === true && estimated(race) !== null;
+}
+
+function MayorRecord() {
+  return (
+    <div className="faq">
+      <details className="live-record">
+        <summary>{RANGE_WORDING.recordSummary}</summary>
+        <div className="faq__a">
+          <p className="forecast-caption">{RANGE_WORDING.mayorRecord}</p>
+        </div>
+      </details>
+    </div>
   );
 }
 
@@ -383,7 +391,7 @@ function TallyKey({ rows }: { rows: TallyRow[] }) {
  *  track with the Estimated Range as an outlined bracket and the Possible Range as a whisker
  *  (Certain win's dashed tick removed, #119). Candidates who cannot win sit under one
  *  break, greyed. Phone widths put each name above its bar. */
-function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
+function Tally({ race, closed, legend = null }: { race: LiveRace; closed: boolean; legend?: ReactNode }) {
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const rows = tallyRows(race, closed, expanded);
@@ -410,10 +418,12 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
           </div>
         )}
       </div>
+      {/* The reading aids sit under the axis they explain (#118). */}
+      {legend}
       {folds(race) && (
         <button
           type="button"
-          className="live-tally__more"
+          className="btn btn--ghost btn--sm live-tally__more"
           aria-expanded={expanded}
           aria-controls={listId}
           onClick={(event) => {
@@ -423,6 +433,7 @@ function Tally({ race, closed }: { race: LiveRace; closed: boolean }) {
             if (expanded) requestAnimationFrame(() => button.scrollIntoView?.({ block: "nearest" }));
           }}
         >
+          <span className="live-tally__chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
           {expanded ? "Show fewer" : `Show all ${race.candidates.length} candidates`}
         </button>
       )}
@@ -466,10 +477,9 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
       return (
         <>
           {race.state === "all_units_in" ? <Status>{WORDING.all_units_in}</Status> : <Progress progress={race.progress} />}
-          <Tally race={race} closed={closed} />
+          <Tally race={race} closed={closed} legend={<RangeNotes race={race} levels={levels} />} />
           {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
           {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}
-          <RangeNotes race={race} levels={levels} />
         </>
       );
   }
@@ -483,10 +493,8 @@ function WardVote({ race, ward }: { race: LiveRace; ward: LiveMayoralWard }) {
   const total = ward.votes_counted ?? votesTotal(ward.votes);
   const top = [...entries].sort((a, b) => b[1] - a[1]).slice(0, WARD_VOTE_SHOWN);
   return (
-    <div className="live-ward-vote">
-      <p className="t-body-small">
-        <strong>Mayoral vote in Ward {ward.num}</strong>
-      </p>
+    <div className="live-ward-vote live-subsection">
+      <p className="kicker">Mayoral vote in Ward {ward.num}</p>
       <Progress progress={ward.progress} />
       <p className="t-body-small">
         {top.map(([key, votes], i) => {
@@ -519,7 +527,8 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
   if (!benchmark || !chow) return null;
   const name = shortLabel(chow);
   return (
-    <>
+    <div className="live-subsection">
+      <p className="kicker">{BENCHMARK_WORDING.label}</p>
       <p className="t-body-small live-benchmark">
         Wards counted so far: {name} {shareText(benchmark.counted2023)} in 2023 · {shareText(benchmark.citywide2023)}{" "}
         citywide
@@ -528,7 +537,7 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
         <summary>{BENCHMARK_WORDING.summary}</summary>
         <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
       </details>
-    </>
+    </div>
   );
 }
 
@@ -571,12 +580,20 @@ export function RaceCard({
   closed?: boolean;
 }) {
   const wardVote = race.level === "mayor" && ward !== null && hasTally(race) ? race.wards?.find((w) => w.num === ward) : null;
+  const record = hasRecord(race, levels);
+  const finalForecast = race.level === "mayor" && forecast && !closed && race.state !== "all_units_in";
   return (
     <section className={isAcclaimed(race) ? "card live-acclaimed" : "card"} aria-labelledby={`live-race-${race.id}`}>
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
       <RaceBody race={race} levels={levels} closed={closed} />
       {wardVote && <WardVote race={race} ward={wardVote} />}
-      {race.level === "mayor" && forecast && !closed && race.state !== "all_units_in" && <FinalForecast />}
+      {/* The card's background disclosures, together at the bottom (#118). */}
+      {(record || finalForecast) && (
+        <div className="live-card-more">
+          {record && <MayorRecord />}
+          {finalForecast && <FinalForecast />}
+        </div>
+      )}
     </section>
   );
 }

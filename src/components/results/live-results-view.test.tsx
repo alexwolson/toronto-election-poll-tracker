@@ -397,13 +397,20 @@ describe("LiveResultsView: the mayor card", () => {
 });
 
 describe("LiveResultsView: the French-language boards", () => {
-  it("sit behind 'Voting for a French-language board?', after TDSB and TCDSB", () => {
-    const html = render(golden("before-results-2026.json"), { ward: "14" });
-    const summary = html.indexOf("<summary>Voting for a French-language board?</summary>");
-    expect(summary).toBeGreaterThan(html.indexOf('id="live-race-tcdsb-'));
-    expect(html.indexOf('id="live-race-viamonde-')).toBeGreaterThan(summary);
-    expect(html.indexOf('id="live-race-monavenir-')).toBeGreaterThan(summary);
-    expect(html.slice(0, summary)).toMatch(/<div class="faq"><details class="live-french">$/);
+  it("show openly after TDSB and TCDSB, under one label and note (#116)", () => {
+    for (const name of ["before-results-2026.json", "no-units-in-2026.json"]) {
+      const html = render(golden(name), { ward: "14" });
+      expect(html, name).not.toContain("live-french");
+      expect(html, name).not.toContain("Voting for a French-language board?");
+      const label = html.indexOf(">French-language school boards<");
+      expect(label, name).toBeGreaterThan(html.indexOf('id="live-race-tcdsb-'));
+      expect(html.indexOf('id="live-race-viamonde-'), name).toBeGreaterThan(label);
+      expect(html.indexOf('id="live-race-monavenir-'), name).toBeGreaterThan(html.indexOf('id="live-race-viamonde-'));
+      expect(count(html, "French-language school boards"), name).toBe(1);
+      expect(count(html, "Count and possible range only: no estimate for these boards."), name).toBe(1);
+      // No board card sits inside a disclosure.
+      expect(html.slice(html.indexOf('id="live-race-viamonde-') - 400, html.indexOf('id="live-race-viamonde-')), name).not.toContain("<details");
+    }
   });
 
   it("are not on /results/", () => {
@@ -668,7 +675,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
 
   it("notes that the French-language boards are never projected", () => {
     const html = render(golden("no-units-in-2026.json"), { ward: "1" });
-    expect(text(html)).toContain("No projection for these boards: only the count and its possible range.");
+    expect(text(html)).toContain("Count and possible range only: no estimate for these boards.");
   });
 
   it("explains a counting French-language board's Possible Range (#97)", () => {

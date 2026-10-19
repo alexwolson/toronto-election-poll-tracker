@@ -76,7 +76,8 @@ const RANGE_WORDING = {
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
-  french: "No projection for these boards: only the count and its possible range.",
+  french: "Count and possible range only: no estimate for these boards.",
+  frenchLabel: "French-language school boards",
 } as const;
 
 /** Chow's counted-wards benchmark (#109, option B as Alex chose it): a short line, with what it
@@ -578,21 +579,20 @@ export function RaceCard({
   );
 }
 
-/** Viamonde and MonAvenir, folded behind one disclosure (#7). */
+/** Viamonde and MonAvenir, in the ballot's card list after TDSB and TCDSB under one label and
+ *  note (#116): there is always real information for them, so nothing folds them away. */
 export function FrenchBoards({ races, closed = false }: { races: LiveRace[]; closed?: boolean }) {
   if (races.length === 0) return null;
   return (
-    <div className="faq">
-      <details className="live-french">
-        <summary>Voting for a French-language board?</summary>
-        <div className="faq__a grid">
-          <p className="t-body-small">{RANGE_WORDING.french}</p>
-          {races.map((race) => (
-            <RaceCard key={race.id} race={race} closed={closed} />
-          ))}
-        </div>
-      </details>
-    </div>
+    <>
+      <div className="live-boards-head">
+        <p className="kicker">{RANGE_WORDING.frenchLabel}</p>
+        <p className="t-body-small">{RANGE_WORDING.french}</p>
+      </div>
+      {races.map((race) => (
+        <RaceCard key={race.id} race={race} closed={closed} />
+      ))}
+    </>
   );
 }
 

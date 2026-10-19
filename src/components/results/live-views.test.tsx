@@ -13,7 +13,7 @@ import { resultsWards } from "@/lib/results-wards";
 import { wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LiveHistory, LivePayload } from "@/types/live";
-import { LiveCountView } from "./live-count-view";
+import { LiveCountView, LiveTablesView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
 
 function read(file: string): string {
@@ -181,30 +181,29 @@ describe("LiveCountView", () => {
 
   it("before results, says when the charts start", () => {
     live.history = HISTORY;
-    render(<LiveCountView payload={BEFORE} wards={WARDS} ballot={[]} ward={null} areas={AREAS} />);
+    render(<LiveCountView payload={BEFORE} ballot={[]} ward={null} />);
     expect(screen.getByText(/start once the City reports results/)).toBeTruthy();
   });
 
   it("while the history loads, says so", () => {
     live.history = null;
-    render(<LiveCountView payload={NIGHT} wards={WARDS} ballot={[]} ward={null} areas={AREAS} />);
+    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
     expect(screen.getByRole("status").textContent).toMatch(/Loading the count/);
   });
 
-  it("gives every chart a table, the mayor by ward and every race by how much is in", () => {
+  it("gives every chart a table; the two tables of the count moved to the Tables view (#123)", () => {
     live.history = HISTORY;
-    render(<LiveCountView payload={NIGHT} wards={WARDS} ballot={[]} ward={null} areas={AREAS} />);
+    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
     expect(screen.getAllByText("Show as a table").length).toBeGreaterThanOrEqual(4);
-    expect(screen.getByRole("heading", { name: "Mayor, ward by ward" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Every race, least counted first" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Mayor, ward by ward" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Every race, least counted first" })).toBeNull();
     // One row per point in the history.
     const pace = screen.getAllByRole("table")[0];
     expect(within(pace).getAllByRole("row")).toHaveLength(HISTORY.t.length + 1);
   });
 
   it("sorts the ward table by lead when asked", () => {
-    live.history = HISTORY;
-    render(<LiveCountView payload={NIGHT} wards={WARDS} ballot={[]} ward={null} areas={AREAS} />);
+    render(<LiveTablesView payload={NIGHT} wards={WARDS} areas={AREAS} />);
     const button = screen.getByRole("button", { name: /^Lead$/ });
     fireEvent.click(button);
     expect(button.closest("th")!.getAttribute("aria-sort")).toBe("descending");
@@ -213,9 +212,27 @@ describe("LiveCountView", () => {
   it("on a ward page, charts that ward's races", () => {
     live.history = HISTORY;
     render(
-      <LiveCountView payload={NIGHT} wards={WARDS} ballot={wardBallotRaceIds("4", trustees)} ward="4" areas={AREAS} />,
+      <LiveCountView payload={NIGHT} ballot={wardBallotRaceIds("4", trustees)} ward="4" />,
     );
     expect(screen.getByRole("heading", { name: "On the Ward 4 ballot" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /^Councillor, Ward 4/ })).toBeTruthy();
+  });
+});
+
+describe("LiveTablesView (#123)", () => {
+  const AREAS = {};
+
+  it("holds the mayor by ward, then every race by how much is in, without the history", () => {
+    live.history = null;
+    render(<LiveTablesView payload={NIGHT} wards={WARDS} areas={AREAS} />);
+    const headings = screen.getAllByRole("heading").map((h) => h.textContent);
+    expect(headings.indexOf("Mayor, ward by ward")).toBeGreaterThan(-1);
+    expect(headings.indexOf("Every race, least counted first")).toBeGreaterThan(headings.indexOf("Mayor, ward by ward"));
+  });
+
+  it("before results, says when the tables start", () => {
+    render(<LiveTablesView payload={BEFORE} wards={WARDS} areas={AREAS} />);
+    expect(screen.getByText(/Tables of the count start once the City reports results/)).toBeTruthy();
+    expect(screen.queryByRole("table")).toBeNull();
   });
 });

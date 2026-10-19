@@ -345,12 +345,10 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally .forecast-chart__track { grid-area: track; align-self: center; }
 .live-tally__value { grid-area: value; }
 .live-tally__meta { grid-area: meta; font-family: var(--font-body); font-size: 0.76rem; line-height: 1.45; color: var(--muted); font-variant-numeric: tabular-nums; }
-/* The mayor card's labelled sub-sections under the tally (#118): the 2023 benchmark and a ward's
-   mayoral vote, each under a kicker after a rule; then the disclosures together. */
+/* The mayor card's labelled sub-section under the tally (#118): the 2023 benchmark under a kicker
+   after a rule; then the disclosures together. */
 .live-subsection { margin-top: var(--space-md); padding-top: var(--space-sm); border-top: 1px solid var(--rule); }
 .live-subsection > .kicker { margin: 0 0 var(--space-xs); }
-.live-ward-vote { display: grid; gap: var(--space-sm); }
-.live-ward-vote .candidate-marker { display: inline-block; vertical-align: -0.05em; margin-right: 0.35em; }
 .live-card-more { margin-top: var(--space-md); }
 .live-forecast .forecast-chart { margin-bottom: var(--space-sm); }
 .live-tile__ranges:empty { display: none; }
@@ -386,6 +384,16 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally__more { margin-top: var(--space-sm); min-height: var(--touch-target-min); cursor: pointer; }
 .live-tally__chevron { font-size: 0.9em; line-height: 1; }
 .live-tally__more:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+/* A ward page's mayoral rows (#125): the city's bar, then the ward's, thinner and lighter with no
+   ranges, and Olivia Chow's 2023 share in the ward as a dashed mark on hers. */
+.live-tally .forecast-chart__row--ward { grid-template-areas: "label track value" "meta track value" "wlabel wtrack wvalue"; }
+.live-tally__wlabel { grid-area: wlabel; font-size: 0.76rem; line-height: 1.45; color: var(--muted); font-variant-numeric: tabular-nums; }
+.live-tally .live-tally__wtrack { grid-area: wtrack; align-self: center; height: 0.5rem; }
+.live-tally__wbar { opacity: 0.55; }
+.live-tally__wvalue { grid-area: wvalue; justify-self: end; font-size: 0.95rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.live-tally__then { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--ink); }
+.live-tally__glyph--then { width: 0; height: 14px; border-left: 2px dashed var(--ink); }
+.live-progress__label { min-width: 4.5rem; color: var(--ink); font-weight: 600; }
 .forecast-chart__row--out { opacity: 0.55; padding-block: 0.45rem; }
 .forecast-chart__row--out .forecast-chart__track { height: 0.75rem; }
 .live-tally__axis { grid-template-columns: minmax(9rem, 17rem) minmax(0, 1fr) 4.5rem; border-bottom: 0; }
@@ -393,6 +401,7 @@ button:disabled { cursor: default; opacity: 0.6; }
 @media (max-width: 560px) {
   /* Name and share on one line, the bar at the card's full width, then the figures. */
   .live-tally .forecast-chart__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "track track" "meta meta"; row-gap: 0.35rem; }
+  .live-tally .forecast-chart__row--ward { grid-template-areas: "label value" "track track" "meta meta" "wlabel wvalue" "wtrack wtrack"; }
   .live-tally .forecast-chart__label { grid-column: auto; }
   .live-tally .forecast-chart__value { font-size: 1.25rem; }
   .live-tally__axis { grid-template-columns: minmax(0, 1fr); }

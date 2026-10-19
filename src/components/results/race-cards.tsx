@@ -19,6 +19,7 @@ import { eliminatedKeys } from "@/lib/live-eliminated";
 import { shareText, votesTotal } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { ResultsWard } from "@/lib/results-wards";
+import { shortLabel } from "@/lib/live-labels";
 import type {
   LiveBand,
   LiveCandidate,
@@ -135,10 +136,6 @@ export function raceTitle(race: LiveRace): string {
   return `${board?.shortName ?? "Trustee"} Ward ${race.num}`;
 }
 
-/** The short label (#16): the registry last name, or the full Ballot Name. */
-function shortLabel(candidate: LiveCandidate): string {
-  return candidate.short_label ?? candidate.full_name;
-}
 
 /** Payload shares are already percent (0..100), unlike `formatSharePct`'s fractions; never
  *  "0.0%" (`shareText`). */

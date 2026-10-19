@@ -29,6 +29,7 @@ import { countRows, leadRows, paceBuckets, shareRows, type ShareRow } from "@/li
 import { mayorWardLead, raceLead, reportedFraction, type Lead } from "@/lib/live-map";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LiveHistory, LivePayload, LiveRace } from "@/types/live";
+import { shortLabel } from "@/lib/live-labels";
 import { useLiveHistory } from "./live-results-poller";
 import { raceTitle } from "./race-cards";
 
@@ -110,7 +111,7 @@ interface Series {
 function seriesFor(race: LiveRace, history: LiveHistory): Series[] {
   const keys = history.races[race.id]?.keys ?? [];
   const byVotes = [...race.candidates].filter((c) => keys.includes(c.key)).sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0));
-  const label = (c: (typeof byVotes)[number]) => c.short_label ?? c.full_name;
+  const label = (c: (typeof byVotes)[number]) => shortLabel(c);
   const hasBand = (key: string) => history.races[race.id]?.b?.some((row) => row[keys.indexOf(key)] !== null) ?? false;
   if (race.level === "mayor") {
     const named = byVotes.filter((c) => c.candidate_id);
@@ -429,7 +430,7 @@ function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHisto
   const [a, b] = race.candidates;
   if (!a || !b || !history.races[race.id]) return null;
   const colour = (c: typeof a) => (c.candidate_id ? candidateMeta(c.candidate_id).colorVar : OTHER);
-  const name = (c: typeof a) => c.short_label ?? c.full_name;
+  const name = (c: typeof a) => shortLabel(c);
   const all = leadRows(history, race.id, a.key, b.key);
   const rows = axis === "clock" ? all : all.filter((r) => r.reported !== null);
   if (rows.length === 0) return null;
@@ -517,7 +518,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
   const names = new Map(wards.map((w) => [w.num, w.name]));
   const label = (key: string | null) => {
     const c = mayor.candidates.find((x) => x.key === key);
-    return c ? (c.short_label ?? c.full_name) : "–";
+    return c ? shortLabel(c) : "–";
   };
   const rows = (mayor.wards ?? []).map((w) => ({ num: w.num, lead: mayorWardLead(w), progress: w.progress }));
   const value = (r: { num: string; lead: Lead }): number | string => {
@@ -630,7 +631,7 @@ function ReportingBoard({ races, areas }: { races: LiveRace[]; areas: Record<str
                       </span>
                       {race.progress!.received} of {race.progress!.total}
                     </td>
-                    <td>{lead.tied ? "Tied" : leader ? (leader.short_label ?? leader.full_name) : "–"}</td>
+                    <td>{lead.tied ? "Tied" : leader ? shortLabel(leader) : "–"}</td>
                   </tr>
                 );
               })}

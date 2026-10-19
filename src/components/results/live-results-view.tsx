@@ -15,7 +15,7 @@ import type { ResultsMapData } from "@/lib/results-map-data";
 import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { LiveCountView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
-import { CouncilTiles, FrenchBoards, RaceCard } from "./race-cards";
+import { CouncilTiles, FrenchBoards, RaceCard, WORDING } from "./race-cards";
 import { ResultsViews } from "./results-views";
 import { WardPicker } from "./ward-picker";
 
@@ -99,6 +99,8 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
     const { payload, heartbeat, closed } = results;
     const counting = payload.state === "results";
     const cityCountAt = Math.min(payload.seq.all_office, payload.seq.ward_by_ward);
+    // From 8 p.m. until the first voting area anywhere.
+    const nothingIn = counting && !payload.races.some((race) => race.state === "counting" || race.state === "all_units_in");
     const shown = ["mayor", ...ballot].flatMap((id) => payload.races.filter((race) => race.id === id));
     const main = shown.filter((race) => race.level !== "french_trustee");
     const french = shown.filter((race) => race.level === "french_trustee");
@@ -120,7 +122,10 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
             <>Final unofficial count as of {clockTime(cityCountAt)}</>
           ) : (
             <>
+              {/* The page's state, said once here rather than on every card (#115). */}
+              {!counting && <>{WORDING.before_results} · </>}
               {counting && <>City count as of {clockTime(cityCountAt)} · </>}
+              {nothingIn && <>{WORDING.no_units_in} · </>}
               {!closed && <>Refreshes every minute · </>}
               City of Toronto unofficial results
             </>

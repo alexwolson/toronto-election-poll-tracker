@@ -92,14 +92,8 @@ describe("LiveResultsView: /results/ before a ward is picked", () => {
     expect(picker).toBeGreaterThan(-1);
     expect(picker).toBeLessThan(html.indexOf("live-race-mayor"));
     expect(html.indexOf("live-race-mayor")).toBeLessThan(html.indexOf('href="/results/1"'));
-    // Mayoral candidates in ballot order.
-    const mayor = payload.races[0].candidates.map((c) => c.full_name);
-    let at = html.indexOf("live-race-mayor");
-    for (const name of mayor) {
-      const found = html.indexOf(name, at);
-      expect(found, name).toBeGreaterThan(at);
-      at = found;
-    }
+    // The mayor folds before results as while counting: the forecast's two, then the rest (#115).
+    expect(tallyNames(card(html, "mayor"))).toEqual(["Brad Bradford", "Olivia Chow", "51 other candidates"]);
   });
 
   it("lists every ward as 'Ward N Name' with no default, then the MyVote pointer", () => {
@@ -142,7 +136,7 @@ describe("LiveResultsView: a ward's page", () => {
     expect(html).toContain("Vincent Crisanti");
     expect(html).toContain("6,800");
     expect(html).toContain("41.2%");
-    expect(html).toContain("No voting areas have reported yet");
+    expect(html).toContain("0 of 1535 voting areas in");
     expect(html).toContain('class="forecast-chart live-tally"');
     expect(html).toContain("Geneviève Oger was acclaimed: the only candidate, so there is no vote.");
     expect(html).not.toContain("Results from 8 p.m.");
@@ -176,7 +170,15 @@ describe("LiveResultsView: the council tiles", () => {
     const html = render(golden("council-counting-2022.json"));
     expect(html).toMatch(/href="\/results\/1"><h3[^>]*>Ward 1 · <span>Etobicoke North<\/span><\/h3>/);
     const before = render(golden("before-results-2026.json"));
-    expect(count(before, "Results from 8 p.m.")).toBe(26);
+    // The page says it once (#115); no tile repeats it.
+    expect(count(before, "Results from 8 p.m.")).toBe(1);
+    expect(tile(before, "1")).not.toContain("Results from 8 p.m.");
+  });
+
+  it("at 0%, carry an empty progress line and no status of their own (#115)", () => {
+    const html = tile(render(golden("no-units-in-2026.json")), "14");
+    expect(html).toContain("0 of 48 voting areas in");
+    expect(html).not.toContain("No voting areas have reported yet");
   });
 });
 
@@ -296,16 +298,35 @@ describe("LiveResultsView: the tally", () => {
     expect(html).toContain('class="forecast-chart live-tally"');
   });
 
-  it("before 8 p.m. and before the first voting area, lists the names in ballot order with no bars", () => {
-    const before = render(golden("before-results-2026.json"), { ward: "14" });
+  it("before 8 p.m. and before the first voting area, shows the counting layout, empty (#115)", () => {
+    const beforePayload = golden("before-results-2026.json");
+    const before = render(beforePayload, { ward: "14" });
     const none = render(golden("no-units-in-2026.json"), { ward: "14" });
+    const names = beforePayload.races.find((r) => r.id === "councillor-14")!.candidates.map((c) => c.full_name);
     for (const html of [before, none]) {
       const council = card(html, "councillor-14");
-      expect(council).not.toContain("live-tally");
-      expect(council).toContain("Maqsood Ahmad");
+      // Every candidate as a tally row, in ballot order; never a run of names.
+      expect(tallyNames(council)).toEqual(names);
+      expect(council).not.toContain(" · Nadia");
+      expect(council).not.toContain("Results from 8 p.m.");
+      expect(council).not.toContain("No voting areas have reported yet");
+      // No bars and no ranges yet.
+      expect(council).not.toContain("live-tally__key");
+      expect(council).not.toContain("live-tally__estimate");
     }
-    expect(card(none, "councillor-14")).toContain("No voting areas have reported yet");
-    expect(card(before, "councillor-14")).toContain("Results from 8 p.m.");
+    expect(card(none, "councillor-14")).toContain("0 of 48 voting areas in");
+    expect(card(before, "councillor-14")).not.toContain("voting areas in");
+  });
+
+  it("says the page's state once, in the status line (#115)", () => {
+    const before = render(golden("before-results-2026.json"), { ward: "14" });
+    expect(count(before, "Results from 8 p.m.")).toBe(1);
+    expect(text(before)).toContain("Results from 8 p.m. · Refreshes every minute · City of Toronto unofficial results");
+    const none = render(golden("no-units-in-2026.json"), { ward: "14" });
+    expect(count(none, "No voting areas have reported yet")).toBe(1);
+    expect(text(none)).toMatch(/City count as of \d{1,2}:\d{2} [ap]\.m\. · No voting areas have reported yet · Refreshes every minute/);
+    // Once a voting area is in, the line no longer says none are.
+    expect(render(golden("council-counting-2022.json"), { ward: "1" })).not.toContain("No voting areas have reported yet");
   });
 });
 
@@ -333,10 +354,13 @@ describe("LiveResultsView: the mayor card", () => {
     expect(tallyNames(card(render(four), "mayor")).at(-1)).toBe("2 other candidates");
   });
 
-  it("never folds before results", () => {
+  it("folds before results too, to the forecast's two, with a button to show everyone (#115)", () => {
     const html = card(render(golden("before-results-2026.json")), "mayor");
-    expect(html).not.toContain("other candidates");
-    expect(html).toContain("Braeden Chow");
+    expect(tallyNames(html)).toEqual(["Brad Bradford", "Olivia Chow", "51 other candidates"]);
+    expect(html).toContain("Show all 53 candidates");
+    // Empty rows: a dash for the share, no votes line.
+    expect(html).toContain('<strong class="forecast-chart__value live-tally__value">–</strong>');
+    expect(html).not.toContain("votes</span>");
   });
 
   it("on a ward's page, adds that ward's mayoral vote with its Reporting Progress", () => {
@@ -397,9 +421,9 @@ describe("LiveResultsView: council tiles while counting", () => {
     expect(html).toContain('<p class="t-meta live-tile__ranges" data-ranges=""></p>');
   });
 
-  it("show the state alone before results", () => {
+  it("show the ward alone before results", () => {
     const html = tile(render(golden("before-results-2026.json")), "1");
-    expect(html).toContain("Results from 8 p.m.");
+    expect(html).not.toContain("Results from 8 p.m.");
     expect(html).not.toContain("data-ranges");
   });
 });

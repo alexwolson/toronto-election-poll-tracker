@@ -589,7 +589,7 @@ export default async function HowItWorksPage() {
               </article>
               <article>
                 <h3>Mayoral polling</h3>
-                <p>Public releases from Liaison Strategies, Forum Research, Mainstreet Research, Pallas Data, Abacus Data, Ipsos, Nanos Research, Canada Pulse Insights, and Scope Research. The Polls page retains the firm and fieldwork date for every reading.</p>
+                <p>Public releases from Liaison Strategies, Forum Research, Mainstreet Research, Pallas Data, Abacus Data, Ipsos, Nanos Research, Canada Pulse Insights, Scope Research, Build Canada, and Pollara Strategic Insights. The Polls page retains the firm and fieldwork date for every reading.</p>
               </article>
               <article>
                 <h3>Forecast history</h3>

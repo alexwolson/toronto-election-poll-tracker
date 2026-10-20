@@ -227,6 +227,8 @@ describe("pollster registry", () => {
     // The feed's firm name, as Polling releases publish it.
     expect(pollsterWebsite("Canada Pulse Insights")).toBe("https://canadapulseinsights.com/");
     expect(pollsterWebsite("Scope Research")).toBe("https://scoperesearch.ca/");
+    expect(pollsterWebsite("Build Canada")).toBe("https://www.buildcanada.com/");
+    expect(pollsterWebsite("Pollara Strategic Insights")).toBe("https://www.pollara.com/");
     expect(pollsterWebsite("Future Pollster")).toBeNull();
   });
 });

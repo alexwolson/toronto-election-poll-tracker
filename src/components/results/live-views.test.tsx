@@ -195,6 +195,87 @@ describe("LiveMapView outlines (#126)", () => {
   });
 });
 
+describe("LiveMapView ward card (#130)", () => {
+  const wardPath = (num: string) => screen.getByRole("button", { name: new RegExp(`^Ward ${num} `) });
+  const card = () => document.querySelector(".live-map__card");
+  const pinned = () => screen.queryByRole("region", { name: /^Ward \d+ .* results$/ });
+
+  it("shows a card for the ward under the mouse, out of the pointer's way", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    expect(card()).toBeNull();
+    fireEvent.mouseEnter(wardPath("12"));
+    expect(card()!.textContent).toMatch(/^Ward 12 /);
+    expect(card()!.classList.contains("is-hover")).toBe(true);
+    expect(within(card() as HTMLElement).queryByRole("button", { name: "Close" })).toBeNull();
+    fireEvent.mouseLeave(wardPath("12"));
+    expect(card()).toBeNull();
+  });
+
+  it("pins the card on a click, with Close; the pinned ward is the held ward", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(wardPath("3"));
+    expect(pinned()!.getAttribute("aria-label")).toMatch(/^Ward 3 /);
+    fireEvent.mouseEnter(wardPath("12"));
+    expect(pinned()!.getAttribute("aria-label")).toMatch(/^Ward 3 /);
+    fireEvent.mouseLeave(wardPath("12"));
+    fireEvent.click(within(pinned()!).getByRole("button", { name: "Close" }));
+    expect(pinned()).toBeNull();
+    expect(wardPath("3").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("unpins on a second click of the same ward, and on Escape", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(wardPath("3"));
+    fireEvent.click(wardPath("3"));
+    expect(pinned()).toBeNull();
+    fireEvent.click(wardPath("5"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(pinned()).toBeNull();
+  });
+
+  it("unpins on a click anywhere else on the map, and Enter on the pinned ward", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(wardPath("3"));
+    fireEvent.click(screen.getByRole("list", { name: "Map legend" }));
+    expect(pinned()).toBeNull();
+    fireEvent.focus(wardPath("3"));
+    expect(pinned()).toBeTruthy();
+    fireEvent.keyDown(wardPath("3"), { key: "Enter" });
+    expect(pinned()).toBeNull();
+  });
+
+  it("hands focus back to the ward on Escape", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(wardPath("3"));
+    within(pinned()!).getByRole("button", { name: "Close" }).focus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(pinned()).toBeNull();
+    expect(document.activeElement).toBe(wardPath("3"));
+  });
+
+  it("keeps the side panel on the held ward while the card shows the hovered one", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    fireEvent.mouseEnter(wardPath("12"));
+    expect(screen.getByRole("complementary", { name: "Ward 7 details" })).toBeTruthy();
+  });
+
+  it("pins the card at the ward when the keyboard focuses it", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    fireEvent.focus(wardPath("7"));
+    expect(pinned()!.getAttribute("aria-label")).toMatch(/^Ward 7 /);
+  });
+
+  it("opens a shared link's ward pinned, and a plain map with no card", () => {
+    live.query = "view=map&ward=9";
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    expect(pinned()!.getAttribute("aria-label")).toMatch(/^Ward 9 /);
+    cleanup();
+    live.query = "view=map";
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    expect(card()).toBeNull();
+  });
+});
+
 describe("LiveMapView selection in the URL (#126)", () => {
   const pressed = (name: string) => screen.getByRole("button", { name }).getAttribute("aria-pressed");
 

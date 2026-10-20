@@ -11,6 +11,7 @@
  */
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { CHOW_2023, chowCandidate, chowVs2023, chowWard, type ChowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
@@ -25,14 +26,19 @@ import {
   type Lead,
   type ReportingTier,
 } from "@/lib/live-map";
+import {
+  mapSelectionFrom,
+  mapSelectionHref,
+  shownMeasure,
+  type MapContest as Contest,
+  type MapMeasure as Measure,
+  type MapSelection,
+} from "@/lib/live-map-url";
 import type { ResultsMapData, ResultsMapWard } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
 import { shortLabel } from "@/lib/live-labels";
 import { raceTitle } from "./race-cards";
-
-type Contest = "mayor" | "council" | "tdsb" | "tcdsb";
-type Measure = "leader" | "share" | "reporting" | "vs2023";
 
 const CONTESTS: { id: Contest; label: string }[] = [
   { id: "mayor", label: "Mayor" },
@@ -170,14 +176,21 @@ export interface LiveMapViewProps {
 }
 
 export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
-  const [contest, setContest] = useState<Contest>("mayor");
-  const [measure, setMeasure] = useState<Measure>("leader");
+  // The URL sets the map it opens with (#126); the reader's changes are written back to it.
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const pageWard = ward ?? data.wards[0]?.num ?? "1";
+  const [selection, setSelection] = useState<MapSelection>(() => {
+    const fromUrl = mapSelectionFrom(searchParams, data.wards.map((w) => w.num));
+    return { ...fromUrl, ward: fromUrl.ward ?? pageWard };
+  });
+  const { contest, measure, candidate: shareKey } = selection;
+  const held = selection.ward ?? pageWard;
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   const counting = payload?.state === "results";
   const shareChoices = (mayor?.candidates ?? []).filter((c) => (c.votes ?? 0) > 0).slice(0, 6);
-  const [shareKey, setShareKey] = useState<string | null>(null);
   const shareCandidate = shareChoices.find((c) => c.key === shareKey) ?? shareChoices[0];
-  const effectiveMeasure: Measure = contest !== "mayor" && (measure === "share" || measure === "vs2023") ? "leader" : measure;
+  const effectiveMeasure = shownMeasure(contest, measure);
 
   const names = new Map(wards.map((w) => [w.num, w.name]));
 
@@ -242,15 +255,31 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
     });
   })();
 
-  const initial = ward ?? data.wards[0]?.num ?? "1";
-  const [held, setHeld] = useState(initial);
   const [preview, setPreview] = useState<string | null>(null);
+  // Keyboard focus only: a click also focuses the ward, but the held outline already shows it.
+  const [focused, setFocused] = useState<string | null>(null);
+  const pointerDown = useRef(false);
   const [announcement, setAnnouncement] = useState("");
   const refs = useRef<Record<string, SVGPathElement | null>>({});
+  const pathOf = (num: string) => data.wards.find((w) => w.num === num)?.path;
   const active = facts.find((f) => f.ward.num === (preview ?? held)) ?? facts[0];
 
+  /** The selection as a link gives it: what the map shows, and no parameter for the page's own ward. */
+  const linkable = (next: MapSelection): MapSelection => ({
+    contest: next.contest,
+    measure: shownMeasure(next.contest, next.measure),
+    candidate: (shareChoices.find((c) => c.key === next.candidate) ?? shareChoices[0])?.key ?? null,
+    ward: next.ward === pageWard ? null : next.ward,
+  });
+  /** Applies a change and writes it to the URL, replacing the entry, so Back leaves the page. */
+  const select = (change: Partial<MapSelection>) => {
+    const next = { ...selection, ...change };
+    setSelection(next);
+    window.history.replaceState(null, "", mapSelectionHref(pathname, searchParams, linkable(next)));
+  };
+
   const hold = (num: string) => {
-    setHeld(num);
+    select({ ward: num });
     const f = facts.find((x) => x.ward.num === num);
     if (f) setAnnouncement(`Ward ${num} ${f.name}: ${f.shade.words}`);
   };
@@ -290,14 +319,14 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
         <div className="live-map__controls">
           <div className="ward-index-sort live-seg" role="group" aria-label="Race">
             {CONTESTS.map((c) => (
-              <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => setContest(c.id)}>
+              <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select({ contest: c.id })}>
                 {c.label}
               </button>
             ))}
           </div>
           <div className="ward-index-sort live-seg" role="group" aria-label="Show">
             {measures.map((m) => (
-              <button key={m.id} type="button" aria-pressed={effectiveMeasure === m.id} onClick={() => setMeasure(m.id)}>
+              <button key={m.id} type="button" aria-pressed={effectiveMeasure === m.id} onClick={() => select({ measure: m.id })}>
                 {m.label}
               </button>
             ))}
@@ -305,7 +334,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           {contest === "mayor" && effectiveMeasure === "share" && shareChoices.length > 0 && (
             <label className="live-map__candidate">
               <span>Candidate</span>
-              <select value={shareCandidate?.key} onChange={(e) => setShareKey(e.target.value)}>
+              <select value={shareCandidate?.key} onChange={(e) => select({ candidate: e.target.value })}>
                 {shareChoices.map((c) => (
                   <option key={c.key} value={c.key}>
                     {c.full_name}
@@ -334,7 +363,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                   refs.current[f.ward.num] = el;
                 }}
                 d={f.ward.path}
-                className={`live-map__ward${f.ward.num === held ? " is-held" : ""}${f.ward.num === (preview ?? held) ? " is-active" : ""}${f.ward.num === ward ? " is-home" : ""}`}
+                className="live-map__ward"
                 style={{ "--ward-fill": f.shade.hatch ? "url(#live-map-hatch)" : (f.shade.fill ?? undefined) } as WardStyle}
                 role="button"
                 tabIndex={f.ward.num === held ? 0 : -1}
@@ -342,12 +371,27 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                 aria-pressed={f.ward.num === held}
                 onMouseEnter={() => setPreview(f.ward.num)}
                 onMouseLeave={() => setPreview(null)}
-                onFocus={() => setPreview(f.ward.num)}
-                onBlur={() => setPreview(null)}
+                onPointerDown={() => (pointerDown.current = true)}
+                onFocus={() => {
+                  setPreview(f.ward.num);
+                  if (!pointerDown.current) setFocused(f.ward.num);
+                  pointerDown.current = false;
+                }}
+                onBlur={() => {
+                  setPreview(null);
+                  setFocused(null);
+                }}
                 onClick={() => hold(f.ward.num)}
                 onKeyDown={(e) => onKey(e, f.ward.num)}
               />
             ))}
+            {/* Outlines go above every ward, so no neighbour drawn later paints over one (#126). */}
+            <g className="live-map__outlines" aria-hidden="true" pointerEvents="none">
+              {ward !== null && ward !== held && <path className="is-home" d={pathOf(ward)} />}
+              <path className="is-held" d={pathOf(held)} />
+              {preview !== null && <path className="is-active" d={pathOf(preview)} />}
+              {focused !== null && <path className="is-focus" d={pathOf(focused)} />}
+            </g>
             <g className="live-map__labels" aria-hidden="true">
               {data.wards.map((w) =>
                 w.label.leader_line ? (
@@ -382,7 +426,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
             </p>
           )}
         </div>
-        {active && <WardPanel facts={active} contest={contest} home={ward} />}
+        {active && <WardPanel facts={active} contest={contest} home={ward} selection={linkable({ ...selection, ward: null })} />}
       </div>
 
       <details className="live-table-toggle">
@@ -452,7 +496,18 @@ function lastName(race: LiveRace | null, key: string): string {
   return c.short_label && c.short_label !== c.full_name ? c.short_label : (c.full_name.split(" ").at(-1) ?? c.full_name);
 }
 
-function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contest; home: string | null }) {
+function WardPanel({
+  facts,
+  contest,
+  home,
+  selection,
+}: {
+  facts: WardFacts;
+  contest: Contest;
+  home: string | null;
+  /** The map's selection, so the ward's page opens the same map. */
+  selection: MapSelection;
+}) {
   const { ward, name, race, lead, reported, shade } = facts;
   const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
   // Each figure once: the lead is in the status line, so the list is just who has what. Its rows
@@ -508,7 +563,7 @@ function WardPanel({ facts, contest, home }: { facts: WardFacts; contest: Contes
         </p>
       )}
       {home !== ward.num && (
-        <Link className="text-link live-map__link" href={`/results/${ward.num}/?view=map`}>
+        <Link className="text-link live-map__link" href={mapSelectionHref(`/results/${ward.num}/`, new URLSearchParams("view=map"), selection)}>
           Ward {ward.num} results <span aria-hidden="true">→</span>
         </Link>
       )}

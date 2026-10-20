@@ -31,11 +31,14 @@ const HISTORY: LiveHistory = serveHistory({
   switches: switchesFrom([]),
 });
 
-const live = vi.hoisted(() => ({ history: null as LiveHistory | null }));
+const live = vi.hoisted(() => ({ history: null as LiveHistory | null, query: "" }));
 vi.mock("./live-results-poller", () => ({ useLiveHistory: () => live.history }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/results/", useSearchParams: () => new URLSearchParams() }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/results/", useSearchParams: () => new URLSearchParams(live.query) }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  live.query = "";
+});
 
 describe("LiveMapView", () => {
   it("draws all 25 wards, each named with what its shade says", () => {
@@ -138,6 +141,114 @@ describe("LiveMapView", () => {
     const table = screen.getByRole("table");
     expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
     expect(screen.getByText(/certified results of the 2023 by-election/)).toBeTruthy();
+  });
+});
+
+describe("LiveMapView outlines (#126)", () => {
+  const wardPath = (num: string) => screen.getByRole("button", { name: new RegExp(`^Ward ${num} `) });
+  const outlines = () => document.querySelector(".live-map__outlines")!;
+
+  it("draws the held and hovered wards' outlines above every ward, out of the pointer's way", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    const layer = outlines();
+    // Painted after (so above) the last ward, since SVG paints in document order.
+    const lastWard = wardPath(String(MAP.wards[MAP.wards.length - 1].num));
+    expect(lastWard.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(layer.getAttribute("aria-hidden")).toBe("true");
+    expect(layer.getAttribute("pointer-events")).toBe("none");
+
+    const held = layer.querySelector(".is-held")!;
+    expect(held.getAttribute("d")).toBe(wardPath("7").getAttribute("d"));
+    expect(layer.querySelector(".is-active")).toBeNull();
+
+    fireEvent.mouseEnter(wardPath("12"));
+    expect(layer.querySelector(".is-active")!.getAttribute("d")).toBe(wardPath("12").getAttribute("d"));
+    fireEvent.mouseLeave(wardPath("12"));
+    expect(layer.querySelector(".is-active")).toBeNull();
+  });
+
+  it("outlines the keyboard-focused ward in the focus colour, whatever the mouse does", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    fireEvent.focus(wardPath("7"));
+    expect(outlines().querySelector(".is-focus")!.getAttribute("d")).toBe(wardPath("7").getAttribute("d"));
+    fireEvent.mouseEnter(wardPath("12"));
+    fireEvent.mouseLeave(wardPath("12"));
+    expect(outlines().querySelector(".is-focus")).toBeTruthy();
+    fireEvent.blur(wardPath("7"));
+    expect(outlines().querySelector(".is-focus")).toBeNull();
+  });
+
+  it("draws no focus outline when a click focuses the ward", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    fireEvent.pointerDown(wardPath("3"));
+    fireEvent.focus(wardPath("3"));
+    fireEvent.click(wardPath("3"));
+    expect(outlines().querySelector(".is-focus")).toBeNull();
+  });
+
+  it("outlines the page's own ward when another is held", () => {
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward="7" />);
+    fireEvent.click(wardPath("3"));
+    expect(outlines().querySelector(".is-home")!.getAttribute("d")).toBe(wardPath("7").getAttribute("d"));
+    expect(outlines().querySelector(".is-held")!.getAttribute("d")).toBe(wardPath("3").getAttribute("d"));
+  });
+});
+
+describe("LiveMapView selection in the URL (#126)", () => {
+  const pressed = (name: string) => screen.getByRole("button", { name }).getAttribute("aria-pressed");
+
+  it("opens the map a shared link describes", () => {
+    live.query = "view=map&race=council&show=reporting&ward=7";
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    expect(pressed("Council")).toBe("true");
+    expect(pressed("Voting areas in")).toBe("true");
+    expect(screen.getByRole("button", { name: /^Ward 7 / }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("complementary", { name: "Ward 7 details" })).toBeTruthy();
+  });
+
+  it("writes the reader's changes back to the URL, replacing the entry and keeping the view", () => {
+    live.query = "view=map";
+    const replace = vi.spyOn(window.history, "replaceState");
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    expect(replace).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Council" }));
+    expect(replace).toHaveBeenLastCalledWith(null, "", "/results/?view=map&race=council");
+    fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
+    expect(replace).toHaveBeenLastCalledWith(null, "", "/results/?view=map&race=council&ward=7");
+    fireEvent.click(screen.getByRole("button", { name: "Mayor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Candidate share" }));
+    const key = NIGHT.races.find((r) => r.id === "mayor")!.candidates[1].key;
+    fireEvent.change(screen.getByRole("combobox", { name: "Candidate" }), { target: { value: key } });
+    expect(replace).toHaveBeenLastCalledWith(
+      null,
+      "",
+      `/results/?${new URLSearchParams({ view: "map", show: "share", candidate: key, ward: "7" })}`,
+    );
+    replace.mockRestore();
+  });
+
+  it("never writes back a candidate that isn't in the race", () => {
+    live.query = "view=map&show=share&candidate=NOBODY";
+    const replace = vi.spyOn(window.history, "replaceState");
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
+    const first = NIGHT.races.find((r) => r.id === "mayor")!.candidates[0].key;
+    expect(replace).toHaveBeenLastCalledWith(
+      null,
+      "",
+      `/results/?${new URLSearchParams({ view: "map", show: "share", candidate: first, ward: "7" })}`,
+    );
+    replace.mockRestore();
+  });
+
+  it("links the held ward's page to the same map", () => {
+    live.query = "view=map&race=council&show=reporting";
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
+    const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
+    expect(within(panel).getByRole("link", { name: /Ward 7 results/ }).getAttribute("href")).toMatch(
+      /^\/results\/7\/?\?view=map&race=council&show=reporting$/,
+    );
   });
 });
 

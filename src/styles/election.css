@@ -483,13 +483,16 @@ button:disabled { cursor: default; opacity: 0.6; }
 }
 .live-map__ward {
   fill: var(--ward-fill, var(--rule-soft)); stroke: var(--paper); stroke-width: 1.5; vector-effect: non-scaling-stroke;
-  cursor: pointer; transition: fill 0.18s ease, filter 0.12s ease;
+  cursor: pointer; transition: fill 0.18s ease;
 }
-.live-map__ward.is-active { filter: brightness(0.93); }
-.live-map__ward.is-home { stroke: var(--blue); stroke-width: 2.5; }
-.live-map__ward.is-held { stroke: var(--ink); stroke-width: 3; }
+/* Keyboard focus is drawn in the outline layer (.is-focus), where no neighbour covers it. */
 .live-map__ward:focus { outline: none; }
-.live-map__ward:focus-visible { stroke: var(--blue); stroke-width: 4; }
+/* Drawn above every ward (#126): a stroke on the ward itself is half-covered by later neighbours. */
+.live-map__outlines path { fill: none; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.live-map__outlines .is-home { stroke: var(--blue); stroke-width: 2.5; }
+.live-map__outlines .is-held { stroke: var(--ink); stroke-width: 3; }
+.live-map__outlines .is-active { stroke: var(--ink); stroke-width: 2; }
+.live-map__outlines .is-focus { stroke: var(--blue); stroke-width: 4; }
 .live-map__labels text {
   fill: var(--ink); font-family: var(--font-mono); font-size: 15px; font-weight: 600; text-anchor: middle;
   paint-order: stroke; stroke: rgba(255, 255, 255, 0.9); stroke-width: 4px; pointer-events: none;

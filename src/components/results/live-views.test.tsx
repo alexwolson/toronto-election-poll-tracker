@@ -14,6 +14,7 @@ import { wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LiveHistory, LivePayload } from "@/types/live";
 import { LiveCountView, LiveTablesView } from "./live-count-view";
+import { CouncilAreasTable } from "./council-areas-table";
 import { LiveMapView } from "./live-map-view";
 
 function read(file: string): string {
@@ -249,6 +250,73 @@ describe("LiveMapView selection in the URL (#126)", () => {
     expect(within(panel).getByRole("link", { name: /Ward 7 results/ }).getAttribute("href")).toMatch(
       /^\/results\/7\/?\?view=map&race=council&show=reporting$/,
     );
+  });
+});
+
+describe("CouncilAreasTable (#127)", () => {
+  const ALL_IN = JSON.parse(read("payload/all-units-in-2018.json")) as LivePayload;
+  const NONE_IN = JSON.parse(read("payload/no-units-in-2026.json")) as LivePayload;
+  const row = (name: string) => within(screen.getByRole("table")).getByRole("rowheader", { name: new RegExp(`^${name}`) }).closest("tr")!;
+
+  it("sums the mayor's count into the four community council areas", () => {
+    render(<CouncilAreasTable payload={NIGHT} />);
+    expect(screen.getByRole("heading", { name: "Mayor by part of the city" })).toBeTruthy();
+    expect(within(screen.getByRole("table")).getAllByRole("rowheader").map((th) => th.textContent)).toEqual([
+      "Etobicoke York",
+      "North York",
+      "Toronto and East York",
+      "Scarborough",
+    ]);
+    // Mock night, summed independently from the fixture's ward rows.
+    const toronto = row("Toronto and East York");
+    expect(within(toronto).getByText("434 of 509")).toBeTruthy();
+    expect(within(toronto).getByText("206,107")).toBeTruthy();
+    expect(toronto.textContent).toMatch(/Chow 45\.1%.*Bradford 30\.4%/);
+    // The bar says the same in words.
+    expect(within(toronto).getByText(/^Brad Bradford 30\.4%, Olivia Chow 45\.1%, \d+ others 24\.5%$/, { selector: ".visually-hidden" })).toBeTruthy();
+  });
+
+  it("says plainly when an area has nothing counted", () => {
+    render(<CouncilAreasTable payload={NONE_IN} />);
+    const etobicoke = row("Etobicoke York");
+    expect(within(etobicoke).getByText("0 of 302")).toBeTruthy();
+    expect(within(etobicoke).getByText("No votes counted yet")).toBeTruthy();
+  });
+
+  it("with everything in, shows every voting area in", () => {
+    render(<CouncilAreasTable payload={ALL_IN} />);
+    for (const th of within(screen.getByRole("table")).getAllByRole("rowheader")) {
+      const cell = th.closest("tr")!.querySelectorAll("td")[1].textContent ?? "";
+      expect(cell).toMatch(/^(\d+) of \1$/);
+    }
+  });
+
+  it("says what the bar's colours are", () => {
+    render(<CouncilAreasTable payload={NIGHT} />);
+    expect(screen.getByText(/grey is every other candidate/)).toBeTruthy();
+  });
+
+  it("on a ward page, marks the area the ward is in", () => {
+    render(<CouncilAreasTable payload={NIGHT} ward="11" />);
+    expect(within(row("Toronto and East York")).getByText("Includes Ward 11")).toBeTruthy();
+    expect(within(row("Scarborough")).queryByText(/Includes Ward/)).toBeNull();
+  });
+
+  it("when the mayor's race has no figures, says so instead of a table of empty rows", () => {
+    for (const state of ["no_figures", "acclaimed"] as const) {
+      const payload = structuredClone(NIGHT);
+      payload.races.find((r) => r.id === "mayor")!.state = state;
+      render(<CouncilAreasTable payload={payload} />);
+      expect(screen.getByText("The mayor’s figures by area aren’t available.")).toBeTruthy();
+      expect(screen.queryByRole("table")).toBeNull();
+      cleanup();
+    }
+  });
+
+  it("before results, says it fills in as wards report", () => {
+    render(<CouncilAreasTable payload={BEFORE} />);
+    expect(screen.getByText(/fills in as wards report, from 8 p\.m\./)).toBeTruthy();
+    expect(screen.queryByRole("table")).toBeNull();
   });
 });
 

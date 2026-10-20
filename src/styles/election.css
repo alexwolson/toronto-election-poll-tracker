@@ -548,6 +548,12 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-bar > span { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
 
 .live-count__block { display: grid; gap: var(--space-lg); }
+/* Mayor by community council area (#127), under the Map. */
+.live-areas { display: grid; gap: var(--space-sm); margin-top: var(--space-xl); }
+.live-areas h2, .live-areas p { margin: 0; }
+.live-areas__shares { min-width: 180px; }
+.live-areas__ward { display: block; font-weight: 400; }
+.live-areas__leaders { display: flex; flex-wrap: wrap; gap: 0 var(--space-md); margin-bottom: 0.35rem; font-variant-numeric: tabular-nums; }
 .live-count__subhead, .live-count__block > h3 { margin: 0; }
 .live-count__note { margin: 0; color: var(--muted); font-size: var(--type-body-small); }
 .live-chart { display: grid; gap: var(--space-md); margin: 0; padding: var(--card-pad); border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--paper); min-width: 0; }

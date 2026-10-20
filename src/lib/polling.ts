@@ -176,6 +176,7 @@ export interface PollsterCount {
  * firm deliberately stays unlinked until its destination can be verified. */
 const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
   "Abacus Data": "https://abacusdata.ca/",
+  "Build Canada": "https://www.buildcanada.com/",
   "Canada Pulse Insights": "https://canadapulseinsights.com/",
   "Forum Research": "https://forumresearch.com/",
   Ipsos: "https://www.ipsos.com/en-ca",
@@ -183,6 +184,7 @@ const POLLSTER_WEBSITES: Readonly<Record<string, string>> = {
   "Mainstreet Research": "https://www.mainstreetresearch.ca/",
   "Nanos Research": "https://nanos.co/",
   "Pallas Data": "https://pallas-data.ca/",
+  "Pollara Strategic Insights": "https://www.pollara.com/",
   "Scope Research": "https://scoperesearch.ca/",
 };
 

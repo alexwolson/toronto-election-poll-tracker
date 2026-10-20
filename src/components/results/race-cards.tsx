@@ -37,6 +37,8 @@ type Levels = LivePayload["levels"];
 /** The counted mayoral field shows this many, then "N other candidates", which expands to
  *  everyone (#7). Two since Alexander's exit (2026-10-11): the count's top two, not named. */
 const MAYOR_SHOWN = 2;
+/** The folded row's key: "N other candidates". */
+const FOLDED = "other-candidates";
 /** Each ward's mayoral line names this many. */
 const NEUTRAL = "var(--color-disengaged)";
 
@@ -287,7 +289,7 @@ function tallyRows(race: LiveRace, closed: boolean, expanded = false, ward: stri
   return [
     ...rows.slice(0, MAYOR_SHOWN),
     {
-      key: "other-candidates",
+      key: FOLDED,
       elected: false,
       eliminated: rest.every((c) => eliminated.has(c.key)),
       band: null,
@@ -420,7 +422,16 @@ function TrackMarks({ row }: { row: TallyRow }) {
 
 /** One tally row; `lead` is one of the mayor's two leaders at the head of the results pages, the
  *  same row restyled large, with its Estimated Range beside the share. */
-function TallyRowView({ row, lead = false }: { row: TallyRow; lead?: boolean }) {
+function TallyRowView({
+  row,
+  lead = false,
+  toggle = null,
+}: {
+  row: TallyRow;
+  lead?: boolean;
+  /** The folded "N other candidates" row's name opens the whole field in place (Alex). */
+  toggle?: { controls: string; onClick: () => void } | null;
+}) {
   return (
     <div
       className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}${row.ward ? " forecast-chart__row--ward" : ""}${lead ? " forecast-chart__row--lead" : ""}`}
@@ -428,7 +439,14 @@ function TallyRowView({ row, lead = false }: { row: TallyRow; lead?: boolean }) 
     >
       <span className="forecast-chart__label">
         {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
-        <span className="live-tally__name">{row.name}</span>
+        {toggle ? (
+          <button type="button" className="live-tally__expand" aria-expanded={false} aria-controls={toggle.controls} onClick={toggle.onClick}>
+            <span className="live-tally__name">{row.name}</span>
+            <span className="live-tally__chevron" aria-hidden="true">⌄</span>
+          </button>
+        ) : (
+          <span className="live-tally__name">{row.name}</span>
+        )}
         {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
         {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
       </span>
@@ -459,6 +477,27 @@ function TallyRowView({ row, lead = false }: { row: TallyRow; lead?: boolean }) 
   );
 }
 
+/** Folds an expanded field back: the folded row's name opens it (Alex). */
+function ShowFewer({ controls, onClick }: { controls: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="btn btn--ghost btn--sm live-tally__more"
+      aria-expanded={true}
+      aria-controls={controls}
+      onClick={(event) => {
+        const button = event.currentTarget;
+        onClick();
+        // Folding a long field back would leave the reader far below the list.
+        requestAnimationFrame(() => button.scrollIntoView?.({ block: "nearest" }));
+      }}
+    >
+      <span className="live-tally__chevron" aria-hidden="true">⌃</span>
+      Show fewer
+    </button>
+  );
+}
+
 /** The tally's key: only the marks this race draws. */
 function TallyKey({ rows, race }: { rows: TallyRow[]; race: LiveRace }) {
   const has = (pick: (row: TallyRow) => unknown) => rows.some(pick);
@@ -485,12 +524,13 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const rows = tallyRows(race, closed, expanded, ward);
+  const toggleFor = (row: TallyRow) => (row.key === FOLDED ? { controls: listId, onClick: () => setExpanded(true) } : null);
   const inIt = rows.filter((row) => !row.eliminated);
   const out = rows.filter((row) => row.eliminated);
   return (
     <>
       <div className="forecast-chart live-tally" role="list" id={listId} aria-label={`${raceTitle(race)} count`}>
-        {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
+        {inIt.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
         {out.length > 0 && (
           <p className="live-tally__break" role="listitem">
             <strong>{WORDING.eliminated}</strong>
@@ -498,7 +538,7 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
             <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
           </p>
         )}
-        {out.map((row) => <TallyRowView key={row.key} row={row} />)}
+        {out.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
         {(race.possible || estimated(race)) && (
           <div className="forecast-chart__axis live-tally__axis" aria-hidden="true">
             <span />
@@ -511,23 +551,7 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
           definitions, then any gate note. */}
       <TallyKey rows={rows} race={race} />
       {legend}
-      {folds(race) && (
-        <button
-          type="button"
-          className="btn btn--ghost btn--sm live-tally__more"
-          aria-expanded={expanded}
-          aria-controls={listId}
-          onClick={(event) => {
-            const button = event.currentTarget;
-            setExpanded(!expanded);
-            // Folding a long field back would leave the reader far below the card.
-            if (expanded) requestAnimationFrame(() => button.scrollIntoView?.({ block: "nearest" }));
-          }}
-        >
-          <span className="live-tally__chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
-          {expanded ? "Show fewer" : `Show all ${race.candidates.length} candidates`}
-        </button>
-      )}
+      {folds(race) && expanded && <ShowFewer controls={listId} onClick={() => setExpanded(false)} />}
     </>
   );
 }
@@ -539,6 +563,7 @@ export function MayorLeadTally({ race, levels, closed, ward }: { race: LiveRace;
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const rows = tallyRows(race, closed, expanded, ward);
+  const toggleFor = (row: TallyRow) => (row.key === FOLDED ? { controls: listId, onClick: () => setExpanded(true) } : null);
   const leaders = rows.slice(0, MAYOR_SHOWN);
   const rest = rows.slice(MAYOR_SHOWN);
   const inIt = rest.filter((row) => !row.eliminated);
@@ -552,7 +577,7 @@ export function MayorLeadTally({ race, levels, closed, ward }: { race: LiveRace;
       </div>
       {rest.length > 0 && (
         <div className="forecast-chart live-tally mayor-lead__field" role="list" id={listId} aria-label="Mayor: the rest of the field">
-          {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
+          {inIt.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
           {out.length > 0 && (
             <p className="live-tally__break" role="listitem">
               <strong>{WORDING.eliminated}</strong>
@@ -560,7 +585,7 @@ export function MayorLeadTally({ race, levels, closed, ward }: { race: LiveRace;
               <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
             </p>
           )}
-          {out.map((row) => <TallyRowView key={row.key} row={row} />)}
+          {out.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
           {(race.possible || estimated(race)) && (
             <div className="forecast-chart__axis live-tally__axis" aria-hidden="true">
               <span />
@@ -572,18 +597,7 @@ export function MayorLeadTally({ race, levels, closed, ward }: { race: LiveRace;
       )}
       <TallyKey rows={rows} race={race} />
       <RangeNotes race={race} levels={levels} />
-      {folds(race) && (
-        <button
-          type="button"
-          className="btn btn--ghost btn--sm live-tally__more"
-          aria-expanded={expanded}
-          aria-controls={listId}
-          onClick={() => setExpanded(!expanded)}
-        >
-          <span className="live-tally__chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
-          {expanded ? "Show fewer" : `Show all ${race.candidates.length} candidates`}
-        </button>
-      )}
+      {folds(race) && expanded && <ShowFewer controls={listId} onClick={() => setExpanded(false)} />}
     </>
   );
 }

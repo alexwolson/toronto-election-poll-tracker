@@ -23,7 +23,8 @@ describe("RaceCard: the mayor's folded field", () => {
     const n = race.candidates.length;
     render(<RaceCard race={race} levels={levels} />);
     expect(names()).toHaveLength(3);
-    const button = screen.getByRole("button", { name: `Show all ${n} candidates` });
+    // The folded row's name is the toggle (Alex): "51 other candidates" with a down arrow.
+    const button = screen.getByRole("button", { name: `${n - 2} other candidates` });
     expect(button.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(button);
     expect(names()).toEqual(race.candidates.map((c) => c.full_name));
@@ -45,7 +46,7 @@ describe("RaceCard: the mayor's folded field", () => {
       ...Object.fromEntries(rest.map((r) => [r.key, { low: 0, high: 20 }])),
     };
     render(<RaceCard race={race} levels={levels} />);
-    fireEvent.click(screen.getByRole("button", { name: /^Show all/ }));
+    fireEvent.click(screen.getByRole("button", { name: /other candidates$/ }));
     const breakEl = document.querySelector(".live-tally__break")!;
     const third = [...document.querySelectorAll(".live-tally__name")].find((el) => el.textContent === c.full_name)!;
     const fourth = [...document.querySelectorAll(".live-tally__name")].find((el) => el.textContent === rest[0].full_name)!;

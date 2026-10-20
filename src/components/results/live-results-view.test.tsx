@@ -344,10 +344,11 @@ describe("LiveResultsView: the mayor card", () => {
     const rest = mayor.candidates.slice(2);
     const restVotes = rest.reduce((sum, c) => sum + c.votes!, 0);
     expect(html).toContain(`${restVotes.toLocaleString("en-CA")} votes`);
-    // An in-place toggle that looks like one (#118): the site's ghost button, with a chevron.
+    // The folded row's name is the toggle, with a down arrow (Alex): no separate button.
     expect(html).toMatch(
-      new RegExp(`<button type="button" class="btn btn--ghost btn--sm live-tally__more" aria-expanded="false"[^>]*><span class="live-tally__chevron" aria-hidden="true">[^<]*</span>Show all ${n} candidates</button>`),
+      new RegExp(`<button type="button" class="live-tally__expand" aria-expanded="false"[^>]*><span class="live-tally__name">${n - 2} other candidates</span><span class="live-tally__chevron" aria-hidden="true">`),
     );
+    expect(html).not.toContain("live-tally__more");
   });
 
   it("orders the card: the tally, its key, the toggle, turnout, the 2023 benchmark, then the disclosures (audit)", () => {
@@ -363,7 +364,6 @@ describe("LiveResultsView: the mayor card", () => {
     const order = [
       at("live-tally__axis"),
       at("Out of reach, even with"),
-      at("live-tally__more"),
       at('class="live-turnout"'),
       at("in the wards counted so far"),
       at(">About this comparison<"),
@@ -389,7 +389,7 @@ describe("LiveResultsView: the mayor card", () => {
     const three = golden("mayor-counting-2023.json");
     three.races[0].candidates = three.races[0].candidates.slice(0, 3);
     expect(tallyNames(card(render(three), "mayor"))).toHaveLength(3);
-    expect(card(render(three), "mayor")).not.toContain("Show all");
+    expect(card(render(three), "mayor")).not.toContain("live-tally__expand");
     const four = golden("mayor-counting-2023.json");
     four.races[0].candidates = four.races[0].candidates.slice(0, 4);
     expect(tallyNames(card(render(four), "mayor")).at(-1)).toBe("2 other candidates");
@@ -398,7 +398,7 @@ describe("LiveResultsView: the mayor card", () => {
   it("folds before results too, to the forecast's two, with a button to show everyone (#115)", () => {
     const html = card(render(golden("before-results-2026.json")), "mayor");
     expect(tallyNames(html)).toEqual(["Brad Bradford", "Olivia Chow", "51 other candidates"]);
-    expect(html).toContain("Show all 53 candidates");
+    expect(html).toMatch(/class="live-tally__expand"[^>]*><span class="live-tally__name">51 other candidates</);
     // Empty rows: a dash for the share, no votes line.
     expect(html).toContain('<strong class="forecast-chart__value live-tally__value">–</strong>');
     expect(html).not.toContain("votes</span>");
@@ -1128,7 +1128,7 @@ describe("LiveResultsView: the mayor leads the page", () => {
     expect(count(html, 'id="live-race-mayor"')).toBe(1);
     expect(html).not.toContain("mayor-lead__more");
     const section = lead(html);
-    expect(section).toContain("Show all 31 candidates");
+    expect(section).toMatch(/class="live-tally__expand"[^>]*><span class="live-tally__name">29 other candidates</);
     expect(section).toContain("live-tally__reach");
     expect(text(section)).toContain("Out of reach, even with all or none of the votes still to count");
     expect(section).toContain('class="live-turnout"');

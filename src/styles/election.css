@@ -388,6 +388,15 @@ button:disabled { cursor: default; opacity: 0.6; }
   text-align: right; color: var(--muted); font-size: var(--type-body-small);
 }
 .mayor-lead__estimate strong { display: block; color: var(--ink); font-family: var(--font-display); font-size: var(--type-headline); font-weight: 800; line-height: 1.1; }
+/* The folded row's name is the toggle (Alex): link-blue with the down arrow, a full touch
+   target that doesn't grow the row. */
+.live-tally__expand {
+  display: inline-flex; align-items: center; gap: var(--space-xs); min-height: var(--touch-target-min); margin-block: -10px;
+  padding: 0; border: 0; background: none; font: inherit; color: var(--blue); text-align: left; cursor: pointer;
+}
+.live-tally__expand .live-tally__name { text-decoration: underline; text-decoration-color: var(--ghost-border); text-underline-offset: 3px; }
+.live-tally__expand:hover .live-tally__name { text-decoration-color: currentColor; }
+.live-tally__expand:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: var(--r-sm); }
 /* The rest of the field, quieter, expandable in place. */
 .mayor-lead__field.forecast-chart { margin-top: 0; border-top: 1px solid var(--rule-soft); }
 .mayor-lead__field .forecast-chart__row { padding-block: 0.6rem; }

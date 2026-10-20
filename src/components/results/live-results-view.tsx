@@ -13,6 +13,7 @@ import { PageHero } from "@/components/page-hero";
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
 import type { ResultsMapData } from "@/lib/results-map-data";
 import { wardLabel, type ResultsWard } from "@/lib/results-wards";
+import { CouncilAreasTable } from "./council-areas-table";
 import { LiveCountView, LiveTablesView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
 import { CouncilTiles, FrenchBoards, RaceCard, WORDING } from "./race-cards";
@@ -179,6 +180,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
         map={
           <ContentSection>
             <LiveMapView data={mapData} payload={results?.payload ?? null} wards={wards} ward={ward?.num ?? null} />
+            <CouncilAreasTable payload={results?.payload ?? null} ward={ward?.num ?? null} />
           </ContentSection>
         }
         count={

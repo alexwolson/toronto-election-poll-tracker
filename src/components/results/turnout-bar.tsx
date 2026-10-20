@@ -7,15 +7,12 @@
  * vote". Facts of the count and the list, never a projection.
  */
 
-import { liveColour } from "@/lib/live-colour";
-import { shortLabel } from "@/lib/live-labels";
+import { mayorParts, segmentWidth } from "@/lib/mayor-bar";
 import { TURNOUT, TURNOUT_NOTE } from "@/lib/turnout";
 import { shareText, votesTotal } from "@/lib/live-share";
 import type { LiveRace } from "@/types/live";
 
-const NEUTRAL = "var(--color-disengaged)";
 const pct = (x: number) => `${x.toFixed(1)}%`;
-const width = (x: number) => ({ width: `${+x.toFixed(2)}%` });
 
 interface Segment {
   key: string;
@@ -44,14 +41,9 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
     }
   } else {
     // The forecast's two, in the payload's order, then everyone else together: the mayor card's rows.
-    const named = race.candidates.filter((c) => c.candidate_id);
-    const rest = race.candidates.filter((c) => !c.candidate_id);
-    for (const c of named) {
-      const votes = votesOf(c.key, c.votes);
-      segments.push({ key: c.key, label: shortLabel(c), share: (100 * votes) / electors, people: votes, className: "votes", colour: liveColour(c, NEUTRAL) });
+    for (const p of mayorParts(race, (c) => votesOf(c.key, c.votes))) {
+      segments.push({ key: p.key, label: p.label, share: (100 * p.votes) / electors, people: p.votes, className: "votes", colour: p.colour });
     }
-    const others = rest.reduce((a, c) => a + votesOf(c.key, c.votes), 0);
-    segments.push({ key: "others", label: `${rest.length} others`, share: (100 * others) / electors, people: others, className: "votes", colour: NEUTRAL });
     const counted = ward === null ? race.candidates.reduce((a, c) => a + (c.votes ?? 0), 0) : votesTotal(wardRow?.votes);
     const complete =
       ward === null
@@ -92,7 +84,7 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
           <span
             key={x.key}
             className={`live-turnout__seg live-turnout__seg--${x.className}`}
-            style={{ ...width(x.share), ...(x.colour ? { background: x.colour } : {}) }}
+            style={{ ...segmentWidth(x.share), ...(x.colour ? { background: x.colour } : {}) }}
           />
         ))}
         <span className="live-turnout__mark" style={{ left: `${area.share_2023}%` }} />

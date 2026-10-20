@@ -12,9 +12,10 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import { CHOW_2023, chowCandidate, chowVs2023, chowWard, type ChowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
+import { placeCard } from "@/lib/live-map-card";
 import { shareText, wardShare } from "@/lib/live-share";
 import {
   incumbentStatus,
@@ -180,10 +181,8 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const pageWard = ward ?? data.wards[0]?.num ?? "1";
-  const [selection, setSelection] = useState<MapSelection>(() => {
-    const fromUrl = mapSelectionFrom(searchParams, data.wards.map((w) => w.num));
-    return { ...fromUrl, ward: fromUrl.ward ?? pageWard };
-  });
+  const [fromUrl] = useState(() => mapSelectionFrom(searchParams, data.wards.map((w) => w.num)));
+  const [selection, setSelection] = useState<MapSelection>({ ...fromUrl, ward: fromUrl.ward ?? pageWard });
   const { contest, measure, candidate: shareKey } = selection;
   const held = selection.ward ?? pageWard;
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
@@ -256,13 +255,26 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   })();
 
   const [preview, setPreview] = useState<string | null>(null);
+  // The ward card (#130): under the mouse, or pinned where it was clicked (map units), or at the
+  // ward's label point when the keyboard or a shared link picked it (`at` null).
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [pin, setPin] = useState<{ num: string; at: { x: number; y: number } | null } | null>(
+    fromUrl.ward === null ? null : { num: fromUrl.ward, at: null },
+  );
+  const svgRef = useRef<SVGSVGElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mouse = useRef({ x: 0, y: 0 });
+  // Set while Close hands focus back to the ward, so that focus doesn't pin the card again.
+  const closing = useRef(false);
   // Keyboard focus only: a click also focuses the ward, but the held outline already shows it.
   const [focused, setFocused] = useState<string | null>(null);
   const pointerDown = useRef(false);
   const [announcement, setAnnouncement] = useState("");
   const refs = useRef<Record<string, SVGPathElement | null>>({});
   const pathOf = (num: string) => data.wards.find((w) => w.num === num)?.path;
-  const active = facts.find((f) => f.ward.num === (preview ?? held)) ?? facts[0];
+  // The side panel keeps the held ward; the card is the quick look at others (#130).
+  const active = facts.find((f) => f.ward.num === held) ?? facts[0];
+  const cardFacts = facts.find((f) => f.ward.num === (pin?.num ?? hovered)) ?? null;
 
   /** The selection as a link gives it: what the map shows, and no parameter for the page's own ward. */
   const linkable = (next: MapSelection): MapSelection => ({
@@ -278,6 +290,71 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
     window.history.replaceState(null, "", mapSelectionHref(pathname, searchParams, linkable(next)));
   };
 
+  /** The card's point in the stage's pixels: the pin's, its ward's label point, or the mouse's. */
+  const cardPoint = (): { x: number; y: number } | null => {
+    const svg = svgRef.current;
+    const stage = svg?.parentElement;
+    if (!svg || !stage) return null;
+    const box = stage.getBoundingClientRect();
+    if (!pin) return { x: mouse.current.x - box.left, y: mouse.current.y - box.top };
+    const label = data.wards.find((w) => w.num === pin.num)?.label;
+    const at = pin.at ?? (label ? { x: label.x, y: label.y } : null);
+    const ctm = svg.getScreenCTM?.();
+    if (!at || !ctm) return null;
+    const p = new DOMPoint(at.x, at.y).matrixTransform(ctm);
+    return { x: p.x - box.left, y: p.y - box.top };
+  };
+  /** Moves the card beside its point, without re-rendering the map. */
+  const placeCardNow = () => {
+    const el = cardRef.current;
+    const stage = svgRef.current?.parentElement;
+    const point = cardPoint();
+    if (!el || !stage || !point) return;
+    const { left, top } = placeCard(point, { w: el.offsetWidth, h: el.offsetHeight }, { w: stage.clientWidth, h: stage.clientHeight });
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+  };
+  useLayoutEffect(placeCardNow);
+  // The window's listeners, added once, call the latest render's handlers.
+  const latest = useRef({ placeCardNow, closeCard: () => {} });
+  useEffect(() => {
+    const onResize = () => latest.current.placeCardNow();
+    const onKeyDown = (e: globalThis.KeyboardEvent) => e.key === "Escape" && latest.current.closeCard();
+    window.addEventListener("resize", onResize);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  /** A click pins the card where it landed; a second click on the pinned ward unpins it. */
+  const clickWard = (event: MouseEvent<SVGPathElement>, num: string) => {
+    // A tap's emulated mouseenter has no mouseleave, so a pin or unpin clears the hover.
+    setHovered(null);
+    if (pin?.num === num) {
+      setPin(null);
+      return;
+    }
+    hold(num);
+    const ctm = svgRef.current?.getScreenCTM?.();
+    const at = ctm ? new DOMPoint(event.clientX, event.clientY).matrixTransform(ctm.inverse()) : null;
+    setPin({ num, at: at ? { x: at.x, y: at.y } : null });
+  };
+  /** Unpins the card and hands focus back to its ward (Close, Escape). */
+  const closeCard = () => {
+    const num = pin?.num;
+    if (!num) return;
+    setPin(null);
+    setHovered(null);
+    closing.current = true;
+    refs.current[num]?.focus();
+    closing.current = false;
+  };
+  useLayoutEffect(() => {
+    latest.current = { placeCardNow, closeCard };
+  });
+
   const hold = (num: string) => {
     select({ ward: num });
     const f = facts.find((x) => x.ward.num === num);
@@ -287,7 +364,12 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const onKey = (event: KeyboardEvent<SVGPathElement>, num: string) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      hold(num);
+      // Like a click: Enter on the pinned ward unpins it, else holds and pins it.
+      if (pin?.num === num) setPin(null);
+      else {
+        hold(num);
+        setPin({ num, at: null });
+      }
       return;
     }
     const next = nearestWard(data.wards, num, event.key);
@@ -346,10 +428,23 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
         </div>
       </div>
 
-      <div className="live-map__body">
-        <div className="live-map__stage">
+      <div className={`live-map__body${pin ? " has-pin" : ""}`}>
+        {/* A click anywhere on the stage but a ward or the card unpins it. */}
+        <div
+          className="live-map__stage"
+          onClick={(e) => !(e.target as Element).closest(".live-map__ward, .live-map__card") && setPin(null)}
+        >
           {!counting && <p className="live-map__empty">The map fills in as wards report, from 8 p.m.</p>}
-          <svg viewBox={data.view_box} role="group" aria-label="Map of Toronto's 25 wards">
+          <svg
+            ref={svgRef}
+            viewBox={data.view_box}
+            role="group"
+            aria-label="Map of Toronto's 25 wards"
+            onMouseMove={(e) => {
+              mouse.current = { x: e.clientX, y: e.clientY };
+              if (!pin) placeCardNow();
+            }}
+          >
             <defs>
               <pattern id="live-map-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                 <rect width="8" height="8" fill="var(--rule-soft)" />
@@ -369,19 +464,29 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                 tabIndex={f.ward.num === held ? 0 : -1}
                 aria-label={`Ward ${f.ward.num} ${f.name}: ${f.shade.words}`}
                 aria-pressed={f.ward.num === held}
-                onMouseEnter={() => setPreview(f.ward.num)}
-                onMouseLeave={() => setPreview(null)}
+                onMouseEnter={(e) => {
+                  setPreview(f.ward.num);
+                  setHovered(f.ward.num);
+                  mouse.current = { x: e.clientX, y: e.clientY };
+                }}
+                onMouseLeave={() => {
+                  setPreview(null);
+                  setHovered(null);
+                }}
                 onPointerDown={() => (pointerDown.current = true)}
                 onFocus={() => {
                   setPreview(f.ward.num);
-                  if (!pointerDown.current) setFocused(f.ward.num);
+                  if (!pointerDown.current) {
+                    setFocused(f.ward.num);
+                    if (!closing.current) setPin({ num: f.ward.num, at: null });
+                  }
                   pointerDown.current = false;
                 }}
                 onBlur={() => {
                   setPreview(null);
                   setFocused(null);
                 }}
-                onClick={() => hold(f.ward.num)}
+                onClick={(e) => clickWard(e, f.ward.num)}
                 onKeyDown={(e) => onKey(e, f.ward.num)}
               />
             ))}
@@ -405,6 +510,26 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
               ))}
             </g>
           </svg>
+          {cardFacts && (
+            <div
+              ref={cardRef}
+              className={`live-map__card${pin ? "" : " is-hover"}`}
+              role={pin ? "region" : undefined}
+              aria-label={pin ? `Ward ${cardFacts.ward.num} ${cardFacts.name} results` : undefined}
+              aria-hidden={pin ? undefined : true}
+            >
+              <WardDetails facts={cardFacts} contest={contest} home={ward} selection={linkable({ ...selection, ward: null })} />
+              {pin && (
+                <button type="button" className="btn btn--ghost btn--sm live-map__card-close" onClick={closeCard}>
+                  Close
+                </button>
+              )}
+            </div>
+          )}
+          <p className="t-meta live-map__hint">
+            <span className="live-map__hint--hover">Hover over a ward to see its results; click to keep them open.</span>
+            <span className="live-map__hint--touch">Tap a ward to see its results.</span>
+          </p>
           {legend.length > 0 && (
             <ul className="live-map__legend" aria-label="Map legend">
               {legend.map((item) => (
@@ -496,18 +621,25 @@ function lastName(race: LiveRace | null, key: string): string {
   return c.short_label && c.short_label !== c.full_name ? c.short_label : (c.full_name.split(" ").at(-1) ?? c.full_name);
 }
 
-function WardPanel({
-  facts,
-  contest,
-  home,
-  selection,
-}: {
+interface WardDetailsProps {
   facts: WardFacts;
   contest: Contest;
   home: string | null;
   /** The map's selection, so the ward's page opens the same map. */
   selection: MapSelection;
-}) {
+}
+
+/** The held ward beside the map on wide screens; narrow screens use the ward card (#130). */
+function WardPanel(props: WardDetailsProps) {
+  return (
+    <aside className="live-map__panel" aria-label={`Ward ${props.facts.ward.num} details`}>
+      <WardDetails {...props} />
+    </aside>
+  );
+}
+
+/** A ward's figures, in the side panel and the ward card. */
+function WardDetails({ facts, contest, home, selection }: WardDetailsProps) {
   const { ward, name, race, lead, reported, shade } = facts;
   const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
   // Each figure once: the lead is in the status line, so the list is just who has what. Its rows
@@ -533,7 +665,7 @@ function WardPanel({
     reported ? `${reported.received} of ${reported.total} voting areas in` : null,
   ].filter((part) => part !== null);
   return (
-    <aside className="live-map__panel" aria-label={`Ward ${ward.num} details`}>
+    <>
       <h3>
         Ward {ward.num} {name}
       </h3>
@@ -545,7 +677,14 @@ function WardPanel({
             <li key={row.name}>
               <span>{row.name}</span>
               <span className="live-map__shares">
-                {row.share !== null && <span className="live-num">{pct(row.share)}</span>}
+                {row.share !== null && (
+                  <span className="live-num">
+                    <span className="live-bar" aria-hidden="true">
+                      <span style={{ width: `${row.share}%` }} />
+                    </span>
+                    {pct(row.share)}
+                  </span>
+                )}
                 {row.share2023 !== undefined && <span className="live-map__then">{pct(row.share2023)} in 2023</span>}
               </span>
             </li>
@@ -567,7 +706,7 @@ function WardPanel({
           Ward {ward.num} results <span aria-hidden="true">→</span>
         </Link>
       )}
-    </aside>
+    </>
   );
 }
 

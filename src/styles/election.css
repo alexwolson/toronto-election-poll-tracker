@@ -519,6 +519,25 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-benchmark-why[open] { margin-bottom: var(--space-lg); }
 .live-map__swatch--hatch { background: repeating-linear-gradient(135deg, var(--rule-soft) 0 3px, var(--live-hatch) 3px 5px); }
 .live-map__panel { display: grid; align-content: start; gap: var(--space-md); padding: var(--card-pad); }
+/* The ward card beside the pointer (#130): placed in script, inside the stage. */
+.live-map__card {
+  position: absolute; z-index: 5; top: 0; left: 0; display: grid; gap: var(--space-xs);
+  width: min(18rem, calc(100% - 2 * var(--space-sm))); box-sizing: border-box; padding: var(--space-md);
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lift);
+}
+.live-map__card.is-hover { pointer-events: none; }
+.live-map__card h3 { margin: 0; padding-right: 5rem; font-size: var(--type-heading, 1.2rem); }
+.live-map__card p, .live-map__card ol { margin: 0; }
+.live-map__card-close { position: absolute; top: var(--space-sm); right: var(--space-sm); min-height: var(--touch-target-min); }
+/* Touch screens have no hover: a tap pins (#130). */
+@media (hover: none) { .live-map__card.is-hover { display: none; } }
+.live-map__hint { margin: var(--space-sm) 0 0; color: var(--muted); }
+.live-map__hint--touch { display: none; }
+@media (hover: none) {
+  .live-map__hint--hover { display: none; }
+  .live-map__hint--touch { display: inline; }
+}
 .live-map__panel h3 { margin: 0; font-size: var(--type-heading, 1.2rem); }
 .live-map__race { margin: 0; color: var(--muted); font-size: var(--type-body-small); }
 .live-map__status { margin: 0; color: var(--ink); font-weight: 700; }
@@ -577,6 +596,11 @@ button:disabled { cursor: default; opacity: 0.6; }
 @media (max-width: 860px) {
   .live-map__body { grid-template-columns: 1fr; }
   .live-map__stage { border-right: 0; border-bottom: 1px solid var(--rule); padding: var(--space-sm); }
+  /* Narrow screens: the held ward's panel until a ward is pinned, then the card instead, under
+     the map rather than over it, since the map is too short to hold it; no hover card (#130). */
+  .live-map__body.has-pin .live-map__panel { display: none; }
+  .live-map__card { position: static; width: auto; margin-top: var(--space-sm); box-shadow: none; }
+  .live-map__card.is-hover { display: none; }
   .live-chart-pair { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {

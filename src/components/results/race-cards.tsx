@@ -564,19 +564,20 @@ export function MayorLeadTally({ race, levels, closed, ward }: { race: LiveRace;
   const listId = useId();
   const rows = tallyRows(race, closed, expanded, ward);
   const toggleFor = (row: TallyRow) => (row.key === FOLDED ? { controls: listId, onClick: () => setExpanded(true) } : null);
-  const leaders = rows.slice(0, MAYOR_SHOWN);
-  const rest = rows.slice(MAYOR_SHOWN);
+  // Expanded, every candidate takes the leaders' look (Alex); folded, the rest is one quiet row.
+  const leaders = expanded ? rows.filter((row) => !row.eliminated) : rows.slice(0, MAYOR_SHOWN);
+  const rest = expanded ? rows.filter((row) => row.eliminated) : rows.slice(MAYOR_SHOWN);
   const inIt = rest.filter((row) => !row.eliminated);
   const out = rest.filter((row) => row.eliminated);
   return (
     <>
-      <div className="forecast-chart live-tally mayor-lead__leaders" role="list" aria-label="Mayor: the two leading candidates">
+      <div className="forecast-chart live-tally mayor-lead__leaders" role="list" id={expanded ? listId : undefined} aria-label="Mayor: the leading candidates">
         {leaders.map((row) => (
           <TallyRowView key={row.key} row={row} lead />
         ))}
       </div>
       {rest.length > 0 && (
-        <div className="forecast-chart live-tally mayor-lead__field" role="list" id={listId} aria-label="Mayor: the rest of the field">
+        <div className="forecast-chart live-tally mayor-lead__field" role="list" id={expanded ? undefined : listId} aria-label="Mayor: the rest of the field">
           {inIt.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
           {out.length > 0 && (
             <p className="live-tally__break" role="listitem">

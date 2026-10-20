@@ -128,6 +128,14 @@ export default async function HowItWorksPage() {
                   individually; the other certified candidates are one pool whose combined
                   share is learned from past races.
                 </p>
+                <p>
+                  Some firms consistently read a candidate a little higher or lower than
+                  others do. The model learns each firm&rsquo;s lean, measured against the
+                  firms that interview at least partly by phone. Online-only polls are still
+                  used, each with its own lean, but they do not set what counts as neutral:
+                  there are few of them, and in past Toronto races they landed further from
+                  the other pollsters than phone polls did.
+                </p>
                 {suspendedShare && (
                   <>
                     <p>

@@ -73,7 +73,7 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
   const where = ward === null ? "" : ` · Ward ${ward}`;
   return (
     <figure className="live-turnout">
-      <figcaption className="live-turnout__head t-meta">
+      <figcaption className="live-turnout__head t-body-small">
         <span>
           Turnout{where} · {electors.toLocaleString("en-CA")} on the voters’ list
         </span>
@@ -91,7 +91,7 @@ export function TurnoutBar({ race, ward }: { race: LiveRace; ward: string | null
       </div>
       {/* The candidates' colours match the rows below, so the bar needs no legend; screen readers get it in words. */}
       <p className="visually-hidden">{segments.map((x) => `${x.label} ${shareText(x.share, x.people)}`).join(", ")}</p>
-      <p className="live-turnout__past t-meta">
+      <p className="live-turnout__past t-body-small">
         <i className="live-turnout__swatch--mark" aria-hidden="true" />
         Turnout in 2023: {pct(area.share_2023)}
       </p>

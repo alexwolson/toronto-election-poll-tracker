@@ -57,8 +57,9 @@ export const WORDING = {
   eliminatedWhy: "can’t win even with every vote still out",
   /** The tally's key (#105). */
   keyCounted: "Counted",
-  keyEstimated: "Estimated final range",
-  keyPossible: "Out of reach",
+  /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
+  keyEstimated: "Estimated final range: where 9 in 10 simulated finishes land",
+  keyPossible: "Out of reach, even with all or none of the votes still to count",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -71,8 +72,6 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
 /** The ranges' legends, the mayor's record (ADR 0002) and the French-language boards' note,
  *  as Alex approved them (#54, #97). */
 const RANGE_WORDING = {
-  estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
-  possible: "Hatched: shares out of reach even if a candidate gets none or all of the votes still to be counted.",
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
@@ -84,7 +83,6 @@ const RANGE_WORDING = {
  *  is and its limit behind a disclosure. */
 const BENCHMARK_WORDING = {
   summary: "About this comparison",
-  label: "Compared with 2023",
   explain: (name: string) =>
     `${name}’s share of the vote in the 2023 by-election, across the wards counted so far tonight (each weighted by its votes counted), beside her share citywide. Early returns from her weakest wards can look like an upset; this shows how those wards voted last time. It allows for which wards are in, not which voting areas within them, and is not an estimate of tonight’s result.`,
 } as const;
@@ -122,7 +120,7 @@ function estimated(race: LiveRace): Record<string, LiveBand> | null {
 }
 
 function progressText(progress: LiveProgress): string {
-  return `${progress.received} of ${progress.total} voting areas in`;
+  return `${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} voting areas in`;
 }
 
 export function raceTitle(race: LiveRace): string {
@@ -318,23 +316,14 @@ function rangeLine(row: TallyRow): string {
  *  Range is on screen (ADR 0002, #54), and why a level shows the count: its gate, or else a
  *  Withdrawal (#43), whose machine reason readers never see. A French-language board has no
  *  projection, so only its Possible Range's legend (#97). */
+/** Why a counting race shows no Estimated Range, if a gate or a withdrawal says so. The ranges'
+ *  definitions are in the tally's key. */
 function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
   if (race.state !== "counting") return null;
-  const bands = estimated(race);
   const level = race.level === "french_trustee" ? null : race.level;
   const status = level ? levelStatus(levels, level) : null;
   const note = (level && status ? gateNote(level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
-  return (
-    <>
-      {note && <Status>{note}</Status>}
-      {(bands || race.possible) && (
-        <p className="forecast-caption">
-          {bands && <>{RANGE_WORDING.estimated} </>}
-          {race.possible && RANGE_WORDING.possible}
-        </p>
-      )}
-    </>
-  );
+  return note ? <Status>{note}</Status> : null;
 }
 
 /** The mayor's record while its Estimated Range is on screen (ADR 0002, #54): it describes the
@@ -457,12 +446,12 @@ function TallyKey({ rows, race }: { rows: TallyRow[]; race: LiveRace }) {
   if (!has((r) => r.band || r.possible) && !then && !last) return null;
   const chow = chowCandidate(race);
   return (
-    <p className="live-tally__key" aria-hidden="true">
-      <span><i className="live-tally__glyph live-tally__glyph--counted" />{WORDING.keyCounted}</span>
-      {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
-      {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--reach" />{WORDING.keyPossible}</span>}
-      {then && chow && <span><i className="live-tally__glyph live-tally__glyph--then" />{`${shortLabel(chow)} in 2023`}</span>}
-      {last && <span><i className="live-tally__glyph live-tally__glyph--then" />{last.label}</span>}
+    <p className="live-tally__key">
+      <span><i className="live-tally__glyph live-tally__glyph--counted" aria-hidden="true" />{WORDING.keyCounted}</span>
+      {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" aria-hidden="true" />{WORDING.keyEstimated}</span>}
+      {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--reach" aria-hidden="true" />{WORDING.keyPossible}</span>}
+      {then && chow && <span><i className="live-tally__glyph live-tally__glyph--then" aria-hidden="true" />{`${shortLabel(chow)} in 2023`}</span>}
+      {last && <span><i className="live-tally__glyph live-tally__glyph--then" aria-hidden="true" />{last.label}</span>}
     </p>
   );
 }
@@ -479,7 +468,6 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
   const out = rows.filter((row) => row.eliminated);
   return (
     <>
-      <TallyKey rows={rows} race={race} />
       <div className="forecast-chart live-tally" role="list" id={listId} aria-label={`${raceTitle(race)} count`}>
         {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
         {out.length > 0 && (
@@ -498,7 +486,9 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
           </div>
         )}
       </div>
-      {/* The reading aids sit under the axis they explain (#118). */}
+      {/* The reading aids sit under the axis they explain (#118): the key, with the ranges'
+          definitions, then any gate note. */}
+      <TallyKey rows={rows} race={race} />
       {legend}
       {folds(race) && (
         <button
@@ -548,8 +538,8 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
     case "before_results":
       return (
         <>
-          {turnout}
           <Tally race={race} closed={closed} ward={both ? ward : null} />
+          {turnout}
         </>
       );
     case "acclaimed":
@@ -561,8 +551,8 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
         <>
           {race.progress && <ProgressLine progress={race.progress} label={both ? WORDING.citywide : null} />}
           {both && wardProgress}
-          {turnout}
           <Tally race={race} closed={closed} ward={both ? ward : null} />
+          {turnout}
         </>
       );
     case "counting":
@@ -577,8 +567,9 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
             <Progress progress={race.progress} />
           )}
           {both && wardProgress}
-          {turnout}
+          {/* Candidates first, then turnout (results audit): on a phone the count leads. */}
           <Tally race={race} closed={closed} ward={both ? ward : null} legend={<RangeNotes race={race} levels={levels} />} />
+          {turnout}
           {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
           {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}
         </>
@@ -595,16 +586,20 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
   const name = shortLabel(chow);
   return (
     <div className="live-subsection">
-      <p className="kicker">{BENCHMARK_WORDING.label}</p>
       <p className="t-body-small live-benchmark">
         {/* A sentence, so it reads right wherever it wraps on a phone (Alex). */}
         In 2023, {name} won {shareText(benchmark.counted2023)} in the wards counted so far, and{" "}
         {shareText(benchmark.citywide2023)} citywide.
       </p>
-      <details className="live-benchmark-why">
-        <summary>{BENCHMARK_WORDING.summary}</summary>
-        <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
-      </details>
+      {/* The card's other disclosures' pattern (results audit). */}
+      <div className="faq">
+        <details className="live-benchmark-why">
+          <summary>{BENCHMARK_WORDING.summary}</summary>
+          <div className="faq__a">
+            <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
+          </div>
+        </details>
+      </div>
     </div>
   );
 }
@@ -672,7 +667,7 @@ export function FrenchBoards({ races, closed = false }: { races: LiveRace[]; clo
   return (
     <>
       <div className="live-boards-head">
-        <p className="kicker">{RANGE_WORDING.frenchLabel}</p>
+        <h3>{RANGE_WORDING.frenchLabel}</h3>
         <p className="t-body-small">{RANGE_WORDING.french}</p>
       </div>
       {races.map((race) => (
@@ -705,10 +700,10 @@ function tileRanges(race: LiveRace, levels: Levels | null): string | null {
   if (showsCountOnly(levelStatus(levels, race.level))) return "Count only";
   const bands = estimated(race);
   if (!bands) return null;
-  return race.candidates
+  const ranges = race.candidates
     .slice(0, 2)
-    .flatMap((c) => (bands[c.key] ? [`${shortLabel(c)} ${rangeText(bands[c.key].low, bands[c.key].high)}`] : []))
-    .join(" · ");
+    .flatMap((c) => (bands[c.key] ? [`${shortLabel(c)} ${rangeText(bands[c.key].low, bands[c.key].high)}`] : []));
+  return ranges.length > 0 ? `Estimated final: ${ranges.join(" · ")}` : null;
 }
 
 function TileBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
@@ -731,7 +726,7 @@ function TileBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
         </p>
       )}
       {race.state === "counting" && race.progress ? <ProgressLine progress={race.progress} /> : <p className="t-meta">{tileStatus(race)}</p>}
-      <p className="t-meta live-tile__ranges" data-ranges="">
+      <p className="t-body-small live-tile__ranges" data-ranges="">
         {tileRanges(race, levels)}
       </p>
     </>

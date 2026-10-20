@@ -598,12 +598,11 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
       </details>
       {contest === "mayor" && (
         <p className="t-meta">
-          Olivia Chow in 2023: her share of each ward&apos;s vote in the{" "}
+          Olivia Chow&apos;s 2023 shares ({pct(CHOW_2023.citywide.share)} citywide) are from the{" "}
           <a className="text-link" href={CHOW_2023.source_url}>
             City of Toronto&apos;s certified results of the 2023 by-election <span aria-hidden="true">↗</span>
           </a>
-          , when she won {pct(CHOW_2023.citywide.share)} citywide against {CHOW_2023.candidates - 1} other candidates.{" "}
-          {CHOW_2023.licence}
+          . {CHOW_2023.licence}
         </p>
       )}
       <span className="sr-only" aria-live="polite">

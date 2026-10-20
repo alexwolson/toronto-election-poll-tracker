@@ -127,7 +127,6 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
               {!counting && <>{WORDING.before_results} · </>}
               {counting && <>City count as of {clockTime(cityCountAt)} · </>}
               {nothingIn && <>{WORDING.no_units_in} · </>}
-              {!closed && <>Refreshes every minute · </>}
               City of Toronto unofficial results
             </>
           )}

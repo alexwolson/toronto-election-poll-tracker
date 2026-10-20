@@ -13,7 +13,7 @@ import { resultsWards } from "@/lib/results-wards";
 import { wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LiveHistory, LivePayload } from "@/types/live";
-import { LiveCountView, LiveTablesView } from "./live-count-view";
+import { clockTicks, LiveCountView, LiveTablesView } from "./live-count-view";
 import { CouncilAreasTable } from "./council-areas-table";
 import { LiveMapView } from "./live-map-view";
 
@@ -128,7 +128,7 @@ describe("LiveMapView", () => {
     expect(within(table).getByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeTruthy();
     expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
     expect(screen.getByRole("link", { name: /certified results of the 2023 by-election/ }).textContent).toContain("↗");
-    expect(screen.getByText(/won 37\.2% citywide against 101 other candidates/)).toBeTruthy();
+    expect(screen.getByText(/2023 shares \(37\.2% citywide\)/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Council" }));
     expect(within(screen.getByRole("table")).queryByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeNull();
     expect(screen.queryByText(/certified results of the 2023 by-election/)).toBeNull();
@@ -372,9 +372,9 @@ describe("CouncilAreasTable (#127)", () => {
     }
   });
 
-  it("says what the bar's colours are", () => {
+  it("needs no note on the bar's colours: the leaders are named beside it", () => {
     render(<CouncilAreasTable payload={NIGHT} />);
-    expect(screen.getByText(/grey is every other candidate/)).toBeTruthy();
+    expect(screen.queryByText(/grey is every other candidate/)).toBeNull();
   });
 
   it("on a ward page, marks the area the ward is in", () => {
@@ -509,5 +509,26 @@ describe("LiveTablesView (#123)", () => {
     render(<LiveTablesView payload={BEFORE} wards={WARDS} areas={AREAS} />);
     expect(screen.getByText(/Tables of the count start once the City reports results/)).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
+  });
+});
+
+describe("LiveCountView after the audit", () => {
+  it("draws the mayor's named candidates and everyone else, without lines for the minor field", () => {
+    live.history = HISTORY;
+    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
+    const frame = screen.getByRole("heading", { name: "Share of the votes counted" }).closest("figure")!;
+    expect(within(frame).getByText("Everyone else")).toBeTruthy();
+    expect(within(frame).queryByText("Alexander")).toBeNull();
+    expect(within(frame).queryByText(/wherever the page showed one|when it showed/)).toBeNull();
+  });
+});
+
+describe("clockTicks", () => {
+  it("labels the start of the night when the first half hour is well after it", () => {
+    const eight = new Date("2026-10-26T20:00:12-04:00").getTime();
+    const half = new Date("2026-10-26T20:30:00-04:00").getTime();
+    expect(clockTicks(eight, half + 60_000)).toEqual([eight, half]);
+    // A start just before a tick is left to that tick, so the labels never collide.
+    expect(clockTicks(half - 60_000, half + 60_000)).toEqual([half]);
   });
 });

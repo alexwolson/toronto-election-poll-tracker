@@ -333,7 +333,74 @@ button:disabled { cursor: default; opacity: 0.6; }
   padding: 12px 14px;
 }
 .field select:focus { outline: none; border-color: var(--blue); box-shadow: var(--shadow-focus); background: var(--paper); }
-.results-picker { max-width: 420px; }
+/* The results bar: the page's state and the ward picker in one row (results redesign). */
+.results-bar { background: var(--paper); border-bottom: 1px solid var(--rule); padding: var(--space-sm) 0; }
+.results-bar__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm) var(--space-lg); }
+.results-bar__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-md); flex: 1 1 18rem; min-width: 0; }
+.results-bar__status > p { margin: 0; }
+.results-bar__status > .callout { flex-basis: 100%; }
+.results-bar__count { color: var(--ink); font-weight: 600; font-size: var(--type-body-small); }
+.results-picker { display: grid; justify-items: end; gap: 2px; }
+.results-picker__form { display: flex; align-items: center; gap: var(--space-sm); }
+.results-picker__form label { color: var(--ink); font-weight: 600; font-size: var(--type-body-small); white-space: nowrap; }
+.results-picker__form select {
+  min-height: var(--touch-target-min); max-width: 17rem; min-width: 0; padding: 8px 10px; font: inherit; font-size: var(--type-body-small);
+  color: var(--ink); background: var(--field-bg); border: 1px solid var(--field-border); border-radius: var(--r-sm);
+}
+.results-picker__form select:focus { outline: none; border-color: var(--blue); box-shadow: var(--shadow-focus); background: var(--paper); }
+.results-picker__form .btn { min-height: var(--touch-target-min); }
+.results-picker__help { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin: 0; font-size: var(--type-body-small); }
+.results-picker__nowrap { white-space: nowrap; }
+@media (max-width: 700px) {
+  .results-picker { justify-items: stretch; flex: 1 1 100%; }
+  /* The select and its button share a row; the select's own "Choose your ward" says what it is. */
+  .results-picker__form label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .results-picker__form select { flex: 1 1 auto; max-width: none; }
+}
+
+/* The mayor's result, first once the count starts (results redesign): the leaders large, the
+   count lead beside them, then the facts that read the count. */
+.mayor-lead { background: var(--paper); padding: var(--space-lg) 0 var(--space-xl); border-bottom: 1px solid var(--rule); }
+.mayor-lead h2 { margin: 0 0 var(--space-md); }
+.mayor-lead__main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-lg) var(--space-xl); align-items: start; }
+.mayor-lead__main:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+/* The two leaders: the tally's own rows, restyled large. Name; the counted share in the
+   candidate's colour with its votes beside it; the Estimated Range at the right behind a dashed
+   rule; then one wide bar with the same marks as every row, and the ward's bar on a ward page. */
+.mayor-lead__leaders.forecast-chart { margin-top: 0; border-top: 0; }
+.mayor-lead__leaders.live-tally .forecast-chart__row--lead {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "label label est" "value meta est" "track track track";
+  column-gap: var(--space-sm); row-gap: 2px; padding: 0 0 var(--space-lg); border-bottom: 0;
+}
+.mayor-lead__leaders.live-tally .forecast-chart__row--lead.forecast-chart__row--ward {
+  grid-template-areas: "label label est" "value meta est" "track track track" "wlabel wlabel wvalue" "wtrack wtrack wtrack";
+}
+.forecast-chart__row--lead .forecast-chart__label { color: var(--ink); font-weight: 700; }
+.mayor-lead__leaders.live-tally .forecast-chart__row--lead .forecast-chart__value {
+  justify-self: start; font-family: var(--font-display); font-size: var(--type-display); font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: normal;
+}
+.forecast-chart__row--lead .live-tally__meta { align-self: end; padding-bottom: 0.3rem; font-size: var(--type-body-small); }
+.forecast-chart__row--lead .forecast-chart__track { height: 20px; margin-top: var(--space-xs); border-radius: var(--r-sm); }
+.forecast-chart__row--lead .live-tally__wlabel { margin-top: var(--space-sm); }
+.mayor-lead__estimate {
+  grid-area: est; align-self: end; padding-left: var(--space-md); border-left: 2px dashed var(--rule);
+  text-align: right; color: var(--muted); font-size: var(--type-body-small);
+}
+.mayor-lead__estimate strong { display: block; color: var(--ink); font-family: var(--font-display); font-size: var(--type-headline); font-weight: 800; line-height: 1.1; }
+/* The rest of the field, quieter, expandable in place. */
+.mayor-lead__field.forecast-chart { margin-top: 0; border-top: 1px solid var(--rule-soft); }
+.mayor-lead__field .forecast-chart__row { padding-block: 0.6rem; }
+.mayor-lead__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-md) var(--space-lg); margin: var(--space-lg) 0 0; padding-top: var(--space-md); border-top: 1px solid var(--rule); }
+.mayor-lead__facts dt { color: var(--muted); font-size: var(--type-body-small); font-weight: 600; }
+.mayor-lead__facts dd { margin: 2px 0 0; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.mayor-lead__sub { display: block; color: var(--muted); font-size: var(--type-body-small); font-weight: 400; }
+@media (max-width: 860px) {
+  .mayor-lead__main { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .mayor-lead__facts { grid-template-columns: minmax(0, 1fr); }
+}
 /* Race cards (#38): the Live Tally reuses the forecast pages' chart rows. Each row is its name
    over one quiet line of figures, the bar, and the share (#105). */
 .live-tally .forecast-chart__row {

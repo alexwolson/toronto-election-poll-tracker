@@ -114,7 +114,7 @@ function levelStatus(levels: Levels | null, level: LiveRace["level"]): Projectio
 }
 
 /** The race's Estimated Range per candidate: the band the payload says to draw, if any. */
-function estimated(race: LiveRace): Record<string, LiveBand> | null {
+export function estimated(race: LiveRace): Record<string, LiveBand> | null {
   const shown = race.projection?.shown;
   return shown ? (race.projection!.bands[shown] ?? null) : null;
 }
@@ -139,7 +139,7 @@ function percent(share: number | null, votes?: number | null): string {
 
 /** The one winner wording (#17): at Night Close only, in a race with every voting area in,
  *  the leader's key, if they lead outright (#51). Candidates come by votes, descending. */
-function electedKey(race: LiveRace, closed: boolean): string | null {
+export function electedKey(race: LiveRace, closed: boolean): string | null {
   if (!closed || race.state !== "all_units_in") return null;
   const [first, second] = race.candidates;
   if (!first || first.votes === null) return null;
@@ -328,11 +328,11 @@ function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null })
 
 /** The mayor's record while its Estimated Range is on screen (ADR 0002, #54): it describes the
  *  estimate, so it shows only beside one. Kept with the card's other disclosures (#118). */
-function hasRecord(race: LiveRace, levels: Levels | null): boolean {
+export function hasRecord(race: LiveRace, levels: Levels | null): boolean {
   return race.state === "counting" && race.level === "mayor" && levels?.mayor.approved === true && estimated(race) !== null;
 }
 
-function MayorRecord() {
+export function MayorRecord() {
   return (
     <div className="faq">
       <details className="live-record">
@@ -390,10 +390,40 @@ function WardBarView({ row, ward }: { row: TallyRow; ward: WardBar }) {
   );
 }
 
-function TallyRowView({ row }: { row: TallyRow }) {
+/** A row's marks on its 0–100% track: the counted bar, the Estimated Range's bracket, and the
+ *  Possible Range as what it leaves out. */
+function TrackMarks({ row }: { row: TallyRow }) {
+  return (
+    <>
+      {/* The Possible Range as what it leaves out: the track above its high, and below its low,
+          hatched as out of reach. The low zone always lies under the counted bar, so it's drawn
+          after it, over it. */}
+      {row.possible && row.possible.high < 100 && (
+        <span className="live-tally__reach live-tally__reach--high" style={reach(row.possible.high, 100)} />
+      )}
+      <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
+      {row.possible && row.possible.low > 0 && (
+        <span className="live-tally__reach live-tally__reach--low" style={reach(0, row.possible.low)} />
+      )}
+      {row.band && (
+        <span className="live-tally__estimate" style={span(row.band.low, row.band.high)}>
+          <span
+            className="live-tally__mid"
+            style={{ left: `${row.band.high > row.band.low ? ((row.band.mid - row.band.low) / (row.band.high - row.band.low)) * 100 : 50}%` }}
+          />
+        </span>
+      )}
+      {row.last && <span className="live-tally__then" style={{ left: `${row.last.share}%` }} />}
+    </>
+  );
+}
+
+/** One tally row; `lead` is one of the mayor's two leaders at the head of the results pages, the
+ *  same row restyled large, with its Estimated Range beside the share. */
+function TallyRowView({ row, lead = false }: { row: TallyRow; lead?: boolean }) {
   return (
     <div
-      className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}${row.ward ? " forecast-chart__row--ward" : ""}`}
+      className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}${row.ward ? " forecast-chart__row--ward" : ""}${lead ? " forecast-chart__row--lead" : ""}`}
       role="listitem"
     >
       <span className="forecast-chart__label">
@@ -403,30 +433,21 @@ function TallyRowView({ row }: { row: TallyRow }) {
         {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
       </span>
       <span className="forecast-chart__track" aria-hidden="true">
-        {/* The Possible Range as what it leaves out: the track above its high, and below its low,
-            hatched as out of reach. The low zone always lies under the counted bar, so it's drawn
-            after it, over it. */}
-        {row.possible && row.possible.high < 100 && (
-          <span className="live-tally__reach live-tally__reach--high" style={reach(row.possible.high, 100)} />
-        )}
-        <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
-        {row.possible && row.possible.low > 0 && (
-          <span className="live-tally__reach live-tally__reach--low" style={reach(0, row.possible.low)} />
-        )}
-        {row.band && (
-          <span className="live-tally__estimate" style={span(row.band.low, row.band.high)}>
-            <span
-              className="live-tally__mid"
-              style={{ left: `${row.band.high > row.band.low ? ((row.band.mid - row.band.low) / (row.band.high - row.band.low)) * 100 : 50}%` }}
-            />
-          </span>
-        )}
-        {row.last && <span className="live-tally__then" style={{ left: `${row.last.share}%` }} />}
+        <TrackMarks row={row} />
       </span>
-      <strong className="forecast-chart__value live-tally__value">{row.waiting ? "–" : percent(row.share, row.votes)}</strong>
+      <strong className="forecast-chart__value live-tally__value" style={lead ? { color: row.color } : undefined}>
+        {row.waiting ? "–" : percent(row.share, row.votes)}
+      </strong>
+      {lead && row.band && !row.eliminated && (
+        <span className="mayor-lead__estimate">
+          {"Estimated final "}
+          <strong>{rangeText(row.band.low, row.band.high)}</strong>
+        </span>
+      )}
       <span className="live-tally__meta">
-        {/* Each figure wraps whole, never a label on one line and its figure on the next. */}
-        {[...(row.ward ? [WORDING.citywide] : []), ...rowMeta(row)].map((part, i) => (
+        {/* Each figure wraps whole, never a label on one line and its figure on the next. A leader's
+            Estimated Range is beside its share, so its line is the votes alone. */}
+        {[...(row.ward ? [WORDING.citywide] : []), ...rowMeta(lead ? { ...row, band: null } : row)].map((part, i) => (
           <span key={part}>
             {i > 0 && " · "}
             <span className="live-tally__fig">{part}</span>
@@ -511,6 +532,62 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
   );
 }
 
+/** The mayor's tally at the head of the results pages (results redesign): the two leaders large,
+ *  then the rest of the field folded to one row that expands in place, the axis, the key and any
+ *  gate note. The same rows, marks and key as every race card. */
+export function MayorLeadTally({ race, levels, closed, ward }: { race: LiveRace; levels: Levels | null; closed: boolean; ward: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+  const rows = tallyRows(race, closed, expanded, ward);
+  const leaders = rows.slice(0, MAYOR_SHOWN);
+  const rest = rows.slice(MAYOR_SHOWN);
+  const inIt = rest.filter((row) => !row.eliminated);
+  const out = rest.filter((row) => row.eliminated);
+  return (
+    <>
+      <div className="forecast-chart live-tally mayor-lead__leaders" role="list" aria-label="Mayor: the two leading candidates">
+        {leaders.map((row) => (
+          <TallyRowView key={row.key} row={row} lead />
+        ))}
+      </div>
+      {rest.length > 0 && (
+        <div className="forecast-chart live-tally mayor-lead__field" role="list" id={listId} aria-label="Mayor: the rest of the field">
+          {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
+          {out.length > 0 && (
+            <p className="live-tally__break" role="listitem">
+              <strong>{WORDING.eliminated}</strong>
+              <span className="live-tally__sep" aria-hidden="true"> · </span>
+              <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
+            </p>
+          )}
+          {out.map((row) => <TallyRowView key={row.key} row={row} />)}
+          {(race.possible || estimated(race)) && (
+            <div className="forecast-chart__axis live-tally__axis" aria-hidden="true">
+              <span />
+              <span className="forecast-chart__axis-track"><span>0</span><span>25</span><span>50</span><span>75</span><span>100%</span></span>
+              <span />
+            </div>
+          )}
+        </div>
+      )}
+      <TallyKey rows={rows} race={race} />
+      <RangeNotes race={race} levels={levels} />
+      {folds(race) && (
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm live-tally__more"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={() => setExpanded(!expanded)}
+        >
+          <span className="live-tally__chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
+          {expanded ? "Show fewer" : `Show all ${race.candidates.length} candidates`}
+        </button>
+      )}
+    </>
+  );
+}
+
 /** The bundle lists exactly one candidate for an acclaimed race (docs/payload.md). Shown as that
  *  candidate with a quiet badge on an outlined card (#117), never "Elected". */
 function Acclaimed({ race }: { race: LiveRace }) {
@@ -579,7 +656,7 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
 
 /** Chow's 2023 share in the wards counted so far, against her 2023 citywide share (#109): early
  *  returns from her weakest wards can read like an upset. Facts of two counts, never an estimate. */
-function ChowBenchmark({ race }: { race: LiveRace }) {
+export function ChowBenchmark({ race }: { race: LiveRace }) {
   const benchmark = countedWardsBenchmark(race);
   const chow = chowCandidate(race);
   if (!benchmark || !chow) return null;
@@ -607,7 +684,7 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
 /** The final Mayoral Forecast, collapsed and kept apart from the count (#7, #12): a pointer
  *  to the home page's forecast only, so none of its outcomes sits beside the count (#17's
  *  "Not shown anywhere", #54). */
-function FinalForecast() {
+export function FinalForecast() {
   return (
     <div className="faq">
       <details className="live-forecast">

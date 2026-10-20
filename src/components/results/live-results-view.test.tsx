@@ -83,7 +83,7 @@ describe("LiveResultsView: /results/ before a ward is picked", () => {
   it("shows the picker, the citywide mayor card, then the 25 council tiles; no trustee races", () => {
     const payload = golden("before-results-2026.json");
     const html = render(payload);
-    expect(html).toContain('<h1 id="results-heading">Election night results</h1>');
+    expect(html).toContain('<h1 id="results-heading" class="visually-hidden">Election night results</h1>');
     expect(cardTitles(html)).toEqual(["Mayor"]);
     expect(html).not.toContain("in your ward");
     expect(html).not.toMatch(/TDSB|TCDSB|Viamonde|MonAvenir/);
@@ -105,14 +105,14 @@ describe("LiveResultsView: /results/ before a ward is picked", () => {
     expect(html).not.toMatch(/<option value="\d+"[^>]*selected/);
     expect(html).toContain('href="https://www.toronto.ca/city-government/elections/voter-information/myvote/"');
     expect(html.indexOf("Ward 25 Scarborough-Rouge Park")).toBeLessThan(html.indexOf("MyVote"));
-    expect(text(html)).toContain("Don&#x27;t know your ward? Look up your address on the City&#x27;s MyVote tool.");
+    expect(text(html)).toContain("Don&#x27;t know your ward? Look it up on MyVote ↗");
   });
 });
 
 describe("LiveResultsView: a ward's page", () => {
   it("renders the ward's councillor, TDSB and TCDSB races, then the French boards", () => {
     const html = render(golden("before-results-2026.json"), { ward: "14" });
-    expect(html).toContain('<h1 id="results-heading">Ward 14 Toronto-Danforth</h1>');
+    expect(html).toContain('<h1 id="results-heading" class="visually-hidden">Ward 14 Toronto-Danforth</h1>');
     expect(cardTitles(html)).toEqual([
       "Mayor",
       "Councillor, Ward 14 Toronto-Danforth",
@@ -409,7 +409,7 @@ describe("LiveResultsView: the mayor card", () => {
     const html = card(render(payload, { ward: "1" }), "mayor");
     expect(html).not.toContain("Mayoral vote in Ward");
     // Both counts, labelled: the city's, then the ward's.
-    expect(text(html)).toMatch(/Citywide[^]*1,221 of 1,451 voting areas in[^]*Ward 1[^]*49 of 52 voting areas in/);
+    expect(text(html)).toMatch(/Voting areas in1,221 of 1,451[^]*Ward 1: 49 of 52/);
     // Every row, the folded one included, has its ward bar; Ward 1's top candidate by its 16,744 counted.
     const rows = html.split('class="forecast-chart__row').slice(1);
     expect(rows.length).toBe(3);
@@ -1087,7 +1087,8 @@ describe("LiveResultsView: the results audit (2026-10-20)", () => {
   });
 
   it("groups thousands in voting-area counts", () => {
-    expect(text(render(golden("mayor-counting-2023.json")))).toContain("1,221 of 1,451 voting areas in");
+    expect(text(render(golden("mayor-counting-2023.json")))).toContain("1,221 of 1,451");
+    expect(text(render(golden("council-counting-2022.json"), { ward: "1" }))).toContain("1,535 voting areas in");
   });
 
   it("labels a council tile's ranges as the estimated final", () => {
@@ -1098,5 +1099,67 @@ describe("LiveResultsView: the results audit (2026-10-20)", () => {
   it("sets the mayor's turnout after its candidates", () => {
     const html = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
     expect(html.indexOf('class="live-turnout"')).toBeGreaterThan(html.indexOf("live-tally__axis"));
+  });
+});
+
+describe("LiveResultsView: the mayor leads the page", () => {
+  /** The markup of the mayor lead section. */
+  const lead = (html: string) => {
+    const start = html.indexOf('class="mayor-lead"');
+    return start < 0 ? "" : html.slice(start, html.indexOf("</section>", start));
+  };
+
+  it("opens with the mayor's two leaders, their estimated finals and the count lead, before the views", () => {
+    // 2022 mid-count golden: Tory 62.42% (59–65%), Penalosa 18.09% (16–21%), 767 of 1,535 voting areas.
+    const html = render(golden("gated-live-2022.json"));
+    const section = text(lead(html));
+    expect(section).toMatch(/Tory John[^]*62\.4%/);
+    expect(section).toContain("Estimated final 59–65%");
+    expect(section).toMatch(/Penalosa Gil[^]*18\.1%/);
+    expect(section).toContain("Estimated final 16–21%");
+    expect(section).toContain("29 other candidates");
+    expect(section).toContain("Tory John leads by 44.3 points");
+    expect(section).toContain("Voting areas in767 of 1,535");
+    expect(html.indexOf('class="mayor-lead"')).toBeLessThan(html.indexOf('aria-label="Results views"'));
+  });
+
+  it("is the mayor's only view: every candidate expands in place, with the out-of-reach zones and the key", () => {
+    const html = render(golden("gated-live-2022.json"));
+    expect(count(html, 'id="live-race-mayor"')).toBe(1);
+    expect(html).not.toContain("mayor-lead__more");
+    const section = lead(html);
+    expect(section).toContain("Show all 31 candidates");
+    expect(section).toContain("live-tally__reach");
+    expect(text(section)).toContain("Out of reach, even with all or none of the votes still to count");
+    expect(section).toContain('class="live-turnout"');
+  });
+
+  it("gives the ward's share under each leader on a ward page", () => {
+    // Ward 1, 2022 golden: Tory 5,119 of the ward's votes (67.2%), Penalosa 478 (6.3%).
+    const section = lead(render(golden("gated-live-2022.json"), { ward: "1" }));
+    expect(text(section)).toContain("Ward 1 · 5,119 votes");
+    expect(section).toMatch(/live-tally__wvalue">67\.2%</);
+    expect(section).toMatch(/live-tally__wvalue">6\.3%</);
+  });
+
+  it("with everything in and no estimate, shows the final count", () => {
+    const section = text(lead(render(golden("all-units-in-2018.json"))));
+    expect(section).toMatch(/John Tory\s*63\.5%/);
+    expect(section).not.toContain("Estimated final");
+    expect(section).toContain("Voting areas inAll in");
+  });
+
+  it("before results, keeps the mayor card in the races, with no lead", () => {
+    const html = render(golden("before-results-2026.json"));
+    expect(lead(html)).toBe("");
+    expect(cardTitles(html)).toEqual(["Mayor"]);
+  });
+
+  it("puts the status and the ward picker in one bar, with the page title for screen readers", () => {
+    const html = render(golden("gated-live-2022.json"), { ward: "1" });
+    expect(html).toMatch(/<h1 id="results-heading" class="visually-hidden">Ward 1 Etobicoke North<\/h1>/);
+    expect(html).toMatch(/class="results-bar"[^]*City count as of[^]*Your ward/);
+    // On a ward page the picker shows the ward.
+    expect(html).toMatch(/<option value="1" selected="">Ward 1 Etobicoke North<\/option>/);
   });
 });

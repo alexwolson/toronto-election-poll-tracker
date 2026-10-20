@@ -9,13 +9,13 @@
 
 import type { ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
-import { PageHero } from "@/components/page-hero";
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
 import type { ResultsMapData } from "@/lib/results-map-data";
 import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { CouncilAreasTable } from "./council-areas-table";
 import { LiveCountView, LiveTablesView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
+import { MayorLead, showsMayorLead } from "./mayor-lead";
 import { CouncilTiles, FrenchBoards, RaceCard, WORDING } from "./race-cards";
 import { ResultsViews } from "./results-views";
 import { WardPicker } from "./ward-picker";
@@ -38,11 +38,7 @@ function clockTime(ms: number): string {
 }
 
 function RehearsalBar() {
-  return (
-    <p>
-      <span className="badge badge--soon">Rehearsal: not real results</span>
-    </p>
-  );
+  return <span className="badge badge--soon">Rehearsal: not real results</span>;
 }
 
 export interface LiveResultsViewProps {
@@ -96,6 +92,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
     unreachable || <p className="t-meta">Loading live results…</p>
   );
   let ballotCards: ReactNode = null;
+  let mayorLead: ReactNode = null;
   if (results !== null) {
     const { payload, heartbeat, closed } = results;
     const counting = payload.state === "results";
@@ -103,7 +100,12 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
     // From 8 p.m. until the first voting area anywhere.
     const nothingIn = counting && !payload.races.some((race) => race.state === "counting" || race.state === "all_units_in");
     const shown = ["mayor", ...ballot].flatMap((id) => payload.races.filter((race) => race.id === id));
-    const main = shown.filter((race) => race.level !== "french_trustee");
+    // Once the count starts the mayor leads the page, above the views; its card folds there.
+    const leadRace = shown.find((race) => race.id === "mayor");
+    mayorLead = showsMayorLead(leadRace) ? (
+      <MayorLead race={leadRace} levels={payload.levels} ward={ward?.num ?? null} forecast={forecast} closed={closed} />
+    ) : null;
+    const main = shown.filter((race) => race.level !== "french_trustee" && !(mayorLead && race.id === "mayor"));
     const french = shown.filter((race) => race.level === "french_trustee");
 
     status = (
@@ -117,7 +119,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
           </p>
         )}
         {unreachable}
-        <p className="t-meta">
+        <p className="results-bar__count">
           {closed && counting ? (
             // "unofficial" once is enough (#54).
             <>Final unofficial count as of {clockTime(cityCountAt)}</>
@@ -133,36 +135,41 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
         </p>
       </>
     );
-    ballotCards = (
-      <ContentSection aria-labelledby="results-ballot-heading">
-        <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
-        <div className="grid">
-          {main.map((race) => (
-            <RaceCard
-              key={race.id}
-              race={race}
-              levels={payload.levels}
-              ward={ward?.num ?? null}
-              forecast={forecast}
-              closed={closed}
-            />
-          ))}
-          <FrenchBoards races={french} closed={closed} />
-        </div>
-      </ContentSection>
-    );
+    ballotCards =
+      main.length + french.length === 0 ? null : (
+        <ContentSection aria-labelledby="results-ballot-heading">
+          <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
+          <div className="grid">
+            {main.map((race) => (
+              <RaceCard
+                key={race.id}
+                race={race}
+                levels={payload.levels}
+                ward={ward?.num ?? null}
+                forecast={forecast}
+                closed={closed}
+              />
+            ))}
+            <FrenchBoards races={french} closed={closed} />
+          </div>
+        </ContentSection>
+      );
   }
 
   return (
     <>
-      <PageHero
-        headingId="results-heading"
-        title={ward ? wardLabel(ward) : "Election night results"}
-        description={ward ? "Election night results" : undefined}
-      >
-        <WardPicker wards={wards} ward={ward} />
-        <div className="grid">{status}</div>
-      </PageHero>
+      {/* The page's state and the ward picker in one bar; the title is for screen readers (the
+          masthead says Results, and a ward page's picker shows its ward). */}
+      <section className="results-bar" aria-labelledby="results-heading">
+        <div className="wrap results-bar__inner">
+          <h1 id="results-heading" className="visually-hidden">
+            {ward ? wardLabel(ward) : "Election night results"}
+          </h1>
+          <div className="results-bar__status">{status}</div>
+          <WardPicker wards={wards} ward={ward} />
+        </div>
+      </section>
+      {mayorLead}
       <ResultsViews
         races={
           <>

@@ -34,35 +34,33 @@ export function WardPicker({ wards, ward }: { wards: ResultsWard[]; ward: Result
 
   return (
     <div className="results-picker">
-      <form onSubmit={choose}>
-        <div className="field">
-          <label htmlFor="results-ward">Your ward</label>
-          <select id="results-ward" name="ward" defaultValue="">
-            <option value="" disabled>
-              Choose your ward
+      {/* One row in the results bar; on a ward page it shows that ward. */}
+      <form onSubmit={choose} className="results-picker__form">
+        <label htmlFor="results-ward">Your ward</label>
+        <select id="results-ward" name="ward" defaultValue={ward?.num ?? ""}>
+          <option value="" disabled>
+            Choose your ward
+          </option>
+          {wards.map((w) => (
+            <option key={w.num} value={w.num}>
+              {wardLabel(w)}
             </option>
-            {wards.map((w) => (
-              <option key={w.num} value={w.num}>
-                {wardLabel(w)}
-              </option>
-            ))}
-          </select>
-          <p className="field__help">
-            Don&apos;t know your ward? Look up your address on the City&apos;s{" "}
-            <a href={MYVOTE_URL}>MyVote</a> tool.
-          </p>
-        </div>
+          ))}
+        </select>
         <button type="submit" className="btn btn--primary btn--sm">
-          Show results
+          Show
         </button>
       </form>
-      {remembered !== null && remembered !== ward?.num && (
-        <p>
+      <p className="results-picker__help">
+        <a href={MYVOTE_URL}>
+          Don&apos;t know your ward? <span className="results-picker__nowrap">Look it up on MyVote ↗</span>
+        </a>
+        {remembered !== null && remembered !== ward?.num && (
           <Link href={`/results/${remembered}`} className="pill">
             Back to Ward {remembered}
           </Link>
-        </p>
-      )}
+        )}
+      </p>
     </div>
   );
 }

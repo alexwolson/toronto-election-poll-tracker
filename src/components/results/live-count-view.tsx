@@ -419,7 +419,7 @@ function PaceCharts({ history }: { history: LiveHistory }) {
 }
 
 /** The lead between the race's top two now, over the night, shaded by who was ahead. */
-function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHistory; axis: Axis }) {
+export function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHistory; axis: Axis }) {
   const narrow = useNarrow();
   const [a, b] = race.candidates;
   if (!a || !b || !history.races[race.id]) return null;

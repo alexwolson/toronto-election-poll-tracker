@@ -42,7 +42,7 @@ function renderPage(ward: string | null = null) {
 
 function choose(ward: string) {
   fireEvent.change(screen.getByLabelText("Your ward"), { target: { value: ward } });
-  fireEvent.click(screen.getByRole("button", { name: "Show results" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show" }));
 }
 
 function blockStorage() {

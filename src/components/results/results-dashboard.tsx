@@ -3,9 +3,9 @@
 /**
  * The results dashboard (Alex, 2026-10-20): one citywide page for readers who follow the whole
  * city. A tab per race type, each one page to scroll (Alex, 2026-10-21): the mayor's race in
- * full, its map, its areas, its count over the night and its wards; or a type's map, then every
- * race at a glance in a grid, sortable, with one opening in place as the full race block with its
- * count over the night. All of it in the URL. The pages are
+ * full, its map, its areas, its count over the night and its wards; or every race of a type at a
+ * glance in a grid, sortable, with one opening in place as the full race block with its count
+ * over the night, then the type's map. All of it in the URL. The pages are
  * static, so the URL is read in the browser behind a Suspense boundary; the prerendered HTML
  * shows the defaults.
  */
@@ -135,7 +135,7 @@ function Dashboard({
   } else {
     content = (
       <>
-        {map}
+        {/* Races first, then where they lead (Alex). */}
         {payload && (
           <RaceGrid
             type={state.race}
@@ -147,6 +147,7 @@ function Dashboard({
             href={href}
           />
         )}
+        {map}
       </>
     );
   }

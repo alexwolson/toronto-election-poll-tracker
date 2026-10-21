@@ -25,6 +25,7 @@ import {
   YAxis,
 } from "recharts";
 import { candidateMeta } from "@/lib/candidates";
+import { liveColour } from "@/lib/live-colour";
 import { shareText } from "@/lib/live-share";
 import { countRows, leadRows, paceBuckets, shareRows, type ShareRow } from "@/lib/live-count";
 import { mayorWardLead, type Lead } from "@/lib/live-map";
@@ -104,8 +105,9 @@ interface Series {
 
 /**
  * The lines a race draws: the mayor's forecast-named candidates in their colours, then the
- * leading others; elsewhere the top four. Colours follow the candidate's place in the
- * history's stable key order, never their rank, so a line keeps its colour all night.
+ * leading others; elsewhere the top four, in their race block's colours, the palette by their
+ * place in the history's stable key order for those without one, never their rank, so a line
+ * keeps its colour all night.
  */
 function seriesFor(race: LiveRace, history: LiveHistory): Series[] {
   const keys = history.races[race.id]?.keys ?? [];
@@ -118,7 +120,8 @@ function seriesFor(race: LiveRace, history: LiveHistory): Series[] {
     return named.map((c) => ({ key: c.key, label: label(c), colour: candidateMeta(c.candidate_id!).colorVar, band: hasBand(c.key) }));
   }
   const drawn = byVotes.slice(0, 4).sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key));
-  return drawn.map((c, i) => ({ key: c.key, label: label(c), colour: SERIES[i], band: hasBand(c.key) }));
+  // Each candidate keeps the colour their race block gives them; the palette fills in for the rest.
+  return drawn.map((c, i) => ({ key: c.key, label: label(c), colour: liveColour(c, SERIES[i]), band: hasBand(c.key) }));
 }
 
 function ChartFrame({ title, caption, children, table }: { title: string; caption?: ReactNode; children: ReactNode; table: ReactNode }) {

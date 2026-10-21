@@ -120,7 +120,7 @@ describe("LiveResultsView: one page per race type (Alex, 2026-10-21)", () => {
   const ids = (html: string, wanted: string[]) =>
     wanted.filter((id) => html.includes(`id="${id}"`)).sort((a, b) => html.indexOf(`id="${a}"`) - html.indexOf(`id="${b}"`));
   const NIGHT = JSON.parse(readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/payload.json"), "utf8")) as LivePayload;
-  const PARTS = ["live-race-mayor", "results-map", "live-areas-heading", "results-count", "results-wards", "results-pace", "race-grid-heading"];
+  const PARTS = ["live-race-mayor", "results-map", "results-count", "results-wards", "race-grid-heading"];
 
   it("has one row of tabs, the race types, and no views", () => {
     const html = renderAt(NIGHT, "");
@@ -129,11 +129,12 @@ describe("LiveResultsView: one page per race type (Alex, 2026-10-21)", () => {
     expect(html).not.toContain("view=");
   });
 
-  it("scrolls the mayor's page: the result, the map, the areas, the count, ward by ward, then the pace", () => {
+  it("scrolls the mayor's page: the result, the map, the count, then ward by ward", () => {
     const html = renderAt(NIGHT, "");
-    expect(ids(html, PARTS)).toEqual(["live-race-mayor", "results-map", "live-areas-heading", "results-count", "results-wards", "results-pace"]);
+    expect(ids(html, PARTS)).toEqual(["live-race-mayor", "results-map", "results-count", "results-wards"]);
     // The disclosures stay the page's very last part.
-    expect(html.lastIndexOf("How accurate is this estimate?")).toBeGreaterThan(html.indexOf('id="results-pace"'));
+    expect(html.lastIndexOf("How accurate is this estimate?")).toBeGreaterThan(html.indexOf('id="results-wards"'));
+    expect(html).not.toContain("How fast the count is coming in");
     expect(html).not.toContain("Every race, least counted first");
   });
 
@@ -411,7 +412,7 @@ describe("LiveResultsView: the mayor card", () => {
     expect(html).not.toContain("live-tally__more");
   });
 
-  it("orders the card: the tally, its key, the toggle, turnout, the 2023 benchmark, then the disclosures (audit)", () => {
+  it("orders the card: the tally, its key, the toggle, turnout, then the disclosures (audit)", () => {
     const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
     const mayor = payload.races.find((r) => r.id === "mayor")!;
     mayor.possible = Object.fromEntries(mayor.candidates.map((c) => [c.key, { low: 1, high: 90 }]));
@@ -426,8 +427,10 @@ describe("LiveResultsView: the mayor card", () => {
       expect(i, needle).toBeGreaterThan(-1);
       return i;
     };
-    const order = [at("in the wards counted so far"), at(">About this comparison<"), at("The final pre-election forecast")];
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    at("The final pre-election forecast");
+    // Chow's counted-wards benchmark is cut (Alex, 2026-10-21).
+    expect(tail).not.toContain("in the wards counted so far");
+    expect(tail).not.toContain("About this comparison");
     expect(html).not.toContain("What’s this?");
     // The ward's mayoral vote is in the bars now (#125), not a section of its own.
     expect(html).not.toContain("Mayoral vote in Ward");

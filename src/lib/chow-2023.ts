@@ -47,36 +47,10 @@ export function chowWard(race: LiveRace | null, ward: Pick<LiveMayoralWard, "num
   return { live: chow ? wardShare(ward.votes, chow.key) : null, share2023: ward2023.share };
 }
 
-export interface CountedWardsBenchmark {
-  /** Her 2023 share across the wards counted so far, percent. */
-  counted2023: number;
-  /** Her 2023 share citywide, percent. */
-  citywide2023: number;
-}
-
-/** Chow's 2023 share across the wards counted so far beside her 2023 citywide share (#109):
- *  how much the wards in flatter or understate her. Each ward weighs by its candidates' counted
- *  votes, the sum the payload's shares come from (docs/payload.md), not its `votes_counted`.
- *  It allows for which wards are in, not which voting areas within them, and is never an
- *  estimate of the citywide result. Null unless the race is counting with votes counted. */
-export function countedWardsBenchmark(race: LiveRace): CountedWardsBenchmark | null {
-  if (race.state !== "counting") return null;
-  let weight = 0;
-  let sum = 0;
-  for (const ward of race.wards ?? []) {
-    const ward2023 = CHOW_2023.wards[ward.num];
-    const counted = votesTotal(ward.votes);
-    if (!ward2023 || counted <= 0) continue;
-    weight += counted;
-    sum += counted * ward2023.share;
-  }
-  return weight > 0 ? { counted2023: sum / weight, citywide2023: CHOW_2023.citywide.share } : null;
-}
-
 /** For each counted ward, Chow's change there since 2023 less her change across all the wards
  *  counted (#110): the ward's lean now against its lean in 2023, in points. Never a raw
  *  2026-minus-2023 difference, which a citywide shift would push one way everywhere; weighed by
- *  votes counted, as `countedWardsBenchmark` weighs them, the figures average to zero. Keyed by
+ *  votes counted, each weighted by its votes counted, the figures average to zero. Keyed by
  *  ward number; a ward with no votes counted is absent. */
 export function chowVs2023(race: LiveRace | null): Record<string, number> {
   const chow = chowCandidate(race);

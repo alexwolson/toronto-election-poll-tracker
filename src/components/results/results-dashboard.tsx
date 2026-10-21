@@ -3,7 +3,7 @@
 /**
  * The results dashboard (Alex, 2026-10-20): one citywide page for readers who follow the whole
  * city. A tab per race type, each one page to scroll (Alex, 2026-10-21): the mayor's race in
- * full, its map, its areas, its count over the night and its wards; or every race of a type at a
+ * full, its map, its count over the night and its wards; or every race of a type at a
  * glance in a grid, sortable, with one opening in place as the full race block with its count
  * over the night, then the type's map. All of it in the URL. The pages are
  * static, so the URL is read in the browser behind a Suspense boundary; the prerendered HTML
@@ -28,8 +28,7 @@ import {
 import type { ResultsMapData } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LivePayload, LiveRace } from "@/types/live";
-import { CouncilAreasTable } from "./council-areas-table";
-import { CountPace, MayorCount, MayorWards, RaceCount } from "./live-count-view";
+import { MayorCount, MayorWards, RaceCount } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
 import type { MapContest } from "@/lib/live-map-url";
 import { MayorLead, MayorNotes, RaceResult, showsRaceResult } from "./mayor-lead";
@@ -116,16 +115,10 @@ function Dashboard({
           ))}
         {map}
         <ContentSection>
-          <CouncilAreasTable payload={payload} ward={null} />
-        </ContentSection>
-        <ContentSection>
           <MayorCount payload={payload} />
         </ContentSection>
         <ContentSection>
           <MayorWards payload={payload} wards={wards} />
-        </ContentSection>
-        <ContentSection>
-          <CountPace payload={payload} />
         </ContentSection>
       </>
     );

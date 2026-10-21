@@ -3,7 +3,7 @@
 /**
  * The count over the night (live-projection #103), from `/live/history.json`: how each
  * candidate's counted share moved with the Estimated Range behind it where one showed, the lead
- * between the top two, how fast voting areas and votes come in, and the mayor by ward. Parts of
+ * between the top two, and the mayor by ward. Parts of
  * each race type's page since the views folded into it (Alex, 2026-10-21). Every chart has a
  * table. The count only, never compared with the forecast (#12).
  */
@@ -13,8 +13,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Area,
-  Bar,
-  BarChart,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -27,14 +25,13 @@ import {
 import { candidateMeta } from "@/lib/candidates";
 import { liveColour } from "@/lib/live-colour";
 import { shareText } from "@/lib/live-share";
-import { countRows, leadRows, paceBuckets, shareRows, type ShareRow } from "@/lib/live-count";
+import { leadRows, shareRows, type ShareRow } from "@/lib/live-count";
 import { mayorWardLead, type Lead } from "@/lib/live-map";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LiveHistory, LivePayload, LiveRace } from "@/types/live";
 import { shortLabel } from "@/lib/live-labels";
 import { useLiveHistoryIfProvided } from "./live-results-poller";
 
-const TEN_MINUTES = 10 * 60_000;
 const HALF_HOUR = 30 * 60_000;
 const MARGIN = { top: 8, right: 28, bottom: 4, left: 0 } as const;
 const AXIS_TICK = { fill: "var(--muted)", fontSize: 12, fontFamily: "var(--font-mono)" } as const;
@@ -62,9 +59,6 @@ function pct(value: number | null | undefined, digits = 1): string {
   return value === null || value === undefined ? "–" : `${value.toFixed(digits)}%`;
 }
 
-function whole(n: number): string {
-  return n.toLocaleString("en-CA");
-}
 
 /** Clock ticks across the domain: on the half hour, or the hour on a phone, and the start
  *  itself when the first of those is well after it, so the axis always says when it begins. */
@@ -320,108 +314,6 @@ function AxisSwitch({ axis, onChange }: { axis: Axis; onChange: (axis: Axis) => 
   );
 }
 
-function PaceCharts({ history }: { history: LiveHistory }) {
-  const narrow = useNarrow();
-  const rows = countRows(history, "mayor");
-  const buckets = paceBuckets(history, "mayor", TEN_MINUTES);
-  if (rows.length === 0) return null;
-  const domain: [number, number] = [buckets[0].start, rows[rows.length - 1].t];
-  const ticks = clockTicks(domain[0], domain[1], narrow);
-  const xAxis = (
-    <XAxis
-      dataKey="t"
-      type="number"
-      domain={domain}
-      ticks={ticks}
-      tickFormatter={tickClock}
-      tick={AXIS_TICK}
-      axisLine={{ stroke: "var(--rule)" }}
-      tickLine={false}
-    />
-  );
-  return (
-    <div className="live-chart-pair">
-      <ChartFrame
-        title="Voting areas in"
-        table={
-          <table className="live-table">
-            <thead>
-              <tr>
-                <th scope="col">City count</th>
-                <th scope="col">Voting areas in</th>
-                <th scope="col">Votes counted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.t}>
-                  <th scope="row">{clock(r.t)}</th>
-                  <td className="live-num">{pct(r.reported, 0)}</td>
-                  <td className="live-num">{whole(r.counted)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        }
-      >
-        <ResponsiveContainer width="100%" height={200} debounce={100}>
-          <ComposedChart data={rows} margin={MARGIN} accessibilityLayer={false}>
-            <CartesianGrid vertical={false} stroke="var(--rule-soft)" />
-            {xAxis}
-            <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v: number) => `${v}%`} tick={AXIS_TICK} axisLine={false} tickLine={false} width={44} />
-            <Area type="stepAfter" dataKey="reported" stroke="var(--live-seq-3)" strokeWidth={2} fill="var(--live-seq-1)" fillOpacity={0.35} connectNulls isAnimationActive={false} />
-            <Tooltip
-              cursor={{ stroke: "var(--muted)", strokeDasharray: "3 3" }}
-              content={({ active, payload }) => {
-                const r = active ? (payload?.[0]?.payload as (typeof rows)[number] | undefined) : undefined;
-                return r ? <TooltipBox heading={clock(r.t)} rows={[{ label: "Voting areas in", value: pct(r.reported, 0) }, { label: "Votes counted", value: whole(r.counted) }]} /> : null;
-              }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartFrame>
-      <ChartFrame
-        title="Votes for mayor counted, per 10 minutes"
-        table={
-          <table className="live-table">
-            <thead>
-              <tr>
-                <th scope="col">From</th>
-                <th scope="col">Votes counted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {buckets.map((b) => (
-                <tr key={b.start}>
-                  <th scope="row">{clock(b.start)}</th>
-                  <td className="live-num">{whole(b.votes)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        }
-      >
-        <ResponsiveContainer width="100%" height={200} debounce={100}>
-          <BarChart data={buckets.map((b) => ({ t: b.start + TEN_MINUTES / 2, ...b }))} margin={MARGIN} barCategoryGap={2} accessibilityLayer={false}>
-            <CartesianGrid vertical={false} stroke="var(--rule-soft)" />
-            {xAxis}
-            <YAxis tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} tick={AXIS_TICK} axisLine={false} tickLine={false} width={44} />
-            <Bar dataKey="votes" fill="var(--live-seq-3)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
-            <Tooltip
-              cursor={{ fill: "var(--tint)" }}
-              content={({ active, payload }) => {
-                const b = active ? (payload?.[0]?.payload as { start: number; votes: number } | undefined) : undefined;
-                return b ? <TooltipBox heading={`${clock(b.start)} to ${clock(b.start + TEN_MINUTES)}`} rows={[{ label: "Votes counted", value: whole(b.votes) }]} /> : null;
-              }}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartFrame>
-    </div>
-  );
-}
-
-/** The lead between the race's top two now, over the night, shaded by who was ahead. */
 export function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHistory; axis: Axis }) {
   const narrow = useNarrow();
   const [a, b] = race.candidates;
@@ -624,18 +516,6 @@ export function MayorCount({ payload }: { payload: LivePayload | null }) {
             <LeadChart race={mayor} history={history} axis={axis} />
           </div>
         ))}
-    </section>
-  );
-}
-
-/** How fast voting areas and votes come in, citywide. */
-export function CountPace({ payload }: { payload: LivePayload | null }) {
-  const history = useLiveHistoryIfProvided();
-  const pending = CountPending({ payload, history });
-  return (
-    <section id="results-pace" className="live-count" aria-labelledby="results-pace-heading">
-      <h2 id="results-pace-heading">How fast the count is coming in</h2>
-      {pending ?? (history && <PaceCharts history={history} />)}
     </section>
   );
 }

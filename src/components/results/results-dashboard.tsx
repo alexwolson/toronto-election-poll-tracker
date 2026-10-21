@@ -97,8 +97,11 @@ function Dashboard({
 
   const map = MAPPED.includes(state.race) && (
     <ContentSection>
-      {/* Keyed by race type, so a new tab opens its own map. */}
-      <LiveMapView key={state.race} data={mapData} payload={payload} wards={wards} ward={null} contest={state.race as MapContest} />
+      {/* Keyed by race type, so a new tab opens its own map. It reads its selection from the URL,
+          so the prerendered page (the defaults, outside the URL's boundary) leaves it to the browser. */}
+      <Suspense fallback={null}>
+        <LiveMapView key={state.race} data={mapData} payload={payload} wards={wards} ward={null} contest={state.race as MapContest} />
+      </Suspense>
     </ContentSection>
   );
 

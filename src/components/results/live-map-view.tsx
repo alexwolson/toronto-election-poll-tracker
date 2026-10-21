@@ -175,14 +175,19 @@ export interface LiveMapViewProps {
   wards: ResultsWard[];
   /** The ward whose page this is: it starts held. */
   ward: string | null;
+  /** The race type whose page holds the map: the map shows it, with no choice of race. */
+  contest?: Contest;
 }
 
-export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
+export function LiveMapView({ data, payload, wards, ward, contest: fixed }: LiveMapViewProps) {
   // The URL sets the map it opens with (#126); the reader's changes are written back to it.
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const pageWard = ward ?? data.wards[0]?.num ?? "1";
-  const [fromUrl] = useState(() => mapSelectionFrom(searchParams, data.wards.map((w) => w.num)));
+  const [fromUrl] = useState(() => {
+    const read = mapSelectionFrom(searchParams, data.wards.map((w) => w.num));
+    return fixed ? { ...read, contest: fixed, measure: shownMeasure(fixed, read.measure) } : read;
+  });
   const [selection, setSelection] = useState<MapSelection>({ ...fromUrl, ward: fromUrl.ward ?? pageWard });
   const { contest, measure, candidate: shareKey } = selection;
   const held = selection.ward ?? pageWard;
@@ -396,17 +401,19 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const legend = legendFor(contest, effectiveMeasure, mayor, facts, candidateColour(shareCandidate));
 
   return (
-    <section className="live-map" aria-labelledby="live-map-heading">
+    <section id="results-map" className="live-map" aria-labelledby="live-map-heading">
       <div className="live-map__head">
         <h2 id="live-map-heading">Results by ward</h2>
         <div className="live-map__controls">
-          <div className="ward-index-sort live-seg" role="group" aria-label="Race">
-            {CONTESTS.map((c) => (
-              <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select({ contest: c.id })}>
-                {c.label}
-              </button>
-            ))}
-          </div>
+          {!fixed && (
+            <div className="ward-index-sort live-seg" role="group" aria-label="Race">
+              {CONTESTS.map((c) => (
+                <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select({ contest: c.id })}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="ward-index-sort live-seg" role="group" aria-label="Show">
             {measures.map((m) => (
               <button key={m.id} type="button" aria-pressed={effectiveMeasure === m.id} onClick={() => select({ measure: m.id })}>

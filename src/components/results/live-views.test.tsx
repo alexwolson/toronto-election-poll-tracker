@@ -10,10 +10,9 @@ import { serveHistory } from "@/lib/live-history";
 import { switchesFrom } from "@/lib/live-serve";
 import { resultsMapData } from "@/lib/results-map-data";
 import { resultsWards } from "@/lib/results-wards";
-import { wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LiveHistory, LivePayload } from "@/types/live";
-import { clockTicks, LiveCountView, LiveTablesView } from "./live-count-view";
+import { clockTicks, CountPace, MayorCount, MayorWards, RaceCount } from "./live-count-view";
 import { CouncilAreasTable } from "./council-areas-table";
 import { LiveMapView } from "./live-map-view";
 
@@ -33,7 +32,7 @@ const HISTORY: LiveHistory = serveHistory({
 });
 
 const live = vi.hoisted(() => ({ history: null as LiveHistory | null, query: "" }));
-vi.mock("./live-results-poller", () => ({ useLiveHistory: () => live.history }));
+vi.mock("./live-results-poller", () => ({ useLiveHistoryIfProvided: () => live.history }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/results/", useSearchParams: () => new URLSearchParams(live.query) }));
 
 afterEach(() => {
@@ -450,73 +449,69 @@ describe("LiveMapView vs 2023", () => {
   });
 });
 
-describe("LiveCountView", () => {
-
-  it("before results, says when the charts start", () => {
+describe("The count on the race type pages (Alex, 2026-10-21)", () => {
+  it("before results, says when the charts and the ward table start", () => {
     live.history = HISTORY;
-    render(<LiveCountView payload={BEFORE} ballot={[]} ward={null} />);
-    expect(screen.getByText(/start once the City reports results/)).toBeTruthy();
+    render(<MayorCount payload={BEFORE} />);
+    render(<CountPace payload={BEFORE} />);
+    render(<MayorWards payload={BEFORE} wards={WARDS} />);
+    expect(screen.getAllByText(/start once the City reports results/)).toHaveLength(2);
+    expect(screen.getByText(/The table fills in once the City reports results/)).toBeTruthy();
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
-  it("while the history loads, says so", () => {
+  it("while the history loads, says so, and the ward table shows without it", () => {
     live.history = null;
-    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
+    render(<MayorCount payload={NIGHT} />);
+    render(<MayorWards payload={NIGHT} wards={WARDS} />);
     expect(screen.getByRole("status").textContent).toMatch(/Loading the count/);
+    expect(screen.getByRole("heading", { name: "Mayor, ward by ward" })).toBeTruthy();
+    expect(screen.getAllByRole("row")).toHaveLength(26);
   });
 
-  it("gives every chart a table; the two tables of the count moved to the Tables view (#123)", () => {
+  it("gives every chart a table, the pace one row per point in the history", () => {
     live.history = HISTORY;
-    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
-    expect(screen.getAllByText("Show as a table").length).toBeGreaterThanOrEqual(4);
-    expect(screen.queryByRole("heading", { name: "Mayor, ward by ward" })).toBeNull();
-    expect(screen.queryByRole("heading", { name: "Every race, least counted first" })).toBeNull();
-    // One row per point in the history.
+    render(<MayorCount payload={NIGHT} />);
+    expect(screen.getAllByText("Show as a table").length).toBeGreaterThanOrEqual(2);
+    cleanup();
+    render(<CountPace payload={NIGHT} />);
     const pace = screen.getAllByRole("table")[0];
     expect(within(pace).getAllByRole("row")).toHaveLength(HISTORY.t.length + 1);
   });
 
+  it("draws the mayor's named candidates and everyone else, without lines for the minor field", () => {
+    live.history = HISTORY;
+    render(<MayorCount payload={NIGHT} />);
+    const frame = screen.getByRole("heading", { name: "Share of the votes counted" }).closest("figure")!;
+    expect(within(frame).getByText("Everyone else")).toBeTruthy();
+    expect(within(frame).queryByText("Alexander")).toBeNull();
+  });
+
   it("sorts the ward table by lead when asked", () => {
-    render(<LiveTablesView payload={NIGHT} wards={WARDS} />);
+    render(<MayorWards payload={NIGHT} wards={WARDS} />);
     const button = screen.getByRole("button", { name: /^Lead$/ });
     fireEvent.click(button);
     expect(button.closest("th")!.getAttribute("aria-sort")).toBe("descending");
   });
 
-  it("on a ward page, charts that ward's races", () => {
+  it("charts a race opened in full, with its table, and nothing before its count starts", () => {
     live.history = HISTORY;
-    render(
-      <LiveCountView payload={NIGHT} ballot={wardBallotRaceIds("4", trustees)} ward="4" />,
-    );
-    expect(screen.getByRole("heading", { name: "On the Ward 4 ballot" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /^Councillor, Ward 4/ })).toBeTruthy();
+    const race = NIGHT.races.find((r) => r.id === "councillor-4")!;
+    render(<RaceCount race={race} />);
+    const frame = screen.getByRole("heading", { name: "Share of the votes counted over the night" }).closest("figure")!;
+    expect(within(frame).getByText("Show as a table")).toBeTruthy();
+    cleanup();
+    const { container } = render(<RaceCount race={BEFORE.races.find((r) => r.id === "councillor-4")!} />);
+    expect(container.innerHTML).toBe("");
   });
 });
 
-describe("LiveTablesView (#123)", () => {
-
-  it("holds the mayor by ward, then every race by how much is in, without the history", () => {
-    live.history = null;
-    render(<LiveTablesView payload={NIGHT} wards={WARDS} />);
-    const headings = screen.getAllByRole("heading").map((h) => h.textContent);
-    expect(headings.indexOf("Mayor, ward by ward")).toBeGreaterThan(-1);
-    expect(headings.indexOf("Every race, least counted first")).toBeGreaterThan(headings.indexOf("Mayor, ward by ward"));
-  });
-
-  it("before results, says when the tables start", () => {
-    render(<LiveTablesView payload={BEFORE} wards={WARDS} />);
-    expect(screen.getByText(/Tables of the count start once the City reports results/)).toBeTruthy();
-    expect(screen.queryByRole("table")).toBeNull();
-  });
-});
-
-describe("LiveCountView after the audit", () => {
-  it("draws the mayor's named candidates and everyone else, without lines for the minor field", () => {
-    live.history = HISTORY;
-    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
-    const frame = screen.getByRole("heading", { name: "Share of the votes counted" }).closest("figure")!;
-    expect(within(frame).getByText("Everyone else")).toBeTruthy();
-    expect(within(frame).queryByText("Alexander")).toBeNull();
-    expect(within(frame).queryByText(/wherever the page showed one|when it showed/)).toBeNull();
+describe("LiveMapView on a race type's page", () => {
+  it("shows that race type, with no choice of race, whatever the URL says", () => {
+    live.query = "race=mayor&show=vs2023";
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contest="council" />);
+    expect(screen.queryByRole("group", { name: "Race" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Incumbent" }).getAttribute("aria-pressed")).toBe("true");
   });
 });
 

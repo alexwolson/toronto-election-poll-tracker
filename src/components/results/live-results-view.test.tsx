@@ -87,6 +87,12 @@ function count(html: string, text: string): number {
   return html.split(text).length - 1;
 }
 
+/** The page without its map, whose 25 wards each say what they show. */
+function withoutMap(html: string): string {
+  const start = html.indexOf('<section id="results-map"');
+  return start === -1 ? html : html.slice(0, start) + html.slice(html.indexOf("</section>", start));
+}
+
 function cardTitles(html: string): string[] {
   return [...html.matchAll(/<h3 id="live-race-[^"]*">([^<]*)<\/h3>/g)].map((m) => m[1]);
 }
@@ -108,6 +114,47 @@ describe("LiveResultsView: /results/", () => {
     expect(tallyNames(card(html, "mayor"))).toEqual(["Brad Bradford", "Olivia Chow", "51 other candidates"]);
   });
 
+});
+
+describe("LiveResultsView: one page per race type (Alex, 2026-10-21)", () => {
+  const ids = (html: string, wanted: string[]) =>
+    wanted.filter((id) => html.includes(`id="${id}"`)).sort((a, b) => html.indexOf(`id="${a}"`) - html.indexOf(`id="${b}"`));
+  const NIGHT = JSON.parse(readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/payload.json"), "utf8")) as LivePayload;
+  const PARTS = ["live-race-mayor", "results-map", "live-areas-heading", "results-count", "results-wards", "results-pace", "race-grid-heading"];
+
+  it("has one row of tabs, the race types, and no views", () => {
+    const html = renderAt(NIGHT, "");
+    expect(html).toMatch(/aria-label="Race types"/);
+    expect(html).not.toMatch(/aria-label="Results views"/);
+    expect(html).not.toContain("view=");
+  });
+
+  it("scrolls the mayor's page: the result, the map, the areas, the count, ward by ward, then the pace", () => {
+    const html = renderAt(NIGHT, "");
+    expect(ids(html, PARTS)).toEqual(["live-race-mayor", "results-map", "live-areas-heading", "results-count", "results-wards", "results-pace"]);
+    // The disclosures stay the page's very last part.
+    expect(html.lastIndexOf("How accurate is this estimate?")).toBeGreaterThan(html.indexOf('id="results-pace"'));
+    expect(html).not.toContain("Every race, least counted first");
+  });
+
+  it("fixes the map to the page's race type, with no choice of race", () => {
+    for (const query of ["", "race=council", "race=tdsb", "race=tcdsb"]) {
+      const html = renderAt(NIGHT, query);
+      expect(html).not.toMatch(/role="group" aria-label="Race"/);
+    }
+    expect(renderAt(NIGHT, "race=council")).toContain("Incumbent");
+  });
+
+  it("opens council and trustee pages on their map, then every race; the French boards on their races", () => {
+    for (const type of ["council", "tdsb", "tcdsb"]) expect(ids(renderAt(NIGHT, `race=${type}`), PARTS)).toEqual(["results-map", "race-grid-heading"]);
+    expect(ids(renderAt(NIGHT, "race=french"), PARTS)).toEqual(["race-grid-heading"]);
+  });
+
+  it("gives a race opened in full its count over the night", () => {
+    const html = renderAt(NIGHT, "race=council&open=councillor-1");
+    const open = html.slice(html.indexOf('class="race-grid__open"'));
+    expect(open).toMatch(/class="live-race-count"/);
+  });
 });
 
 describe("LiveResultsView: a ward's page", () => {
@@ -175,7 +222,7 @@ describe("LiveResultsView: the council tiles", () => {
     expect(html).toMatch(/<a href="\/results\?race=council&amp;open=councillor-1">Ward 1 Etobicoke North<\/a>/);
     const before = councilGrid(golden("before-results-2026.json"));
     // The page says it once (#115); no block repeats it.
-    expect(count(before, "Results from 8 p.m.")).toBe(1);
+    expect(count(withoutMap(before), "Results from 8 p.m.")).toBe(1);
     expect(tile(before, "1")).not.toContain("Results from 8 p.m.");
   });
 
@@ -245,7 +292,9 @@ function card(html: string, raceId: string): string {
   expect(start, raceId).toBeGreaterThan(-1);
   const next = html.indexOf('id="live-race-', start + 1);
   const tiles = html.indexOf("results-council-heading", start);
-  const end = [next, tiles].filter((i) => i > -1).reduce((a, b) => Math.min(a, b), html.length);
+  // The mayor's page goes on to its map (Alex, 2026-10-21).
+  const map = html.indexOf('id="results-map"', start);
+  const end = [next, tiles, map].filter((i) => i > -1).reduce((a, b) => Math.min(a, b), html.length);
   return html.slice(start, end);
 }
 
@@ -333,7 +382,7 @@ describe("LiveResultsView: the tally", () => {
 
   it("says the page's state once, in the status line (#115)", () => {
     const before = renderAt(golden("before-results-2026.json"), "");
-    expect(count(before, "Results from 8 p.m.")).toBe(1);
+    expect(count(withoutMap(before), "Results from 8 p.m.")).toBe(1);
     expect(text(before)).toContain("Results from 8 p.m. · City of Toronto unofficial results");
     const none = renderAt(golden("no-units-in-2026.json"), "");
     expect(count(none, "No voting areas have reported yet")).toBe(1);

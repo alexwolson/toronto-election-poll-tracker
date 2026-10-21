@@ -9,30 +9,38 @@ const NIGHT = JSON.parse(
 ) as LivePayload;
 
 describe("dashboardFrom", () => {
-  it("opens on the mayor, the results view, sorted by number, with nothing open", () => {
+  it("opens on the mayor, sorted by number, with nothing open and nowhere to jump", () => {
     expect(dashboardFrom(new URLSearchParams(""))).toEqual({
       race: "mayor",
-      view: "races",
       open: null,
       sort: "number",
+      jump: null,
     });
   });
 
-  it("reads the race type, view, the open race and the sort", () => {
-    expect(dashboardFrom(new URLSearchParams("race=council&view=map&open=councillor-11&sort=close"))).toEqual({
+  it("reads the race type, the open race and the sort", () => {
+    expect(dashboardFrom(new URLSearchParams("race=council&open=councillor-11&sort=close"))).toEqual({
       race: "council",
-      view: "map",
       open: "councillor-11",
       sort: "close",
+      jump: null,
     });
+  });
+
+  it("sends an old view link to that part of its race type's page (Alex, one page per race type)", () => {
+    expect(dashboardFrom(new URLSearchParams("view=map")).jump).toBe("results-map");
+    expect(dashboardFrom(new URLSearchParams("race=council&view=map")).jump).toBe("results-map");
+    expect(dashboardFrom(new URLSearchParams("view=count")).jump).toBe("results-count");
+    expect(dashboardFrom(new URLSearchParams("view=tables")).jump).toBe("results-wards");
+    expect(dashboardFrom(new URLSearchParams("view=races")).jump).toBeNull();
   });
 
   it("falls back for values that don't exist", () => {
     expect(dashboardFrom(new URLSearchParams("race=senate&view=odds&sort=random"))).toEqual({
       race: "mayor",
-      view: "races",
       open: null,
       sort: "number",
+      jump: null,
     });
   });
 });
@@ -43,6 +51,10 @@ describe("dashboardHref", () => {
     expect(dashboardHref("/results/", params, { race: "tdsb" })).toBe("/results/?race=tdsb&ward=4");
     expect(dashboardHref("/results/", params, { race: "mayor" })).toBe("/results/?ward=4");
     expect(dashboardHref("/results/", params, { open: "councillor-3" })).toBe("/results/?race=council&ward=4&open=councillor-3");
+  });
+
+  it("drops an old view parameter from every link it makes", () => {
+    expect(dashboardHref("/results/", new URLSearchParams("view=map&race=council"), { sort: "close" })).toBe("/results/?race=council&sort=close");
   });
 
   it("closes the open race when the race type changes", () => {

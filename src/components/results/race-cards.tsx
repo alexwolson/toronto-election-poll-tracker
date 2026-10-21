@@ -11,14 +11,12 @@
 
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
-import { ContentSection } from "@/components/content-section";
 import { candidateMeta } from "@/lib/candidates";
-import { CHOW_2023, chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
+import { chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
-import { rangeText, shareText, votesTotal } from "@/lib/live-share";
+import { rangeText, shareText } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
-import type { ResultsWard } from "@/lib/results-wards";
 import { shortLabel } from "@/lib/live-labels";
 import { AboutTurnout, TurnoutBar } from "./turnout-bar";
 import { lastElection, type LastElection } from "@/lib/council-incumbents";
@@ -37,6 +35,8 @@ type Levels = LivePayload["levels"];
 /** The counted mayoral field shows this many, then "N other candidates", which expands to
  *  everyone (#7). Two since Alexander's exit (2026-10-11): the count's top two, not named. */
 const MAYOR_SHOWN = 2;
+/** The folded row's key: "N other candidates". */
+const FOLDED = "other-candidates";
 /** Each ward's mayoral line names this many. */
 const NEUTRAL = "var(--color-disengaged)";
 
@@ -57,8 +57,9 @@ export const WORDING = {
   eliminatedWhy: "can’t win even with every vote still out",
   /** The tally's key (#105). */
   keyCounted: "Counted",
-  keyEstimated: "Estimated final range",
-  keyPossible: "Out of reach",
+  /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
+  keyEstimated: "Estimated final range: where 99 in 100 simulated finishes land",
+  keyPossible: "Out of reach, even with all of the votes still to count",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -70,9 +71,7 @@ const LEVEL_WORDS: Record<"mayor" | "council" | "trustee", string> = {
 
 /** The ranges' legends, the mayor's record (ADR 0002) and the French-language boards' note,
  *  as Alex approved them (#54, #97). */
-const RANGE_WORDING = {
-  estimated: "Estimated: where the final share lands in 9 of 10 simulated finishes.",
-  possible: "Hatched: shares out of reach even if a candidate gets none or all of the votes still to be counted.",
+export const RANGE_WORDING = {
   mayorRecord:
     "In replays of past election nights, this estimate did very well in the 2014, 2018 and 2022 elections, and worse than expected in the 2023 by-election, when the early vote broke very differently from election day.",
   recordSummary: "How accurate is this estimate?",
@@ -84,7 +83,6 @@ const RANGE_WORDING = {
  *  is and its limit behind a disclosure. */
 const BENCHMARK_WORDING = {
   summary: "About this comparison",
-  label: "Compared with 2023",
   explain: (name: string) =>
     `${name}’s share of the vote in the 2023 by-election, across the wards counted so far tonight (each weighted by its votes counted), beside her share citywide. Early returns from her weakest wards can look like an upset; this shows how those wards voted last time. It allows for which wards are in, not which voting areas within them, and is not an estimate of tonight’s result.`,
 } as const;
@@ -115,14 +113,20 @@ function levelStatus(levels: Levels | null, level: LiveRace["level"]): Projectio
   return levels[level].projection;
 }
 
+/** Whether a counting race shows its count only, its level's projection off (#17 § On-night
+ *  reader wording). */
+export function countOnly(race: LiveRace, levels: Levels | null): boolean {
+  return showsCountOnly(levelStatus(levels, race.level));
+}
+
 /** The race's Estimated Range per candidate: the band the payload says to draw, if any. */
-function estimated(race: LiveRace): Record<string, LiveBand> | null {
+export function estimated(race: LiveRace): Record<string, LiveBand> | null {
   const shown = race.projection?.shown;
   return shown ? (race.projection!.bands[shown] ?? null) : null;
 }
 
 function progressText(progress: LiveProgress): string {
-  return `${progress.received} of ${progress.total} voting areas in`;
+  return `${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} voting areas in`;
 }
 
 export function raceTitle(race: LiveRace): string {
@@ -141,7 +145,7 @@ function percent(share: number | null, votes?: number | null): string {
 
 /** The one winner wording (#17): at Night Close only, in a race with every voting area in,
  *  the leader's key, if they lead outright (#51). Candidates come by votes, descending. */
-function electedKey(race: LiveRace, closed: boolean): string | null {
+export function electedKey(race: LiveRace, closed: boolean): string | null {
   if (!closed || race.state !== "all_units_in") return null;
   const [first, second] = race.candidates;
   if (!first || first.votes === null) return null;
@@ -166,11 +170,6 @@ function waiting(race: LiveRace): boolean {
 function tallyOrder(race: LiveRace): LiveCandidate[] {
   if (!waiting(race)) return race.candidates;
   return [...race.candidates.filter((c) => c.candidate_id), ...race.candidates.filter((c) => !c.candidate_id)];
-}
-
-/** Whether the race shows its Live Tally: counting, or every voting area in. */
-function hasTally(race: LiveRace): boolean {
-  return race.state === "counting" || race.state === "all_units_in";
 }
 
 /** The thin Reporting Progress bar: the one piece with no CHW or site component. */
@@ -207,37 +206,11 @@ interface TallyRow {
   slug: string | null;
   /** Before any vote (#115): an empty row, its share a dash and no line under the name. */
   waiting: boolean;
-  /** A ward page's mayoral row (#125): the ward's own count, under the city's. */
-  ward: WardBar | null;
   /** An incumbent councillor's share in the ward's last election, and the key's label for it. */
   last: (LastElection & { label: string }) | null;
   color: string;
   votes: number | null;
   share: number | null;
-}
-
-interface WardBar {
-  num: string;
-  votes: number | null;
-  /** Percent of the ward's counted mayoral votes; null until one is counted there. */
-  share: number | null;
-  /** Olivia Chow's 2023 share in the ward (#108), on her row only. */
-  then: number | null;
-}
-
-/** The ward bar for one candidate, or for the folded field's sum (#125). */
-function wardBar(race: LiveRace, ward: string | null, candidates: LiveCandidate[]): WardBar | null {
-  if (ward === null || race.level !== "mayor") return null;
-  const w = race.wards?.find((x) => x.num === ward) ?? null;
-  const counted = w?.votes ? (w.votes_counted ?? votesTotal(w.votes)) : 0;
-  const votes = w?.votes ? candidates.reduce((a, c) => a + (w.votes![c.key] ?? 0), 0) : null;
-  const chow = candidates.length === 1 && candidates[0].candidacy_id === CHOW_2023.candidacy_id;
-  return {
-    num: ward,
-    votes,
-    share: votes !== null && counted > 0 ? (100 * votes) / counted : null,
-    then: chow ? (CHOW_2023.wards[ward]?.share ?? null) : null,
-  };
 }
 
 function lastOf(race: LiveRace, candidate: LiveCandidate): TallyRow["last"] {
@@ -261,13 +234,15 @@ function tallyRow(
     name: candidate.full_name,
     slug: meta?.slug ?? null,
     waiting: waiting(race),
-    ward: null,
     last: lastOf(race, candidate),
     color: liveColour(candidate, NEUTRAL),
     votes: candidate.votes,
     share: candidate.share,
   };
 }
+
+/** A race's result view shows every candidate up to this many, and folds a bigger field (Alex). */
+const RESULT_SHOWS_ALL = 5;
 
 /** Whether the race's counted field folds: the mayor's, unless the folded row would stand for
  *  a single name. */
@@ -278,18 +253,23 @@ function folds(race: LiveRace): boolean {
 /** The race's rows: the mayor's counted field folds to its top four and one
  *  "N other candidates" row, unless that row would stand for a single name. The folded row
  *  counts as eliminated when everyone in it is (#105). */
-function tallyRows(race: LiveRace, closed: boolean, expanded = false, ward: string | null = null): TallyRow[] {
+function tallyRows(
+  race: LiveRace,
+  closed: boolean,
+  expanded = false,
+  folded: boolean = folds(race),
+): TallyRow[] {
   const elected = electedKey(race, closed);
   const eliminated = eliminatedKeys(race.possible);
   const candidates = tallyOrder(race);
-  const rows = candidates.map((candidate) => ({ ...tallyRow(candidate, race, elected, eliminated), ward: wardBar(race, ward, [candidate]) }));
-  if (expanded || !folds(race)) return rows;
+  const rows = candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated));
+  if (expanded || !folded) return rows;
   const rest = candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
   return [
     ...rows.slice(0, MAYOR_SHOWN),
     {
-      key: "other-candidates",
+      key: FOLDED,
       elected: false,
       eliminated: rest.every((c) => eliminated.has(c.key)),
       band: null,
@@ -297,7 +277,6 @@ function tallyRows(race: LiveRace, closed: boolean, expanded = false, ward: stri
       name: `${rest.length} other candidates`,
       slug: null,
       waiting: waiting(race),
-      ward: wardBar(race, ward, rest),
       last: null,
       color: NEUTRAL,
       votes: sum(rest.map((c) => c.votes)),
@@ -318,32 +297,23 @@ function rangeLine(row: TallyRow): string {
  *  Range is on screen (ADR 0002, #54), and why a level shows the count: its gate, or else a
  *  Withdrawal (#43), whose machine reason readers never see. A French-language board has no
  *  projection, so only its Possible Range's legend (#97). */
+/** Why a counting race shows no Estimated Range, if a gate or a withdrawal says so. The ranges'
+ *  definitions are in the tally's key. */
 function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
   if (race.state !== "counting") return null;
-  const bands = estimated(race);
   const level = race.level === "french_trustee" ? null : race.level;
   const status = level ? levelStatus(levels, level) : null;
   const note = (level && status ? gateNote(level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
-  return (
-    <>
-      {note && <Status>{note}</Status>}
-      {(bands || race.possible) && (
-        <p className="forecast-caption">
-          {bands && <>{RANGE_WORDING.estimated} </>}
-          {race.possible && RANGE_WORDING.possible}
-        </p>
-      )}
-    </>
-  );
+  return note ? <Status>{note}</Status> : null;
 }
 
 /** The mayor's record while its Estimated Range is on screen (ADR 0002, #54): it describes the
  *  estimate, so it shows only beside one. Kept with the card's other disclosures (#118). */
-function hasRecord(race: LiveRace, levels: Levels | null): boolean {
+export function hasRecord(race: LiveRace, levels: Levels | null): boolean {
   return race.state === "counting" && race.level === "mayor" && levels?.mayor.approved === true && estimated(race) !== null;
 }
 
-function MayorRecord() {
+export function MayorRecord() {
   return (
     <div className="faq">
       <details className="live-record">
@@ -376,93 +346,145 @@ function rowMeta(row: TallyRow): string[] {
   return [...parts, ...last];
 }
 
-/** A ward page's second bar for a mayoral row (#125): the ward's counted share, lighter, with
- *  no ranges (the projection is citywide), and Olivia Chow's 2023 share there as a dashed mark. */
-function WardBarView({ row, ward }: { row: TallyRow; ward: WardBar }) {
-  const parts = [`Ward ${ward.num}`];
-  if (ward.votes !== null && !row.waiting) parts.push(`${ward.votes.toLocaleString("en-CA")} ${ward.votes === 1 ? "vote" : "votes"}`);
-  if (ward.then !== null) parts.push(`${ward.then.toFixed(1)}% in 2023`);
+/** A result row's line when its votes are the topline: the share of the count, and an incumbent
+ *  councillor's share last time. */
+function votesFirstMeta(row: TallyRow): string[] {
+  const last = row.last ? [`${row.last.share.toFixed(1)}% ${row.last.when}`] : [];
+  // A missing figure is a dash on the topline, never "0", and no share line.
+  return row.waiting || row.share === null ? last : [`${percent(row.share, row.votes)} of counted votes`, ...last];
+}
+
+/** A share as a percent of a track whose end is `top` percent, capped at the end. */
+function scaled(share: number, top: number): number {
+  return Math.min(100, (100 * share) / top);
+}
+
+/** A row's marks on its track: the counted bar, the Estimated Range's bracket, and the Possible
+ *  Range as what it leaves out. A track that ends at `top` (the mayor's lead: the most anyone can
+ *  still reach) needs no out-of-reach zone; its end says it. */
+function TrackMarks({ row, top = 100, reachZones = true }: { row: TallyRow; top?: number; reachZones?: boolean }) {
   return (
     <>
-      <span className="live-tally__wlabel">
-        {parts.map((part, i) => (
-          <span key={part}>
-            {i > 0 && " · "}
-            <span className="live-tally__fig">{part}</span>
-          </span>
-        ))}
-      </span>
-      <span className="forecast-chart__track live-tally__wtrack" aria-hidden="true">
-        <span className="forecast-chart__bar live-tally__wbar" style={{ width: `${ward.share ?? 0}%`, background: row.color }} />
-        {ward.then !== null && <span className="live-tally__then" style={{ left: `${ward.then}%` }} />}
-      </span>
-      <strong className="live-tally__wvalue">{ward.share === null ? "–" : percent(ward.share, ward.votes)}</strong>
+      {/* The Possible Range as what it leaves out above: the track past its high, hatched as out of
+          reach (Alex: the low zone, under the counted bar, is not drawn). */}
+      {reachZones && row.possible && row.possible.high < 100 && (
+        <span className="live-tally__reach live-tally__reach--high" style={reach(row.possible.high, 100)} />
+      )}
+      <span className="forecast-chart__bar" style={{ width: `${scaled(row.share ?? 0, top)}%`, background: row.color }} />
+      {row.band && (
+        <span className="live-tally__estimate" style={span(row.band.low, row.band.high)}>
+          <span
+            className="live-tally__mid"
+            style={{ left: `${row.band.high > row.band.low ? ((row.band.mid - row.band.low) / (row.band.high - row.band.low)) * 100 : 50}%` }}
+          />
+        </span>
+      )}
+      {row.last && <span className="live-tally__then" style={{ left: `${scaled(row.last.share, top)}%` }} />}
     </>
   );
 }
 
-function TallyRowView({ row }: { row: TallyRow }) {
+/** One tally row; `lead` is one of the mayor's two leaders at the head of the results pages, the
+ *  same row restyled large, with its Estimated Range beside the share. */
+function TallyRowView({
+  row,
+  lead = false,
+  votesFirst = lead,
+  top = 100,
+  reachZones = true,
+  toggle = null,
+}: {
+  row: TallyRow;
+  lead?: boolean;
+  /** The mayor's lead (Alex): the votes counted are the topline, the share the line beside them. */
+  votesFirst?: boolean;
+  /** The share at the track's end (a result scales to the most anyone can still reach). */
+  top?: number;
+  /** Out-of-reach zones: a result's scaled track has none; its end says it. */
+  reachZones?: boolean;
+  /** The folded "N other candidates" row's name opens the whole field in place (Alex). */
+  toggle?: { controls: string; onClick: () => void } | null;
+}) {
   return (
     <div
-      className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}${row.ward ? " forecast-chart__row--ward" : ""}`}
+      className={`forecast-chart__row${row.eliminated ? " forecast-chart__row--out" : ""}${lead ? " forecast-chart__row--lead" : ""}`}
       role="listitem"
     >
       <span className="forecast-chart__label">
         {row.slug && <span className={`candidate-marker candidate-marker--${row.slug}`} aria-hidden="true" />}
-        <span className="live-tally__name">{row.name}</span>
+        {toggle ? (
+          <button type="button" className="live-tally__expand" aria-expanded={false} aria-controls={toggle.controls} onClick={toggle.onClick}>
+            <span className="live-tally__name">{row.name}</span>
+            <span className="live-tally__chevron" aria-hidden="true">⌄</span>
+          </button>
+        ) : (
+          <span className="live-tally__name">{row.name}</span>
+        )}
         {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
         {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
       </span>
       <span className="forecast-chart__track" aria-hidden="true">
-        {/* The Possible Range as what it leaves out: the track above its high, and below its low,
-            hatched as out of reach. The low zone always lies under the counted bar, so it's drawn
-            after it, over it. */}
-        {row.possible && row.possible.high < 100 && (
-          <span className="live-tally__reach live-tally__reach--high" style={reach(row.possible.high, 100)} />
-        )}
-        <span className="forecast-chart__bar" style={{ width: `${row.share ?? 0}%`, background: row.color }} />
-        {row.possible && row.possible.low > 0 && (
-          <span className="live-tally__reach live-tally__reach--low" style={reach(0, row.possible.low)} />
-        )}
-        {row.band && (
-          <span className="live-tally__estimate" style={span(row.band.low, row.band.high)}>
-            <span
-              className="live-tally__mid"
-              style={{ left: `${row.band.high > row.band.low ? ((row.band.mid - row.band.low) / (row.band.high - row.band.low)) * 100 : 50}%` }}
-            />
-          </span>
-        )}
-        {row.last && <span className="live-tally__then" style={{ left: `${row.last.share}%` }} />}
+        <TrackMarks row={row} top={top} reachZones={reachZones} />
       </span>
-      <strong className="forecast-chart__value live-tally__value">{row.waiting ? "–" : percent(row.share, row.votes)}</strong>
+      <strong className="forecast-chart__value live-tally__value" style={lead ? { color: row.color } : undefined}>
+        {/* A leader's topline is the votes counted (Alex); its share is the line beside it. */}
+        {row.waiting || (votesFirst && row.votes === null) ? "–" : votesFirst ? row.votes!.toLocaleString("en-CA") : percent(row.share, row.votes)}
+      </strong>
+      {lead && row.band && !row.eliminated && (
+        <span className="mayor-lead__estimate">
+          {"Estimated final "}
+          <strong>{rangeText(row.band.low, row.band.high)}</strong>
+        </span>
+      )}
       <span className="live-tally__meta">
-        {/* Each figure wraps whole, never a label on one line and its figure on the next. */}
-        {[...(row.ward ? [WORDING.citywide] : []), ...rowMeta(row)].map((part, i) => (
+        {/* Each figure wraps whole, never a label on one line and its figure on the next. A leader's
+            Estimated Range is beside its share, so its line is the votes alone. */}
+        {(votesFirst ? votesFirstMeta(row) : rowMeta(row)).map((part, i) => (
           <span key={part}>
             {i > 0 && " · "}
             <span className="live-tally__fig">{part}</span>
           </span>
         ))}
       </span>
-      {row.ward && <WardBarView row={row} ward={row.ward} />}
     </div>
   );
 }
 
-/** The tally's key: only the marks this race draws. */
-function TallyKey({ rows, race }: { rows: TallyRow[]; race: LiveRace }) {
-  const has = (pick: (row: TallyRow) => unknown) => rows.some(pick);
-  const then = has((r) => r.ward?.then !== null && r.ward?.then !== undefined);
-  const last = rows.find((r) => r.last)?.last ?? null;
-  if (!has((r) => r.band || r.possible) && !then && !last) return null;
-  const chow = chowCandidate(race);
+/** Folds an expanded field back: the folded row's name opens it (Alex). */
+function ShowFewer({ controls, onClick }: { controls: string; onClick: () => void }) {
   return (
-    <p className="live-tally__key" aria-hidden="true">
-      <span><i className="live-tally__glyph live-tally__glyph--counted" />{WORDING.keyCounted}</span>
-      {has((r) => r.band) && <span><i className="live-tally__glyph live-tally__glyph--estimate" />{WORDING.keyEstimated}</span>}
-      {has((r) => r.possible) && <span><i className="live-tally__glyph live-tally__glyph--reach" />{WORDING.keyPossible}</span>}
-      {then && chow && <span><i className="live-tally__glyph live-tally__glyph--then" />{`${shortLabel(chow)} in 2023`}</span>}
-      {last && <span><i className="live-tally__glyph live-tally__glyph--then" />{last.label}</span>}
+    <button
+      type="button"
+      className="btn btn--ghost btn--sm live-tally__more"
+      aria-expanded={true}
+      aria-controls={controls}
+      onClick={(event) => {
+        const button = event.currentTarget;
+        onClick();
+        // Folding a long field back would leave the reader far below the list.
+        requestAnimationFrame(() => button.scrollIntoView?.({ block: "nearest" }));
+      }}
+    >
+      <span className="live-tally__chevron" aria-hidden="true">⌃</span>
+      Show fewer
+    </button>
+  );
+}
+
+/** The tally's key: only the marks this race draws. */
+function TallyKey({ rows, reachZones = true }: { rows: TallyRow[]; reachZones?: boolean }) {
+  const has = (pick: (row: TallyRow) => unknown) => rows.some(pick);
+  const last = rows.find((r) => r.last)?.last ?? null;
+  const band = has((r) => r.band);
+  const reachShown = reachZones && has((r) => r.possible);
+  if (!band && !reachShown && !last) return null;
+  return (
+    <p className="live-tally__key">
+      {/* "Counted" only beside a mark it's told apart from: alone, the bar says it. */}
+      {(band || reachShown) && <span><i className="live-tally__glyph live-tally__glyph--counted" aria-hidden="true" />{WORDING.keyCounted}</span>}
+      {band && <span><i className="live-tally__glyph live-tally__glyph--estimate" aria-hidden="true" />{WORDING.keyEstimated}</span>}
+      {reachShown && <span><i className="live-tally__glyph live-tally__glyph--reach" aria-hidden="true" />{WORDING.keyPossible}</span>}
+      {last && <span><i className="live-tally__glyph live-tally__glyph--then" aria-hidden="true" />{last.label}</span>}
     </p>
   );
 }
@@ -471,17 +493,17 @@ function TallyKey({ rows, race }: { rows: TallyRow[]; race: LiveRace }) {
  *  track with the Estimated Range as an outlined bracket and the Possible Range as a whisker
  *  (Certain win's dashed tick removed, #119). Candidates who cannot win sit under one
  *  break, greyed. Phone widths put each name above its bar. */
-function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; closed: boolean; legend?: ReactNode; ward?: string | null }) {
+function Tally({ race, closed, legend = null }: { race: LiveRace; closed: boolean; legend?: ReactNode }) {
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
-  const rows = tallyRows(race, closed, expanded, ward);
+  const rows = tallyRows(race, closed, expanded);
+  const toggleFor = (row: TallyRow) => (row.key === FOLDED ? { controls: listId, onClick: () => setExpanded(true) } : null);
   const inIt = rows.filter((row) => !row.eliminated);
   const out = rows.filter((row) => row.eliminated);
   return (
     <>
-      <TallyKey rows={rows} race={race} />
       <div className="forecast-chart live-tally" role="list" id={listId} aria-label={`${raceTitle(race)} count`}>
-        {inIt.map((row) => <TallyRowView key={row.key} row={row} />)}
+        {inIt.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
         {out.length > 0 && (
           <p className="live-tally__break" role="listitem">
             <strong>{WORDING.eliminated}</strong>
@@ -489,7 +511,7 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
             <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
           </p>
         )}
-        {out.map((row) => <TallyRowView key={row.key} row={row} />)}
+        {out.map((row) => <TallyRowView key={row.key} row={row} toggle={toggleFor(row)} />)}
         {(race.possible || estimated(race)) && (
           <div className="forecast-chart__axis live-tally__axis" aria-hidden="true">
             <span />
@@ -498,25 +520,76 @@ function Tally({ race, closed, legend = null, ward = null }: { race: LiveRace; c
           </div>
         )}
       </div>
-      {/* The reading aids sit under the axis they explain (#118). */}
+      {/* The reading aids sit under the axis they explain (#118): the key, with the ranges'
+          definitions, then any gate note. */}
+      <TallyKey rows={rows} />
       {legend}
-      {folds(race) && (
-        <button
-          type="button"
-          className="btn btn--ghost btn--sm live-tally__more"
-          aria-expanded={expanded}
-          aria-controls={listId}
-          onClick={(event) => {
-            const button = event.currentTarget;
-            setExpanded(!expanded);
-            // Folding a long field back would leave the reader far below the card.
-            if (expanded) requestAnimationFrame(() => button.scrollIntoView?.({ block: "nearest" }));
-          }}
-        >
-          <span className="live-tally__chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
-          {expanded ? "Show fewer" : `Show all ${race.candidates.length} candidates`}
-        </button>
+      {folds(race) && expanded && <ShowFewer controls={listId} onClick={() => setExpanded(false)} />}
+    </>
+  );
+}
+
+/** Where a result's bars end: the most any candidate can still reach (Alex), in place of
+ *  out-of-reach zones; with no Possible Range (every area in), the full 100%. */
+function reachTop(race: LiveRace): number {
+  const highs = Object.values(race.possible ?? {}).map((p) => p.high);
+  return highs.length > 0 ? Math.min(100, Math.max(5, Math.ceil(Math.max(...highs)))) : 100;
+}
+
+/** A race at a glance in the dashboard's grid (Alex): its two leaders and the rest as one row,
+ *  votes first, on the result's scale; three candidates show whole. */
+export function RaceCompactTally({ race, closed }: { race: LiveRace; closed: boolean }) {
+  const top = reachTop(race);
+  const rows = tallyRows(race, closed, false, race.candidates.length > 3).map((row) => ({ ...row, band: null }));
+  return (
+    <div className="forecast-chart live-tally race-compact__rows" role="list" aria-label={`${raceTitle(race)}: the count`}>
+      {rows.map((row) => (
+        <TallyRowView key={row.key} row={row} votesFirst top={top} reachZones={false} />
+      ))}
+    </div>
+  );
+}
+
+/** The mayor's tally at the head of the results pages (results redesign): the two leaders large,
+ *  then the rest of the field folded to one row that expands in place, the axis, the key and any
+ *  gate note. The same rows, marks and key as every race card. */
+export function RaceLeadTally({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+  const foldable = race.candidates.length > RESULT_SHOWS_ALL;
+  // The count only (Alex): the projection is the panel beside it, so no row carries an Estimated Range.
+  const rows = tallyRows(race, closed, expanded, foldable).map((row) => ({ ...row, band: null }));
+  const toggleFor = (row: TallyRow) => (row.key === FOLDED ? { controls: listId, onClick: () => setExpanded(true) } : null);
+  // Expanded, every candidate takes the leaders' look (Alex); folded, the rest is one quiet row.
+  // Every row still in it takes the leaders' look (Alex), the folded "N other candidates" too.
+  const leaders = rows.filter((row) => !row.eliminated);
+  const rest = rows.filter((row) => row.eliminated);
+  const inIt = rest.filter((row) => !row.eliminated);
+  const out = rest.filter((row) => row.eliminated);
+  const top = reachTop(race);
+  return (
+    <>
+      <div className="forecast-chart live-tally mayor-lead__leaders" role="list" id={listId} aria-label={`${raceTitle(race)}: the count`}>
+        {leaders.map((row) => (
+          <TallyRowView key={row.key} row={row} lead top={top} reachZones={false} toggle={toggleFor(row)} />
+        ))}
+      </div>
+      {rest.length > 0 && (
+        <div className="forecast-chart live-tally mayor-lead__field" role="list" aria-label={`${raceTitle(race)}: mathematically eliminated`}>
+          {inIt.map((row) => <TallyRowView key={row.key} row={row} votesFirst top={top} reachZones={false} toggle={toggleFor(row)} />)}
+          {out.length > 0 && (
+            <p className="live-tally__break" role="listitem">
+              <strong>{WORDING.eliminated}</strong>
+              <span className="live-tally__sep" aria-hidden="true"> · </span>
+              <span className="live-tally__why">{WORDING.eliminatedWhy}</span>
+            </p>
+          )}
+          {out.map((row) => <TallyRowView key={row.key} row={row} votesFirst top={top} reachZones={false} toggle={toggleFor(row)} />)}
+        </div>
       )}
+      <TallyKey rows={rows} reachZones={false} />
+      <RangeNotes race={race} levels={levels} />
+      {foldable && expanded && <ShowFewer controls={listId} onClick={() => setExpanded(false)} />}
     </>
   );
 }
@@ -535,21 +608,17 @@ function Acclaimed({ race }: { race: LiveRace }) {
   );
 }
 
-function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; levels: Levels | null; closed: boolean; ward?: string | null }) {
+function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
   if (isAcclaimed(race)) return <Acclaimed race={race} />;
-  // A ward page's mayor (#125): both counts, the city's and the ward's, labelled.
-  const wardRow = ward !== null && race.level === "mayor" ? (race.wards?.find((w) => w.num === ward) ?? null) : null;
-  const both = ward !== null && race.level === "mayor";
-  const wardProgress = wardRow?.progress ? <ProgressLine progress={wardRow.progress} label={`Ward ${ward}`} /> : null;
-  // The voters' list bar (Alex): the mayor card's, for the page's ward or the city.
-  const turnout = race.level === "mayor" ? <TurnoutBar race={race} ward={both ? ward : null} /> : null;
+  // The voters' list bar (Alex): the mayor card's, citywide.
+  const turnout = race.level === "mayor" ? <TurnoutBar race={race} /> : null;
   switch (race.state) {
     // The page says "Results from 8 p.m." once (#115); the card shows the tally it will fill.
     case "before_results":
       return (
         <>
+          <Tally race={race} closed={closed} />
           {turnout}
-          <Tally race={race} closed={closed} ward={both ? ward : null} />
         </>
       );
     case "acclaimed":
@@ -559,10 +628,9 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
     case "no_units_in":
       return (
         <>
-          {race.progress && <ProgressLine progress={race.progress} label={both ? WORDING.citywide : null} />}
-          {both && wardProgress}
+          {race.progress && <ProgressLine progress={race.progress} />}
+          <Tally race={race} closed={closed} />
           {turnout}
-          <Tally race={race} closed={closed} ward={both ? ward : null} />
         </>
       );
     case "counting":
@@ -572,13 +640,13 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
           {race.state === "all_units_in" ? (
             <Status>{WORDING.all_units_in}</Status>
           ) : race.progress ? (
-            <ProgressLine progress={race.progress} label={both ? WORDING.citywide : null} />
+            <ProgressLine progress={race.progress} />
           ) : (
             <Progress progress={race.progress} />
           )}
-          {both && wardProgress}
+          {/* Candidates first, then turnout (results audit): on a phone the count leads. */}
+          <Tally race={race} closed={closed} legend={<RangeNotes race={race} levels={levels} />} />
           {turnout}
-          <Tally race={race} closed={closed} ward={both ? ward : null} legend={<RangeNotes race={race} levels={levels} />} />
           {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
           {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}
         </>
@@ -588,23 +656,27 @@ function RaceBody({ race, levels, closed, ward = null }: { race: LiveRace; level
 
 /** Chow's 2023 share in the wards counted so far, against her 2023 citywide share (#109): early
  *  returns from her weakest wards can read like an upset. Facts of two counts, never an estimate. */
-function ChowBenchmark({ race }: { race: LiveRace }) {
+export function ChowBenchmark({ race }: { race: LiveRace }) {
   const benchmark = countedWardsBenchmark(race);
   const chow = chowCandidate(race);
   if (!benchmark || !chow) return null;
   const name = shortLabel(chow);
   return (
     <div className="live-subsection">
-      <p className="kicker">{BENCHMARK_WORDING.label}</p>
       <p className="t-body-small live-benchmark">
         {/* A sentence, so it reads right wherever it wraps on a phone (Alex). */}
         In 2023, {name} won {shareText(benchmark.counted2023)} in the wards counted so far, and{" "}
         {shareText(benchmark.citywide2023)} citywide.
       </p>
-      <details className="live-benchmark-why">
-        <summary>{BENCHMARK_WORDING.summary}</summary>
-        <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
-      </details>
+      {/* The card's other disclosures' pattern (results audit). */}
+      <div className="faq">
+        <details className="live-benchmark-why">
+          <summary>{BENCHMARK_WORDING.summary}</summary>
+          <div className="faq__a">
+            <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
+          </div>
+        </details>
+      </div>
     </div>
   );
 }
@@ -612,7 +684,7 @@ function ChowBenchmark({ race }: { race: LiveRace }) {
 /** The final Mayoral Forecast, collapsed and kept apart from the count (#7, #12): a pointer
  *  to the home page's forecast only, so none of its outcomes sits beside the count (#17's
  *  "Not shown anywhere", #54). */
-function FinalForecast() {
+export function FinalForecast() {
   return (
     <div className="faq">
       <details className="live-forecast">
@@ -633,15 +705,12 @@ function FinalForecast() {
 export function RaceCard({
   race,
   levels = null,
-  ward = null,
   forecast = false,
   closed = false,
 }: {
   race: LiveRace;
   /** The payload's level statuses, for the gate notes and the mayor's record (#45). */
   levels?: Levels | null;
-  /** The page's ward: the mayor card adds its ward bars (#125). */
-  ward?: string | null;
   /** The mayor card's forecast panel; hidden once the count is complete. */
   forecast?: boolean;
   /** Night Close is declared (#51). */
@@ -652,7 +721,7 @@ export function RaceCard({
   return (
     <section className={isAcclaimed(race) ? "card live-acclaimed" : "card"} aria-labelledby={`live-race-${race.id}`}>
       <h3 id={`live-race-${race.id}`}>{raceTitle(race)}</h3>
-      <RaceBody race={race} levels={levels} closed={closed} ward={ward} />
+      <RaceBody race={race} levels={levels} closed={closed} />
       {/* The card's background disclosures, together at the bottom (#118). */}
       {(record || finalForecast || race.level === "mayor") && (
         <div className="live-card-more">
@@ -662,121 +731,5 @@ export function RaceCard({
         </div>
       )}
     </section>
-  );
-}
-
-/** Viamonde and MonAvenir, in the ballot's card list after TDSB and TCDSB under one label and
- *  note (#116): there is always real information for them, so nothing folds them away. */
-export function FrenchBoards({ races, closed = false }: { races: LiveRace[]; closed?: boolean }) {
-  if (races.length === 0) return null;
-  return (
-    <>
-      <div className="live-boards-head">
-        <p className="kicker">{RANGE_WORDING.frenchLabel}</p>
-        <p className="t-body-small">{RANGE_WORDING.french}</p>
-      </div>
-      {races.map((race) => (
-        <RaceCard key={race.id} race={race} closed={closed} />
-      ))}
-    </>
-  );
-}
-
-/** One line of a council tile: the race's state in a few words. */
-function tileStatus(race: LiveRace): string {
-  switch (race.state) {
-    case "before_results":
-    case "no_units_in":
-    case "all_units_in":
-      return WORDING[race.state];
-    case "acclaimed":
-      return WORDING.acclaimed;
-    case "no_figures":
-      return "No figures from the City right now";
-    case "counting":
-      return race.progress ? progressText(race.progress) : WORDING.no_progress;
-  }
-}
-
-/** A council tile's range line: its top two candidates' Estimated Ranges, or "Count only"
- *  while council shows the count (#17 § On-night reader wording). */
-function tileRanges(race: LiveRace, levels: Levels | null): string | null {
-  if (race.state !== "counting") return null;
-  if (showsCountOnly(levelStatus(levels, race.level))) return "Count only";
-  const bands = estimated(race);
-  if (!bands) return null;
-  return race.candidates
-    .slice(0, 2)
-    .flatMap((c) => (bands[c.key] ? [`${shortLabel(c)} ${rangeText(bands[c.key].low, bands[c.key].high)}`] : []))
-    .join(" · ");
-}
-
-function TileBody({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
-  // The page says the state once (#115): before results the tile is the ward alone, and before
-  // its first voting area an empty progress line.
-  if (race.state === "before_results") return null;
-  if (race.state === "no_units_in") return race.progress ? <ProgressLine progress={race.progress} /> : null;
-  if (!hasTally(race)) return <p className="t-meta">{tileStatus(race)}</p>;
-  const leader = race.candidates[0];
-  const elected = electedKey(race, closed) !== null;
-  return (
-    <>
-      {/* A null share hides the share, never the label. */}
-      {leader && (leader.share !== null || elected) && (
-        <p className="t-body-small live-tile__leader">
-          {[
-            leader.share === null ? shortLabel(leader) : `${shortLabel(leader)} ${percent(leader.share)}`,
-            ...(elected ? [WORDING.elected] : []),
-          ].join(" · ")}
-        </p>
-      )}
-      {race.state === "counting" && race.progress ? <ProgressLine progress={race.progress} /> : <p className="t-meta">{tileStatus(race)}</p>}
-      <p className="t-meta live-tile__ranges" data-ranges="">
-        {tileRanges(race, levels)}
-      </p>
-    </>
-  );
-}
-
-/** "Council across the city": a link per ward, in the /wards index's cards. A
- *  tap opens that ward from the payload already held; it never changes the
- *  remembered ward. */
-export function CouncilTiles({
-  wards,
-  races,
-  levels = null,
-  closed = false,
-}: {
-  wards: ResultsWard[];
-  races: LiveRace[];
-  levels?: Levels | null;
-  /** Night Close is declared (#51). */
-  closed?: boolean;
-}) {
-  return (
-    <ContentSection aria-labelledby="results-council-heading">
-      <h2 id="results-council-heading">Council across the city</h2>
-      <ul className="race-index-list ward-index-grid live-tiles">
-        {wards.map((w) => {
-          const race = races.find((r) => r.id === `councillor-${w.num}`);
-          return (
-            <li key={w.num}>
-              <Link href={`/results/${w.num}`} className="race-index-card ward-index-card">
-                <h3 className="race-index-card__heading ward-index-card__name">
-                  Ward {w.num}
-                  {w.name && (
-                    <>
-                      {" · "}
-                      <span>{w.name}</span>
-                    </>
-                  )}
-                </h3>
-                {race && <TileBody race={race} levels={levels} closed={closed} />}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </ContentSection>
   );
 }

@@ -80,7 +80,6 @@ export function CouncilAreasTable({ payload, ward = null }: { payload: LivePaylo
             </tbody>
           </table>
         </div>
-        <p className="t-meta">Bars show each area’s counted vote: the named candidates in their colours; grey is every other candidate.</p>
       </>
     );
   return (

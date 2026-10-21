@@ -35,7 +35,7 @@ describe("Council ward pages", () => {
       await WardPage({ params: Promise.resolve({ ward_num: "14" }) }),
     );
 
-    expect(html).toMatch(/<a [^>]*href="\/results\/14">Ward 14 election night results<\/a>/);
+    expect(html).toMatch(/<a [^>]*href="\/results\/?\?race=council&amp;open=councillor-14">Ward 14 election night results<\/a>/);
   });
 
   it("uses the open-seat tag without restating it in the hero", async () => {

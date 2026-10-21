@@ -13,7 +13,7 @@ import { resultsWards } from "@/lib/results-wards";
 import { wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LiveHistory, LivePayload } from "@/types/live";
-import { LiveCountView, LiveTablesView } from "./live-count-view";
+import { clockTicks, LiveCountView, LiveTablesView } from "./live-count-view";
 import { CouncilAreasTable } from "./council-areas-table";
 import { LiveMapView } from "./live-map-view";
 
@@ -54,7 +54,8 @@ describe("LiveMapView", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
     expect(within(panel).getByText(/voting areas in/)).toBeTruthy();
-    expect(within(panel).getByRole("link", { name: /Ward 7 results/ }).getAttribute("href")).toMatch(/^\/results\/7\/?\?view=map$/);
+    // Its council race, opened in full on the dashboard.
+    expect(within(panel).getByRole("link", { name: /Ward 7 council race/ }).getAttribute("href")).toMatch(/^\/results\/?\?race=council&open=councillor-7$/);
   });
 
   it("switches to council and says, for each ward, whether a running incumbent leads", () => {
@@ -128,7 +129,7 @@ describe("LiveMapView", () => {
     expect(within(table).getByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeTruthy();
     expect(within(within(table).getByRole("rowheader", { name: /^2 / }).closest("tr")!).getByText("21.2%")).toBeTruthy();
     expect(screen.getByRole("link", { name: /certified results of the 2023 by-election/ }).textContent).toContain("↗");
-    expect(screen.getByText(/won 37\.2% citywide against 101 other candidates/)).toBeTruthy();
+    expect(screen.getByText(/2023 shares \(37\.2% citywide\)/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Council" }));
     expect(within(screen.getByRole("table")).queryByRole("columnheader", { name: "Olivia Chow in 2023" })).toBeNull();
     expect(screen.queryByText(/certified results of the 2023 by-election/)).toBeNull();
@@ -323,14 +324,12 @@ describe("LiveMapView selection in the URL (#126)", () => {
     replace.mockRestore();
   });
 
-  it("links the held ward's page to the same map", () => {
+  it("links the held ward's race on the map's contest to that race in full", () => {
     live.query = "view=map&race=council&show=reporting";
     render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
-    expect(within(panel).getByRole("link", { name: /Ward 7 results/ }).getAttribute("href")).toMatch(
-      /^\/results\/7\/?\?view=map&race=council&show=reporting$/,
-    );
+    expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toMatch(/^\/results\/?\?race=council&open=councillor-7$/);
   });
 });
 
@@ -372,9 +371,9 @@ describe("CouncilAreasTable (#127)", () => {
     }
   });
 
-  it("says what the bar's colours are", () => {
+  it("needs no note on the bar's colours: the leaders are named beside it", () => {
     render(<CouncilAreasTable payload={NIGHT} />);
-    expect(screen.getByText(/grey is every other candidate/)).toBeTruthy();
+    expect(screen.queryByText(/grey is every other candidate/)).toBeNull();
   });
 
   it("on a ward page, marks the area the ward is in", () => {
@@ -452,7 +451,6 @@ describe("LiveMapView vs 2023", () => {
 });
 
 describe("LiveCountView", () => {
-  const AREAS = {};
 
   it("before results, says when the charts start", () => {
     live.history = HISTORY;
@@ -478,7 +476,7 @@ describe("LiveCountView", () => {
   });
 
   it("sorts the ward table by lead when asked", () => {
-    render(<LiveTablesView payload={NIGHT} wards={WARDS} areas={AREAS} />);
+    render(<LiveTablesView payload={NIGHT} wards={WARDS} />);
     const button = screen.getByRole("button", { name: /^Lead$/ });
     fireEvent.click(button);
     expect(button.closest("th")!.getAttribute("aria-sort")).toBe("descending");
@@ -495,19 +493,39 @@ describe("LiveCountView", () => {
 });
 
 describe("LiveTablesView (#123)", () => {
-  const AREAS = {};
 
   it("holds the mayor by ward, then every race by how much is in, without the history", () => {
     live.history = null;
-    render(<LiveTablesView payload={NIGHT} wards={WARDS} areas={AREAS} />);
+    render(<LiveTablesView payload={NIGHT} wards={WARDS} />);
     const headings = screen.getAllByRole("heading").map((h) => h.textContent);
     expect(headings.indexOf("Mayor, ward by ward")).toBeGreaterThan(-1);
     expect(headings.indexOf("Every race, least counted first")).toBeGreaterThan(headings.indexOf("Mayor, ward by ward"));
   });
 
   it("before results, says when the tables start", () => {
-    render(<LiveTablesView payload={BEFORE} wards={WARDS} areas={AREAS} />);
+    render(<LiveTablesView payload={BEFORE} wards={WARDS} />);
     expect(screen.getByText(/Tables of the count start once the City reports results/)).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
+  });
+});
+
+describe("LiveCountView after the audit", () => {
+  it("draws the mayor's named candidates and everyone else, without lines for the minor field", () => {
+    live.history = HISTORY;
+    render(<LiveCountView payload={NIGHT} ballot={[]} ward={null} />);
+    const frame = screen.getByRole("heading", { name: "Share of the votes counted" }).closest("figure")!;
+    expect(within(frame).getByText("Everyone else")).toBeTruthy();
+    expect(within(frame).queryByText("Alexander")).toBeNull();
+    expect(within(frame).queryByText(/wherever the page showed one|when it showed/)).toBeNull();
+  });
+});
+
+describe("clockTicks", () => {
+  it("labels the start of the night when the first half hour is well after it", () => {
+    const eight = new Date("2026-10-26T20:00:12-04:00").getTime();
+    const half = new Date("2026-10-26T20:30:00-04:00").getTime();
+    expect(clockTicks(eight, half + 60_000)).toEqual([eight, half]);
+    // A start just before a tick is left to that tick, so the labels never collide.
+    expect(clockTicks(half - 60_000, half + 60_000)).toEqual([half]);
   });
 });

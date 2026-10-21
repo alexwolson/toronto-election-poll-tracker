@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
   // Clean `/wards/` paths. Paths with a file extension are exempt, so
   // `/live/results.json` serves directly.
   trailingSlash: true,
+  // The ward ballot pages are gone (Alex, 2026-10-20): a shared link opens that ward's council
+  // race on the dashboard.
+  async redirects() {
+    return [{ source: "/results/:ward(\\d{1,2})", destination: "/results/?race=council&open=councillor-:ward", permanent: false }];
+  },
 };
 
 export default nextConfig;

@@ -175,7 +175,7 @@ describe("Trustees pages", () => {
     expect(html).toContain("<h1>Ward 1 — Etobicoke North; Humber River-Black Creek</h1>");
     // Coverage repeats the heading's areas, but as the way to each ward's results (#39).
     expect(html).toContain("trustee-ward-area");
-    expect(html).toMatch(/<a [^>]*href="\/results\/1">Etobicoke North<\/a> and <a [^>]*href="\/results\/7">Humber River-Black Creek<\/a>/);
+    expect(html).toMatch(/<a [^>]*href="\/results\/?\?race=council&amp;open=councillor-1">Etobicoke North<\/a> and <a [^>]*href="\/results\/?\?race=council&amp;open=councillor-7">Humber River-Black Creek<\/a>/);
     expect(html).toContain("Candidate histories cover verified Toronto");
     expect(html).toContain("Incumbent Trustee");
     expect(html).toContain("won · 27.8%");
@@ -218,7 +218,7 @@ describe("Trustees pages", () => {
     expect(html).toContain("<h1>Ward 2 — Est</h1>");
     expect(html).toContain("trustee-ward-area");
     expect(html).toContain("Areas covered");
-    expect(html).toMatch(/<a [^>]*href="\/results\/25">Scarborough-Rouge Park<\/a>/);
+    expect(html).toMatch(/<a [^>]*href="\/results\/?\?race=council&amp;open=councillor-25">Scarborough-Rouge Park<\/a>/);
   });
 
   it("states the official acclamation and omits a made-up vote total", async () => {

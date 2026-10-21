@@ -13,6 +13,8 @@ interface Area {
   /** Percent, 2 dp. */
   share_2022: number;
   share_2023: number;
+  /** Votes for councillor in 2022 over the ward's list; null for Ward 23 (see build.py). */
+  council_share_2022?: number | null;
 }
 
 export const TURNOUT: {

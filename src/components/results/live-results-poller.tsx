@@ -107,6 +107,14 @@ export function ResultsBallot(props: Omit<LiveResultsViewProps, "state" | "now">
   return <LiveResultsView state={state} now={now} {...props} />;
 }
 
+/** The count over the night where a provider polls it, else null: for parts of the page that
+ *  also render outside the live layout, as the mayor lead does in server-rendered tests. */
+export function useLiveHistoryIfProvided(): LiveHistory | null {
+  const live = useContext(LiveResultsContext);
+  useEffect(() => live?.watchHistory(), [live]);
+  return live?.history ?? null;
+}
+
 /** The count over the night, polled while the calling view is mounted. */
 export function useLiveHistory(): LiveHistory | null {
   const live = useContext(LiveResultsContext);

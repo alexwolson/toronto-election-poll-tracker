@@ -8,6 +8,7 @@
  * has a table. The count only, never compared with the forecast (#12).
  */
 
+import { wardRaceHref, raceHref } from "@/lib/results-dashboard";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -41,8 +42,6 @@ const AXIS_TICK = { fill: "var(--muted)", fontSize: 12, fontFamily: "var(--font-
 /** Lines for candidates without a forecast colour: validated categorical slots, in order (dataviz). */
 const SERIES = ["var(--live-series-1)", "var(--live-series-2)", "var(--live-series-3)", "var(--live-series-4)"];
 const OTHER = "var(--live-other)";
-/** Neutral lines, told apart by dash as well as by label. */
-const NEUTRAL_DASH = ["6 3", "2 3", "8 3 2 3"];
 
 const CLOCK = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" });
 
@@ -67,11 +66,13 @@ function whole(n: number): string {
   return n.toLocaleString("en-CA");
 }
 
-/** Clock ticks across the domain: on the half hour, or the hour on a phone. */
-function clockTicks(min: number, max: number, narrow = false): number[] {
+/** Clock ticks across the domain: on the half hour, or the hour on a phone, and the start
+ *  itself when the first of those is well after it, so the axis always says when it begins. */
+export function clockTicks(min: number, max: number, narrow = false): number[] {
   const step = narrow ? 2 * HALF_HOUR : HALF_HOUR;
   const ticks = [];
   for (let t = Math.ceil(min / step) * step; t <= max; t += step) ticks.push(t);
+  if (ticks.length === 0 || ticks[0] - min > step / 3) ticks.unshift(min);
   return ticks;
 }
 
@@ -99,7 +100,6 @@ interface Series {
   key: string;
   label: string;
   colour: string;
-  dash?: string;
   band: boolean;
 }
 
@@ -115,11 +115,8 @@ function seriesFor(race: LiveRace, history: LiveHistory): Series[] {
   const hasBand = (key: string) => history.races[race.id]?.b?.some((row) => row[keys.indexOf(key)] !== null) ?? false;
   if (race.level === "mayor") {
     const named = byVotes.filter((c) => c.candidate_id);
-    const others = byVotes.filter((c) => !c.candidate_id).slice(0, Math.max(0, 5 - named.length));
-    return [
-      ...named.map((c) => ({ key: c.key, label: label(c), colour: candidateMeta(c.candidate_id!).colorVar, band: hasBand(c.key) })),
-      ...others.map((c, i) => ({ key: c.key, label: label(c), colour: OTHER, dash: NEUTRAL_DASH[i % NEUTRAL_DASH.length], band: false })),
-    ];
+    // The minor field is one "Everyone else" line: separate grey lines near zero can't be told apart.
+    return named.map((c) => ({ key: c.key, label: label(c), colour: candidateMeta(c.candidate_id!).colorVar, band: hasBand(c.key) }));
   }
   const drawn = byVotes.slice(0, 4).sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key));
   return drawn.map((c, i) => ({ key: c.key, label: label(c), colour: SERIES[i], band: hasBand(c.key) }));
@@ -166,7 +163,7 @@ function Legend({ series, others }: { series: Series[]; others: boolean }) {
       {series.map((s) => (
         <li key={s.key}>
           <svg width="22" height="10" aria-hidden="true">
-            <line x1="1" y1="5" x2="21" y2="5" stroke={s.colour} strokeWidth="2.5" strokeDasharray={s.dash} />
+            <line x1="1" y1="5" x2="21" y2="5" stroke={s.colour} strokeWidth="2.5" />
           </svg>
           {s.label}
         </li>
@@ -182,7 +179,7 @@ function Legend({ series, others }: { series: Series[]; others: boolean }) {
       {series.some((s) => s.band) && (
         <li>
           <span className="live-legend__band" aria-hidden="true" />
-          Estimated final range, when it showed
+          Estimated final range
         </li>
       )}
     </ul>
@@ -243,7 +240,7 @@ function ShareChart({ race, history, axis, height = 300 }: { race: LiveRace; his
               dataKey={s.key}
               stroke={s.colour}
               strokeWidth={2.5}
-              strokeDasharray={s.dash}
+             
               dot={false}
               activeDot={{ r: 4, stroke: "var(--paper)", strokeWidth: 2 }}
               isAnimationActive={false}
@@ -344,7 +341,6 @@ function PaceCharts({ history }: { history: LiveHistory }) {
     <div className="live-chart-pair">
       <ChartFrame
         title="Voting areas in"
-        caption="Share of the city's voting areas the City has counted, citywide."
         table={
           <table className="live-table">
             <thead>
@@ -383,8 +379,7 @@ function PaceCharts({ history }: { history: LiveHistory }) {
         </ResponsiveContainer>
       </ChartFrame>
       <ChartFrame
-        title="Votes counted every 10 minutes"
-        caption="Votes for mayor newly counted in each 10 minutes on the clock."
+        title="Votes for mayor counted, per 10 minutes"
         table={
           <table className="live-table">
             <thead>
@@ -425,7 +420,7 @@ function PaceCharts({ history }: { history: LiveHistory }) {
 }
 
 /** The lead between the race's top two now, over the night, shaded by who was ahead. */
-function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHistory; axis: Axis }) {
+export function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHistory; axis: Axis }) {
   const narrow = useNarrow();
   const [a, b] = race.candidates;
   if (!a || !b || !history.races[race.id]) return null;
@@ -445,7 +440,7 @@ function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHisto
   return (
     <ChartFrame
       title={`${name(a)} against ${name(b)}`}
-      caption={`${name(a)}'s counted share minus ${name(b)}'s, in points. Above the line, ${name(a)} was ahead in the count; below it, ${name(b)}.`}
+      caption={`${name(a)}'s counted share minus ${name(b)}'s, in points.`}
       table={
         <table className="live-table">
           <thead>
@@ -560,7 +555,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
               return (
                 <tr key={r.num}>
                   <th scope="row">
-                    <Link href={`/results/${r.num}/`}>
+                    <Link href={wardRaceHref(r.num)}>
                       {r.num} {names.get(r.num)}
                     </Link>
                   </th>
@@ -590,13 +585,8 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
   );
 }
 
-function wardOfRace(race: LiveRace, areas: Record<string, string[]>): string | null {
-  if (race.level === "council") return race.num;
-  return areas[race.id]?.[0] ?? null;
-}
-
 /** Every race by how much is in, least first; races with everything in fold to one line. */
-function ReportingBoard({ races, areas }: { races: LiveRace[]; areas: Record<string, string[]> }) {
+function ReportingBoard({ races }: { races: LiveRace[] }) {
   const counted = races.filter((r) => r.state !== "acclaimed" && r.progress !== null);
   const rows = counted
     .map((race) => ({ race, fraction: reportedFraction(race.progress) ?? 0, lead: raceLead(race) }))
@@ -620,11 +610,10 @@ function ReportingBoard({ races, areas }: { races: LiveRace[]; areas: Record<str
             </thead>
             <tbody>
               {open.map(({ race, fraction, lead }) => {
-                const ward = wardOfRace(race, areas);
                 const leader = race.candidates.find((c) => c.key === lead.leader);
                 return (
                   <tr key={race.id}>
-                    <th scope="row">{ward && race.level !== "mayor" ? <Link href={`/results/${ward}/`}>{raceTitle(race)}</Link> : raceTitle(race)}</th>
+                    <th scope="row">{race.level !== "mayor" ? <Link href={raceHref(race)}>{raceTitle(race)}</Link> : raceTitle(race)}</th>
                     <td className="live-num">
                       <span className="live-bar" aria-hidden="true">
                         <span style={{ width: `${100 * fraction}%` }} />
@@ -654,8 +643,6 @@ export interface LiveCountViewProps {
 export interface LiveTablesViewProps {
   payload: LivePayload | null;
   wards: ResultsWard[];
-  /** Trustee race id → the city wards it covers, for links. */
-  areas: Record<string, string[]>;
 }
 
 export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
@@ -719,12 +706,11 @@ export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
       {mayor && history.races.mayor && (
         <div className="live-count__block">
           <div className="live-count__row">
-            <h3>Mayor: each candidate&apos;s share of the count</h3>
+            <h3>Mayor</h3>
             {!(ward && ballotRaces.length > 0) && <AxisSwitch axis={axis} onChange={setAxis} />}
           </div>
           <ChartFrame
-            title="Counted share over the night"
-            caption="Each candidate's share of the votes counted so far. The shaded range is the Estimated final range, wherever the page showed one."
+            title="Share of the votes counted"
             table={<ShareTable race={mayor} history={history} />}
           >
             <ShareChart race={mayor} history={history} axis={axis} />
@@ -738,7 +724,7 @@ export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
 
 /** The Tables view (#123): the mayor ward by ward, then every race by how much is in. Both read
  *  only the payload, so they show from the first poll, with no history. */
-export function LiveTablesView({ payload, wards, areas }: LiveTablesViewProps) {
+export function LiveTablesView({ payload, wards }: LiveTablesViewProps) {
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   return (
     <section className="live-count" aria-labelledby="live-tables-heading">
@@ -748,7 +734,7 @@ export function LiveTablesView({ payload, wards, areas }: LiveTablesViewProps) {
       ) : (
         <>
           {mayor?.wards && <MayorWardTable mayor={mayor} wards={wards} />}
-          <ReportingBoard races={payload.races} areas={areas} />
+          <ReportingBoard races={payload.races} />
         </>
       )}
     </section>

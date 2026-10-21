@@ -13,127 +13,152 @@
   "1": {
    "electors_2026": 78411,
    "share_2022": 23.43,
-   "share_2023": 25.2
+   "share_2023": 25.2,
+   "council_share_2022": 23.54
   },
   "2": {
    "electors_2026": 97554,
    "share_2022": 29.58,
-   "share_2023": 42.28
+   "share_2023": 42.28,
+   "council_share_2022": 28.63
   },
   "3": {
    "electors_2026": 116485,
    "share_2022": 31.94,
-   "share_2023": 40.76
+   "share_2023": 40.76,
+   "council_share_2022": 31.85
   },
   "4": {
    "electors_2026": 88529,
    "share_2022": 38.02,
-   "share_2023": 47.47
+   "share_2023": 47.47,
+   "council_share_2022": 38.03
   },
   "5": {
    "electors_2026": 83515,
    "share_2022": 27.39,
-   "share_2023": 32.62
+   "share_2023": 32.62,
+   "council_share_2022": 27.53
   },
   "6": {
    "electors_2026": 79015,
    "share_2022": 24.5,
-   "share_2023": 33.18
+   "share_2023": 33.18,
+   "council_share_2022": 24.21
   },
   "7": {
    "electors_2026": 73832,
    "share_2022": 21.02,
-   "share_2023": 24.13
+   "share_2023": 24.13,
+   "council_share_2022": 21.33
   },
   "8": {
    "electors_2026": 89581,
    "share_2022": 30.83,
-   "share_2023": 43.5
+   "share_2023": 43.5,
+   "council_share_2022": 30.49
   },
   "9": {
    "electors_2026": 84706,
    "share_2022": 30.59,
-   "share_2023": 43.03
+   "share_2023": 43.03,
+   "council_share_2022": 30.26
   },
   "10": {
    "electors_2026": 123597,
    "share_2022": 24.28,
-   "share_2023": 35.4
+   "share_2023": 35.4,
+   "council_share_2022": 23.28
   },
   "11": {
    "electors_2026": 90868,
    "share_2022": 31.65,
-   "share_2023": 44.41
+   "share_2023": 44.41,
+   "council_share_2022": 30.53
   },
   "12": {
    "electors_2026": 95032,
    "share_2022": 33.11,
-   "share_2023": 48.46
+   "share_2023": 48.46,
+   "council_share_2022": 31.87
   },
   "13": {
    "electors_2026": 101769,
    "share_2022": 28.41,
-   "share_2023": 39.43
+   "share_2023": 39.43,
+   "council_share_2022": 26.93
   },
   "14": {
    "electors_2026": 85786,
    "share_2022": 35.25,
-   "share_2023": 47.94
+   "share_2023": 47.94,
+   "council_share_2022": 34.69
   },
   "15": {
    "electors_2026": 76936,
    "share_2022": 32.18,
-   "share_2023": 44.92
+   "share_2023": 44.92,
+   "council_share_2022": 31.38
   },
   "16": {
    "electors_2026": 70080,
    "share_2022": 29.95,
-   "share_2023": 35.92
+   "share_2023": 35.92,
+   "council_share_2022": 29.55
   },
   "17": {
    "electors_2026": 81623,
    "share_2022": 26.07,
-   "share_2023": 34.97
+   "share_2023": 34.97,
+   "council_share_2022": 25.5
   },
   "18": {
    "electors_2026": 84671,
    "share_2022": 28.18,
-   "share_2023": 34.01
+   "share_2023": 34.01,
+   "council_share_2022": 28.42
   },
   "19": {
    "electors_2026": 85048,
    "share_2022": 35.95,
-   "share_2023": 47.84
+   "share_2023": 47.84,
+   "council_share_2022": 35.64
   },
   "20": {
    "electors_2026": 82427,
    "share_2022": 31.95,
-   "share_2023": 37.95
+   "share_2023": 37.95,
+   "council_share_2022": 31.81
   },
   "21": {
    "electors_2026": 80557,
    "share_2022": 25.97,
-   "share_2023": 32.51
+   "share_2023": 32.51,
+   "council_share_2022": 25.39
   },
   "22": {
    "electors_2026": 75224,
    "share_2022": 25.06,
-   "share_2023": 34.02
+   "share_2023": 34.02,
+   "council_share_2022": 25.05
   },
   "23": {
    "electors_2026": 66760,
    "share_2022": 24.39,
-   "share_2023": 31.04
+   "share_2023": 31.04,
+   "council_share_2022": null
   },
   "24": {
    "electors_2026": 72345,
    "share_2022": 26.15,
-   "share_2023": 33.13
+   "share_2023": 33.13,
+   "council_share_2022": 25.57
   },
   "25": {
    "electors_2026": 79420,
    "share_2022": 27.07,
-   "share_2023": 34.66
+   "share_2023": 34.66,
+   "council_share_2022": 26.83
   }
  }
 }

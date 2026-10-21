@@ -11,8 +11,8 @@ export const metadata: Metadata = {
     "The City of Toronto's unofficial count for every race on Oct. 26, 2026, updated about every minute from 8 p.m.",
 };
 
-/** Before a ward is picked: the picker, the citywide mayor card, then the 25
- *  council tiles. No default ward (#13). The count arrives in the browser. */
+/** The results dashboard: every race citywide, by type (Alex, 2026-10-20). The count arrives in
+ *  the browser. */
 export default async function ResultsPage() {
   const [council, trustees, forecast] = await Promise.all([
     loadCouncilRaceCards(),
@@ -22,8 +22,6 @@ export default async function ResultsPage() {
   return (
     <ResultsBallot
       wards={resultsWards(council)}
-      ward={null}
-      ballot={[]}
       forecast={resultsForecast(forecast)}
       mapData={resultsMapData(council, trustees)}
     />

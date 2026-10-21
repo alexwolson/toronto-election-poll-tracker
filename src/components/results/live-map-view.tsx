@@ -646,7 +646,7 @@ function WardPanel(props: WardDetailsProps) {
 /** A ward's figures, in the side panel and the ward card. */
 function WardDetails({ facts, contest }: WardDetailsProps) {
   const { ward, name, race, lead, reported, shade } = facts;
-  const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
+  const raceName = contest === "mayor" ? "Votes for mayor in this ward" : race ? raceTitle(race) : null;
   // Each figure once: the lead is in the status line, so the list is just who has what. Its rows
   // keep one alphabetical order by last name, whoever leads, so they don't swap places from ward
   // to ward (#122). Chow's row carries her 2023 share in the ward (#108), and joins the list if

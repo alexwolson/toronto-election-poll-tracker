@@ -15,9 +15,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { RouteTabs } from "@/components/route-tabs";
-import { liveColour } from "@/lib/live-colour";
-import { shortLabel } from "@/lib/live-labels";
-import { rangeText } from "@/lib/live-share";
 import {
   RACE_TYPES,
   dashboardFrom,
@@ -36,7 +33,7 @@ import { CountPace, MayorCount, MayorWards, RaceCount } from "./live-count-view"
 import { LiveMapView } from "./live-map-view";
 import type { MapContest } from "@/lib/live-map-url";
 import { MayorLead, MayorNotes, RaceResult, showsRaceResult } from "./mayor-lead";
-import { RANGE_WORDING, RaceCard, RaceCompactTally, WORDING, countOnly, estimated, raceTitle } from "./race-cards";
+import { RANGE_WORDING, RaceCard, RaceCompactTally, WORDING, raceTitle } from "./race-cards";
 
 const DEFAULTS: DashboardState = { race: "mayor", open: null, sort: "number", jump: null };
 
@@ -231,7 +228,7 @@ function RaceGrid({
               </Link>
             </div>
           ) : (
-            <CompactRace key={race.id} race={race} levels={levels} closed={closed} openHref={href({ open: race.id })} />
+            <CompactRace key={race.id} race={race} closed={closed} openHref={href({ open: race.id })} />
           ),
         )}
       </div>
@@ -239,16 +236,14 @@ function RaceGrid({
   );
 }
 
-/** One race at a glance: title, voting areas in, its leaders and the rest, and its projected
- *  finish in a line. The title opens it in full. */
+/** One race at a glance (Alex, 2026-10-21): its title and how much is in, one bar for the count
+ *  and its two leaders. The whole card opens it in full. */
 function CompactRace({
   race,
-  levels,
   closed,
   openHref,
 }: {
   race: LiveRace;
-  levels: LivePayload["levels"];
   closed: boolean;
   openHref: string;
 }) {
@@ -256,55 +251,23 @@ function CompactRace({
   let body: ReactNode;
   if (race.state === "acclaimed") body = <p className="t-body-small">{`${WORDING.acclaimed}: ${race.candidates[0]?.full_name ?? ""}`}</p>;
   else if (race.state === "no_figures") body = <p className="t-body-small">No figures from the City for this race right now</p>;
-  else if (showsRaceResult(race))
-    body = (
-      <>
-        <RaceCompactTally race={race} closed={closed} />
-        {/* While the level shows the count, the block says so in place of the projected line. */}
-        {race.state === "counting" && countOnly(race, levels) ? <p className="race-compact__projected t-body-small">Count only</p> : <ProjectedLine race={race} />}
-      </>
-    );
+  else if (showsRaceResult(race)) body = <RaceCompactTally race={race} closed={closed} />;
   else body = <p className="t-body-small">{`${race.candidates.length} candidates`}</p>;
   return (
     <article className="race-compact" aria-labelledby={`live-race-${race.id}`}>
-      <h3 id={`live-race-${race.id}`}>
-        <Link href={openHref} scroll={false}>
-          {/* The tab names the office, so a council race is its ward. */}
-          {race.level === "council" ? raceTitle(race).replace(/^Councillor, /, "") : raceTitle(race)}
-        </Link>
-      </h3>
-      {race.state === "counting" && !progress && <p className="race-compact__progress t-meta">{WORDING.no_progress}</p>}
-      {progress && race.state !== "acclaimed" && (
-        <p className="race-compact__progress t-meta">
-          <span className="mayor-lead__progress" aria-hidden="true">
-            <span style={{ width: `${progress.total > 0 ? Math.min(100, (100 * progress.received) / progress.total) : 0}%` }} />
-          </span>
-          {`${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} voting areas in`}
-        </p>
-      )}
+      <div className="race-compact__head">
+        <h3 id={`live-race-${race.id}`}>
+          <Link href={openHref} scroll={false}>
+            {/* The tab names the office, so a council race is its ward. */}
+            {race.level === "council" ? raceTitle(race).replace(/^Councillor, /, "") : raceTitle(race)}
+          </Link>
+        </h3>
+        {race.state === "counting" && !progress && <p className="race-compact__progress t-meta">{WORDING.no_progress}</p>}
+        {progress && race.state !== "acclaimed" && (
+          <p className="race-compact__progress t-meta">{`${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} in`}</p>
+        )}
+      </div>
       {body}
-      <Link className="race-compact__open" href={openHref} scroll={false}>
-        Full result <span aria-hidden="true">⌄</span>
-      </Link>
     </article>
-  );
-}
-
-/** The projected finish in a line, for the two leaders, when the level's projection shows. */
-function ProjectedLine({ race }: { race: LiveRace }) {
-  const bands = estimated(race);
-  const leaders = [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0)).slice(0, 2);
-  if (!bands || leaders.some((c) => !bands[c.key])) return null;
-  return (
-    <p className="race-compact__projected t-body-small">
-      {"Projected finish (99%): "}
-      {leaders.map((c, i) => (
-        <span key={c.key}>
-          {i > 0 && " · "}
-          <span style={{ color: liveColour(c, "var(--color-disengaged)") }}>{shortLabel(c)}</span>{" "}
-          {rangeText(bands[c.key].low, bands[c.key].high)}
-        </span>
-      ))}
-    </p>
   );
 }

@@ -1,43 +1,42 @@
 "use client";
 
 /**
- * The ward picker and the remembered ward (#17 § Results pages and site changes;
- * #13). Choosing a ward here is the only thing that remembers it; the chip links
- * back to it and never redirects. No geolocation, postal-code or address lookup:
- * the MyVote pointer covers readers who don't know their ward.
+ * Your ward on the results dashboard (Alex, 2026-10-20: the ballot pages are gone): choosing a
+ * ward highlights it, putting its races first and adding its bars to the mayor, and remembers it
+ * (#13). It never navigates away. No geolocation, postal-code or address lookup: the MyVote
+ * pointer covers readers who don't know their ward.
  */
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSyncExternalStore, type FormEvent } from "react";
+import type { FormEvent } from "react";
 import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { isResultsWard } from "@/lib/ward-ballot";
-import { readRememberedWard, rememberWard } from "@/lib/ward-memory";
+import { rememberWard } from "@/lib/ward-memory";
 
 const MYVOTE_URL = "https://www.toronto.ca/city-government/elections/voter-information/myvote/";
 
-/** Storage changes only through this page's own picker, which then navigates. */
-const subscribe = () => () => {};
-
-export function WardPicker({ wards, ward }: { wards: ResultsWard[]; ward: ResultsWard | null }) {
-  const router = useRouter();
-  // Null on the server and in the first hydration pass, so the markup matches.
-  const remembered = useSyncExternalStore(subscribe, readRememberedWard, () => null);
-
+export function WardPicker({
+  wards,
+  ward,
+  onChoose,
+}: {
+  wards: ResultsWard[];
+  /** The highlighted ward, if any. */
+  ward: ResultsWard | null;
+  onChoose: (ward: string) => void;
+}) {
   function choose(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const chosen = new FormData(event.currentTarget).get("ward");
     if (typeof chosen !== "string" || !isResultsWard(chosen)) return;
     rememberWard(chosen);
-    router.push(`/results/${chosen}`);
+    onChoose(chosen);
   }
 
   return (
     <div className="results-picker">
-      {/* One row in the results bar; on a ward page it shows that ward. */}
       <form onSubmit={choose} className="results-picker__form">
         <label htmlFor="results-ward">Your ward</label>
-        <select id="results-ward" name="ward" defaultValue={ward?.num ?? ""}>
+        <select id="results-ward" name="ward" key={ward?.num ?? ""} defaultValue={ward?.num ?? ""}>
           <option value="" disabled>
             Choose your ward
           </option>
@@ -55,11 +54,6 @@ export function WardPicker({ wards, ward }: { wards: ResultsWard[]; ward: Result
         <a href={MYVOTE_URL}>
           Don&apos;t know your ward? <span className="results-picker__nowrap">Look it up on MyVote ↗</span>
         </a>
-        {remembered !== null && remembered !== ward?.num && (
-          <Link href={`/results/${remembered}`} className="pill">
-            Back to Ward {remembered}
-          </Link>
-        )}
       </p>
     </div>
   );

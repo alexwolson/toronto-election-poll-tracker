@@ -12,11 +12,11 @@ import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
 import { LiveResultsView } from "./live-results-view";
 
-const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), query: "" }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/results/",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(router.query),
 }));
 
 const council = councilFixture as unknown as CouncilRaceCardsFeed;
@@ -26,18 +26,22 @@ const payload = JSON.parse(
   readFileSync(path.resolve(__dirname, "../../../fixtures/live/payload/before-results-2026.json"), "utf8"),
 ) as LivePayload;
 
-function renderPage(ward: string | null = null) {
+/** The dashboard at `/results/?<query>`. */
+function renderPage(query = "") {
+  router.query = query;
   return render(
     <LiveResultsView
       state={{ results: { heartbeat: payload.seq.all_office, paused: false, closed: false, payload }, failures: 0 }}
       now={payload.seq.all_office}
       wards={WARDS}
-      ward={WARDS.find((w) => w.num === ward) ?? null}
-      ballot={[]}
       forecast={false}
       mapData={MAP}
     />,
   );
+}
+
+function picked(): string {
+  return (screen.getByLabelText("Your ward") as HTMLSelectElement).value;
 }
 
 function choose(ward: string) {
@@ -54,6 +58,7 @@ function blockStorage() {
 beforeEach(() => {
   router.push.mockReset();
   router.replace.mockReset();
+  router.query = "";
 });
 
 afterEach(() => {
@@ -62,50 +67,48 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe("the ward picker and the remembered ward (#13)", () => {
-  it("remembers the ward chosen with the picker and opens it", () => {
+describe("the ward picker and the remembered ward (#13, the dashboard)", () => {
+  it("remembers the ward chosen with the picker and makes it yours in place", () => {
     renderPage();
     choose("14");
     expect(window.localStorage.getItem("results-ward")).toBe("14");
-    expect(router.push).toHaveBeenCalledWith("/results/14");
+    expect(router.replace).toHaveBeenCalledWith("/results/?myward=14", { scroll: false });
+    expect(router.push).not.toHaveBeenCalled();
   });
 
-  it("shows the remembered ward as a 'Back to Ward N' chip and never redirects", async () => {
+  it("keeps the page's other parameters when the ward changes", () => {
+    renderPage("race=council&sort=close");
+    choose("3");
+    expect(router.replace).toHaveBeenCalledWith("/results/?race=council&sort=close&myward=3", { scroll: false });
+  });
+
+  it("shows the remembered ward in the picker and never navigates", async () => {
     window.localStorage.setItem("results-ward", "14");
     await act(async () => {
       renderPage();
     });
-    const chip = screen.getByRole("link", { name: "Back to Ward 14" });
-    expect(chip.getAttribute("href")).toBe("/results/14");
+    expect(picked()).toBe("14");
     expect(router.push).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it("hides the chip on the remembered ward's own page", async () => {
+  it("a shared link with another ward shows it and leaves the memory unchanged", async () => {
     window.localStorage.setItem("results-ward", "14");
     await act(async () => {
-      renderPage("14");
+      renderPage("myward=3");
     });
-    expect(screen.queryByRole("link", { name: "Back to Ward 14" })).toBeNull();
-  });
-
-  it("a shared link to another ward leaves the memory unchanged", async () => {
-    window.localStorage.setItem("results-ward", "14");
-    await act(async () => {
-      renderPage("3");
-    });
+    expect(picked()).toBe("3");
     expect(window.localStorage.getItem("results-ward")).toBe("14");
-    expect(screen.getByRole("link", { name: "Back to Ward 14" })).toBeTruthy();
   });
 
-  it("a tile tap leaves the memory unchanged", async () => {
+  it("opening a race leaves the memory unchanged", async () => {
     window.localStorage.setItem("results-ward", "14");
     await act(async () => {
-      renderPage();
+      renderPage("race=council");
     });
-    const tile = screen.getByRole("link", { name: /Ward 3 · Etobicoke-Lakeshore/ });
-    expect(tile.getAttribute("href")).toBe("/results/3");
-    fireEvent.click(tile);
+    const block = screen.getByRole("link", { name: "Ward 3 Etobicoke-Lakeshore" });
+    expect(block.getAttribute("href")).toBe("/results?race=council&open=councillor-3");
+    fireEvent.click(block);
     expect(window.localStorage.getItem("results-ward")).toBe("14");
   });
 
@@ -114,9 +117,9 @@ describe("the ward picker and the remembered ward (#13)", () => {
     await act(async () => {
       renderPage();
     });
-    expect(screen.queryByRole("link", { name: /Back to Ward/ })).toBeNull();
+    expect(picked()).toBe("");
     choose("14");
-    expect(router.push).toHaveBeenCalledWith("/results/14");
+    expect(router.replace).toHaveBeenCalledWith("/results/?myward=14", { scroll: false });
     expect(screen.getByRole("heading", { level: 3, name: "Mayor" })).toBeTruthy();
   });
 });

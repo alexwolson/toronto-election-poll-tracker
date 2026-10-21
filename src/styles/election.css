@@ -381,6 +381,8 @@ button:disabled { cursor: default; opacity: 0.6; }
   justify-self: start; font-family: var(--font-display); font-size: var(--type-display); font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: normal;
 }
 .forecast-chart__row--lead .live-tally__meta { align-self: end; padding-bottom: 0.3rem; font-size: var(--type-body-small); }
+/* Beside a large count on a phone the share wraps rather than leave the card. */
+.forecast-chart__row--lead .live-tally__fig { white-space: normal; }
 .forecast-chart__row--lead .forecast-chart__track { height: 20px; margin-top: var(--space-xs); border-radius: var(--r-sm); }
 .forecast-chart__row--lead .live-tally__wlabel { margin-top: var(--space-sm); }
 .mayor-lead__estimate {
@@ -716,3 +718,27 @@ button:disabled { cursor: default; opacity: 0.6; }
 .race-result { padding-top: var(--space-lg); border-top: 1px solid var(--rule); }
 .race-result > h3 { margin: 0 0 var(--space-md); font-size: var(--type-headline); }
 .results-races .live-boards-head { padding-top: var(--space-lg); border-top: 1px solid var(--rule); }
+/* The results dashboard (Alex, 2026-10-20): every race of a type at a glance, one open in full. */
+.race-grid__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm) var(--space-lg); margin-bottom: var(--space-md); }
+.race-grid__head h2 { margin: 0; }
+.ward-index-sort a {
+  display: inline-flex; align-items: center; min-height: var(--touch-target-min); padding: 0 14px; border-right: 1px solid var(--ghost-border);
+  color: var(--blue); font-weight: 600; font-size: var(--type-body-small); text-decoration: none; background: var(--paper);
+}
+.ward-index-sort a:last-child { border-right: 0; }
+.ward-index-sort a[aria-current="true"] { color: var(--paper); background: var(--blue); }
+.race-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-md); align-items: start; }
+.race-compact { display: grid; gap: var(--space-xs); padding: var(--space-md); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-lg); }
+.race-compact.is-mine { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+.race-compact h3 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin: 0; font-size: var(--type-heading); }
+.race-compact h3 a { color: var(--ink); text-decoration: none; }
+.race-compact h3 a:hover { text-decoration: underline; }
+.race-compact__progress { display: grid; gap: 2px; margin: 0; }
+.race-compact__rows.forecast-chart { margin-top: var(--space-xs); border-top: 0; }
+.race-compact__rows .forecast-chart__row { grid-template-columns: minmax(0, 1fr) 5.5rem; grid-template-areas: "label value" "meta value" "track track"; padding-block: 0.45rem; }
+.race-compact__rows .forecast-chart__track { height: 8px; margin-top: 2px; }
+.race-compact__projected { margin: 0; color: var(--muted); }
+.race-compact__open { justify-self: start; min-height: var(--touch-target-min); display: inline-flex; align-items: center; gap: 4px; color: var(--blue); font-weight: 600; font-size: var(--type-body-small); }
+.race-grid__open { grid-column: 1 / -1; padding: var(--card-pad); border: 1px solid var(--blue); border-radius: var(--r-lg); background: var(--paper); }
+.race-grid__open .race-result { padding-top: 0; border-top: 0; }
+.race-grid__close { margin-top: var(--space-md); min-height: var(--touch-target-min); }

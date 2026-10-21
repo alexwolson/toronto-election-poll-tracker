@@ -10,6 +10,7 @@
  * keys move to the nearest ward in that direction, Enter or Space holds a ward.
  */
 
+import { raceHref } from "@/lib/results-dashboard";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
@@ -518,7 +519,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
               aria-label={pin ? `Ward ${cardFacts.ward.num} ${cardFacts.name} results` : undefined}
               aria-hidden={pin ? undefined : true}
             >
-              <WardDetails facts={cardFacts} contest={contest} home={ward} selection={linkable({ ...selection, ward: null })} />
+              <WardDetails facts={cardFacts} contest={contest} />
               {pin && (
                 <button type="button" className="btn btn--ghost btn--sm live-map__card-close" onClick={closeCard}>
                   Close
@@ -551,7 +552,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
             </p>
           )}
         </div>
-        {active && <WardPanel facts={active} contest={contest} home={ward} selection={linkable({ ...selection, ward: null })} />}
+        {active && <WardPanel facts={active} contest={contest} />}
       </div>
 
       <details className="live-table-toggle">
@@ -623,9 +624,6 @@ function lastName(race: LiveRace | null, key: string): string {
 interface WardDetailsProps {
   facts: WardFacts;
   contest: Contest;
-  home: string | null;
-  /** The map's selection, so the ward's page opens the same map. */
-  selection: MapSelection;
 }
 
 /** The held ward beside the map on wide screens; narrow screens use the ward card (#130). */
@@ -638,7 +636,7 @@ function WardPanel(props: WardDetailsProps) {
 }
 
 /** A ward's figures, in the side panel and the ward card. */
-function WardDetails({ facts, contest, home, selection }: WardDetailsProps) {
+function WardDetails({ facts, contest }: WardDetailsProps) {
   const { ward, name, race, lead, reported, shade } = facts;
   const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
   // Each figure once: the lead is in the status line, so the list is just who has what. Its rows
@@ -700,11 +698,13 @@ function WardDetails({ facts, contest, home, selection }: WardDetailsProps) {
           ))}
         </p>
       )}
-      {home !== ward.num && (
-        <Link className="text-link live-map__link" href={mapSelectionHref(`/results/${ward.num}/`, new URLSearchParams("view=map"), selection)}>
-          Ward {ward.num} results <span aria-hidden="true">→</span>
-        </Link>
-      )}
+      {/* The ward's race in full on the dashboard: its council race when the map shows the mayor. */}
+      <Link
+        className="text-link live-map__link"
+        href={raceHref(contest === "mayor" || !race ? { id: `councillor-${ward.num}`, level: "council" } : race)}
+      >
+        {contest === "mayor" || !race ? `Ward ${ward.num} council race` : `${raceTitle(race)} in full`} <span aria-hidden="true">→</span>
+      </Link>
     </>
   );
 }

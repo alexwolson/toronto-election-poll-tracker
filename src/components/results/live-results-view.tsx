@@ -1,24 +1,16 @@
 /**
- * The Ward Ballot pages (#35, on #30's simple race display): the picker, the
- * mayor card, the chosen ward's races, then the 25 council tiles, with Reporting
- * Progress, the City count time, the staleness banner, the rehearsal bar and the
- * browser's can't-reach notice (#17 § On-night reader wording), and the final state
- * at Night Close (#51). Pure apart from
- * the picker: the poller supplies the state and the clock, and the page the ward.
+ * The results page (#30, #35; the dashboard since 2026-10-20, Alex): the page's state (the City
+ * count time, the staleness banner, the rehearsal bar, the browser's can't-reach notice and the
+ * page pause; #17 § On-night reader wording) and the final state at Night Close (#51), handed to
+ * the dashboard with the payload. Pure: the poller supplies the state and the clock.
  */
 
 import type { ReactNode } from "react";
-import { ContentSection } from "@/components/content-section";
 import { showsUnreachableNotice, type LiveClientState } from "@/lib/live-accept";
 import type { ResultsMapData } from "@/lib/results-map-data";
-import { wardLabel, type ResultsWard } from "@/lib/results-wards";
-import { CouncilAreasTable } from "./council-areas-table";
-import { LiveCountView, LiveTablesView } from "./live-count-view";
-import { LiveMapView } from "./live-map-view";
-import { MayorLead, MayorNotes, RaceResult, showsMayorLead, showsRaceResult } from "./mayor-lead";
-import { CouncilTiles, FrenchBoards, RaceCard, WORDING } from "./race-cards";
-import { ResultsViews } from "./results-views";
-import { WardPicker } from "./ward-picker";
+import type { ResultsWard } from "@/lib/results-wards";
+import { WORDING } from "./race-cards";
+import { ResultsDashboard } from "./results-dashboard";
 
 /** The City's own results page, for the page pause (#49). */
 const CITY_RESULTS_URL = "https://www.toronto.ca/city-government/elections/election-results-reports/election-results/";
@@ -44,32 +36,20 @@ function RehearsalBar() {
 export interface LiveResultsViewProps {
   state: LiveClientState;
   now: number;
-  /** Every City ward, for the picker and the tiles. */
+  /** Every City ward, for your ward and the Map. */
   wards: ResultsWard[];
-  /** The ward whose page this is; null on /results/. */
-  ward: ResultsWard | null;
-  /** The ward's payload race ids after the mayor (`wardBallotRaceIds`). */
-  ballot: string[];
-  /** Whether the final forecast publishes, for the mayor card's pointer to it. */
+  /** Whether the final forecast publishes, for the mayor's pointer to it. */
   forecast: boolean;
   /** The Map's ward shapes, trustee areas and incumbents (live-projection #103). */
   mapData: ResultsMapData;
 }
 
-/** Trustee race id → the city wards it covers, from the map data's ward → area. */
-function areaWards(mapData: ResultsMapData): Record<string, string[]> {
-  const areas: Record<string, string[]> = {};
-  for (const [ward, { tdsb, tcdsb }] of Object.entries(mapData.areas)) {
-    for (const id of [tdsb, tcdsb]) if (id) (areas[id] ??= []).push(ward);
-  }
-  return areas;
-}
 
 /** The whole page, in CHW components (PageHero, Callout, Badge, Card, `.grid`,
  *  `.field`, `.pill`, `.t-*`) and the /wards index's cards: page status on the
  *  hero's paper ground, where a tint Callout shows, then the ballot's cards and
  *  the council tiles. */
-export function LiveResultsView({ state, now, wards, ward, ballot, forecast, mapData }: LiveResultsViewProps) {
+export function LiveResultsView({ state, now, wards, forecast, mapData }: LiveResultsViewProps) {
   const unreachable = showsUnreachableNotice(state) && (
     <p className="callout" role="status">
       Can&apos;t reach live results; retrying
@@ -91,25 +71,12 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
   ) : (
     unreachable || <p className="t-meta">Loading live results…</p>
   );
-  let ballotCards: ReactNode = null;
-  let mayorLead: ReactNode = null;
-  let mayorNotes: ReactNode = null;
   if (results !== null) {
     const { payload, heartbeat, closed } = results;
     const counting = payload.state === "results";
     const cityCountAt = Math.min(payload.seq.all_office, payload.seq.ward_by_ward);
     // From 8 p.m. until the first voting area anywhere.
     const nothingIn = counting && !payload.races.some((race) => race.state === "counting" || race.state === "all_units_in");
-    const shown = ["mayor", ...ballot].flatMap((id) => payload.races.filter((race) => race.id === id));
-    // Once the count starts the mayor leads the page, above the views; its card folds there.
-    const leadRace = shown.find((race) => race.id === "mayor");
-    mayorLead = showsMayorLead(leadRace) ? (
-      <MayorLead race={leadRace} levels={payload.levels} ward={ward?.num ?? null} closed={closed} />
-    ) : null;
-    mayorNotes = showsMayorLead(leadRace) ? <MayorNotes race={leadRace} levels={payload.levels} forecast={forecast} closed={closed} /> : null;
-    const main = shown.filter((race) => race.level !== "french_trustee" && !(mayorLead && race.id === "mayor"));
-    const french = shown.filter((race) => race.level === "french_trustee");
-
     status = (
       <>
         {payload.rehearsal && <RehearsalBar />}
@@ -137,85 +104,16 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
         </p>
       </>
     );
-    ballotCards =
-      main.length + french.length === 0 ? null : (
-        <ContentSection aria-labelledby="results-ballot-heading">
-          <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
-          {/* Once a race's count starts it shows as a result, full width, like the mayor's (Alex). */}
-          <div className={[...main, ...french].some(showsRaceResult) ? "results-races" : "grid"}>
-            {main.map((race) =>
-              showsRaceResult(race) ? (
-                <RaceResult key={race.id} race={race} levels={payload.levels} ward={ward?.num ?? null} closed={closed} />
-              ) : (
-                <RaceCard
-                  key={race.id}
-                  race={race}
-                  levels={payload.levels}
-                  ward={ward?.num ?? null}
-                  forecast={forecast}
-                  closed={closed}
-                />
-              ),
-            )}
-            <FrenchBoards
-              races={french}
-              closed={closed}
-              renderRace={(race) =>
-                showsRaceResult(race) ? (
-                  <RaceResult key={race.id} race={race} levels={payload.levels} ward={ward?.num ?? null} closed={closed} />
-                ) : null
-              }
-            />
-          </div>
-        </ContentSection>
-      );
   }
 
   return (
-    <>
-      {/* The page's state and the ward picker in one bar; the title is for screen readers (the
-          masthead says Results, and a ward page's picker shows its ward). */}
-      <section className="results-bar" aria-labelledby="results-heading">
-        <div className="wrap results-bar__inner">
-          <h1 id="results-heading" className="visually-hidden">
-            {ward ? wardLabel(ward) : "Election night results"}
-          </h1>
-          <div className="results-bar__status">{status}</div>
-          <WardPicker wards={wards} ward={ward} />
-        </div>
-      </section>
-      {mayorLead}
-      <ResultsViews
-        races={
-          <>
-            {ballotCards}
-            {/* The tiles' wards are static, so they show before the first good poll. */}
-            <CouncilTiles
-              wards={wards}
-              races={results?.payload.races ?? []}
-              levels={results?.payload.levels ?? null}
-              closed={results?.closed ?? false}
-            />
-          </>
-        }
-        map={
-          <ContentSection>
-            <LiveMapView data={mapData} payload={results?.payload ?? null} wards={wards} ward={ward?.num ?? null} />
-            <CouncilAreasTable payload={results?.payload ?? null} ward={ward?.num ?? null} />
-          </ContentSection>
-        }
-        count={
-          <ContentSection>
-            <LiveCountView payload={results?.payload ?? null} ballot={ballot} ward={ward?.num ?? null} />
-          </ContentSection>
-        }
-        tables={
-          <ContentSection>
-            <LiveTablesView payload={results?.payload ?? null} wards={wards} areas={areaWards(mapData)} />
-          </ContentSection>
-        }
-      />
-      {mayorNotes}
-    </>
+    <ResultsDashboard
+      payload={results?.payload ?? null}
+      closed={results?.closed ?? false}
+      status={status}
+      wards={wards}
+      forecast={forecast}
+      mapData={mapData}
+    />
   );
 }

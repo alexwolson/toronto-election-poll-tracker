@@ -7,7 +7,7 @@
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { TrusteeRaceCardsFeed } from "@/types/feeds";
 
-/** The 25 City wards, as `/results/1/` to `/results/25/` spell them. */
+/** The 25 City wards, as the dashboard's `myward` spells them. */
 export const RESULTS_WARDS: readonly string[] = Array.from({ length: 25 }, (_, i) => String(i + 1));
 
 export function isResultsWard(value: string): boolean {

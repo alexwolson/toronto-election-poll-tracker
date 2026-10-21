@@ -54,7 +54,8 @@ describe("LiveMapView", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
     expect(within(panel).getByText(/voting areas in/)).toBeTruthy();
-    expect(within(panel).getByRole("link", { name: /Ward 7 results/ }).getAttribute("href")).toMatch(/^\/results\/7\/?\?view=map$/);
+    // Its council race, opened in full on the dashboard.
+    expect(within(panel).getByRole("link", { name: /Ward 7 council race/ }).getAttribute("href")).toMatch(/^\/results\/?\?race=council&open=councillor-7$/);
   });
 
   it("switches to council and says, for each ward, whether a running incumbent leads", () => {
@@ -323,14 +324,12 @@ describe("LiveMapView selection in the URL (#126)", () => {
     replace.mockRestore();
   });
 
-  it("links the held ward's page to the same map", () => {
+  it("links the held ward's race on the map's contest to that race in full", () => {
     live.query = "view=map&race=council&show=reporting";
     render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
-    expect(within(panel).getByRole("link", { name: /Ward 7 results/ }).getAttribute("href")).toMatch(
-      /^\/results\/7\/?\?view=map&race=council&show=reporting$/,
-    );
+    expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toMatch(/^\/results\/?\?race=council&open=councillor-7$/);
   });
 });
 
@@ -452,7 +451,6 @@ describe("LiveMapView vs 2023", () => {
 });
 
 describe("LiveCountView", () => {
-  const AREAS = {};
 
   it("before results, says when the charts start", () => {
     live.history = HISTORY;
@@ -478,7 +476,7 @@ describe("LiveCountView", () => {
   });
 
   it("sorts the ward table by lead when asked", () => {
-    render(<LiveTablesView payload={NIGHT} wards={WARDS} areas={AREAS} />);
+    render(<LiveTablesView payload={NIGHT} wards={WARDS} />);
     const button = screen.getByRole("button", { name: /^Lead$/ });
     fireEvent.click(button);
     expect(button.closest("th")!.getAttribute("aria-sort")).toBe("descending");
@@ -495,18 +493,17 @@ describe("LiveCountView", () => {
 });
 
 describe("LiveTablesView (#123)", () => {
-  const AREAS = {};
 
   it("holds the mayor by ward, then every race by how much is in, without the history", () => {
     live.history = null;
-    render(<LiveTablesView payload={NIGHT} wards={WARDS} areas={AREAS} />);
+    render(<LiveTablesView payload={NIGHT} wards={WARDS} />);
     const headings = screen.getAllByRole("heading").map((h) => h.textContent);
     expect(headings.indexOf("Mayor, ward by ward")).toBeGreaterThan(-1);
     expect(headings.indexOf("Every race, least counted first")).toBeGreaterThan(headings.indexOf("Mayor, ward by ward"));
   });
 
   it("before results, says when the tables start", () => {
-    render(<LiveTablesView payload={BEFORE} wards={WARDS} areas={AREAS} />);
+    render(<LiveTablesView payload={BEFORE} wards={WARDS} />);
     expect(screen.getByText(/Tables of the count start once the City reports results/)).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });

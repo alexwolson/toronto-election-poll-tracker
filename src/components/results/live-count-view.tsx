@@ -8,6 +8,7 @@
  * has a table. The count only, never compared with the forecast (#12).
  */
 
+import { myWardHref, raceHref } from "@/lib/results-dashboard";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -554,7 +555,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
               return (
                 <tr key={r.num}>
                   <th scope="row">
-                    <Link href={`/results/${r.num}/`}>
+                    <Link href={myWardHref(r.num)}>
                       {r.num} {names.get(r.num)}
                     </Link>
                   </th>
@@ -584,13 +585,8 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
   );
 }
 
-function wardOfRace(race: LiveRace, areas: Record<string, string[]>): string | null {
-  if (race.level === "council") return race.num;
-  return areas[race.id]?.[0] ?? null;
-}
-
 /** Every race by how much is in, least first; races with everything in fold to one line. */
-function ReportingBoard({ races, areas }: { races: LiveRace[]; areas: Record<string, string[]> }) {
+function ReportingBoard({ races }: { races: LiveRace[] }) {
   const counted = races.filter((r) => r.state !== "acclaimed" && r.progress !== null);
   const rows = counted
     .map((race) => ({ race, fraction: reportedFraction(race.progress) ?? 0, lead: raceLead(race) }))
@@ -614,11 +610,10 @@ function ReportingBoard({ races, areas }: { races: LiveRace[]; areas: Record<str
             </thead>
             <tbody>
               {open.map(({ race, fraction, lead }) => {
-                const ward = wardOfRace(race, areas);
                 const leader = race.candidates.find((c) => c.key === lead.leader);
                 return (
                   <tr key={race.id}>
-                    <th scope="row">{ward && race.level !== "mayor" ? <Link href={`/results/${ward}/`}>{raceTitle(race)}</Link> : raceTitle(race)}</th>
+                    <th scope="row">{race.level !== "mayor" ? <Link href={raceHref(race)}>{raceTitle(race)}</Link> : raceTitle(race)}</th>
                     <td className="live-num">
                       <span className="live-bar" aria-hidden="true">
                         <span style={{ width: `${100 * fraction}%` }} />
@@ -648,8 +643,6 @@ export interface LiveCountViewProps {
 export interface LiveTablesViewProps {
   payload: LivePayload | null;
   wards: ResultsWard[];
-  /** Trustee race id → the city wards it covers, for links. */
-  areas: Record<string, string[]>;
 }
 
 export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
@@ -731,7 +724,7 @@ export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
 
 /** The Tables view (#123): the mayor ward by ward, then every race by how much is in. Both read
  *  only the payload, so they show from the first poll, with no history. */
-export function LiveTablesView({ payload, wards, areas }: LiveTablesViewProps) {
+export function LiveTablesView({ payload, wards }: LiveTablesViewProps) {
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   return (
     <section className="live-count" aria-labelledby="live-tables-heading">
@@ -741,7 +734,7 @@ export function LiveTablesView({ payload, wards, areas }: LiveTablesViewProps) {
       ) : (
         <>
           {mayor?.wards && <MayorWardTable mayor={mayor} wards={wards} />}
-          <ReportingBoard races={payload.races} areas={areas} />
+          <ReportingBoard races={payload.races} />
         </>
       )}
     </section>

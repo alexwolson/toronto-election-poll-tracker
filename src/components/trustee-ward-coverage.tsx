@@ -1,3 +1,4 @@
+import { myWardHref } from "@/lib/results-dashboard";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 import { cityWardAreaNames, cityWardsLabel } from "@/lib/trustees";
@@ -37,7 +38,7 @@ export function TrusteeWardCoverage({
   const prefix = areaNames.length > 0 ? "" : cityWards.length === 1 ? "City Ward " : "City Wards ";
   const area = (index: number) =>
     linkResults ? (
-      <Link href={`/results/${cityWards[index]}`} className="text-link">
+      <Link href={myWardHref(String(cityWards[index]))} className="text-link">
         {labels[index]}
       </Link>
     ) : (

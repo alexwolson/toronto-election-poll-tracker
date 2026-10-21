@@ -12,13 +12,18 @@ import type { LivePayload } from "@/types/live";
 import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "@/lib/live-serve";
 import { CHOW_2023 } from "@/lib/chow-2023";
 import { TURNOUT } from "@/lib/turnout";
+import { raceTypeOf } from "@/lib/results-dashboard";
 import { LiveResultsView } from "./live-results-view";
 
-const navigation = vi.hoisted(() => ({ view: null as string | null }));
+const navigation = vi.hoisted(() => ({ view: null as string | null, query: "" }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => "/results/",
-  useSearchParams: () => new URLSearchParams(navigation.view ? { view: navigation.view } : {}),
+  useSearchParams: () => {
+    const params = new URLSearchParams(navigation.query);
+    if (navigation.view) params.set("view", navigation.view);
+    return params;
+  },
 }));
 
 // Seam 7 (#17): the Ward Ballot pages rendered from the golden payloads.
@@ -35,31 +40,43 @@ const MAP = resultsMapData(council, trustees);
 
 const MINUTE = 60_000;
 
-/** Render `/results/` (no ward) or `/results/<ward>/` as a reader whose newest
- *  heartbeat is `age` ms old. */
-function render(
+/** The dashboard at `query`, as a reader whose newest heartbeat is `age` ms old. */
+function renderAt(
   payload: LivePayload,
-  {
-    ward = null as string | null,
-    age = MINUTE,
-    failures = 0,
-    forecast = true,
-    paused = false,
-    closed = false,
-  } = {},
+  query: string,
+  { age = MINUTE, failures = 0, forecast = true, paused = false, closed = false } = {},
 ) {
   const heartbeat = Math.max(payload.seq.all_office, payload.seq.ward_by_ward);
-  return renderToStaticMarkup(
-    <LiveResultsView
-      state={{ results: { heartbeat, paused, closed, payload }, failures }}
-      now={heartbeat + age}
-      wards={WARDS}
-      ward={WARDS.find((w) => w.num === ward) ?? null}
-      ballot={ward === null ? [] : wardBallotRaceIds(ward, trustees)}
-      forecast={forecast}
-      mapData={MAP}
-    />,
-  );
+  navigation.query = query;
+  try {
+    return renderToStaticMarkup(
+      <LiveResultsView
+        state={{ results: { heartbeat, paused, closed, payload }, failures }}
+        now={heartbeat + age}
+        wards={WARDS}
+        forecast={forecast}
+        mapData={MAP}
+      />,
+    );
+  } finally {
+    navigation.query = "";
+  }
+}
+
+/** `/results/`, or what a reader sees for a ward now the ballot pages are gone (Alex,
+ *  2026-10-20): the Mayor tab with the ward as theirs, then each of the ward's races opened in
+ *  its type's grid, one render each. */
+function render(
+  payload: LivePayload,
+  { ward = null as string | null, ...options }: { ward?: string | null; age?: number; failures?: number; forecast?: boolean; paused?: boolean; closed?: boolean } = {},
+) {
+  if (ward === null) return renderAt(payload, "", options);
+  const parts = [renderAt(payload, `myward=${ward}`, options)];
+  for (const id of wardBallotRaceIds(ward, trustees)) {
+    const race = payload.races.find((r) => r.id === id);
+    if (race) parts.push(renderAt(payload, `race=${raceTypeOf(race)}&open=${id}&myward=${ward}`, options));
+  }
+  return parts.join("\n");
 }
 
 /** The markup's text, tags dropped. */
@@ -75,10 +92,6 @@ function cardTitles(html: string): string[] {
   return [...html.matchAll(/<h3 id="live-race-[^"]*">([^<]*)<\/h3>/g)].map((m) => m[1]);
 }
 
-function tileHrefs(html: string): string[] {
-  return [...html.matchAll(/<a class="race-index-card[^"]*" href="([^"]*)"/g)].map((m) => m[1]);
-}
-
 describe("LiveResultsView: /results/ before a ward is picked", () => {
   it("shows the picker, the citywide mayor card, then the 25 council tiles; no trustee races", () => {
     const payload = golden("before-results-2026.json");
@@ -86,14 +99,14 @@ describe("LiveResultsView: /results/ before a ward is picked", () => {
     expect(html).toContain('<h1 id="results-heading" class="visually-hidden">Election night results</h1>');
     expect(cardTitles(html)).toEqual(["Mayor"]);
     expect(html).not.toContain("in your ward");
-    expect(html).not.toMatch(/TDSB|TCDSB|Viamonde|MonAvenir/);
-    expect(tileHrefs(html)).toEqual(RESULTS_WARDS.map((n) => `/results/${n}`));
-    expect(html).toContain("Council across the city");
-    // Picker before the mayor card, the mayor card before the tiles.
+    // One tab per race type (Alex, the dashboard), the other types a click away.
+    expect(html).toMatch(/aria-label="Race types"/);
+    for (const type of ["council", "tdsb", "tcdsb", "french"]) expect(html).toContain(`href="/results?race=${type}"`);
+    expect(html).not.toContain('class="race-compact');
+    // Your ward before the mayor.
     const picker = html.indexOf("Your ward");
     expect(picker).toBeGreaterThan(-1);
     expect(picker).toBeLessThan(html.indexOf("live-race-mayor"));
-    expect(html.indexOf("live-race-mayor")).toBeLessThan(html.indexOf('href="/results/1"'));
     // The mayor folds before results as while counting: the forecast's two, then the rest (#115).
     expect(tallyNames(card(html, "mayor"))).toEqual(["Brad Bradford", "Olivia Chow", "51 other candidates"]);
   });
@@ -112,7 +125,7 @@ describe("LiveResultsView: /results/ before a ward is picked", () => {
 describe("LiveResultsView: a ward's page", () => {
   it("renders the ward's councillor, TDSB and TCDSB races, then the French boards", () => {
     const html = render(golden("before-results-2026.json"), { ward: "14" });
-    expect(html).toContain('<h1 id="results-heading" class="visually-hidden">Ward 14 Toronto-Danforth</h1>');
+    expect(html).toContain('<h1 id="results-heading" class="visually-hidden">Election night results</h1>');
     expect(cardTitles(html)).toEqual([
       "Mayor",
       "Councillor, Ward 14 Toronto-Danforth",
@@ -124,22 +137,21 @@ describe("LiveResultsView: a ward's page", () => {
     expect(html).toContain("Maqsood Ahmad");
     expect(html).toContain("Elina Feyginberg");
     expect(html).toContain("Angela Kennedy");
-    // Another ward's councillor race is a tile, not a card.
+    // Another ward's councillor race is a compact block, its names not shown before results.
     expect(html).not.toContain("Abraham Abbey");
-    expect(tileHrefs(html)).toHaveLength(25);
   });
 
   it("while counting, shows each race's tally, Reporting Progress and the City count time", () => {
     const html = render(golden("council-counting-2022.json"), { ward: "1" });
     // The older of the two seqs (both 9:46 p.m. here).
     expect(html).toContain("City count as of 9:46 p.m.");
-    expect(html).toContain("51 of 55 voting areas in");
-    expect(html).toMatch(/class="live-progress__fill" style="width:92\.7\d*%"/);
+    expect(html).toContain("51 of 55");
+    expect(html).toMatch(/style="width:92\.7\d*%"/);
     expect(html).toContain("Vincent Crisanti");
     expect(html).toContain("6,800");
     expect(html).toContain("41.2%");
     expect(html).toContain("0 of 1,535 voting areas in");
-    expect(html).toContain('class="forecast-chart live-tally"');
+    expect(html).toContain("forecast-chart live-tally");
     expect(text(html)).toContain("Geneviève Oger");
     expect(text(html)).toContain("The only candidate, so there is no vote.");
     expect(html).not.toContain("Results from 8 p.m.");
@@ -153,7 +165,7 @@ describe("LiveResultsView: a ward's page", () => {
   });
 
   it("shows fully reported and unreadable races in their own words", () => {
-    expect(render(golden("all-units-in-2018.json"), { ward: "1" })).toContain("All voting areas in");
+    expect(text(render(golden("all-units-in-2018.json"), { ward: "1" }))).toContain("Voting areas inAll in");
     expect(render(golden("no-figures-2026.json"), { ward: "14" })).toContain(
       "No figures from the City for this race right now",
     );
@@ -163,23 +175,24 @@ describe("LiveResultsView: a ward's page", () => {
     const payload = golden("council-counting-2022.json");
     payload.races.find((r) => r.id === "councillor-1")!.progress = null;
     const html = render(payload, { ward: "1" });
-    expect(html).toContain("Voting areas: not available");
+    expect(text(html)).toContain("Voting areas inNot available");
     expect(html).toContain("Vincent Crisanti");
   });
 });
 
 describe("LiveResultsView: the council tiles", () => {
   it("label each ward and its race's state, and link to the ward's page", () => {
-    const html = render(golden("council-counting-2022.json"));
-    expect(html).toMatch(/href="\/results\/1"><h3[^>]*>Ward 1 · <span>Etobicoke North<\/span><\/h3>/);
-    const before = render(golden("before-results-2026.json"));
-    // The page says it once (#115); no tile repeats it.
+    const html = councilGrid(golden("council-counting-2022.json"));
+    // The title opens the race in full in place (Alex, the dashboard).
+    expect(html).toMatch(/<a href="\/results\?race=council&amp;open=councillor-1">Ward 1 Etobicoke North<\/a>/);
+    const before = councilGrid(golden("before-results-2026.json"));
+    // The page says it once (#115); no block repeats it.
     expect(count(before, "Results from 8 p.m.")).toBe(1);
     expect(tile(before, "1")).not.toContain("Results from 8 p.m.");
   });
 
   it("at 0%, carry an empty progress line and no status of their own (#115)", () => {
-    const html = tile(render(golden("no-units-in-2026.json")), "14");
+    const html = tile(councilGrid(golden("no-units-in-2026.json")), "14");
     expect(html).toContain("0 of 48 voting areas in");
     expect(html).not.toContain("No voting areas have reported yet");
   });
@@ -195,7 +208,7 @@ describe("LiveResultsView: page status", () => {
     );
     expect(stale).toMatch(/<p class="callout" role="status">We haven/);
     // The count stays on the page.
-    expect(stale).toContain("51 of 55 voting areas in");
+    expect(stale).toContain("51 of 55");
   });
 
   it("shows the rehearsal bar only on a rehearsal payload", () => {
@@ -210,27 +223,24 @@ describe("LiveResultsView: page status", () => {
     expect(render(payload, { ward: "1", failures: 2 })).not.toContain("Can&#x27;t reach live results");
     const html = render(payload, { ward: "1", failures: 3 });
     expect(html).toContain('<p class="callout" role="status">Can&#x27;t reach live results; retrying</p>');
-    expect(html).toContain("51 of 55 voting areas in");
+    expect(html).toContain("51 of 55");
   });
 
-  it("before the first good poll, shows the picker, a loading line and the tiles, then the notice after three failures", () => {
+  it("before the first good poll, shows the picker, a loading line and the race types, then the notice after three failures", () => {
     const view = (failures: number) =>
       renderToStaticMarkup(
         <LiveResultsView
           state={{ results: null, failures }}
           now={0}
           wards={WARDS}
-          ward={null}
-          ballot={[]}
           forecast
           mapData={MAP}
         />,
       );
     expect(view(0)).toContain("Loading live results");
     expect(view(0)).toContain("Your ward");
-    // The tiles come from the static ward list, not the payload.
-    expect(tileHrefs(view(0))).toEqual(RESULTS_WARDS.map((n) => `/results/${n}`));
-    expect(tileHrefs(view(3))).toHaveLength(25);
+    // The race types stay a click away while the page waits.
+    expect(view(0)).toMatch(/aria-label="Race types"/);
     expect(view(3)).toContain("Can&#x27;t reach live results; retrying");
   });
 });
@@ -253,9 +263,16 @@ function card(html: string, raceId: string): string {
 }
 
 /** One ward's council tile: from its link to the link's end. */
+/** A council race's compact block in the Council grid (the council tiles' successor). */
 function tile(html: string, ward: string): string {
-  const start = html.indexOf(`href="/results/${ward}"`);
-  return html.slice(start, html.indexOf("</a>", start));
+  const start = html.indexOf(`aria-labelledby="live-race-councillor-${ward}"`);
+  expect(start, `council block ${ward}`).toBeGreaterThan(-1);
+  return html.slice(start, html.indexOf("</article>", start));
+}
+
+/** The Council tab: every council race at a glance. */
+function councilGrid(payload: LivePayload, options: { closed?: boolean } = {}): string {
+  return renderAt(payload, "race=council", options);
 }
 
 /** Names in a tally, in row order. */
@@ -328,10 +345,10 @@ describe("LiveResultsView: the tally", () => {
   });
 
   it("says the page's state once, in the status line (#115)", () => {
-    const before = render(golden("before-results-2026.json"), { ward: "14" });
+    const before = renderAt(golden("before-results-2026.json"), "myward=14");
     expect(count(before, "Results from 8 p.m.")).toBe(1);
     expect(text(before)).toContain("Results from 8 p.m. · City of Toronto unofficial results");
-    const none = render(golden("no-units-in-2026.json"), { ward: "14" });
+    const none = renderAt(golden("no-units-in-2026.json"), "myward=14");
     expect(count(none, "No voting areas have reported yet")).toBe(1);
     expect(text(none)).toMatch(/City count as of \d{1,2}:\d{2} [ap]\.m\. · No voting areas have reported yet · City of Toronto unofficial results/);
     // Once a voting area is in, the line no longer says none are.
@@ -450,57 +467,53 @@ describe("LiveResultsView: the mayor card", () => {
 });
 
 describe("LiveResultsView: the French-language boards", () => {
-  it("show openly after TDSB and TCDSB, under one label and note (#116)", () => {
+  it("have their own tab, under one note (#116)", () => {
     for (const name of ["before-results-2026.json", "no-units-in-2026.json"]) {
-      const html = render(golden(name), { ward: "14" });
-      expect(html, name).not.toContain("live-french");
-      expect(html, name).not.toContain("Voting for a French-language board?");
-      const label = html.indexOf(">French-language school boards<");
-      expect(label, name).toBeGreaterThan(html.indexOf('id="live-race-tcdsb-'));
-      expect(html.indexOf('id="live-race-viamonde-'), name).toBeGreaterThan(label);
-      expect(html.indexOf('id="live-race-monavenir-'), name).toBeGreaterThan(html.indexOf('id="live-race-viamonde-'));
-      expect(count(html, "French-language school boards"), name).toBe(1);
+      const html = renderAt(golden(name), "race=french");
+      expect(html, name).toMatch(/<h2 id="race-grid-heading">French boards: \d+ races<\/h2>/);
       expect(count(html, "Count and possible range only: no estimate for these boards."), name).toBe(1);
-      // No board card sits inside a disclosure.
-      expect(html.slice(html.indexOf('id="live-race-viamonde-') - 400, html.indexOf('id="live-race-viamonde-')), name).not.toContain("<details");
+      expect(html.indexOf('id="live-race-monavenir-'), name).toBeGreaterThan(-1);
+      expect(html.indexOf('id="live-race-viamonde-'), name).toBeGreaterThan(-1);
+      expect(html, name).not.toContain("<details");
     }
   });
+
 
   it("are not on /results/", () => {
     expect(render(golden("before-results-2026.json"))).not.toContain("French-language board");
   });
 });
 
-describe("LiveResultsView: council tiles while counting", () => {
-  it("show the leader, Reporting Progress and an empty slot for the ranges", () => {
-    const html = tile(render(golden("council-counting-2022.json")), "1");
-    expect(html).toContain("Ward 1 · <span>Etobicoke North</span>");
-    expect(html).toContain("Vincent Crisanti 41.2%");
-    expect(html).toContain("51 of 55 voting areas in");
-    // A stub projection draws no range, so the tile's range line stays empty.
-    expect(html).toContain('<p class="t-body-small live-tile__ranges" data-ranges=""></p>');
+describe("LiveResultsView: council blocks while counting", () => {
+  it("show the leaders' votes and shares, Reporting Progress, and no projected line from a stub projection", () => {
+    const html = tile(councilGrid(golden("council-counting-2022.json")), "1");
+    expect(html).toContain(">Ward 1 Etobicoke North</a>");
+    expect(html).toContain("Vincent Crisanti");
+    expect(text(html)).toContain("41.2%");
+    expect(html).toContain("51 of 55");
+    expect(html).not.toContain("Projected finish");
   });
 
-  it("show the ward alone before results", () => {
-    const html = tile(render(golden("before-results-2026.json")), "1");
+  it("show the field alone before results", () => {
+    const html = tile(councilGrid(golden("before-results-2026.json")), "1");
     expect(html).not.toContain("Results from 8 p.m.");
-    expect(html).not.toContain("data-ranges");
+    expect(text(html)).toMatch(/\d+ candidates/);
   });
 });
 
 describe("LiveResultsView: names and colours (#16)", () => {
-  it("label leaders by the registry last name, or the full Ballot Name", () => {
-    const html = render(
+  it("name a council block's leaders by their full Ballot Name", () => {
+    const html = councilGrid(
       counting2026({
         "councillor-17": ["Hassan Mubarak Noor Mohamed"],
         "councillor-21": ["Nisha Kumari"],
         "councillor-25": ["Kannan S'ree Jr"],
       }),
     );
-    expect(tile(html, "17")).toMatch(/Noor Mohamed \d/);
-    expect(tile(html, "17")).not.toContain("Hassan");
-    expect(tile(html, "21")).toMatch(/Nisha Kumari \d/);
-    expect(tile(html, "25")).toMatch(/S&#x27;ree Jr \d/);
+    // A block's rows carry the full Ballot Name, as every tally does.
+    expect(tallyNames(tile(html, "17"))[0]).toBe("Hassan Mubarak Noor Mohamed");
+    expect(tallyNames(tile(html, "21"))[0]).toBe("Nisha Kumari");
+    expect(tallyNames(tile(html, "25"))[0]).toBe("Kannan S'ree Jr");
   });
 
   it("show full Ballot Names in the tally, and Di Francesco whole", () => {
@@ -706,8 +719,8 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
   });
 
   it("gives council tiles their top two candidates' Estimated Ranges", () => {
-    const html = tile(render(golden("gated-live-2022.json")), "1");
-    expect(text(html)).toContain("Crisanti Vincent 37–43% · Minhas Avtar 20–25%");
+    const html = tile(councilGrid(golden("gated-live-2022.json")), "1");
+    expect(text(html)).toContain("Projected finish (90%): Crisanti Vincent 37–43% · Minhas Avtar 20–25%");
   });
 
   it("says why a level shows the count: its gate failed, or the projection is paused", () => {
@@ -723,7 +736,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(text(card(html, "councillor-1"))).not.toContain("Estimated final");
     // The Possible Range is arithmetic on the count and stays.
     expect(text(card(html, "councillor-1"))).toContain("Possible 4–93%");
-    expect(text(tile(html, "1"))).toContain("Count only");
+    expect(text(tile(councilGrid(golden("gated-off-2022.json")), "1"))).toContain("Count only");
   });
 
   it("notes that the French-language boards are never projected", () => {
@@ -759,13 +772,6 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
 describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
   const WITHDRAWN = "No projection for this race right now. The count is as the City reports it.";
 
-  /** A ward whose Ward Ballot holds `raceId`. */
-  function wardWith(raceId: string): string {
-    const ward = RESULTS_WARDS.find((w) => wardBallotRaceIds(w, trustees).includes(raceId));
-    expect(ward, raceId).toBeDefined();
-    return ward!;
-  }
-
   it("keeps a withdrawn race's tally and says only that there is no projection", () => {
     // councillor-5's count is above its expected total: the one fault that still withdraws.
     const html = render(golden("withdrawals-2022.json"), { ward: "5" });
@@ -783,7 +789,7 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
     expect(ward3).toContain("Voting areas inNot available");
     expect(ward3).not.toContain(WITHDRAWN);
     expect(ward3).toContain("Projected finish");
-    expect(text(tile(render(golden("withdrawals-2022.json")), "3"))).toContain("Voting areas: not available");
+    expect(text(tile(councilGrid(golden("withdrawals-2022.json")), "3"))).toContain("Voting areas: not available");
     expect(html).not.toContain("polls_received_above_polls");
   });
 
@@ -811,8 +817,8 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
   });
 
   it("hides 2022's MonAvenir polls 0 Reporting Progress and keeps its count", () => {
-    const html = render(golden("council-counting-2022.json"), { ward: wardWith("monavenir-4") });
-    const monavenir = text(card(html, "monavenir-4"));
+    const html = renderAt(golden("council-counting-2022.json"), "race=french&open=monavenir-4");
+    const monavenir = text(html.slice(html.indexOf('class="race-grid__open"')));
     expect(monavenir).toContain("Voting areas: not available");
     expect(monavenir).not.toContain("539 of 0");
     expect(monavenir).not.toContain(WITHDRAWN);
@@ -835,7 +841,7 @@ describe("LiveResultsView: the switches (#49)", () => {
     expect(text(card(html, "councillor-1"))).toContain(PAUSED);
     expect(text(card(html, "councillor-1"))).not.toContain("Estimated final");
     expect(text(card(html, "councillor-1"))).toContain("Possible ");
-    expect(text(tile(html, "1"))).toContain("Count only");
+    expect(text(tile(councilGrid(payload), "1"))).toContain("Count only");
     expect(text(card(html, "mayor"))).not.toContain("Projection paused");
   });
 
@@ -863,8 +869,8 @@ describe("LiveResultsView: the switches (#49)", () => {
     expect(cardTitles(html)).toEqual([]);
     expect(html).not.toMatch(/Estimated final|Possible |City count as of|voting areas in/);
     expect(text(html)).not.toMatch(/Tory|Crisanti/);
-    // The tiles stay as links to each ward.
-    expect(tileHrefs(html)).toEqual(RESULTS_WARDS.map((n) => `/results/${n}`));
+    // The race types stay as links.
+    expect(html).toMatch(/aria-label="Race types"/);
     // A paused Rehearsal still says it is one.
     const rehearsal = render({ ...payload, rehearsal: true }, { paused: true });
     expect(rehearsal).toContain("Rehearsal: not real results");
@@ -887,7 +893,7 @@ describe("LiveResultsView: Night Close (#51)", () => {
       expect(rows.indexOf(ELECTED)).toBeGreaterThan(rows.indexOf(leader));
       expect(rows.indexOf(ELECTED)).toBeLessThan(rows.indexOf(runnerUp));
     }
-    expect(text(tile(html, "1"))).toMatch(/Ford [\d.]+% · Elected \(unofficial\)/);
+    expect(text(tile(councilGrid(payload, { closed: true }), "1"))).toMatch(/Michael Ford[^]*Elected \(unofficial\)[^]*Vincent Crisanti/);
   });
 
   it("never labels a race still counting, or a tie at the top, even at Night Close", () => {
@@ -898,7 +904,7 @@ describe("LiveResultsView: Night Close (#51)", () => {
     ward1.candidates[1].votes = ward1.candidates[0].votes;
     const tied = render(payload, { ward: "1", closed: true });
     expect(card(tied, "councillor-1")).not.toContain(ELECTED);
-    expect(tile(tied, "1")).not.toContain(ELECTED);
+    expect(tile(councilGrid(payload, { closed: true }), "1")).not.toContain(ELECTED);
     expect(card(tied, "mayor")).toContain(ELECTED);
   });
 
@@ -921,7 +927,7 @@ describe("LiveResultsView: Night Close (#51)", () => {
   it("keeps a tile's label when the leader's share is missing", () => {
     const payload = golden("all-units-in-2018.json");
     payload.races.find((r) => r.id === "councillor-1")!.candidates[0].share = null;
-    expect(text(tile(render(payload, { closed: true }), "1"))).toContain("Michael Ford · Elected (unofficial)");
+    expect(text(tile(councilGrid(payload, { closed: true }), "1"))).toMatch(/Michael Ford[^]*Elected \(unofficial\)/);
   });
 
   it("hides the final forecast at Night Close", () => {
@@ -1111,7 +1117,7 @@ describe("LiveResultsView: the results audit (2026-10-20)", () => {
   it("has no kicker labels above headings, and heads the French-language boards with a heading", () => {
     const html = render(golden("gated-live-2022.json"), { ward: "1" });
     expect(html).not.toContain('class="kicker"');
-    expect(render(golden("no-units-in-2026.json"), { ward: "1" })).toMatch(/<h3[^>]*>French-language school boards<\/h3>/);
+    expect(renderAt(golden("no-units-in-2026.json"), "race=french")).toMatch(/<h2[^>]*>French boards: \d+ races<\/h2>/);
   });
 
   it("groups thousands in voting-area counts", () => {
@@ -1119,9 +1125,9 @@ describe("LiveResultsView: the results audit (2026-10-20)", () => {
     expect(text(render(golden("council-counting-2022.json"), { ward: "1" }))).toContain("1,535 voting areas in");
   });
 
-  it("labels a council tile's ranges as the estimated final", () => {
-    const html = render(golden("gated-live-2022.json"));
-    expect(text(tile(html, "1"))).toMatch(/Estimated final: [^·]+ \d+–\d+% · /);
+  it("labels a council block's ranges as the projected finish", () => {
+    const html = councilGrid(golden("gated-live-2022.json"));
+    expect(text(tile(html, "1"))).toMatch(/Projected finish \(90%\): [^·]+ \d+–\d+% · /);
   });
 
   it("sets the mayor's turnout after its candidates", () => {
@@ -1137,7 +1143,7 @@ describe("LiveResultsView: the mayor leads the page", () => {
     return start < 0 ? "" : html.slice(start, html.indexOf("</section>", start));
   };
 
-  it("opens with the mayor's two leaders, their estimated finals and the count lead, before the views", () => {
+  it("opens with the mayor's two leaders, their estimated finals and the count lead, after the tabs", () => {
     // 2022 mid-count golden: Tory 62.42% (59–65%), Penalosa 18.09% (16–21%), 767 of 1,535 voting areas.
     const html = render(golden("gated-live-2022.json"));
     const section = text(lead(html));
@@ -1149,7 +1155,8 @@ describe("LiveResultsView: the mayor leads the page", () => {
     expect(section).toContain("29 other candidates");
     expect(text(section)).not.toContain("In the count");
     expect(section).toContain("Voting areas in767 of 1,535");
-    expect(html.indexOf('class="mayor-lead"')).toBeLessThan(html.indexOf('aria-label="Results views"'));
+    // The tabs first, then the mayor.
+    expect(html.indexOf('class="mayor-lead"')).toBeGreaterThan(html.indexOf('aria-label="Results views"'));
   });
 
   it("is the mayor's only view: every candidate expands in place, with the out-of-reach zones and the key", () => {
@@ -1187,9 +1194,9 @@ describe("LiveResultsView: the mayor leads the page", () => {
 
   it("puts the status and the ward picker in one bar, with the page title for screen readers", () => {
     const html = render(golden("gated-live-2022.json"), { ward: "1" });
-    expect(html).toMatch(/<h1 id="results-heading" class="visually-hidden">Ward 1 Etobicoke North<\/h1>/);
+    expect(html).toMatch(/<h1 id="results-heading" class="visually-hidden">Election night results<\/h1>/);
     expect(html).toMatch(/class="results-bar"[^]*City count as of[^]*Your ward/);
-    // On a ward page the picker shows the ward.
+    // With a ward as yours the picker shows it.
     expect(html).toMatch(/<option value="1" selected="">Ward 1 Etobicoke North<\/option>/);
   });
 });

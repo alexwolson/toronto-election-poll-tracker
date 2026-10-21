@@ -13,7 +13,7 @@ import type { LivePayload, LiveRace } from "@/types/live";
 import { liveColour } from "@/lib/live-colour";
 import { rangeText, shareText } from "@/lib/live-share";
 import type { LiveCandidate } from "@/types/live";
-import { ChowBenchmark, FinalForecast, MayorRecord, RaceLeadTally, estimated, hasRecord, raceTitle } from "./race-cards";
+import { FinalForecast, MayorRecord, RaceLeadTally, estimated, hasRecord, raceTitle } from "./race-cards";
 import { AboutTurnout, TurnoutBar } from "./turnout-bar";
 
 /** Whether a race shows as a result: once its count has started. */
@@ -148,8 +148,6 @@ export function MayorNotes({
   return (
     <section className="mayor-notes" aria-label="About the mayor's count">
       <div className="wrap">
-        {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
-        {race.state === "counting" && !closed && <ChowBenchmark race={race} />}
         <div className="live-card-more">
           <AboutTurnout />
           {hasRecord(race, levels) && <MayorRecord />}

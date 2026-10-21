@@ -536,10 +536,6 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
               )}
             </div>
           )}
-          <p className="t-meta live-map__hint">
-            <span className="live-map__hint--hover">Hover over a ward to see its results; click to keep them open.</span>
-            <span className="live-map__hint--touch">Tap a ward to see its results.</span>
-          </p>
           {legend.length > 0 && (
             <ul className="live-map__legend" aria-label="Map legend">
               {legend.map((item) => (
@@ -553,11 +549,6 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
                 </li>
               ))}
             </ul>
-          )}
-          {legend.length > 0 && effectiveMeasure === "vs2023" && (
-            <p className="t-meta live-map__key-note">
-              Olivia Chow’s share of the counted vote in each ward compared with her 2023 share there.
-            </p>
           )}
         </div>
         {active && <WardPanel facts={active} contest={contest} />}
@@ -604,16 +595,17 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
             </tbody>
           </table>
         </div>
+              {/* Where the 2023 shares come from, with the table that shows them. */}
+        {contest === "mayor" && (
+          <p className="t-meta">
+            Olivia Chow&apos;s 2023 shares ({pct(CHOW_2023.citywide.share)} citywide) are from the{" "}
+            <a className="text-link" href={CHOW_2023.source_url}>
+              City of Toronto&apos;s certified results of the 2023 by-election <span aria-hidden="true">↗</span>
+            </a>
+            . {CHOW_2023.licence}
+          </p>
+        )}
       </details>
-      {contest === "mayor" && (
-        <p className="t-meta">
-          Olivia Chow&apos;s 2023 shares ({pct(CHOW_2023.citywide.share)} citywide) are from the{" "}
-          <a className="text-link" href={CHOW_2023.source_url}>
-            City of Toronto&apos;s certified results of the 2023 by-election <span aria-hidden="true">↗</span>
-          </a>
-          . {CHOW_2023.licence}
-        </p>
-      )}
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>

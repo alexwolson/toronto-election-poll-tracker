@@ -204,7 +204,6 @@ function RaceGrid({
           ))}
         </nav>
       </div>
-      {type === "french" && <p className="t-body-small">{RANGE_WORDING.french}</p>}
       <div className="race-grid">
         {ordered.map((race) =>
           race.id === state.open ? (
@@ -216,6 +215,8 @@ function RaceGrid({
                 <RaceCard race={race} levels={levels} closed={closed} />
               )}
               <RaceCount race={race} />
+              {/* Why a French board has no projected finish, where a reader would look for one. */}
+              {type === "french" && <p className="t-meta">{RANGE_WORDING.french}</p>}
               <Link className="btn btn--ghost btn--sm race-grid__close" href={href({ open: null })} scroll={false}>
                 <span className="live-tally__chevron" aria-hidden="true">⌃</span> Close
               </Link>

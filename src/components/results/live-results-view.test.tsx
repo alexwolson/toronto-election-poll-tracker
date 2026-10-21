@@ -490,11 +490,13 @@ describe("LiveResultsView: the mayor card", () => {
 });
 
 describe("LiveResultsView: the French-language boards", () => {
-  it("have their own tab, under one note (#116)", () => {
+  it("have their own tab, the no-estimate note kept for a board opened in full (#116)", () => {
     for (const name of ["before-results-2026.json", "no-units-in-2026.json"]) {
       const html = renderAt(golden(name), "race=french");
       expect(html, name).toMatch(/<h2 id="race-grid-heading">French boards: \d+ races<\/h2>/);
-      expect(count(html, "Count and possible range only: no estimate for these boards."), name).toBe(1);
+      expect(count(html, "Count and possible range only: no estimate for these boards."), name).toBe(0);
+      const open = renderAt(golden(name), "race=french&open=" + golden(name).races.find((r) => r.level === "french_trustee")!.id);
+      expect(count(open, "Count and possible range only: no estimate for these boards."), name).toBe(1);
       expect(html.indexOf('id="live-race-monavenir-'), name).toBeGreaterThan(-1);
       expect(html.indexOf('id="live-race-viamonde-'), name).toBeGreaterThan(-1);
       expect(html, name).not.toContain("<details");
@@ -764,7 +766,8 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
   });
 
   it("notes that the French-language boards are never projected", () => {
-    const html = render(golden("no-units-in-2026.json"), { ward: "1" });
+    const payload = golden("no-units-in-2026.json");
+    const html = renderAt(payload, `race=french&open=${payload.races.find((r) => r.level === "french_trustee")!.id}`);
     expect(text(html)).toContain("Count and possible range only: no estimate for these boards.");
   });
 

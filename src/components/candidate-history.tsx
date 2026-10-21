@@ -118,7 +118,7 @@ export function CandidateHistoryItem({
             <span className="candidate-row__compact-label">
               <span className="candidate-row__name">{name}</span>
               <span className="candidate-row__hint">
-                {campaignLinkLabel(campaignUrl)} <span aria-hidden="true">↗</span>
+                {compactHint ?? campaignLinkLabel(campaignUrl)} <span aria-hidden="true">↗</span>
               </span>
             </span>
           </a>

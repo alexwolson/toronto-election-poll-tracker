@@ -30,7 +30,7 @@ export interface ResultsMapData {
   areas: Record<string, { tdsb: string | null; tcdsb: string | null }>;
 }
 
-const MAPPED_BOARDS = ["tdsb", "tcdsb"] as const;
+const MAPPED_BOARDS = ["tdsb", "tcdsb", "viamonde", "monavenir"] as const;
 
 function councilIncumbents(card: CouncilRaceCardsFeed["wards"][string] | undefined): string[] | null {
   if (!card) return null;

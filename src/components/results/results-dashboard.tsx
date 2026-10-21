@@ -36,8 +36,14 @@ import { RANGE_WORDING, RaceCard, RaceCompactTally, WORDING, raceTitle } from ".
 
 const DEFAULTS: DashboardState = { race: "mayor", open: null, sort: "number", jump: null };
 
-/** The race types the Map draws; the French boards have no map. */
-const MAPPED: readonly RaceType[] = ["mayor", "council", "tdsb", "tcdsb"];
+/** What each race type's map can show: its own race, or the French boards' two (Alex, 2026-10-21). */
+const MAP_CONTESTS: Record<RaceType, readonly MapContest[]> = {
+  mayor: ["mayor"],
+  council: ["council"],
+  tdsb: ["tdsb"],
+  tcdsb: ["tcdsb"],
+  french: ["viamonde", "monavenir"],
+};
 
 const SORTS: { id: RaceSort; label: string; council?: true }[] = [
   { id: "number", label: "Ward number" },
@@ -91,12 +97,12 @@ function Dashboard({
     if (state.jump) document.getElementById(state.jump)?.scrollIntoView();
   }, [state.jump]);
 
-  const map = MAPPED.includes(state.race) && (
+  const map = (
     <ContentSection>
       {/* Keyed by race type, so a new tab opens its own map. It reads its selection from the URL,
           so the prerendered page (the defaults, outside the URL's boundary) leaves it to the browser. */}
       <Suspense fallback={null}>
-        <LiveMapView key={state.race} data={mapData} payload={payload} wards={wards} ward={null} contest={state.race as MapContest} />
+        <LiveMapView key={state.race} data={mapData} payload={payload} wards={wards} ward={null} contests={MAP_CONTESTS[state.race]} />
       </Suspense>
     </ContentSection>
   );

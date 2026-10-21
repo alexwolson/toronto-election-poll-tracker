@@ -48,6 +48,8 @@ const CONTESTS: { id: Contest; label: string }[] = [
   { id: "tdsb", label: "TDSB" },
   { id: "tcdsb", label: "TCDSB" },
 ];
+/** The French boards' choice on their page; never offered on the open map. */
+const BOARD_LABELS: Partial<Record<Contest, string>> = { viamonde: "Viamonde", monavenir: "MonAvenir" };
 
 /** The fill for a ward's lead: stronger for a wider lead. */
 const TIER_MIX = { narrow: 42, clear: 70, wide: 100 } as const;
@@ -174,16 +176,18 @@ export interface LiveMapViewProps {
   wards: ResultsWard[];
   /** The ward whose page this is: it starts held. */
   ward: string | null;
-  /** The race type whose page holds the map: the map shows it, with no choice of race. */
-  contest?: Contest;
+  /** The races the page's map can show: one, with no choice, or the French boards' two. The page
+   *  owns the URL's `race`, so the map never writes it. */
+  contests?: readonly Contest[];
 }
 
-export function LiveMapView({ data, payload, wards, ward, contest: fixed }: LiveMapViewProps) {
+export function LiveMapView({ data, payload, wards, ward, contests }: LiveMapViewProps) {
+  const fixed = contests?.[0];
   // The URL sets the map it opens with (#126); the reader's changes are written back to it.
   const pathname = usePathname();
   const searchParams = useSearchParams();
   // The school boards draw their own trustee wards; the mayor and council, the City's.
-  const shapesFor = (c: Contest) => (c === "tdsb" || c === "tcdsb" ? data.boards[c] : data.wards);
+  const shapesFor = (c: Contest) => (c === "mayor" || c === "council" ? data.wards : data.boards[c]);
   const startShapes = shapesFor(fixed ?? mapSelectionFrom(searchParams, data.wards.map((w) => w.num)).contest);
   const pageWard = ward ?? startShapes[0]?.num ?? "1";
   const [fromUrl] = useState(() => {
@@ -295,7 +299,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
   const select = (change: Partial<MapSelection>) => {
     const next = { ...selection, ...change };
     setSelection(next);
-    window.history.replaceState(null, "", mapSelectionHref(pathname, searchParams, linkable(next)));
+    window.history.replaceState(null, "", mapSelectionHref(pathname, searchParams, linkable(next), !contests));
   };
 
   /** The card's point in the stage's pixels: the pin's, its ward's label point, or the mouse's. */
@@ -407,10 +411,10 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
       <div className="live-map__head">
         <h2 id="live-map-heading">Results by ward</h2>
         <div className="live-map__controls">
-          {!fixed && (
-            <div className="ward-index-sort live-seg" role="group" aria-label="Race">
-              {CONTESTS.map((c) => (
-                <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select({ contest: c.id })}>
+          {(!contests || contests.length > 1) && (
+            <div className="ward-index-sort live-seg" role="group" aria-label={contests ? "Board" : "Race"}>
+              {(contests ? contests.map((id) => ({ id, label: BOARD_LABELS[id] ?? id })) : CONTESTS).map((c) => (
+                <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select(contests ? { contest: c.id, ward: shapesFor(c.id)[0]?.num ?? null } : { contest: c.id })}>
                   {c.label}
                 </button>
               ))}
@@ -559,7 +563,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
         <div className="live-table-scroll">
           <table className="live-table">
             <caption className="sr-only">
-              {CONTESTS.find((c) => c.id === contest)!.label} by ward
+              {CONTESTS.find((c) => c.id === contest)?.label ?? BOARD_LABELS[contest]} by ward
             </caption>
             <thead>
               <tr>

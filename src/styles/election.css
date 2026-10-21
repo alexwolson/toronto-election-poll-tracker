@@ -560,7 +560,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 }
 .live-map__legend li { display: inline-flex; align-items: center; gap: var(--space-sm); }
 .live-map__swatch { width: 14px; height: 14px; flex: none; box-shadow: inset 0 0 0 1px rgba(22, 38, 79, 0.18); }
-.live-map__key-note { margin: var(--space-sm) 0 0; }
 /* Its disclosure runs straight into the card's others: one rule between them, not two. */
 .live-subsection + .live-card-more { margin-top: 0; }
 .live-subsection + .live-card-more > .faq:first-child { border-top: 0; }
@@ -579,11 +578,7 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-map__card-close { position: absolute; top: var(--space-sm); right: var(--space-sm); min-height: var(--touch-target-min); }
 /* Touch screens have no hover: a tap pins (#130). */
 @media (hover: none) { .live-map__card.is-hover { display: none; } }
-.live-map__hint { margin: var(--space-sm) 0 0; color: var(--muted); }
-.live-map__hint--touch { display: none; }
 @media (hover: none) {
-  .live-map__hint--hover { display: none; }
-  .live-map__hint--touch { display: inline; }
 }
 .live-map__panel h3 { margin: 0; font-size: var(--type-heading, 1.2rem); }
 .live-map__race { margin: 0; color: var(--muted); font-size: var(--type-body-small); }

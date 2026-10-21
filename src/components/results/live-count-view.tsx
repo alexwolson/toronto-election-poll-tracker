@@ -500,11 +500,6 @@ export function MayorCount({ payload }: { payload: LivePayload | null }) {
     <section id="results-count" className="live-count" aria-labelledby="live-count-heading">
       <div className="live-count__head">
         <h2 id="live-count-heading">The count over the night</h2>
-        {!pending && history && (
-          <p className="live-count__note">
-            From {clock(history.t[0])} to {clock(history.t[history.t.length - 1])}.
-          </p>
-        )}
       </div>
       {pending ??
         (mayor && history?.races.mayor && (

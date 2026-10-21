@@ -367,7 +367,6 @@ describe("LiveMapView vs 2023", () => {
       "Down 2–5 points",
       "Down 5+ points",
     ]);
-    expect(screen.getByText("Olivia Chow’s share of the counted vote in each ward compared with her 2023 share there.")).toBeTruthy();
   });
 
   it("leaves a ward with no votes counted unshaded, and says so", () => {

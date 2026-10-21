@@ -58,7 +58,7 @@ export const WORDING = {
   /** The tally's key (#105). */
   keyCounted: "Counted",
   /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
-  keyEstimated: "Estimated final range: where 9 in 10 simulated finishes land",
+  keyEstimated: "Estimated final range: where 99 in 100 simulated finishes land",
   keyPossible: "Out of reach, even with all of the votes still to count",
 } as const;
 

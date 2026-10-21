@@ -57,7 +57,7 @@ function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandi
           ))}
         </div>
       </div>
-      <p className="mayor-projection__note">90% confidence interval</p>
+      <p className="mayor-projection__note">99% confidence interval</p>
     </figure>
   );
 }

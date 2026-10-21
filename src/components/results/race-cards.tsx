@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { candidateMeta } from "@/lib/candidates";
-import { liveColour } from "@/lib/live-colour";
+import { figureColour, liveColour } from "@/lib/live-colour";
 import { leaderParts, segmentWidth } from "@/lib/mayor-bar";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { rangeText, shareText } from "@/lib/live-share";
@@ -418,7 +418,7 @@ function TallyRowView({
       <span className="forecast-chart__track" aria-hidden="true">
         <TrackMarks row={row} top={top} reachZones={reachZones} />
       </span>
-      <strong className="forecast-chart__value live-tally__value" style={lead ? { color: row.color } : undefined}>
+      <strong className="forecast-chart__value live-tally__value" style={lead ? { color: figureColour(row.color) } : undefined}>
         {/* A leader's topline is the votes counted (Alex); its share is the line beside it. */}
         {row.waiting || (votesFirst && row.votes === null) ? "–" : votesFirst ? row.votes!.toLocaleString("en-CA") : percent(row.share, row.votes)}
       </strong>

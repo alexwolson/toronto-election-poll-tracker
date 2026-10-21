@@ -81,3 +81,19 @@ describe("RaceResult: the projected finish (Alex, 2026-10-21)", () => {
     expect(rows()).toBe(2);
   });
 });
+
+describe("Large coloured figures stay readable (Alex, 2026-10-21)", () => {
+  const night = JSON.parse(
+    readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/payload.json"), "utf8"),
+  ) as LivePayload;
+  const race = night.races.find((r) => r.id === "councillor-12")!;
+
+  it("darkens each candidate's colour towards the ink for the big vote and projected figures; bars keep it pure", () => {
+    render(<RaceResult race={race} levels={night.levels} closed={false} />);
+    const figures = [...document.querySelectorAll<HTMLElement>(".live-tally__value, .mayor-projection__figures strong")].filter((el) => el.style.color);
+    expect(figures.length).toBeGreaterThan(0);
+    for (const el of figures) expect(el.style.color).toMatch(/^color-mix\(in srgb, .+ 70%, var\(--ink\)\)$/);
+    const bar = document.querySelector<HTMLElement>(".forecast-chart__bar")!;
+    expect(bar.style.background).not.toContain("color-mix");
+  });
+});

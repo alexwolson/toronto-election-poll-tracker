@@ -50,3 +50,9 @@ export function oklab(hex: string): [number, number, number] {
     0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
   ];
 }
+
+/** A candidate's colour as large text: mixed towards the ink so even a light campaign colour
+ *  reads at 3:1 or better on paper (Alex, 2026-10-21). Bars and swatches keep the pure colour. */
+export function figureColour(colour: string): string {
+  return `color-mix(in srgb, ${colour} 70%, var(--ink))`;
+}

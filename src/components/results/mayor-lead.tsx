@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import type { LivePayload, LiveRace } from "@/types/live";
-import { liveColour } from "@/lib/live-colour";
+import { figureColour, liveColour } from "@/lib/live-colour";
 import { rangeText, shareText } from "@/lib/live-share";
 import type { LiveCandidate } from "@/types/live";
 import { FinalForecast, MayorRecord, RaceLeadTally, estimated, hasRecord, raceTitle } from "./race-cards";
@@ -56,7 +56,7 @@ function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandi
           <div key={c.key} className={`mayor-projection__row${leaderKeys.has(c.key) ? "" : " mayor-projection__row--rest"}`}>
             <span className="mayor-projection__name">{c.full_name}</span>
             <p className="mayor-projection__figures">
-              <strong style={{ color: colour }}>{shareText(band.mid)}</strong>
+              <strong style={{ color: figureColour(colour) }}>{shareText(band.mid)}</strong>
               <span className="mayor-projection__span">{rangeText(band.low, band.high)}</span>
             </p>
             <span className="mayor-projection__track" aria-hidden="true">

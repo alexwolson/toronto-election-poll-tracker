@@ -350,8 +350,8 @@ describe("LiveMapView vs 2023", () => {
   it("says, for each ward, how Chow's change since 2023 compares with her change across the wards counted", () => {
     show(NIGHT);
     // Mock night: ward 12 has moved 1.6 points her way against the counted wards, ward 10 2.0 against her.
-    expect(label("12").getAttribute("aria-label")).toMatch(/: Olivia Chow 1\.6 points ahead of her change citywide since 2023$/);
-    expect(label("10").getAttribute("aria-label")).toMatch(/: Olivia Chow 2\.0 points behind her change citywide since 2023$/);
+    expect(label("12").getAttribute("aria-label")).toMatch(/: Olivia Chow 1\.6 points above her citywide swing$/);
+    expect(label("10").getAttribute("aria-label")).toMatch(/: Olivia Chow 2\.0 points below her citywide swing$/);
     expect(label("12").getAttribute("style")).toContain("--live-div-0");
     expect(label("10").getAttribute("style")).toContain("--live-div-worse-1");
     const legend = screen.getByRole("list", { name: "Map legend" });
@@ -364,7 +364,7 @@ describe("LiveMapView vs 2023", () => {
     ]);
     expect(screen.getByText(/against her change across all the wards counted so far/)).toBeTruthy();
     const row = within(screen.getByRole("table")).getByRole("rowheader", { name: /^12 / }).closest("tr")!;
-    expect(within(row).getByText("Olivia Chow 1.6 points ahead of her change citywide since 2023")).toBeTruthy();
+    expect(within(row).getByText("Olivia Chow 1.6 points above her citywide swing")).toBeTruthy();
   });
 
   it("leaves a ward with no votes counted unshaded, and says so", () => {

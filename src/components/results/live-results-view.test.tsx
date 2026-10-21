@@ -189,7 +189,7 @@ describe("LiveResultsView: a ward's page", () => {
     expect(html).toContain("0 of 1,535 voting areas in");
     expect(html).toContain("forecast-chart live-tally");
     expect(text(html)).toContain("Geneviève Oger");
-    expect(text(html)).toContain("The only candidate, so there is no vote.");
+    expect(text(html)).toContain("No vote is held with only one candidate.");
     expect(html).not.toContain("Results from 8 p.m.");
     expect(html).not.toContain("Rehearsal: not real results");
     expect(html).not.toContain("may be out of date");
@@ -750,7 +750,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
   it("says why a level shows the count: its gate failed, or the projection is paused", () => {
     const html = render(golden("gated-off-2022.json"), { ward: "1" });
     expect(text(card(html, "councillor-1"))).toContain(
-      "No projection for council races tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count as the City reports it.",
+      "No projection for council races tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count only.",
     );
     expect(text(card(html, "mayor"))).toContain("No projection for the mayor&#x27;s race tonight.");
     const trustee = card(html, html.match(/id="live-race-(tdsb-\d+)"/)![1]);
@@ -794,7 +794,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
 });
 
 describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
-  const WITHDRAWN = "No projection for this race right now. The count is as the City reports it.";
+  const WITHDRAWN = "No projection for this race right now.";
 
   it("keeps a withdrawn race's tally and says only that there is no projection", () => {
     // councillor-5's count is above its expected total: the one fault that still withdraws.
@@ -978,7 +978,7 @@ describe("LiveResultsView: acclaimed races (#117)", () => {
       const { html, id, page } = acclaimed(name);
       expect(page, name).toContain(`<section class="card live-acclaimed" aria-labelledby="live-race-${id}">`);
       expect(html, name).toMatch(/<p class="live-acclaimed__row"><span class="live-acclaimed__name">[^<]+<\/span> <span class="badge badge--acclaimed">Acclaimed<\/span><\/p>/);
-      expect(text(html), name).toContain("The only candidate, so there is no vote.");
+      expect(text(html), name).toContain("No vote is held with only one candidate.");
       expect(html, name).not.toContain("was acclaimed:");
     }
   });

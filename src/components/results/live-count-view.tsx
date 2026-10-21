@@ -334,7 +334,7 @@ export function LeadChart({ race, history, axis }: { race: LiveRace; history: Li
   return (
     <ChartFrame
       title={`${name(a)} against ${name(b)}`}
-      caption={`${name(a)}'s counted share minus ${name(b)}'s, in points.`}
+      caption={`${name(a)}'s counted share minus ${name(b)}'s.`}
       table={
         <table className="live-table">
           <thead>
@@ -480,7 +480,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
 
 /** Before results, or while the history loads: one line in place of the charts. */
 function CountPending({ payload, history }: { payload: LivePayload | null; history: LiveHistory | null }): ReactNode {
-  if (!payload || payload.state !== "results") return <p className="live-empty">Charts of the count start once the City reports results, from 8 p.m.</p>;
+  if (!payload || payload.state !== "results") return <p className="live-empty">Charts of the count start when results come in after 8 p.m.</p>;
   if (history === null || history.t.length === 0)
     return (
       <p className="live-empty" role="status">
@@ -527,7 +527,7 @@ export function MayorWards({ payload, wards }: { payload: LivePayload | null; wa
     <section id="results-wards" className="live-count" aria-labelledby="mayor-wards-heading">
       <h2 id="mayor-wards-heading">Mayor by ward</h2>
       {!payload || payload.state !== "results" ? (
-        <p className="live-empty">The table fills in once the City reports results, from 8 p.m.</p>
+        <p className="live-empty">The table fills in when results come in after 8 p.m.</p>
       ) : mayor?.wards ? (
         <MayorWardTable mayor={mayor} wards={wards} />
       ) : (

@@ -87,7 +87,7 @@ describe("LiveMapView", () => {
 
   it("before results, says when the map fills in and shades nothing", () => {
     render(<LiveMapView data={MAP} payload={BEFORE} wards={WARDS} ward={null} />);
-    expect(screen.getByText(/fills in as wards report, from 8 p\.m\./)).toBeTruthy();
+    expect(screen.getByText(/fills in as wards report after 8 p\.m\./)).toBeTruthy();
     expect(screen.queryByRole("list", { name: "Map legend" })).toBeNull();
   });
 
@@ -367,7 +367,7 @@ describe("LiveMapView vs 2023", () => {
       "Down 2–5 points",
       "Down 5+ points",
     ]);
-    expect(screen.getByText("Olivia Chow’s share of the votes counted in each ward, against her share there in 2023.")).toBeTruthy();
+    expect(screen.getByText("Olivia Chow’s share of the counted vote in each ward compared with her 2023 share there.")).toBeTruthy();
   });
 
   it("leaves a ward with no votes counted unshaded, and says so", () => {
@@ -391,8 +391,8 @@ describe("The count on the race type pages (Alex, 2026-10-21)", () => {
     live.history = HISTORY;
     render(<MayorCount payload={BEFORE} />);
     render(<MayorWards payload={BEFORE} wards={WARDS} />);
-    expect(screen.getAllByText(/start once the City reports results/)).toHaveLength(1);
-    expect(screen.getByText(/The table fills in once the City reports results/)).toBeTruthy();
+    expect(screen.getAllByText(/start when results come in/)).toHaveLength(1);
+    expect(screen.getByText(/The table fills in when results come in/)).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });
 

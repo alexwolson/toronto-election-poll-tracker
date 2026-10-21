@@ -15,7 +15,7 @@ import { wardLabel, type ResultsWard } from "@/lib/results-wards";
 import { CouncilAreasTable } from "./council-areas-table";
 import { LiveCountView, LiveTablesView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
-import { MayorLead, showsMayorLead } from "./mayor-lead";
+import { MayorLead, MayorNotes, RaceResult, showsMayorLead, showsRaceResult } from "./mayor-lead";
 import { CouncilTiles, FrenchBoards, RaceCard, WORDING } from "./race-cards";
 import { ResultsViews } from "./results-views";
 import { WardPicker } from "./ward-picker";
@@ -93,6 +93,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
   );
   let ballotCards: ReactNode = null;
   let mayorLead: ReactNode = null;
+  let mayorNotes: ReactNode = null;
   if (results !== null) {
     const { payload, heartbeat, closed } = results;
     const counting = payload.state === "results";
@@ -103,8 +104,9 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
     // Once the count starts the mayor leads the page, above the views; its card folds there.
     const leadRace = shown.find((race) => race.id === "mayor");
     mayorLead = showsMayorLead(leadRace) ? (
-      <MayorLead race={leadRace} levels={payload.levels} ward={ward?.num ?? null} forecast={forecast} closed={closed} />
+      <MayorLead race={leadRace} levels={payload.levels} ward={ward?.num ?? null} closed={closed} />
     ) : null;
+    mayorNotes = showsMayorLead(leadRace) ? <MayorNotes race={leadRace} levels={payload.levels} forecast={forecast} closed={closed} /> : null;
     const main = shown.filter((race) => race.level !== "french_trustee" && !(mayorLead && race.id === "mayor"));
     const french = shown.filter((race) => race.level === "french_trustee");
 
@@ -139,18 +141,31 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
       main.length + french.length === 0 ? null : (
         <ContentSection aria-labelledby="results-ballot-heading">
           <h2 id="results-ballot-heading">{ward ? `On the Ward ${ward.num} ballot` : "Citywide"}</h2>
-          <div className="grid">
-            {main.map((race) => (
-              <RaceCard
-                key={race.id}
-                race={race}
-                levels={payload.levels}
-                ward={ward?.num ?? null}
-                forecast={forecast}
-                closed={closed}
-              />
-            ))}
-            <FrenchBoards races={french} closed={closed} />
+          {/* Once a race's count starts it shows as a result, full width, like the mayor's (Alex). */}
+          <div className={[...main, ...french].some(showsRaceResult) ? "results-races" : "grid"}>
+            {main.map((race) =>
+              showsRaceResult(race) ? (
+                <RaceResult key={race.id} race={race} levels={payload.levels} ward={ward?.num ?? null} closed={closed} />
+              ) : (
+                <RaceCard
+                  key={race.id}
+                  race={race}
+                  levels={payload.levels}
+                  ward={ward?.num ?? null}
+                  forecast={forecast}
+                  closed={closed}
+                />
+              ),
+            )}
+            <FrenchBoards
+              races={french}
+              closed={closed}
+              renderRace={(race) =>
+                showsRaceResult(race) ? (
+                  <RaceResult key={race.id} race={race} levels={payload.levels} ward={ward?.num ?? null} closed={closed} />
+                ) : null
+              }
+            />
           </div>
         </ContentSection>
       );
@@ -200,6 +215,7 @@ export function LiveResultsView({ state, now, wards, ward, ballot, forecast, map
           </ContentSection>
         }
       />
+      {mayorNotes}
     </>
   );
 }

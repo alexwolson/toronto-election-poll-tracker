@@ -235,6 +235,13 @@ describe("LiveResultsView: page status", () => {
   });
 });
 
+/** The mayor's notes at the very bottom of the page (Alex): the 2023 benchmark and the disclosures. */
+function notes(html: string): string {
+  const start = html.indexOf('class="mayor-notes"');
+  expect(start, "mayor notes").toBeGreaterThan(-1);
+  return html.slice(start);
+}
+
 /** The HTML of one race's card, from its heading to the next card. */
 function card(html: string, raceId: string): string {
   const start = html.indexOf(`id="live-race-${raceId}"`);
@@ -284,21 +291,20 @@ function counting2026(leaders: Record<string, string[]>): LivePayload {
 }
 
 describe("LiveResultsView: the tally", () => {
-  it("draws each candidate's counted share as a bar, with the share and votes beside it", () => {
+  it("shows a council race as a result: votes first, the share beside them, a field of 16 folded (Alex)", () => {
     const html = card(render(golden("council-counting-2022.json"), { ward: "1" }), "councillor-1");
     expect(html).toMatch(/<span class="live-tally__name">Vincent Crisanti<\/span>/);
-    expect(html).toMatch(/class="forecast-chart__bar" style="width:41\.2%;background:var\(--color-disengaged\)"/);
-    expect(html).toContain("41.2%");
-    expect(html).toContain("6,800 votes");
-    // Every candidate, none folded, in the payload's order.
-    expect(tallyNames(html)).toHaveLength(16);
-    expect(html).not.toContain("other candidates");
+    // The bars end at the most anyone can still reach (86.23%, to 87%): Crisanti's 41.2% fills 47.4%.
+    expect(html).toMatch(/class="forecast-chart__bar" style="width:47\.3\d*%;background:var\(--color-disengaged\)"/);
+    expect(text(html)).toMatch(/6,800\s*41\.2% of counted votes/);
+    // More than five candidates fold to the top two and the rest.
+    expect(tallyNames(html)).toEqual(["Vincent Crisanti", "Avtar Minhas", "14 other candidates"]);
   });
 
   it("shows the tally once every voting area is in", () => {
     const html = card(render(golden("all-units-in-2018.json"), { ward: "1" }), "councillor-1");
-    expect(html).toContain("All voting areas in");
-    expect(html).toContain('class="forecast-chart live-tally"');
+    expect(text(html)).toContain("Voting areas inAll in");
+    expect(html).toContain("forecast-chart live-tally");
   });
 
   it("before 8 p.m. and before the first voting area, shows the counting layout, empty (#115)", () => {
@@ -343,7 +349,8 @@ describe("LiveResultsView: the mayor card", () => {
     expect(html).not.toContain(mayor.candidates[2].full_name);
     const rest = mayor.candidates.slice(2);
     const restVotes = rest.reduce((sum, c) => sum + c.votes!, 0);
-    expect(html).toContain(`${restVotes.toLocaleString("en-CA")} votes`);
+    // The folded row leads with its votes, like the leaders (Alex).
+    expect(html).toMatch(new RegExp(`live-tally__value"[^>]*>${restVotes.toLocaleString("en-CA")}<`));
     // The folded row's name is the toggle, with a down arrow (Alex): no separate button.
     expect(html).toMatch(
       new RegExp(`<button type="button" class="live-tally__expand" aria-expanded="false"[^>]*><span class="live-tally__name">${n - 2} other candidates</span><span class="live-tally__chevron" aria-hidden="true">`),
@@ -355,20 +362,18 @@ describe("LiveResultsView: the mayor card", () => {
     const payload = counting2026({ mayor: ["Brad Bradford", "Olivia Chow"] });
     const mayor = payload.races.find((r) => r.id === "mayor")!;
     mayor.possible = Object.fromEntries(mayor.candidates.map((c) => [c.key, { low: 1, high: 90 }]));
-    const html = card(render(payload, { ward: "9" }), "mayor");
+    const page = render(payload, { ward: "9" });
+    const html = card(page, "mayor");
+    expect(html.indexOf("live-tally__name")).toBeLessThan(html.indexOf('class="live-turnout"'));
+    // The benchmark and the disclosures are the page's very last part, after every view (Alex).
+    expect(page.indexOf('class="mayor-notes"')).toBeGreaterThan(page.indexOf("results-council-heading"));
+    const tail = notes(page);
     const at = (needle: string) => {
-      const i = html.indexOf(needle);
+      const i = tail.indexOf(needle);
       expect(i, needle).toBeGreaterThan(-1);
       return i;
     };
-    const order = [
-      at("live-tally__axis"),
-      at("Out of reach, even with"),
-      at('class="live-turnout"'),
-      at("in the wards counted so far"),
-      at(">About this comparison<"),
-      at("The final pre-election forecast"),
-    ];
+    const order = [at("in the wards counted so far"), at(">About this comparison<"), at("The final pre-election forecast")];
     expect(order).toEqual([...order].sort((a, b) => a - b));
     expect(html).not.toContain("What’s this?");
     // The ward's mayoral vote is in the bars now (#125), not a section of its own.
@@ -376,9 +381,9 @@ describe("LiveResultsView: the mayor card", () => {
   });
 
   it("groups the accuracy record with the pre-election forecast at the bottom (#118)", () => {
-    const html = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
+    const html = notes(render(golden("gated-live-2022.json"), { ward: "1" }));
     const record = html.indexOf("How accurate is this estimate?");
-    expect(record).toBeGreaterThan(html.indexOf("live-tally__axis"));
+    expect(record).toBeGreaterThan(-1);
     expect(record).toBeLessThan(html.indexOf("The final pre-election forecast"));
     const group = html.slice(html.indexOf('class="live-card-more"'));
     expect(group).toContain("How accurate is this estimate?");
@@ -390,9 +395,13 @@ describe("LiveResultsView: the mayor card", () => {
     three.races[0].candidates = three.races[0].candidates.slice(0, 3);
     expect(tallyNames(card(render(three), "mayor"))).toHaveLength(3);
     expect(card(render(three), "mayor")).not.toContain("live-tally__expand");
-    const four = golden("mayor-counting-2023.json");
-    four.races[0].candidates = four.races[0].candidates.slice(0, 4);
-    expect(tallyNames(card(render(four), "mayor")).at(-1)).toBe("2 other candidates");
+    // Every candidate up to five (Alex); six fold to the top two and "4 other candidates".
+    const five = golden("mayor-counting-2023.json");
+    five.races[0].candidates = five.races[0].candidates.slice(0, 5);
+    expect(tallyNames(card(render(five), "mayor"))).toHaveLength(5);
+    const six = golden("mayor-counting-2023.json");
+    six.races[0].candidates = six.races[0].candidates.slice(0, 6);
+    expect(tallyNames(card(render(six), "mayor")).at(-1)).toBe("4 other candidates");
   });
 
   it("folds before results too, to the forecast's two, with a button to show everyone (#115)", () => {
@@ -422,7 +431,8 @@ describe("LiveResultsView: the mayor card", () => {
 
   it("keeps the final forecast collapsed: a link to it, labelled as neither the count nor the projection", () => {
     for (const name of ["before-results-2026.json", "mayor-counting-2023.json"]) {
-      const html = card(render(golden(name)), "mayor");
+      // Before results the mayor's card has it; once the count starts, the page's notes do.
+      const html = name.startsWith("before") ? card(render(golden(name)), "mayor") : notes(render(golden(name)));
       expect(html).toMatch(/<div class="faq"><details class="live-forecast"><summary>The final pre-election forecast<\/summary>/);
       expect(html).toContain("It is not the count and not the projection.");
       expect(html).toMatch(/<a href="\/">home page<\/a>/);
@@ -528,12 +538,14 @@ describe("LiveResultsView: never shown (#7, #12)", () => {
     }
     const payload = golden("council-counting-2022.json");
     const race = payload.races.find((r) => r.id === "councillor-1")!;
+    // Five candidates, so every one shows (Alex).
+    race.candidates = race.candidates.slice(0, 5);
     const last = race.candidates.at(-1)!;
     last.votes = 1;
     last.share = 0;
     const html = card(render(payload, { ward: "1" }), "councillor-1");
     const lastRow = text(html).slice(text(html).indexOf(last.full_name));
-    expect(lastRow).toMatch(/^[^·]*&lt;0\.1%1 vote(?!s)/);
+    expect(lastRow).toMatch(/^[^·]*1&lt;0\.1% of counted votes/);
   });
 
   it("has no chance-to-win wording in any reader state", () => {
@@ -561,24 +573,27 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
 
   it("draws each candidate's Estimated and Possible Ranges over their counted-share bar", () => {
     const mayor = card(render(golden("gated-live-2022.json"), { ward: "1" }), "mayor");
-    expect(text(mayor)).toContain("Estimated final 59–65% · possible 9–94%");
+    // The mayor's rows are the count alone (Alex): the Estimated Range is the panel beside them.
+    expect(text(mayor)).toContain("Possible 9–94%");
     const tory = row(mayor, "Tory John");
-    // The Possible Range as the track it leaves out: hatched below 9.4% and above 94.34%, the low
-    // zone drawn after (over) the counted bar; no whisker. Then the Estimated bracket.
-    expect(tory).toContain('class="live-tally__reach live-tally__reach--high" style="left:94.34%;width:5.66%"');
-    expect(tory).toContain('class="live-tally__reach live-tally__reach--low" style="left:0;width:9.4%"');
-    expect(tory.indexOf("live-tally__reach--low")).toBeGreaterThan(tory.indexOf("forecast-chart__bar"));
+    // The bars end at the most anyone can still reach (Tory's 94.34%, rounded up to 95%), in place
+    // of out-of-reach zones (Alex): Tory's 62.42% fills 65.7% of the track.
+    expect(tory).not.toContain("live-tally__reach");
+    expect(tory).toMatch(/class="forecast-chart__bar" style="width:65\.7\d*%/);
     expect(tory).not.toContain("live-tally__possible");
-    expect(tory).toMatch(/class="live-tally__estimate" style="left:58.84%;width:6.6/);
-    expect(tory).toMatch(/class="live-tally__mid" style="left:5\d\.\d+%"/);
+    expect(tory).not.toContain("live-tally__estimate");
+    // Council races are results too: their projection is the panel, not brackets (Alex).
+    const council = card(render(golden("gated-live-2022.json"), { ward: "1" }), "councillor-1");
+    expect(council).not.toContain("live-tally__estimate");
+    expect(council).toContain('class="mayor-projection"');
     // The folded row stands for many candidates and carries no range.
     const others = `${golden("gated-live-2022.json").races[0].candidates.length - 2} other candidates`;
     expect(row(mayor, others)).not.toContain("live-tally__reach");
     expect(row(mayor, others)).not.toContain("live-tally__estimate");
-    // One key per card names the marks.
-    expect(count(mayor, 'class="live-tally__key')).toBe(1);
-    expect(text(mayor)).toContain("Out of reach");
-    expect(mayor).toContain("live-tally__glyph--reach");
+    // No key: "Counted" alone says nothing the bar doesn't (no 2023 mark in 2022).
+    expect(count(mayor, 'class="live-tally__key')).toBe(0);
+    expect(text(mayor)).not.toContain("Out of reach");
+    expect(mayor).not.toContain("live-tally__glyph--reach");
     expect(text(mayor)).not.toContain("Possible range");
     expect(text(mayor)).not.toMatch(/certain win/i);
   });
@@ -586,15 +601,14 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
   it("explains both ranges once per card, and the mayor's 2023 record behind 'How accurate is this estimate?'", () => {
     const html = render(golden("gated-live-2022.json"), { ward: "1" });
     const mayor = text(card(html, "mayor"));
-    expect(mayor).toContain("Estimated final range: where 9 in 10 simulated finishes land");
-    expect(mayor).toContain("Out of reach, even with all or none of the votes still to count");
-    // Once: the key carries the definitions, with no second caption saying it again.
-    expect(count(mayor, "9 in 10")).toBe(1);
-    expect(card(html, "mayor")).toMatch(
+    // The projection panel names its band (Alex); the cards' key keeps the longer wording.
+    expect(mayor).toContain("90% confidence interval");
+    expect(count(mayor, "9 in 10")).toBe(0);
+    expect(notes(html)).toMatch(
       /<details class="live-record"><summary>How accurate is this estimate\?<\/summary>[^]*worse than expected in the 2023 by-election/,
     );
     expect(text(card(html, "councillor-1"))).not.toContain("2023 by-election");
-    expect(count(text(card(html, "councillor-1")), "Estimated final range: where 9 in 10 simulated finishes land")).toBe(1);
+    expect(count(text(card(html, "councillor-1")), "90% confidence interval")).toBe(1);
   });
 
   it("shows only the Possible Range, and no 2023 record, below the approved mayor's ESS floor", () => {
@@ -626,6 +640,8 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
   function thirdOut(): { payload: LivePayload; third: string } {
     const payload = golden("gated-live-2022.json");
     const race = payload.races.find((r) => r.id === "councillor-1")!;
+    // Five candidates, so every one shows unfolded (Alex: a result folds above five).
+    race.candidates = race.candidates.slice(0, 5);
     const [leader, second, third] = race.candidates;
     race.possible = {
       ...race.possible,
@@ -649,8 +665,8 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(html.indexOf("live-tally__break")).toBeLessThan(html.indexOf(`<span class="live-tally__name">${third}</span>`));
     expect(html.indexOf("live-tally__break")).toBeGreaterThan(html.indexOf(`<span class="live-tally__name">${names.at(-2)}</span>`));
     expect(row(html, third)).toContain("forecast-chart__row--out");
-    // Quiet rows (#105): one line of figures; the eliminated show their votes only.
-    expect(text(meta(wholeRow(html, third)))).toMatch(/^[\d,]+ votes$/);
+    // Quiet rows (#105): votes first, the share of the count beside them.
+    expect(text(meta(wholeRow(html, third)))).toMatch(/^(&lt;)?[\d.]+% of counted votes$/);
     // The wide ranges of the golden's mayor eliminate no one.
     expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically eliminated");
   });
@@ -663,9 +679,9 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(html).not.toContain("live-tally__win");
     expect(html).not.toContain("glyph--win");
     expect(text(html)).not.toMatch(/certain win/i);
-    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d,]+ votes · Estimated final \d+–\d+%$/);
-    // The Possible Range's figures are for screen readers; the whisker shows them.
-    expect(wholeRow(html, leader.full_name)).toMatch(/<span class="visually-hidden">Estimated final [^<]* · possible 40–60%<\/span>/);
+    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d.]+% of counted votes$/);
+    // The Possible Range's figures are for screen readers; the estimate is the panel beside.
+    expect(wholeRow(html, leader.full_name)).toMatch(/<span class="visually-hidden">Possible 40–60%<\/span>/);
     // The Mathematically Eliminated badge stays.
     expect(row(html, third)).toBeTruthy();
     expect(html).toContain("live-tally__break");
@@ -726,8 +742,10 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     race.candidates = race.candidates.map((c, i) => ({ ...c, votes: i === 0 ? 200 : 100 / (race.candidates.length - 1) }));
     race.possible = Object.fromEntries(race.candidates.map((c) => [c.key, { low: 4, high: 92 }]));
     const html = card(render(payload, { ward: "1" }), race.id);
-    expect(text(html)).toContain("Out of reach, even with all or none of the votes still to count");
-    expect(text(html)).not.toContain("9 in 10");
+    // A result like the rest, with no projection panel: the boards have no estimate.
+    expect(html).toContain("forecast-chart__bar");
+    expect(html).not.toContain("mayor-projection");
+    expect(text(html)).not.toContain("confidence interval");
   });
 
   it("never shows a win probability on a gated night", () => {
@@ -753,7 +771,7 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
     const html = render(golden("withdrawals-2022.json"), { ward: "5" });
     const ward5 = text(card(html, "councillor-5"));
     expect(ward5).toContain(WITHDRAWN);
-    expect(ward5).toContain("28 of 65 voting areas in");
+    expect(ward5).toContain("Voting areas in28 of 65");
     expect(ward5).not.toContain("Estimated final");
     expect(ward5).toContain("Possible");
     expect(html).not.toContain("count_above_expected");
@@ -762,9 +780,9 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
   it("hides Reporting Progress that fails its check, and the range carries on (#97)", () => {
     const html = render(golden("withdrawals-2022.json"), { ward: "3" });
     const ward3 = text(card(html, "councillor-3"));
-    expect(ward3).toContain("Voting areas: not available");
+    expect(ward3).toContain("Voting areas inNot available");
     expect(ward3).not.toContain(WITHDRAWN);
-    expect(ward3).toContain("Estimated final");
+    expect(ward3).toContain("Projected finish");
     expect(text(tile(render(golden("withdrawals-2022.json")), "3"))).toContain("Voting areas: not available");
     expect(html).not.toContain("polls_received_above_polls");
   });
@@ -773,13 +791,14 @@ describe("LiveResultsView: per-race checks and Withdrawals (#43)", () => {
     const mayor = text(card(render(golden("withdrawals-2022.json"), { ward: "1" }), "mayor"));
     expect(mayor).not.toContain(WITHDRAWN);
     expect(mayor).toContain("Tory John");
-    expect(mayor).toContain("Estimated final");
+    // The projection stands: the panel beside the count shows it.
+    expect(mayor).toContain("Projected finish");
   });
 
   it("shows a name the bundle doesn't hold as written, with nothing special", () => {
     const ward8 = text(card(render(golden("withdrawals-2022.json"), { ward: "8" }), "councillor-8"));
     expect(ward8).toContain("Someone Unregistered");
-    expect(ward8).toContain("Estimated final");
+    expect(ward8).toContain("Projected finish");
     expect(ward8).not.toContain(WITHDRAWN);
   });
 
@@ -988,9 +1007,15 @@ describe("LiveResultsView: an incumbent councillor's share in the ward's last el
   const counting = () => counting2026({});
 
   it("marks it on the incumbent's bar, in their caption and in the key", () => {
-    const html = card(render(counting(), { ward: "1" }), "councillor-1");
+    // Five candidates, Crisanti among them, so every one shows (Alex: a result folds above five).
+    const payload = counting();
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    const crisantiCandidate = race.candidates.find((c) => c.full_name === "Vincent Crisanti")!;
+    race.candidates = [crisantiCandidate, ...race.candidates.filter((c) => c !== crisantiCandidate).slice(0, 4)];
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
     const crisanti = rowOf(html, "Vincent Crisanti");
-    expect(crisanti).toContain('class="live-tally__then" style="left:41.07%"');
+    // On the result's scale: the mark sits at 41.07% of the share, past the bar's own scale.
+    expect(crisanti).toMatch(/class="live-tally__then" style="left:[\d.]+%"/);
     expect(text(crisanti)).toContain("41.1% in 2022");
     expect(text(html)).toContain("Crisanti in 2022");
     expect(rowOf(html, "Abraham Abbey")).not.toContain("live-tally__then");
@@ -1047,7 +1072,10 @@ describe("LiveResultsView: the voters' list bar", () => {
     expect(html).toContain("live-turnout__seg--pending");
     expect(text(html)).toMatch(/[\d.]+% counted so far/);
     expect(text(html)).not.toMatch(/[\d.]+% voted/);
-    expect(card(render(payload, { ward: "9" }), "councillor-9")).not.toContain("live-turnout");
+    // A council race has its ward's voters' list too, with its 2022 turnout marked (Alex).
+    const council = card(render(payload, { ward: "9" }), "councillor-9");
+    expect(council).toContain("live-turnout");
+    expect(text(council)).toMatch(/Turnout in 2022: [\d.]+%/);
   });
 
   it("once the ward's count is complete, the rest is who didn't vote", () => {
@@ -1114,11 +1142,12 @@ describe("LiveResultsView: the mayor leads the page", () => {
     const html = render(golden("gated-live-2022.json"));
     const section = text(lead(html));
     expect(section).toMatch(/Tory John[^]*62\.4%/);
-    expect(section).toContain("Estimated final 59–65%");
+    expect(section).not.toContain("Estimated final 59–65%");
+    expect(text(section)).toContain("59–65%");
     expect(section).toMatch(/Penalosa Gil[^]*18\.1%/);
-    expect(section).toContain("Estimated final 16–21%");
+    expect(text(section)).toContain("16–21%");
     expect(section).toContain("29 other candidates");
-    expect(section).toContain("Tory John leads by 44.3 points");
+    expect(text(section)).not.toContain("In the count");
     expect(section).toContain("Voting areas in767 of 1,535");
     expect(html.indexOf('class="mayor-lead"')).toBeLessThan(html.indexOf('aria-label="Results views"'));
   });
@@ -1129,8 +1158,8 @@ describe("LiveResultsView: the mayor leads the page", () => {
     expect(html).not.toContain("mayor-lead__more");
     const section = lead(html);
     expect(section).toMatch(/class="live-tally__expand"[^>]*><span class="live-tally__name">29 other candidates</);
-    expect(section).toContain("live-tally__reach");
-    expect(text(section)).toContain("Out of reach, even with all or none of the votes still to count");
+    expect(section).not.toContain("live-tally__reach");
+    expect(section).not.toContain("live-tally__axis");
     expect(section).toContain('class="live-turnout"');
   });
 
@@ -1144,7 +1173,8 @@ describe("LiveResultsView: the mayor leads the page", () => {
 
   it("with everything in and no estimate, shows the final count", () => {
     const section = text(lead(render(golden("all-units-in-2018.json"))));
-    expect(section).toMatch(/John Tory\s*63\.5%/);
+    // The votes counted lead (2018: 479,659), the share beside them.
+    expect(section).toMatch(/John Tory[^]*479,659[^]*63\.5% of counted votes/);
     expect(section).not.toContain("Estimated final");
     expect(section).toContain("Voting areas inAll in");
   });
@@ -1161,5 +1191,39 @@ describe("LiveResultsView: the mayor leads the page", () => {
     expect(html).toMatch(/class="results-bar"[^]*City count as of[^]*Your ward/);
     // On a ward page the picker shows the ward.
     expect(html).toMatch(/<option value="1" selected="">Ward 1 Etobicoke North<\/option>/);
+  });
+});
+
+describe("LiveResultsView: the projected finish beside the mayor's leaders", () => {
+  const panel = (html: string) => {
+    const at = html.indexOf('class="mayor-projection"');
+    return at < 0 ? "" : html.slice(at, html.indexOf("</figure>", at));
+  };
+
+  it("gives the two leaders' central projections large, and their ranges on one axis", () => {
+    // 2022 golden, the band shown: Tory mid 62.33 (58.84–65.48), Penalosa mid 17.93 (16.19–20.59).
+    const p = panel(render(golden("gated-live-2022.json")));
+    expect(text(p)).toContain("Projected finish");
+    expect(text(p)).toMatch(/Tory John[^]*62\.3%[^]*Penalosa Gil[^]*17\.9%/);
+    expect(text(p)).toContain("59–65%");
+    expect(text(p)).toContain("16–21%");
+    expect(count(p, 'class="mayor-projection__range"')).toBe(2);
+  });
+
+  it("is absent when no Estimated Range shows", () => {
+    expect(panel(render(golden("all-units-in-2018.json")))).toBe("");
+  });
+});
+
+describe("LiveResultsView: a result with missing figures", () => {
+  it("shows a dash, never 0, for a candidate the City gives no votes", () => {
+    const payload = golden("council-counting-2022.json");
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    race.candidates = race.candidates.slice(0, 3).map((c, i) => (i === 2 ? { ...c, votes: null, share: null } : c));
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    const last = race.candidates[2].full_name;
+    const row = html.slice(html.indexOf(`>${last}<`));
+    expect(row).toMatch(/live-tally__value"[^>]*>–</);
+    expect(text(row.slice(0, row.indexOf("forecast-chart__row", 10)))).not.toContain("of counted votes");
   });
 });

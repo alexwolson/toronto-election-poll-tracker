@@ -1,6 +1,6 @@
 """Build the results pages' turnout figures: advance voters, and votes for mayor as a share of
 eligible electors by ward and citywide, for 2026's electors and the 2022 and 2023 counts
-(Alex, 2026-10-19).
+(Alex, 2026-10-19), and each ward's 2022 votes for councillor the same way (2026-10-20).
 
 Runs in toronto-election-live-projection's environment, which reads the City's certified
 poll-by-poll workbooks and voter statistics (its data/historical, sha256-pinned there):
@@ -42,6 +42,7 @@ LP = args.live_projection.resolve()
 os.chdir(LP)  # the harness reads its data by repo-relative paths
 sys.path.insert(0, str(LP / "src"))
 
+from election_night.feed import COUNCILLOR_OFFICE_ID  # noqa: E402
 from election_night.projection.history import ward_electors  # noqa: E402
 from election_night.replay.historical import load_night  # noqa: E402
 
@@ -62,6 +63,16 @@ for year in (2022, 2023):
     assert sum(votes.values()) == CANONICAL_VOTES[year], (year, sum(votes.values()))
     assert sum(electors.values()) == LIST_TOTALS[year], (year, sum(electors.values()))
     past[year] = {"votes": votes, "electors": electors}
+    if year == 2022:
+        # Each ward's council race: its votes over the same voters' list (the by-election had none).
+        council = {r.num: int(r.votes.sum()) for r in night.races if r.office_id == COUNCILLOR_OFFICE_ID}
+        assert sorted(council, key=int) == [str(n) for n in range(1, 26)], sorted(council)
+        # Ward 23's 2022 race lost its incumbent, Cynthia Lai, days before election day, and votes
+        # cast for her weren't counted: 70% of the ward's mayoral vote, no fair comparison.
+        council.pop("23")
+        # Every other council race draws close to its ward's mayoral vote: a guard against a wrong join.
+        assert all(0.9 < council[w] / votes[w] < 1.1 for w in council), {w: council[w] / votes[w] for w in council}
+        past[year]["council"] = council
 
 advance = {"2026": int(bundle["ward_aggregates"]["advance_voters"])}
 with open(LP / "data" / "historical" / "advance_turnout" / "advance_turnout_as_released.csv", encoding="utf-8") as f:
@@ -75,6 +86,12 @@ wards = {
         "electors_2026": electors_2026[str(n)],
         "share_2022": round(100 * past[2022]["votes"][str(n)] / past[2022]["electors"][str(n)], 2),
         "share_2023": round(100 * past[2023]["votes"][str(n)] / past[2023]["electors"][str(n)], 2),
+        # Valid votes for councillor in 2022 over the ward's list, measured as the mayor's are.
+        "council_share_2022": (
+            round(100 * past[2022]["council"][str(n)] / past[2022]["electors"][str(n)], 2)
+            if str(n) in past[2022]["council"]
+            else None
+        ),
     }
     for n in range(1, 26)
 }

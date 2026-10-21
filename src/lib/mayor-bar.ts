@@ -26,5 +26,16 @@ export function mayorParts(race: LiveRace, votesOf: (candidate: LiveCandidate) =
   ];
 }
 
+/** The parts of a race's bar without forecast-named candidates: its two leaders by votes, each in
+ *  its colour, then everyone else together. */
+export function leaderParts(race: LiveRace, votesOf: (candidate: LiveCandidate) => number): MayorPart[] {
+  const byVotes = [...race.candidates].sort((a, b) => votesOf(b) - votesOf(a));
+  const rest = byVotes.slice(2);
+  return [
+    ...byVotes.slice(0, 2).map((c) => ({ key: c.key, label: shortLabel(c), votes: votesOf(c), colour: liveColour(c, NEUTRAL) })),
+    ...(rest.length > 0 ? [{ key: "others", label: `${rest.length} others`, votes: rest.reduce((a, c) => a + votesOf(c), 0), colour: NEUTRAL }] : []),
+  ];
+}
+
 /** A bar segment's width for a percent share. */
 export const segmentWidth = (share: number) => ({ width: `${+share.toFixed(2)}%` });

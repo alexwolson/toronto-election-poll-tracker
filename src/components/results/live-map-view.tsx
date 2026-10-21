@@ -147,7 +147,7 @@ function leadWords(race: LiveRace | null, lead: Lead): string {
 function wardRace(payload: LivePayload | null, data: ResultsMapData, contest: Contest, num: string): LiveRace | null {
   if (!payload) return null;
   const id =
-    contest === "mayor" ? "mayor" : contest === "council" ? `councillor-${num}` : data.areas[num]?.[contest] ?? null;
+    contest === "mayor" ? "mayor" : contest === "council" ? `councillor-${num}` : `${contest}-${num}`;
   return id === null ? null : (payload.races.find((r) => r.id === id) ?? null);
 }
 
@@ -183,13 +183,17 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
   // The URL sets the map it opens with (#126); the reader's changes are written back to it.
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const pageWard = ward ?? data.wards[0]?.num ?? "1";
+  // The school boards draw their own trustee wards; the mayor and council, the City's.
+  const shapesFor = (c: Contest) => (c === "tdsb" || c === "tcdsb" ? data.boards[c] : data.wards);
+  const startShapes = shapesFor(fixed ?? mapSelectionFrom(searchParams, data.wards.map((w) => w.num)).contest);
+  const pageWard = ward ?? startShapes[0]?.num ?? "1";
   const [fromUrl] = useState(() => {
-    const read = mapSelectionFrom(searchParams, data.wards.map((w) => w.num));
+    const read = mapSelectionFrom(searchParams, startShapes.map((w) => w.num));
     return fixed ? { ...read, contest: fixed, measure: shownMeasure(fixed, read.measure) } : read;
   });
   const [selection, setSelection] = useState<MapSelection>({ ...fromUrl, ward: fromUrl.ward ?? pageWard });
   const { contest, measure, candidate: shareKey } = selection;
+  const shapes = shapesFor(contest);
   const held = selection.ward ?? pageWard;
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   const counting = payload?.state === "results";
@@ -203,13 +207,13 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
     const mayorWards = new Map((mayor?.wards ?? []).map((w) => [w.num, w]));
     // One scale for the share layer: up to the highest ward, rounded up to 10 points.
     const shareOf = (num: string) => (shareCandidate ? wardShare(mayorWards.get(num)?.votes, shareCandidate.key) : null);
-    const top = Math.max(10, ...data.wards.map((w) => shareOf(w.num) ?? 0));
+    const top = Math.max(10, ...shapes.map((w) => shareOf(w.num) ?? 0));
     const scaleMax = Math.ceil(top / 10) * 10;
     const vs2023 = chowVs2023(mayor);
     const chowName = chowCandidate(mayor)?.full_name ?? "Olivia Chow";
 
-    return data.wards.map((shape): WardFacts => {
-      const name = names.get(shape.num) ?? "";
+    return shapes.map((shape): WardFacts => {
+      const name = shape.name ?? names.get(shape.num) ?? "";
       // Chow's 2023 share is static, so it shows from before results (#108).
       const chow = contest === "mayor" ? chowWard(mayor, mayorWards.get(shape.num) ?? { num: shape.num, votes: null }) : undefined;
       if (!counting) {
@@ -277,7 +281,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
   const pointerDown = useRef(false);
   const [announcement, setAnnouncement] = useState("");
   const refs = useRef<Record<string, SVGPathElement | null>>({});
-  const pathOf = (num: string) => data.wards.find((w) => w.num === num)?.path;
+  const pathOf = (num: string) => shapes.find((w) => w.num === num)?.path;
   // The side panel keeps the held ward; the card is the quick look at others (#130).
   const active = facts.find((f) => f.ward.num === held) ?? facts[0];
   const cardFacts = facts.find((f) => f.ward.num === (pin?.num ?? hovered)) ?? null;
@@ -303,7 +307,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
     if (!svg || !stage) return null;
     const box = stage.getBoundingClientRect();
     if (!pin) return { x: mouse.current.x - box.left, y: mouse.current.y - box.top };
-    const label = data.wards.find((w) => w.num === pin.num)?.label;
+    const label = shapes.find((w) => w.num === pin.num)?.label;
     const at = pin.at ?? (label ? { x: label.x, y: label.y } : null);
     const ctm = svg.getScreenCTM?.();
     if (!at || !ctm) return null;
@@ -378,7 +382,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
       }
       return;
     }
-    const next = nearestWard(data.wards, num, event.key);
+    const next = nearestWard(shapes, num, event.key);
     if (next === null) return;
     event.preventDefault();
     hold(next);
@@ -506,12 +510,12 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
               {focused !== null && <path className="is-focus" d={pathOf(focused)} />}
             </g>
             <g className="live-map__labels" aria-hidden="true">
-              {data.wards.map((w) =>
+              {shapes.map((w) =>
                 w.label.leader_line ? (
                   <line key={`${w.num}-line`} {...w.label.leader_line} />
                 ) : null,
               )}
-              {data.wards.map((w) => (
+              {shapes.map((w) => (
                 <text key={w.num} x={w.label.x} y={w.label.y}>
                   {w.label.text}
                 </text>

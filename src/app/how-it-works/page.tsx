@@ -195,7 +195,7 @@ export default async function HowItWorksPage() {
                 <div className="worked-example__path" aria-label="Illustrative publication path">
                   <div>
                     <strong>Simulation</strong>
-                    <span>Sixteen thousand full-ballot election results, every candidate in each.</span>
+                    <span>Sixteen thousand full-ballot election results.</span>
                   </div>
                   <div aria-hidden="true">→</div>
                   <div>

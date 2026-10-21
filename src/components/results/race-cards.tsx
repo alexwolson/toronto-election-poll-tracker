@@ -678,7 +678,7 @@ export function FinalForecast() {
             The forecast published before election day is on the <Link href="/">home page</Link>.
           </p>
           <p className="forecast-caption">
-            The final pre-election forecast, kept for reference. It is not the count and not the projection.
+            The final pre-election forecast. It is not the count and not the projection.
           </p>
         </div>
       </details>

@@ -502,7 +502,7 @@ export function MayorCount({ payload }: { payload: LivePayload | null }) {
         <h2 id="live-count-heading">The count over the night</h2>
         {!pending && history && (
           <p className="live-count__note">
-            From {clock(history.t[0])} to {clock(history.t[history.t.length - 1])}, as the City reported it.
+            From {clock(history.t[0])} to {clock(history.t[history.t.length - 1])}.
           </p>
         )}
       </div>
@@ -525,7 +525,7 @@ export function MayorWards({ payload, wards }: { payload: LivePayload | null; wa
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   return (
     <section id="results-wards" className="live-count" aria-labelledby="mayor-wards-heading">
-      <h2 id="mayor-wards-heading">Mayor, ward by ward</h2>
+      <h2 id="mayor-wards-heading">Mayor by ward</h2>
       {!payload || payload.state !== "results" ? (
         <p className="live-empty">The table fills in once the City reports results, from 8 p.m.</p>
       ) : mayor?.wards ? (

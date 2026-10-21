@@ -340,24 +340,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 .results-bar__status > p { margin: 0; }
 .results-bar__status > .callout { flex-basis: 100%; }
 .results-bar__count { color: var(--ink); font-weight: 600; font-size: var(--type-body-small); }
-.results-picker { display: grid; justify-items: end; gap: 2px; }
-.results-picker__form { display: flex; align-items: center; gap: var(--space-sm); }
-.results-picker__form label { color: var(--ink); font-weight: 600; font-size: var(--type-body-small); white-space: nowrap; }
-.results-picker__form select {
-  min-height: var(--touch-target-min); max-width: 17rem; min-width: 0; padding: 8px 10px; font: inherit; font-size: var(--type-body-small);
-  color: var(--ink); background: var(--field-bg); border: 1px solid var(--field-border); border-radius: var(--r-sm);
-}
-.results-picker__form select:focus { outline: none; border-color: var(--blue); box-shadow: var(--shadow-focus); background: var(--paper); }
-.results-picker__form .btn { min-height: var(--touch-target-min); }
-.results-picker__help { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin: 0; font-size: var(--type-body-small); }
-.results-picker__nowrap { white-space: nowrap; }
-@media (max-width: 700px) {
-  .results-picker { justify-items: stretch; flex: 1 1 100%; }
-  /* The select and its button share a row; the select's own "Choose your ward" says what it is. */
-  .results-picker__form label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .results-picker__form select { flex: 1 1 auto; max-width: none; }
-}
-
 /* The mayor's result, first once the count starts (results redesign): the leaders large, the
    count lead beside them, then the facts that read the count. */
 .mayor-lead { background: var(--paper); padding: var(--space-lg) 0 var(--space-xl); border-bottom: 1px solid var(--rule); }
@@ -373,9 +355,6 @@ button:disabled { cursor: default; opacity: 0.6; }
   grid-template-areas: "label label est" "value meta est" "track track track";
   column-gap: var(--space-sm); row-gap: 2px; padding: 0 0 var(--space-lg); border-bottom: 0;
 }
-.mayor-lead__leaders.live-tally .forecast-chart__row--lead.forecast-chart__row--ward {
-  grid-template-areas: "label label est" "value meta est" "track track track" "wlabel wlabel wvalue" "wtrack wtrack wtrack";
-}
 .forecast-chart__row--lead .forecast-chart__label { color: var(--ink); font-weight: 700; }
 .mayor-lead__leaders.live-tally .forecast-chart__row--lead .forecast-chart__value {
   justify-self: start; font-family: var(--font-display); font-size: var(--type-display); font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: normal;
@@ -384,7 +363,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* Beside a large count on a phone the share wraps rather than leave the card. */
 .forecast-chart__row--lead .live-tally__fig { white-space: normal; }
 .forecast-chart__row--lead .forecast-chart__track { height: 20px; margin-top: var(--space-xs); border-radius: var(--r-sm); }
-.forecast-chart__row--lead .live-tally__wlabel { margin-top: var(--space-sm); }
 .mayor-lead__estimate {
   grid-area: est; align-self: end; padding-left: var(--space-md); border-left: 2px dashed var(--rule);
   text-align: right; color: var(--muted); font-size: var(--type-body-small);
@@ -407,7 +385,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 .mayor-lead__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md) var(--space-lg); margin: var(--space-lg) 0 0; padding-top: var(--space-md); border-top: 1px solid var(--rule); }
 .mayor-lead__facts dt { color: var(--muted); font-size: var(--type-body-small); font-weight: 600; }
 .mayor-lead__facts dd { margin: 2px 0 0; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-.mayor-lead__sub { display: block; color: var(--muted); font-size: var(--type-body-small); font-weight: 400; }
 @media (max-width: 860px) {
   .mayor-lead__main { grid-template-columns: minmax(0, 1fr); }
 }
@@ -467,11 +444,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 .live-tally__more:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 /* A ward page's mayoral rows (#125): the city's bar, then the ward's, thinner and lighter with no
    ranges, and Olivia Chow's 2023 share in the ward as a dashed mark on hers. */
-.live-tally .forecast-chart__row--ward { grid-template-areas: "label track value" "meta track value" "wlabel wtrack wvalue"; }
-.live-tally__wlabel { grid-area: wlabel; font-size: 0.76rem; line-height: 1.45; color: var(--muted); font-variant-numeric: tabular-nums; }
-.live-tally .live-tally__wtrack { grid-area: wtrack; align-self: center; height: 0.5rem; }
-.live-tally__wbar { opacity: 0.55; }
-.live-tally__wvalue { grid-area: wvalue; justify-self: end; font-size: 0.95rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .live-tally__then { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--ink); }
 .live-tally__glyph--then { width: 0; height: 14px; border-left: 2px dashed var(--ink); }
 .live-progress__label { min-width: 4.5rem; color: var(--ink); font-weight: 600; }
@@ -497,7 +469,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 @media (max-width: 560px) {
   /* Name and share on one line, the bar at the card's full width, then the figures. */
   .live-tally .forecast-chart__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "track track" "meta meta"; row-gap: 0.35rem; }
-  .live-tally .forecast-chart__row--ward { grid-template-areas: "label value" "track track" "meta meta" "wlabel wvalue" "wtrack wtrack"; }
   .live-tally .forecast-chart__label { grid-column: auto; }
   .live-tally .forecast-chart__value { font-size: 1.25rem; }
   .live-tally__axis { grid-template-columns: minmax(0, 1fr); }
@@ -729,7 +700,6 @@ button:disabled { cursor: default; opacity: 0.6; }
 .ward-index-sort a[aria-current="true"] { color: var(--paper); background: var(--blue); }
 .race-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-md); align-items: start; }
 .race-compact { display: grid; gap: var(--space-xs); padding: var(--space-md); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-lg); }
-.race-compact.is-mine { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
 .race-compact h3 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin: 0; font-size: var(--type-heading); }
 .race-compact h3 a { color: var(--ink); text-decoration: none; }
 .race-compact h3 a:hover { text-decoration: underline; }

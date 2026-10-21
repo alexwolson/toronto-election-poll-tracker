@@ -1,4 +1,4 @@
-import { myWardHref } from "@/lib/results-dashboard";
+import { wardRaceHref } from "@/lib/results-dashboard";
 import { ContentSection } from "@/components/content-section";
 import Link from "next/link";
 import { WardPolls } from "@/components/ward-polls";
@@ -113,7 +113,7 @@ function WardDetail({ card, benchmark }: { card: CouncilRaceCard; benchmark?: Wa
           {ATTENTION_LABEL[attention]}
         </span>
         <p className="race-hero-meta">
-          <Link href={myWardHref(card.ward)} className="text-link">
+          <Link href={wardRaceHref(card.ward)} className="text-link">
             Ward {card.ward} election night results
           </Link>
         </p>

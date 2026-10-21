@@ -4,14 +4,14 @@
  * The results dashboard (Alex, 2026-10-20): one citywide page for readers who follow the whole
  * city. A tab per race type; the mayor's race in full; every council, TDSB, TCDSB or French
  * board race at a glance in a grid, sortable, with one opening in place as the full race block;
- * your ward highlighted; and the Map, Count and Tables views. All of it in the URL. The pages are
+ * and the Map, Count and Tables views. All of it in the URL. The pages are
  * static, so the URL is read in the browser behind a Suspense boundary; the prerendered HTML
  * shows the defaults.
  */
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useSyncExternalStore, type ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { RouteTabs } from "@/components/route-tabs";
 import { liveColour } from "@/lib/live-colour";
@@ -29,16 +29,14 @@ import {
 } from "@/lib/results-dashboard";
 import type { ResultsMapData } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
-import { readRememberedWard } from "@/lib/ward-memory";
 import type { LivePayload, LiveRace } from "@/types/live";
 import { CouncilAreasTable } from "./council-areas-table";
 import { LiveCountView, LiveTablesView } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
 import { MayorLead, MayorNotes, RaceResult, showsRaceResult } from "./mayor-lead";
 import { RANGE_WORDING, RaceCard, RaceCompactTally, WORDING, countOnly, estimated, raceTitle } from "./race-cards";
-import { WardPicker } from "./ward-picker";
 
-const DEFAULTS: DashboardState = { race: "mayor", view: "races", myWard: null, open: null, sort: "number" };
+const DEFAULTS: DashboardState = { race: "mayor", view: "races", open: null, sort: "number" };
 
 const VIEW_TABS = [
   { id: "races", label: "Results" },
@@ -53,9 +51,6 @@ const SORTS: { id: RaceSort; label: string; council?: true }[] = [
   { id: "counted", label: "Least counted" },
   { id: "incumbent", label: "Incumbent trailing", council: true },
 ];
-
-/** The remembered ward changes only through the picker, which also writes the URL. */
-const subscribe = () => () => {};
 
 export interface ResultsDashboardProps {
   payload: LivePayload | null;
@@ -79,16 +74,8 @@ export function ResultsDashboard(props: ResultsDashboardProps) {
 function DashboardFromUrl(props: ResultsDashboardProps) {
   const params = useSearchParams();
   const pathname = usePathname();
-  const state = dashboardFrom(new URLSearchParams(params.toString()), props.wards.map((w) => w.num));
+  const state = dashboardFrom(new URLSearchParams(params.toString()));
   return <Dashboard {...props} state={state} params={new URLSearchParams(params.toString())} pathname={pathname} />;
-}
-
-/** A race type's race in your ward: its council race, or the trustee areas covering it. */
-function mineIn(type: RaceType, ward: string | null, mapData: ResultsMapData): string | null {
-  if (ward === null) return null;
-  if (type === "council") return `councillor-${ward}`;
-  if (type === "tdsb" || type === "tcdsb") return mapData.areas[ward]?.[type] ?? null;
-  return null;
 }
 
 function Dashboard({
@@ -102,11 +89,6 @@ function Dashboard({
   params,
   pathname,
 }: ResultsDashboardProps & { state: DashboardState; params: URLSearchParams; pathname: string }) {
-  const router = useRouter();
-  // Null on the server and in the first hydration pass, so the markup matches.
-  const remembered = useSyncExternalStore(subscribe, readRememberedWard, () => null);
-  const myWard = state.myWard ?? remembered;
-  const myWardRow = wards.find((w) => w.num === myWard) ?? null;
   const href = (change: Partial<DashboardState>) => dashboardHref(pathname, params, change);
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   const mayorShown = state.race === "mayor" && state.view === "races";
@@ -115,8 +97,8 @@ function Dashboard({
   if (state.view === "map") {
     content = (
       <ContentSection>
-        <LiveMapView data={mapData} payload={payload} wards={wards} ward={myWard} />
-        <CouncilAreasTable payload={payload} ward={myWard} />
+        <LiveMapView data={mapData} payload={payload} wards={wards} ward={null} />
+        <CouncilAreasTable payload={payload} ward={null} />
       </ContentSection>
     );
   } else if (state.view === "count") {
@@ -133,10 +115,10 @@ function Dashboard({
     );
   } else if (state.race === "mayor") {
     content = !mayor ? null : showsRaceResult(mayor) ? (
-      <MayorLead race={mayor} levels={payload!.levels} ward={myWard} closed={closed} />
+      <MayorLead race={mayor} levels={payload!.levels} closed={closed} />
     ) : (
       <ContentSection>
-        <RaceCard race={mayor} levels={payload!.levels} ward={myWard} forecast={forecast} closed={closed} />
+        <RaceCard race={mayor} levels={payload!.levels} forecast={forecast} closed={closed} />
       </ContentSection>
     );
   } else {
@@ -147,7 +129,6 @@ function Dashboard({
         levels={payload.levels}
         closed={closed}
         state={state}
-        mine={mineIn(state.race, myWard, mapData)}
         incumbents={state.race === "council" ? mapData.council : mapData.trustee}
         href={href}
       />
@@ -156,15 +137,13 @@ function Dashboard({
 
   return (
     <>
-      {/* The page's state and your ward in one bar; the title is for screen readers (the masthead
-          says Results). */}
+      {/* The page's state; the title is for screen readers (the masthead says Results). */}
       <section className="results-bar" aria-labelledby="results-heading">
         <div className="wrap results-bar__inner">
           <h1 id="results-heading" className="visually-hidden">
             Election night results
           </h1>
           <div className="results-bar__status">{status}</div>
-          <WardPicker wards={wards} ward={myWardRow} onChoose={(num) => router.replace(href({ myWard: num }), { scroll: false })} />
         </div>
       </section>
       <RouteTabs
@@ -190,7 +169,6 @@ function RaceGrid({
   levels,
   closed,
   state,
-  mine,
   incumbents,
   href,
 }: {
@@ -199,7 +177,6 @@ function RaceGrid({
   levels: LivePayload["levels"];
   closed: boolean;
   state: DashboardState;
-  mine: string | null;
   incumbents: Record<string, readonly string[] | null>;
   href: (change: Partial<DashboardState>) => string;
 }) {
@@ -208,7 +185,7 @@ function RaceGrid({
   const byNum = type === "council" ? incumbents : Object.fromEntries(races.map((r) => [r.num, incumbents[r.id] ?? null]));
   const sorts = SORTS.filter((s) => !s.council || type === "council");
   const sort = sorts.some((s) => s.id === state.sort) ? state.sort : "number";
-  const ordered = sortRaces(races, sort, byNum, mine);
+  const ordered = sortRaces(races, sort, byNum);
   return (
     <ContentSection aria-labelledby="race-grid-heading">
       <div className="race-grid__head">
@@ -228,7 +205,7 @@ function RaceGrid({
             <div key={race.id} className="race-grid__open">
               {/* Before its count starts a race's full view is its card. */}
               {showsRaceResult(race) ? (
-                <RaceResult race={race} levels={levels} ward={null} closed={closed} />
+                <RaceResult race={race} levels={levels} closed={closed} />
               ) : (
                 <RaceCard race={race} levels={levels} closed={closed} />
               )}
@@ -237,7 +214,7 @@ function RaceGrid({
               </Link>
             </div>
           ) : (
-            <CompactRace key={race.id} race={race} levels={levels} closed={closed} mine={race.id === mine} openHref={href({ open: race.id })} />
+            <CompactRace key={race.id} race={race} levels={levels} closed={closed} openHref={href({ open: race.id })} />
           ),
         )}
       </div>
@@ -251,13 +228,11 @@ function CompactRace({
   race,
   levels,
   closed,
-  mine,
   openHref,
 }: {
   race: LiveRace;
   levels: LivePayload["levels"];
   closed: boolean;
-  mine: boolean;
   openHref: string;
 }) {
   const progress = race.progress;
@@ -274,13 +249,12 @@ function CompactRace({
     );
   else body = <p className="t-body-small">{`${race.candidates.length} candidates`}</p>;
   return (
-    <article className={`race-compact${mine ? " is-mine" : ""}`} aria-labelledby={`live-race-${race.id}`}>
+    <article className="race-compact" aria-labelledby={`live-race-${race.id}`}>
       <h3 id={`live-race-${race.id}`}>
         <Link href={openHref} scroll={false}>
           {/* The tab names the office, so a council race is its ward. */}
           {race.level === "council" ? raceTitle(race).replace(/^Councillor, /, "") : raceTitle(race)}
         </Link>
-        {mine && <span className="badge badge--status">Your ward</span>}
       </h3>
       {race.state === "counting" && !progress && <p className="race-compact__progress t-meta">{WORDING.no_progress}</p>}
       {progress && race.state !== "acclaimed" && (

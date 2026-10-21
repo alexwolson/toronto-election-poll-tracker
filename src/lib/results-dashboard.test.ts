@@ -4,37 +4,33 @@ import { describe, expect, it } from "vitest";
 import type { LivePayload, LiveRace } from "@/types/live";
 import { dashboardFrom, dashboardHref, racesOfType, sortRaces } from "./results-dashboard";
 
-const WARDS = Array.from({ length: 25 }, (_, i) => String(i + 1));
 const NIGHT = JSON.parse(
   readFileSync(path.resolve(__dirname, "../../fixtures/live/mock-night/payload.json"), "utf8"),
 ) as LivePayload;
 
 describe("dashboardFrom", () => {
-  it("opens on the mayor, the results view, sorted by number, with no ward", () => {
-    expect(dashboardFrom(new URLSearchParams(""), WARDS)).toEqual({
+  it("opens on the mayor, the results view, sorted by number, with nothing open", () => {
+    expect(dashboardFrom(new URLSearchParams(""))).toEqual({
       race: "mayor",
       view: "races",
-      myWard: null,
       open: null,
       sort: "number",
     });
   });
 
-  it("reads the race type, view, your ward, the open race and the sort", () => {
-    expect(dashboardFrom(new URLSearchParams("race=council&view=map&myward=11&open=councillor-11&sort=close"), WARDS)).toEqual({
+  it("reads the race type, view, the open race and the sort", () => {
+    expect(dashboardFrom(new URLSearchParams("race=council&view=map&open=councillor-11&sort=close"))).toEqual({
       race: "council",
       view: "map",
-      myWard: "11",
       open: "councillor-11",
       sort: "close",
     });
   });
 
   it("falls back for values that don't exist", () => {
-    expect(dashboardFrom(new URLSearchParams("race=senate&view=odds&myward=26&sort=random"), WARDS)).toEqual({
+    expect(dashboardFrom(new URLSearchParams("race=senate&view=odds&sort=random"))).toEqual({
       race: "mayor",
       view: "races",
-      myWard: null,
       open: null,
       sort: "number",
     });
@@ -43,10 +39,10 @@ describe("dashboardFrom", () => {
 
 describe("dashboardHref", () => {
   it("changes one thing and keeps the rest, leaving defaults out", () => {
-    const params = new URLSearchParams("race=council&myward=11&ward=4");
-    expect(dashboardHref("/results/", params, { race: "tdsb" })).toBe("/results/?race=tdsb&myward=11&ward=4");
-    expect(dashboardHref("/results/", params, { race: "mayor" })).toBe("/results/?myward=11&ward=4");
-    expect(dashboardHref("/results/", params, { open: "councillor-3" })).toBe("/results/?race=council&myward=11&ward=4&open=councillor-3");
+    const params = new URLSearchParams("race=council&ward=4");
+    expect(dashboardHref("/results/", params, { race: "tdsb" })).toBe("/results/?race=tdsb&ward=4");
+    expect(dashboardHref("/results/", params, { race: "mayor" })).toBe("/results/?ward=4");
+    expect(dashboardHref("/results/", params, { open: "councillor-3" })).toBe("/results/?race=council&ward=4&open=councillor-3");
   });
 
   it("closes the open race when the race type changes", () => {
@@ -100,9 +96,5 @@ describe("sortRaces", () => {
     // Ward 10's incumbent is its second candidate, who trails; ward 7's leads.
     const incumbents = { "10": ["can_10_1"], "7": ["can_7_0"], "2": [] };
     expect(nums(sortRaces(races, "incumbent", incumbents))).toEqual(["10", "2", "7"]);
-  });
-
-  it("puts your ward's race first, whatever the order", () => {
-    expect(nums(sortRaces(races, "close", undefined, "councillor-7"))).toEqual(["7", "2", "10"]);
   });
 });

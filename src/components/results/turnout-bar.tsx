@@ -1,6 +1,6 @@
 /**
  * The voters' list bar (Alex, 2026-10-19): everyone on the voters' list before election day, citywide
- * or in the page's ward, split into who has been counted voting for each mayoral candidate and the
+ * or in a council race's ward, split into who has been counted voting for each mayoral candidate and the
  * rest, with 2023's share marked (only 2023's, Alex). Before 8 p.m. the city's advance voters (the City's
  * figure has no ward breakdown); while counting the rest is "not counted yet, or didn't vote", never
  * labelled as non-voters, since the two can't be told apart until the count is in; then "didn't
@@ -9,7 +9,7 @@
 
 import { leaderParts, mayorParts, segmentWidth } from "@/lib/mayor-bar";
 import { TURNOUT, TURNOUT_NOTE } from "@/lib/turnout";
-import { shareText, votesTotal } from "@/lib/live-share";
+import { shareText } from "@/lib/live-share";
 import type { LiveRace } from "@/types/live";
 
 const pct = (x: number) => `${x.toFixed(1)}%`;
@@ -24,13 +24,12 @@ interface Segment {
   colour?: string;
 }
 
-export function TurnoutBar({ race, ward: pageWard }: { race: LiveRace; ward: string | null }) {
+export function TurnoutBar({ race }: { race: LiveRace }) {
   // The mayor's, and a council race's (its ward's list). A school board's electorate is its own
   // supporters, which the City's 2026 files don't give, so trustee races have none (Alex).
   const council = race.level === "council";
   if (race.level !== "mayor" && !council) return null;
-  const ward = council ? null : pageWard;
-  const area = council ? TURNOUT.wards[race.num] : ward === null ? TURNOUT.city : TURNOUT.wards[ward];
+  const area = council ? TURNOUT.wards[race.num] : TURNOUT.city;
   if (!area || area.electors_2026 <= 0) return null;
   const past = council
     ? area.council_share_2022 == null
@@ -38,27 +37,21 @@ export function TurnoutBar({ race, ward: pageWard }: { race: LiveRace; ward: str
       : { year: 2022, share: area.council_share_2022 }
     : { year: 2023, share: area.share_2023 };
   const electors = area.electors_2026;
-  const wardRow = ward === null ? null : (race.wards?.find((w) => w.num === ward) ?? null);
-  const votesOf = (key: string, cityVotes: number | null) =>
-    ward === null ? (cityVotes ?? 0) : (wardRow?.votes?.[key] ?? 0);
 
   const segments: Segment[] = [];
   if (race.state === "before_results") {
     // The City's advance figure is citywide only.
-    if (ward === null && !council) {
+    if (!council) {
       const advance = TURNOUT.advance_voters["2026"];
       segments.push({ key: "advance", label: "Advance voters", share: (100 * advance) / electors, people: advance, className: "advance" });
     }
   } else {
     // The forecast's two, in the payload's order, then everyone else together: the mayor card's rows.
-    for (const p of (council ? leaderParts : mayorParts)(race, (c) => votesOf(c.key, c.votes))) {
+    for (const p of (council ? leaderParts : mayorParts)(race, (c) => c.votes ?? 0)) {
       segments.push({ key: p.key, label: p.label, share: (100 * p.votes) / electors, people: p.votes, className: "votes", colour: p.colour });
     }
-    const counted = ward === null ? race.candidates.reduce((a, c) => a + (c.votes ?? 0), 0) : votesTotal(wardRow?.votes);
-    const complete =
-      ward === null
-        ? race.state === "all_units_in"
-        : !!wardRow?.progress && wardRow.progress.total > 0 && wardRow.progress.received >= wardRow.progress.total;
+    const counted = race.candidates.reduce((a, c) => a + (c.votes ?? 0), 0);
+    const complete = race.state === "all_units_in";
     const remaining = Math.max(0, 100 - (100 * counted) / electors);
     const people = Math.max(0, electors - counted);
     segments.push(
@@ -74,7 +67,7 @@ export function TurnoutBar({ race, ward: pageWard }: { race: LiveRace; ward: str
   const shownText = shareText(shownShare, shown.reduce((a, x) => a + x.people, 0));
   const summary =
     race.state === "before_results"
-      ? ward === null && !council
+      ? !council
         ? `${TURNOUT.advance_voters["2026"].toLocaleString("en-CA")} advance voters (${shownText})`
         : null
       : segments.some((x) => x.className === "novote")
@@ -83,8 +76,7 @@ export function TurnoutBar({ race, ward: pageWard }: { race: LiveRace; ward: str
   return (
     <figure className="live-turnout">
       <figcaption className="live-turnout__head t-body-small">
-        {/* On a ward page the figure says it is the ward's. */}
-        {summary && <span className="live-turnout__figure">{ward === null ? summary : `Ward ${ward}: ${summary}`}</span>}
+        {summary && <span className="live-turnout__figure">{summary}</span>}
       </figcaption>
       <div className="live-turnout__track" aria-hidden="true">
         {segments.map((x) => (

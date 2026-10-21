@@ -66,19 +66,16 @@ function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandi
 export function RaceResult({
   race,
   levels,
-  ward,
   closed,
   lead = false,
 }: {
   race: LiveRace;
   levels: LivePayload["levels"] | null;
-  ward: string | null;
   closed: boolean;
   lead?: boolean;
 }) {
   const byVotes = [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0));
   const [first, second] = byVotes;
-  const wardRow = ward && race.level === "mayor" ? (race.wards?.find((w) => w.num === ward) ?? null) : null;
   const turnout = race.level === "mayor" || race.level === "council";
   const Heading = lead ? "h2" : "h3";
   const body = (
@@ -86,7 +83,7 @@ export function RaceResult({
       <Heading id={`live-race-${race.id}`}>{lead ? "Mayor" : raceTitle(race)}</Heading>
       <div className="mayor-lead__main">
         <div className="mayor-lead__tally">
-          <RaceLeadTally race={race} levels={levels} closed={closed} ward={ward} />
+          <RaceLeadTally race={race} levels={levels} closed={closed} />
         </div>
         <ProjectedFinish race={race} leaders={[first, second]} />
       </div>
@@ -104,17 +101,14 @@ export function RaceResult({
                 <span style={{ width: `${Math.min(100, (100 * race.progress.received) / race.progress.total)}%` }} />
               </span>
             )}
-            {wardRow?.progress && (
-              <span className="mayor-lead__sub">{`Ward ${ward}: ${wardRow.progress.received} of ${wardRow.progress.total}`}</span>
-            )}
           </dd>
         </div>
         {turnout && (
           <div className="mayor-lead__turnout">
             <dt>Turnout so far</dt>
             <dd>
-              {/* The voters' list bar (Alex): the mayor's for the page's ward or the city, a council race's for its ward. */}
-              <TurnoutBar race={race} ward={ward} />
+              {/* The voters' list bar (Alex): the mayor's citywide, a council race's for its ward. */}
+              <TurnoutBar race={race} />
             </dd>
           </div>
         )}
@@ -133,7 +127,7 @@ export function RaceResult({
 }
 
 /** The mayor's result at the head of the results pages. */
-export function MayorLead(props: { race: LiveRace; levels: LivePayload["levels"] | null; ward: string | null; closed: boolean }) {
+export function MayorLead(props: { race: LiveRace; levels: LivePayload["levels"] | null; closed: boolean }) {
   return <RaceResult {...props} lead />;
 }
 

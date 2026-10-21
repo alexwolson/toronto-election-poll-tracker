@@ -25,9 +25,9 @@ beforeEach(() => {
 });
 
 describe("the results dashboard route (Alex, 2026-10-20)", () => {
-  it("sends an old ward page link to the dashboard with that ward as yours", async () => {
+  it("sends an old ward page link to that ward's council race on the dashboard", async () => {
     expect(await nextConfig.redirects!()).toEqual([
-      { source: "/results/:ward(\\d{1,2})", destination: "/results/?myward=:ward", permanent: false },
+      { source: "/results/:ward(\\d{1,2})", destination: "/results/?race=council&open=councillor-:ward", permanent: false },
     ]);
   });
 

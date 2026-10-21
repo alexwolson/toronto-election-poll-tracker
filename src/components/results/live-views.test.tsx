@@ -459,7 +459,7 @@ describe("LiveMapView school boards: their own ward boundaries", () => {
   for (const board of ["tdsb", "tcdsb"] as const) {
     it(`draws the ${board.toUpperCase()}'s trustee wards, each shaded by its own race`, () => {
       const feed = trustees.boards.find((b) => b.board_id === board)!;
-      render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contest={board} />);
+      render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contests={[board]} />);
       const shapes = screen.getAllByRole("button", { name: /^Ward \d+ / });
       expect(shapes).toHaveLength(feed.map!.features.length);
       expect(shapes).not.toHaveLength(25);
@@ -473,10 +473,26 @@ describe("LiveMapView school boards: their own ward boundaries", () => {
   }
 });
 
+describe("LiveMapView: the French boards (Alex, 2026-10-21)", () => {
+  it("draws Viamonde's areas, then MonAvenir's on asking, without touching the page's URL", () => {
+    live.query = "race=french";
+    const replace = vi.spyOn(window.history, "replaceState");
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contests={["viamonde", "monavenir"]} />);
+    const count = (board: string) => trustees.boards.find((b) => b.board_id === board)!.map!.features.length;
+    expect(screen.getAllByRole("button", { name: /^Ward \d+ / })).toHaveLength(count("viamonde"));
+    fireEvent.click(screen.getByRole("button", { name: "MonAvenir" }));
+    expect(screen.getAllByRole("button", { name: /^Ward \d+ / })).toHaveLength(count("monavenir"));
+    const first = trustees.boards.find((b) => b.board_id === "monavenir")!.wards[0];
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`^Ward ${first.ward_id} `) }));
+    for (const [, , url] of replace.mock.calls) expect(String(url)).toContain("race=french");
+    replace.mockRestore();
+  });
+});
+
 describe("LiveMapView on a race type's page", () => {
   it("shows that race type, with no choice of race, whatever the URL says", () => {
     live.query = "race=mayor&show=vs2023";
-    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contest="council" />);
+    render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contests={["council"]} />);
     expect(screen.queryByRole("group", { name: "Race" })).toBeNull();
     expect(screen.getByRole("button", { name: "Incumbent" }).getAttribute("aria-pressed")).toBe("true");
   });

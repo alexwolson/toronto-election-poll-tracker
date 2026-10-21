@@ -525,6 +525,24 @@ describe("RaceCount colours", () => {
   });
 });
 
+describe("LiveMapView school boards: their own ward boundaries", () => {
+  for (const board of ["tdsb", "tcdsb"] as const) {
+    it(`draws the ${board.toUpperCase()}'s trustee wards, each shaded by its own race`, () => {
+      const feed = trustees.boards.find((b) => b.board_id === board)!;
+      render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} contest={board} />);
+      const shapes = screen.getAllByRole("button", { name: /^Ward \d+ / });
+      expect(shapes).toHaveLength(feed.map!.features.length);
+      expect(shapes).not.toHaveLength(25);
+      const first = feed.wards[0];
+      fireEvent.click(screen.getByRole("button", { name: new RegExp(`^Ward ${first.ward_id} `) }));
+      const panel = screen.getByRole("complementary", { name: `Ward ${first.ward_id} details` });
+      const district = first.district_name.replace(/^Ward \d+\s*[—–-]\s*/, "");
+      expect(panel.textContent).toContain(`Ward ${first.ward_id} ${district}`);
+      expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toContain(`open=${board}-${first.ward_id}`);
+    });
+  }
+});
+
 describe("LiveMapView on a race type's page", () => {
   it("shows that race type, with no choice of race, whatever the URL says", () => {
     live.query = "race=mayor&show=vs2023";

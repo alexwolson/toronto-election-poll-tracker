@@ -228,7 +228,7 @@ describe("LiveResultsView: the council tiles", () => {
 
   it("at 0%, carry an empty progress line and no status of their own (#115)", () => {
     const html = tile(councilGrid(golden("no-units-in-2026.json")), "14");
-    expect(html).toContain("0 of 48 voting areas in");
+    expect(html).toContain("0 of 48 in");
     expect(html).not.toContain("No voting areas have reported yet");
   });
 });
@@ -738,9 +738,10 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(wide).not.toContain("live-tally__break");
   });
 
-  it("gives council tiles their top two candidates' Estimated Ranges", () => {
+  it("leaves the ranges to a council race in full: its tile is the count at a glance (Alex, 2026-10-21)", () => {
     const html = tile(councilGrid(golden("gated-live-2022.json")), "1");
-    expect(text(html)).toContain("Projected finish (99%): Crisanti Vincent 35–45% · Minhas Avtar 19–27%");
+    expect(text(html)).not.toContain("Projected finish");
+    expect(text(html)).toMatch(/Crisanti[^]*Minhas/);
   });
 
   it("says why a level shows the count: its gate failed, or the projection is paused", () => {
@@ -756,7 +757,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(text(card(html, "councillor-1"))).not.toContain("Estimated final");
     // The Possible Range is arithmetic on the count and stays.
     expect(text(card(html, "councillor-1"))).toContain("Possible 4–93%");
-    expect(text(tile(councilGrid(golden("gated-off-2022.json")), "1"))).toContain("Count only");
+    expect(text(tile(councilGrid(golden("gated-off-2022.json")), "1"))).not.toContain("Projected finish");
   });
 
   it("notes that the French-language boards are never projected", () => {
@@ -774,7 +775,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     race.progress = { received: 100, total: 389 };
     race.candidates = race.candidates.map((c, i) => ({ ...c, votes: i === 0 ? 200 : 100 / (race.candidates.length - 1) }));
     race.possible = Object.fromEntries(race.candidates.map((c) => [c.key, { low: 4, high: 92 }]));
-    const html = card(render(payload, { ward: "1" }), race.id);
+    const html = card(renderAt(payload, `race=french&open=${race.id}`), race.id);
     // A result like the rest, with no projection panel: the boards have no estimate.
     expect(html).toContain("forecast-chart__bar");
     expect(html).not.toContain("mayor-projection");
@@ -861,7 +862,7 @@ describe("LiveResultsView: the switches (#49)", () => {
     expect(text(card(html, "councillor-1"))).toContain(PAUSED);
     expect(text(card(html, "councillor-1"))).not.toContain("Estimated final");
     expect(text(card(html, "councillor-1"))).toContain("Possible ");
-    expect(text(tile(councilGrid(payload), "1"))).toContain("Count only");
+    expect(text(tile(councilGrid(payload), "1"))).not.toContain("Projected finish");
     expect(text(card(html, "mayor"))).not.toContain("Projection paused");
   });
 
@@ -1099,11 +1100,6 @@ describe("LiveResultsView: the results audit (2026-10-20)", () => {
   it("groups thousands in voting-area counts", () => {
     expect(text(render(golden("mayor-counting-2023.json")))).toContain("1,221 of 1,451");
     expect(text(render(golden("council-counting-2022.json"), { ward: "1" }))).toContain("1,535 voting areas in");
-  });
-
-  it("labels a council block's ranges as the projected finish", () => {
-    const html = councilGrid(golden("gated-live-2022.json"));
-    expect(text(tile(html, "1"))).toMatch(/Projected finish \(99%\): [^·]+ \d+–\d+% · /);
   });
 
   it("sets the mayor's turnout after its candidates", () => {

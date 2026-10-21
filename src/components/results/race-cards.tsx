@@ -14,6 +14,7 @@ import { useId, useState, type ReactNode } from "react";
 import { candidateMeta } from "@/lib/candidates";
 import { chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
+import { leaderParts, segmentWidth } from "@/lib/mayor-bar";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { rangeText, shareText } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
@@ -539,13 +540,30 @@ function reachTop(race: LiveRace): number {
 /** A race at a glance in the dashboard's grid (Alex): its two leaders and the rest as one row,
  *  votes first, on the result's scale; three candidates show whole. */
 export function RaceCompactTally({ race, closed }: { race: LiveRace; closed: boolean }) {
-  const top = reachTop(race);
-  const rows = tallyRows(race, closed, false, race.candidates.length > 3).map((row) => ({ ...row, band: null }));
+  // The race at a glance (Alex, 2026-10-21): one bar for the whole count, the two leaders on a
+  // line each. The rest of the field, the ranges and the count's detail are in the full result.
+  const votesOf = (c: LiveCandidate) => c.votes ?? 0;
+  const total = race.candidates.reduce((sum, c) => sum + votesOf(c), 0);
+  const parts = leaderParts(race, votesOf);
+  const elected = electedKey(race, closed);
+  const leaders = [...race.candidates].sort((a, b) => votesOf(b) - votesOf(a)).slice(0, 2);
+  const share = (c: LiveCandidate) => c.share ?? (total > 0 ? (100 * votesOf(c)) / total : null);
   return (
-    <div className="forecast-chart live-tally race-compact__rows" role="list" aria-label={`${raceTitle(race)}: the count`}>
-      {rows.map((row) => (
-        <TallyRowView key={row.key} row={row} votesFirst top={top} reachZones={false} />
-      ))}
+    <div className="race-compact__count">
+      <span className="race-compact__bar" aria-hidden="true">
+        {total > 0 && parts.map((part) => <span key={part.key} style={{ ...segmentWidth((100 * part.votes) / total), background: part.colour }} />)}
+      </span>
+      <ul className="race-compact__leaders" aria-label={`${raceTitle(race)}: the two leaders`}>
+        {leaders.map((c) => (
+          <li key={c.key}>
+            <span className="race-compact__swatch" style={{ background: liveColour(c, NEUTRAL) }} aria-hidden="true" />
+            <span className="live-tally__name">{c.full_name}</span>
+            {c.key === elected && <span className="badge badge--status">{WORDING.elected}</span>}
+            <span className="race-compact__share">{shareText(share(c), c.votes)}</span>
+            <span className="race-compact__votes">{votesOf(c).toLocaleString("en-CA")}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

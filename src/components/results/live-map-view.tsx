@@ -164,8 +164,8 @@ function vsShade(vs: number | undefined, name: string): Shade {
   const step = size < 2 ? 2 : shown > 0 ? (size < 5 ? 1 : 0) : size < 5 ? 3 : 4;
   const words =
     shown === 0
-      ? `${name} in line with her 2023 pattern`
-      : `${name} ${size.toFixed(1)} points ${shown > 0 ? "better" : "worse"} than her 2023 pattern`;
+      ? `${name} in step with her change citywide since 2023`
+      : `${name} ${size.toFixed(1)} points ${shown > 0 ? "ahead of" : "behind"} her change citywide since 2023`;
   return { fill: VS_STEPS[step].fill, words };
 }
 

@@ -56,7 +56,7 @@ export const WORDING = {
   eliminated: "Mathematically eliminated",
   eliminatedWhy: "can’t win even with every vote still out",
   /** The tally's key (#105). */
-  keyCounted: "Counted",
+  keyCounted: "Share of the votes counted so far",
   /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
   keyEstimated: "Estimated final range: where 99 in 100 simulated finishes land",
   keyPossible: "Can’t be reached with the votes left to count",
@@ -343,7 +343,7 @@ function rowMeta(row: TallyRow): string[] {
 function votesFirstMeta(row: TallyRow): string[] {
   const last = row.last ? [`${row.last.share.toFixed(1)}% ${row.last.when}`] : [];
   // A missing figure is a dash on the topline, never "0", and no share line.
-  return row.waiting || row.share === null ? last : [`${percent(row.share, row.votes)} of counted votes`, ...last];
+  return row.waiting || row.share === null ? last : [percent(row.share, row.votes), ...last];
 }
 
 /** A share as a percent of a track whose end is `top` percent, capped at the end. */
@@ -469,11 +469,12 @@ function TallyKey({ rows, reachZones = true }: { rows: TallyRow[]; reachZones?: 
   const last = rows.find((r) => r.last)?.last ?? null;
   const band = has((r) => r.band);
   const reachShown = reachZones && has((r) => r.possible);
-  if (!band && !reachShown && !last) return null;
+  const counted = has((r) => r.share !== null && !r.waiting);
+  if (!counted && !band && !reachShown && !last) return null;
   return (
     <p className="live-tally__key">
-      {/* "Counted" only beside a mark it's told apart from: alone, the bar says it. */}
-      {(band || reachShown) && <span><i className="live-tally__glyph live-tally__glyph--counted" aria-hidden="true" />{WORDING.keyCounted}</span>}
+      {/* What each row's share is of, said once here rather than on every row (Alex). */}
+      {counted && <span><i className="live-tally__glyph live-tally__glyph--counted" aria-hidden="true" />{WORDING.keyCounted}</span>}
       {band && <span><i className="live-tally__glyph live-tally__glyph--estimate" aria-hidden="true" />{WORDING.keyEstimated}</span>}
       {reachShown && <span><i className="live-tally__glyph live-tally__glyph--reach" aria-hidden="true" />{WORDING.keyPossible}</span>}
       {last && <span><i className="live-tally__glyph live-tally__glyph--then" aria-hidden="true" />{last.label}</span>}

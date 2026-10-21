@@ -145,8 +145,8 @@ describe("LiveResultsView: one page per race type (Alex, 2026-10-21)", () => {
     expect(renderAt(NIGHT, "race=council")).toContain("Incumbent");
   });
 
-  it("opens council and trustee pages on their map, then every race; the French boards on their races", () => {
-    for (const type of ["council", "tdsb", "tcdsb"]) expect(ids(renderAt(NIGHT, `race=${type}`), PARTS)).toEqual(["results-map", "race-grid-heading"]);
+  it("opens council and trustee pages on every race, then their map; the French boards on their races", () => {
+    for (const type of ["council", "tdsb", "tcdsb"]) expect(ids(renderAt(NIGHT, `race=${type}`), PARTS)).toEqual(["race-grid-heading", "results-map"]);
     expect(ids(renderAt(NIGHT, "race=french"), PARTS)).toEqual(["race-grid-heading"]);
   });
 

@@ -8,6 +8,8 @@ import councilFixture from "../../../fixtures/council_race_cards.json";
 import trusteeFixture from "../../../fixtures/trustee_race_cards.json";
 import { serveHistory } from "@/lib/live-history";
 import { switchesFrom } from "@/lib/live-serve";
+import { liveColour } from "@/lib/live-colour";
+import { shortLabel } from "@/lib/live-labels";
 import { resultsMapData } from "@/lib/results-map-data";
 import { resultsWards } from "@/lib/results-wards";
 import type { CouncilRaceCardsFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
@@ -503,6 +505,23 @@ describe("The count on the race type pages (Alex, 2026-10-21)", () => {
     cleanup();
     const { container } = render(<RaceCount race={BEFORE.races.find((r) => r.id === "councillor-4")!} />);
     expect(container.innerHTML).toBe("");
+  });
+});
+
+describe("RaceCount colours", () => {
+  it("draws each candidate in the colour the race block gives them", () => {
+    live.history = HISTORY;
+    const race = NIGHT.races.find((r) => r.id === "councillor-4")!;
+    render(<RaceCount race={race} />);
+    const figure = screen.getByRole("heading", { name: "Share of the votes counted over the night" }).closest("figure")!;
+    const legend = figure.querySelector<HTMLElement>(".live-legend")!;
+    const coloured = race.candidates.filter((c) => liveColour(c, "none") !== "none");
+    expect(coloured.length).toBeGreaterThan(0);
+    for (const c of coloured) {
+      const item = within(legend).queryByText(shortLabel(c))?.closest("li");
+      if (item) expect(item.querySelector("line")!.getAttribute("stroke")).toBe(liveColour(c));
+    }
+    expect(coloured.some((c) => within(legend).queryByText(shortLabel(c)))).toBe(true);
   });
 });
 

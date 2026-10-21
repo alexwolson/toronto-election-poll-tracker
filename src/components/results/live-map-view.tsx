@@ -444,7 +444,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
           className="live-map__stage"
           onClick={(e) => !(e.target as Element).closest(".live-map__ward, .live-map__card") && setPin(null)}
         >
-          {!counting && <p className="live-map__empty">The map fills in as wards report, from 8 p.m.</p>}
+          {!counting && <p className="live-map__empty">The map fills in as wards report after 8 p.m.</p>}
           <svg
             ref={svgRef}
             viewBox={data.view_box}
@@ -556,7 +556,7 @@ export function LiveMapView({ data, payload, wards, ward, contest: fixed }: Live
           )}
           {legend.length > 0 && effectiveMeasure === "vs2023" && (
             <p className="t-meta live-map__key-note">
-              Olivia Chow’s share of the votes counted in each ward, against her share there in 2023.
+              Olivia Chow’s share of the counted vote in each ward compared with her 2023 share there.
             </p>
           )}
         </div>

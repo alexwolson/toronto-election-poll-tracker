@@ -44,12 +44,12 @@ const NEUTRAL = "var(--color-disengaged)";
 export const WORDING = {
   citywide: "Citywide",
   acclaimed: "Acclaimed",
-  acclaimedNote: "The only candidate, so there is no vote.",
+  acclaimedNote: "No vote is held with only one candidate.",
   before_results: "Results from 8 p.m.",
   no_units_in: "No voting areas have reported yet",
   all_units_in: "All voting areas in",
   no_progress: "Voting areas: not available",
-  withdrawn: "No projection for this race right now. The count is as the City reports it.",
+  withdrawn: "No projection for this race right now.",
   elected: "Elected (unofficial)",
   /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003), as one
    *  break above those candidates (#105). */
@@ -59,7 +59,7 @@ export const WORDING = {
   keyCounted: "Counted",
   /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
   keyEstimated: "Estimated final range: where 99 in 100 simulated finishes land",
-  keyPossible: "Out of reach, even with all of the votes still to count",
+  keyPossible: "Can’t be reached with the votes left to count",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -94,7 +94,7 @@ function gateNote(level: "mayor" | "council" | "trustee", status: ProjectionStat
   if (!showsCountOnly(status)) return null;
   const words = LEVEL_WORDS[level];
   if (status === "gate_failed") {
-    return `No projection for ${words} tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count as the City reports it.`;
+    return `No projection for ${words} tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count only.`;
   }
   return `Projection paused for ${words}. The count below is as the City reports it.`;
 }

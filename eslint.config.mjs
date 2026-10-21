@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Bundled agent tooling is third-party code, not application source.
     ".agents/**",
+    ".claude/**",
   ]),
 ]);
 

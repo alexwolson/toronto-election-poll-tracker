@@ -2,21 +2,19 @@
 
 /**
  * The results dashboard (Alex, 2026-10-20): one citywide page for readers who follow the whole
- * city. A tab per race type; the mayor's race in full; every council, TDSB, TCDSB or French
- * board race at a glance in a grid, sortable, with one opening in place as the full race block;
- * and the Map, Count and Tables views. All of it in the URL. The pages are
+ * city. A tab per race type, each one page to scroll (Alex, 2026-10-21): the mayor's race in
+ * full, its map, its count over the night and its wards; or every race of a type at a
+ * glance in a grid, sortable, with one opening in place as the full race block with its count
+ * over the night, then the type's map. All of it in the URL. The pages are
  * static, so the URL is read in the browser behind a Suspense boundary; the prerendered HTML
  * shows the defaults.
  */
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
 import { RouteTabs } from "@/components/route-tabs";
-import { liveColour } from "@/lib/live-colour";
-import { shortLabel } from "@/lib/live-labels";
-import { rangeText } from "@/lib/live-share";
 import {
   RACE_TYPES,
   dashboardFrom,
@@ -30,20 +28,16 @@ import {
 import type { ResultsMapData } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LivePayload, LiveRace } from "@/types/live";
-import { CouncilAreasTable } from "./council-areas-table";
-import { LiveCountView, LiveTablesView } from "./live-count-view";
+import { MayorCount, MayorWards, RaceCount } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
+import type { MapContest } from "@/lib/live-map-url";
 import { MayorLead, MayorNotes, RaceResult, showsRaceResult } from "./mayor-lead";
-import { RANGE_WORDING, RaceCard, RaceCompactTally, WORDING, countOnly, estimated, raceTitle } from "./race-cards";
+import { RANGE_WORDING, RaceCard, RaceCompactTally, WORDING, raceTitle } from "./race-cards";
 
-const DEFAULTS: DashboardState = { race: "mayor", view: "races", open: null, sort: "number" };
+const DEFAULTS: DashboardState = { race: "mayor", open: null, sort: "number", jump: null };
 
-const VIEW_TABS = [
-  { id: "races", label: "Results" },
-  { id: "map", label: "Map" },
-  { id: "count", label: "Count" },
-  { id: "tables", label: "Tables" },
-] as const;
+/** The race types the Map draws; the French boards have no map. */
+const MAPPED: readonly RaceType[] = ["mayor", "council", "tdsb", "tcdsb"];
 
 const SORTS: { id: RaceSort; label: string; council?: true }[] = [
   { id: "number", label: "Ward number" },
@@ -89,49 +83,62 @@ function Dashboard({
   params,
   pathname,
 }: ResultsDashboardProps & { state: DashboardState; params: URLSearchParams; pathname: string }) {
-  const href = (change: Partial<DashboardState>) => dashboardHref(pathname, params, change);
+  const href = (change: Parameters<typeof dashboardHref>[2]) => dashboardHref(pathname, params, change);
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
-  const mayorShown = state.race === "mayor" && state.view === "races";
+
+  // An old `?view=` link lands on the part of the page that view became.
+  useEffect(() => {
+    if (state.jump) document.getElementById(state.jump)?.scrollIntoView();
+  }, [state.jump]);
+
+  const map = MAPPED.includes(state.race) && (
+    <ContentSection>
+      {/* Keyed by race type, so a new tab opens its own map. It reads its selection from the URL,
+          so the prerendered page (the defaults, outside the URL's boundary) leaves it to the browser. */}
+      <Suspense fallback={null}>
+        <LiveMapView key={state.race} data={mapData} payload={payload} wards={wards} ward={null} contest={state.race as MapContest} />
+      </Suspense>
+    </ContentSection>
+  );
 
   let content: ReactNode;
-  if (state.view === "map") {
+  if (state.race === "mayor") {
     content = (
-      <ContentSection>
-        <LiveMapView data={mapData} payload={payload} wards={wards} ward={null} />
-        <CouncilAreasTable payload={payload} ward={null} />
-      </ContentSection>
-    );
-  } else if (state.view === "count") {
-    content = (
-      <ContentSection>
-        <LiveCountView payload={payload} ballot={[]} ward={null} />
-      </ContentSection>
-    );
-  } else if (state.view === "tables") {
-    content = (
-      <ContentSection>
-        <LiveTablesView payload={payload} wards={wards} />
-      </ContentSection>
-    );
-  } else if (state.race === "mayor") {
-    content = !mayor ? null : showsRaceResult(mayor) ? (
-      <MayorLead race={mayor} levels={payload!.levels} closed={closed} />
-    ) : (
-      <ContentSection>
-        <RaceCard race={mayor} levels={payload!.levels} forecast={forecast} closed={closed} />
-      </ContentSection>
+      <>
+        {mayor &&
+          (showsRaceResult(mayor) ? (
+            <MayorLead race={mayor} levels={payload!.levels} closed={closed} />
+          ) : (
+            <ContentSection>
+              <RaceCard race={mayor} levels={payload!.levels} forecast={forecast} closed={closed} />
+            </ContentSection>
+          ))}
+        {map}
+        <ContentSection>
+          <MayorCount payload={payload} />
+        </ContentSection>
+        <ContentSection>
+          <MayorWards payload={payload} wards={wards} />
+        </ContentSection>
+      </>
     );
   } else {
-    content = payload && (
-      <RaceGrid
-        type={state.race}
-        races={racesOfType(payload, state.race)}
-        levels={payload.levels}
-        closed={closed}
-        state={state}
-        incumbents={state.race === "council" ? mapData.council : mapData.trustee}
-        href={href}
-      />
+    content = (
+      <>
+        {/* Races first, then where they lead (Alex). */}
+        {payload && (
+          <RaceGrid
+            type={state.race}
+            races={racesOfType(payload, state.race)}
+            levels={payload.levels}
+            closed={closed}
+            state={state}
+            incumbents={state.race === "council" ? mapData.council : mapData.trustee}
+            href={href}
+          />
+        )}
+        {map}
+      </>
     );
   }
 
@@ -151,10 +158,9 @@ function Dashboard({
         items={RACE_TYPES.map((t) => ({ id: t.id, href: href({ race: t.id }), label: t.label }))}
         activeId={state.race}
       />
-      <RouteTabs label="Results views" items={VIEW_TABS.map((v) => ({ id: v.id, href: href({ view: v.id }), label: v.label }))} activeId={state.view} />
-      {content}
+      <div className="results-page">{content}</div>
       {/* The mayor's benchmark and disclosures: the page's very last part (Alex). */}
-      {mayorShown && mayor && showsRaceResult(mayor) && (
+      {state.race === "mayor" && mayor && showsRaceResult(mayor) && (
         <MayorNotes race={mayor} levels={payload!.levels} forecast={forecast} closed={closed} />
       )}
     </>
@@ -178,7 +184,7 @@ function RaceGrid({
   closed: boolean;
   state: DashboardState;
   incumbents: Record<string, readonly string[] | null>;
-  href: (change: Partial<DashboardState>) => string;
+  href: (change: Parameters<typeof dashboardHref>[2]) => string;
 }) {
   const label = RACE_TYPES.find((t) => t.id === type)!.label;
   // Incumbents are known by ward for council; trustee races by race id, so keyed the same here.
@@ -198,7 +204,6 @@ function RaceGrid({
           ))}
         </nav>
       </div>
-      {type === "french" && <p className="t-body-small">{RANGE_WORDING.french}</p>}
       <div className="race-grid">
         {ordered.map((race) =>
           race.id === state.open ? (
@@ -209,12 +214,15 @@ function RaceGrid({
               ) : (
                 <RaceCard race={race} levels={levels} closed={closed} />
               )}
+              <RaceCount race={race} />
+              {/* Why a French board has no projected finish, where a reader would look for one. */}
+              {type === "french" && <p className="t-meta">{RANGE_WORDING.french}</p>}
               <Link className="btn btn--ghost btn--sm race-grid__close" href={href({ open: null })} scroll={false}>
                 <span className="live-tally__chevron" aria-hidden="true">⌃</span> Close
               </Link>
             </div>
           ) : (
-            <CompactRace key={race.id} race={race} levels={levels} closed={closed} openHref={href({ open: race.id })} />
+            <CompactRace key={race.id} race={race} closed={closed} openHref={href({ open: race.id })} />
           ),
         )}
       </div>
@@ -222,16 +230,14 @@ function RaceGrid({
   );
 }
 
-/** One race at a glance: title, voting areas in, its leaders and the rest, and its projected
- *  finish in a line. The title opens it in full. */
+/** One race at a glance (Alex, 2026-10-21): its title and how much is in, one bar for the count
+ *  and its two leaders. The whole card opens it in full. */
 function CompactRace({
   race,
-  levels,
   closed,
   openHref,
 }: {
   race: LiveRace;
-  levels: LivePayload["levels"];
   closed: boolean;
   openHref: string;
 }) {
@@ -239,55 +245,23 @@ function CompactRace({
   let body: ReactNode;
   if (race.state === "acclaimed") body = <p className="t-body-small">{`${WORDING.acclaimed}: ${race.candidates[0]?.full_name ?? ""}`}</p>;
   else if (race.state === "no_figures") body = <p className="t-body-small">No figures from the City for this race right now</p>;
-  else if (showsRaceResult(race))
-    body = (
-      <>
-        <RaceCompactTally race={race} closed={closed} />
-        {/* While the level shows the count, the block says so in place of the projected line. */}
-        {race.state === "counting" && countOnly(race, levels) ? <p className="race-compact__projected t-body-small">Count only</p> : <ProjectedLine race={race} />}
-      </>
-    );
+  else if (showsRaceResult(race)) body = <RaceCompactTally race={race} closed={closed} />;
   else body = <p className="t-body-small">{`${race.candidates.length} candidates`}</p>;
   return (
     <article className="race-compact" aria-labelledby={`live-race-${race.id}`}>
-      <h3 id={`live-race-${race.id}`}>
-        <Link href={openHref} scroll={false}>
-          {/* The tab names the office, so a council race is its ward. */}
-          {race.level === "council" ? raceTitle(race).replace(/^Councillor, /, "") : raceTitle(race)}
-        </Link>
-      </h3>
-      {race.state === "counting" && !progress && <p className="race-compact__progress t-meta">{WORDING.no_progress}</p>}
-      {progress && race.state !== "acclaimed" && (
-        <p className="race-compact__progress t-meta">
-          <span className="mayor-lead__progress" aria-hidden="true">
-            <span style={{ width: `${progress.total > 0 ? Math.min(100, (100 * progress.received) / progress.total) : 0}%` }} />
-          </span>
-          {`${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} voting areas in`}
-        </p>
-      )}
+      <div className="race-compact__head">
+        <h3 id={`live-race-${race.id}`}>
+          <Link href={openHref} scroll={false}>
+            {/* The tab names the office, so a council race is its ward. */}
+            {race.level === "council" ? raceTitle(race).replace(/^Councillor, /, "") : raceTitle(race)}
+          </Link>
+        </h3>
+        {race.state === "counting" && !progress && <p className="race-compact__progress t-meta">{WORDING.no_progress}</p>}
+        {progress && race.state !== "acclaimed" && (
+          <p className="race-compact__progress t-meta">{`${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} in`}</p>
+        )}
+      </div>
       {body}
-      <Link className="race-compact__open" href={openHref} scroll={false}>
-        Full result <span aria-hidden="true">⌄</span>
-      </Link>
     </article>
-  );
-}
-
-/** The projected finish in a line, for the two leaders, when the level's projection shows. */
-function ProjectedLine({ race }: { race: LiveRace }) {
-  const bands = estimated(race);
-  const leaders = [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0)).slice(0, 2);
-  if (!bands || leaders.some((c) => !bands[c.key])) return null;
-  return (
-    <p className="race-compact__projected t-body-small">
-      {"Projected finish (99%): "}
-      {leaders.map((c, i) => (
-        <span key={c.key}>
-          {i > 0 && " · "}
-          <span style={{ color: liveColour(c, "var(--color-disengaged)") }}>{shortLabel(c)}</span>{" "}
-          {rangeText(bands[c.key].low, bands[c.key].high)}
-        </span>
-      ))}
-    </p>
   );
 }

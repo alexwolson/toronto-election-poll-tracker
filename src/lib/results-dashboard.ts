@@ -1,6 +1,7 @@
 /**
  * The results dashboard's state (Alex, 2026-10-20): one citywide page with a tab per race type,
- * every race of that type at a glance, one open in full, and a sort. All
+ * every race of that type at a glance, one open in full, and a sort. Each race type is one page
+ * to scroll; the Map, Count and Tables views folded into it (Alex, 2026-10-21). All
  * of it in the URL, so a view can be shared. The race type shares the Map's `race` parameter
  * (the same values), so the two follow each other.
  */
@@ -9,15 +10,15 @@ import type { LivePayload, LiveRace } from "@/types/live";
 import { raceLead, reportedFraction } from "./live-map";
 
 export type RaceType = "mayor" | "council" | "tdsb" | "tcdsb" | "french";
-export type DashboardView = "races" | "map" | "count" | "tables";
 export type RaceSort = "number" | "close" | "counted" | "incumbent";
 
 export interface DashboardState {
   race: RaceType;
-  view: DashboardView;
   /** The race shown in full in its type's grid, by payload id. */
   open: string | null;
   sort: RaceSort;
+  /** The part of the page an old `?view=` link points to, by element id; null for the top. */
+  jump: string | null;
 }
 
 export const RACE_TYPES: readonly { id: RaceType; label: string }[] = [
@@ -27,7 +28,8 @@ export const RACE_TYPES: readonly { id: RaceType; label: string }[] = [
   { id: "tcdsb", label: "TCDSB" },
   { id: "french", label: "French boards" },
 ];
-const VIEWS: readonly DashboardView[] = ["races", "map", "count", "tables"];
+/** Where the retired views' links land on the page that holds them now. */
+const JUMPS: Record<string, string> = { map: "results-map", count: "results-count", tables: "results-wards" };
 const SORTS: readonly RaceSort[] = ["number", "close", "counted", "incumbent"];
 
 function oneOf<T extends string>(value: string | null, options: readonly T[], fallback: T): T {
@@ -37,22 +39,22 @@ function oneOf<T extends string>(value: string | null, options: readonly T[], fa
 export function dashboardFrom(params: URLSearchParams): DashboardState {
   return {
     race: oneOf(params.get("race"), RACE_TYPES.map((t) => t.id), "mayor"),
-    view: oneOf(params.get("view"), VIEWS, "races"),
     open: params.get("open"),
     sort: oneOf(params.get("sort"), SORTS, "number"),
+    jump: JUMPS[params.get("view") ?? ""] ?? null,
   };
 }
 
 /** The page's URL with these changes, keeping its other parameters and leaving defaults out. A
- *  new race type closes the open race. */
-export function dashboardHref(pathname: string, params: URLSearchParams, change: Partial<DashboardState>): string {
+ *  new race type closes the open race; an old `?view=` is dropped. */
+export function dashboardHref(pathname: string, params: URLSearchParams, change: Partial<Omit<DashboardState, "jump">>): string {
   const next = new URLSearchParams(params);
+  next.delete("view");
   const put = (key: string, value: string | null) => (value === null ? next.delete(key) : next.set(key, value));
   if (change.race !== undefined) {
     put("race", change.race === "mayor" ? null : change.race);
     if (change.open === undefined) next.delete("open");
   }
-  if (change.view !== undefined) put("view", change.view === "races" ? null : change.view);
   if (change.open !== undefined) put("open", change.open);
   if (change.sort !== undefined) put("sort", change.sort === "number" ? null : change.sort);
   const query = next.toString();

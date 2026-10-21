@@ -14,7 +14,7 @@ import { raceHref } from "@/lib/results-dashboard";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
-import { CHOW_2023, chowCandidate, chowVs2023, chowWard, type ChowWard } from "@/lib/chow-2023";
+import { CHOW_2023, chowCandidate, chowWard, type ChowWard } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
 import { placeCard } from "@/lib/live-map-card";
 import { shareText, wardShare } from "@/lib/live-share";
@@ -84,14 +84,15 @@ const REPORTING_STEP: Record<ReportingTier, string | null> = {
   all: "var(--live-seq-4)",
 };
 
-/** The "vs 2023" steps (#110), from better for Chow than her change across the counted wards to
- *  worse: within 2 points, 2–5, and 5 or more, each way. */
+/** The "vs 2023" steps: Chow's share now against her 2023 share in the ward (Alex, 2026-10-21,
+ *  in place of #110's change against her citywide change, which read as jargon). Within 2
+ *  points, 2–5, and 5 or more, each way. */
 const VS_STEPS = [
-  { label: "5+ points better", fill: "var(--live-div-better-2)" },
-  { label: "2–5 points better", fill: "var(--live-div-better-1)" },
+  { label: "Up 5+ points", fill: "var(--live-div-better-2)" },
+  { label: "Up 2–5 points", fill: "var(--live-div-better-1)" },
   { label: "Within 2 points", fill: "var(--live-div-0)" },
-  { label: "2–5 points worse", fill: "var(--live-div-worse-1)" },
-  { label: "5+ points worse", fill: "var(--live-div-worse-2)" },
+  { label: "Down 2–5 points", fill: "var(--live-div-worse-1)" },
+  { label: "Down 5+ points", fill: "var(--live-div-worse-2)" },
 ] as const;
 
 type WardStyle = CSSProperties & { "--ward-fill"?: string };
@@ -147,7 +148,7 @@ function leadWords(race: LiveRace | null, lead: Lead): string {
 function wardRace(payload: LivePayload | null, data: ResultsMapData, contest: Contest, num: string): LiveRace | null {
   if (!payload) return null;
   const id =
-    contest === "mayor" ? "mayor" : contest === "council" ? `councillor-${num}` : data.areas[num]?.[contest] ?? null;
+    contest === "mayor" ? "mayor" : contest === "council" ? `councillor-${num}` : `${contest}-${num}`;
   return id === null ? null : (payload.races.find((r) => r.id === id) ?? null);
 }
 
@@ -156,16 +157,14 @@ function reportingShade(fraction: number | null): Shade {
   return { fill: REPORTING_STEP[tier], words: `${REPORTING_WORDS[tier]}${fraction === null ? "" : ` (${pct(100 * fraction, 0)})`}` };
 }
 
-function vsShade(vs: number | undefined, name: string): Shade {
-  if (vs === undefined) return { fill: null, words: "No votes counted yet" };
+function vsShade(chow: ChowWard | null | undefined, name: string): Shade {
+  if (!chow || chow.live === null) return { fill: null, words: "No votes counted yet" };
+  const vs = chow.live - chow.share2023;
   // Stepped on the figure as shown, so a ward reading "2.0 points" never sits in the band under 2.
   const shown = Math.round(vs * 10) / 10;
   const size = Math.abs(shown);
   const step = size < 2 ? 2 : shown > 0 ? (size < 5 ? 1 : 0) : size < 5 ? 3 : 4;
-  const words =
-    shown === 0
-      ? `${name} in line with her 2023 pattern`
-      : `${name} ${size.toFixed(1)} points ${shown > 0 ? "better" : "worse"} than her 2023 pattern`;
+  const words = `${name} ${chow.live.toFixed(1)}%, ${shown >= 0 ? "up" : "down"} from ${chow.share2023.toFixed(1)}% in 2023`;
   return { fill: VS_STEPS[step].fill, words };
 }
 
@@ -175,16 +174,25 @@ export interface LiveMapViewProps {
   wards: ResultsWard[];
   /** The ward whose page this is: it starts held. */
   ward: string | null;
+  /** The race type whose page holds the map: the map shows it, with no choice of race. */
+  contest?: Contest;
 }
 
-export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
+export function LiveMapView({ data, payload, wards, ward, contest: fixed }: LiveMapViewProps) {
   // The URL sets the map it opens with (#126); the reader's changes are written back to it.
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const pageWard = ward ?? data.wards[0]?.num ?? "1";
-  const [fromUrl] = useState(() => mapSelectionFrom(searchParams, data.wards.map((w) => w.num)));
+  // The school boards draw their own trustee wards; the mayor and council, the City's.
+  const shapesFor = (c: Contest) => (c === "tdsb" || c === "tcdsb" ? data.boards[c] : data.wards);
+  const startShapes = shapesFor(fixed ?? mapSelectionFrom(searchParams, data.wards.map((w) => w.num)).contest);
+  const pageWard = ward ?? startShapes[0]?.num ?? "1";
+  const [fromUrl] = useState(() => {
+    const read = mapSelectionFrom(searchParams, startShapes.map((w) => w.num));
+    return fixed ? { ...read, contest: fixed, measure: shownMeasure(fixed, read.measure) } : read;
+  });
   const [selection, setSelection] = useState<MapSelection>({ ...fromUrl, ward: fromUrl.ward ?? pageWard });
   const { contest, measure, candidate: shareKey } = selection;
+  const shapes = shapesFor(contest);
   const held = selection.ward ?? pageWard;
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   const counting = payload?.state === "results";
@@ -198,13 +206,12 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
     const mayorWards = new Map((mayor?.wards ?? []).map((w) => [w.num, w]));
     // One scale for the share layer: up to the highest ward, rounded up to 10 points.
     const shareOf = (num: string) => (shareCandidate ? wardShare(mayorWards.get(num)?.votes, shareCandidate.key) : null);
-    const top = Math.max(10, ...data.wards.map((w) => shareOf(w.num) ?? 0));
+    const top = Math.max(10, ...shapes.map((w) => shareOf(w.num) ?? 0));
     const scaleMax = Math.ceil(top / 10) * 10;
-    const vs2023 = chowVs2023(mayor);
     const chowName = chowCandidate(mayor)?.full_name ?? "Olivia Chow";
 
-    return data.wards.map((shape): WardFacts => {
-      const name = names.get(shape.num) ?? "";
+    return shapes.map((shape): WardFacts => {
+      const name = shape.name ?? names.get(shape.num) ?? "";
       // Chow's 2023 share is static, so it shows from before results (#108).
       const chow = contest === "mayor" ? chowWard(mayor, mayorWards.get(shape.num) ?? { num: shape.num, votes: null }) : undefined;
       if (!counting) {
@@ -216,7 +223,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
         const reported = mw?.progress ?? null;
         let shade: Shade;
         if (effectiveMeasure === "reporting") shade = reportingShade(lead?.reported ?? null);
-        else if (effectiveMeasure === "vs2023") shade = vsShade(vs2023[shape.num], chowName);
+        else if (effectiveMeasure === "vs2023") shade = vsShade(chow, chowName);
         else if (effectiveMeasure === "share") {
           const share = shareOf(shape.num);
           shade =
@@ -272,7 +279,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const pointerDown = useRef(false);
   const [announcement, setAnnouncement] = useState("");
   const refs = useRef<Record<string, SVGPathElement | null>>({});
-  const pathOf = (num: string) => data.wards.find((w) => w.num === num)?.path;
+  const pathOf = (num: string) => shapes.find((w) => w.num === num)?.path;
   // The side panel keeps the held ward; the card is the quick look at others (#130).
   const active = facts.find((f) => f.ward.num === held) ?? facts[0];
   const cardFacts = facts.find((f) => f.ward.num === (pin?.num ?? hovered)) ?? null;
@@ -298,7 +305,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
     if (!svg || !stage) return null;
     const box = stage.getBoundingClientRect();
     if (!pin) return { x: mouse.current.x - box.left, y: mouse.current.y - box.top };
-    const label = data.wards.find((w) => w.num === pin.num)?.label;
+    const label = shapes.find((w) => w.num === pin.num)?.label;
     const at = pin.at ?? (label ? { x: label.x, y: label.y } : null);
     const ctm = svg.getScreenCTM?.();
     if (!at || !ctm) return null;
@@ -373,7 +380,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
       }
       return;
     }
-    const next = nearestWard(data.wards, num, event.key);
+    const next = nearestWard(shapes, num, event.key);
     if (next === null) return;
     event.preventDefault();
     hold(next);
@@ -396,17 +403,19 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
   const legend = legendFor(contest, effectiveMeasure, mayor, facts, candidateColour(shareCandidate));
 
   return (
-    <section className="live-map" aria-labelledby="live-map-heading">
+    <section id="results-map" className="live-map" aria-labelledby="live-map-heading">
       <div className="live-map__head">
         <h2 id="live-map-heading">Results by ward</h2>
         <div className="live-map__controls">
-          <div className="ward-index-sort live-seg" role="group" aria-label="Race">
-            {CONTESTS.map((c) => (
-              <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select({ contest: c.id })}>
-                {c.label}
-              </button>
-            ))}
-          </div>
+          {!fixed && (
+            <div className="ward-index-sort live-seg" role="group" aria-label="Race">
+              {CONTESTS.map((c) => (
+                <button key={c.id} type="button" aria-pressed={contest === c.id} onClick={() => select({ contest: c.id })}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="ward-index-sort live-seg" role="group" aria-label="Show">
             {measures.map((m) => (
               <button key={m.id} type="button" aria-pressed={effectiveMeasure === m.id} onClick={() => select({ measure: m.id })}>
@@ -435,7 +444,7 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
           className="live-map__stage"
           onClick={(e) => !(e.target as Element).closest(".live-map__ward, .live-map__card") && setPin(null)}
         >
-          {!counting && <p className="live-map__empty">The map fills in as wards report, from 8 p.m.</p>}
+          {!counting && <p className="live-map__empty">The map fills in as wards report after 8 p.m.</p>}
           <svg
             ref={svgRef}
             viewBox={data.view_box}
@@ -499,12 +508,12 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
               {focused !== null && <path className="is-focus" d={pathOf(focused)} />}
             </g>
             <g className="live-map__labels" aria-hidden="true">
-              {data.wards.map((w) =>
+              {shapes.map((w) =>
                 w.label.leader_line ? (
                   <line key={`${w.num}-line`} {...w.label.leader_line} />
                 ) : null,
               )}
-              {data.wards.map((w) => (
+              {shapes.map((w) => (
                 <text key={w.num} x={w.label.x} y={w.label.y}>
                   {w.label.text}
                 </text>
@@ -527,10 +536,6 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
               )}
             </div>
           )}
-          <p className="t-meta live-map__hint">
-            <span className="live-map__hint--hover">Hover over a ward to see its results; click to keep them open.</span>
-            <span className="live-map__hint--touch">Tap a ward to see its results.</span>
-          </p>
           {legend.length > 0 && (
             <ul className="live-map__legend" aria-label="Map legend">
               {legend.map((item) => (
@@ -544,12 +549,6 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
                 </li>
               ))}
             </ul>
-          )}
-          {legend.length > 0 && effectiveMeasure === "vs2023" && (
-            <p className="t-meta live-map__key-note">
-              Olivia Chow&apos;s change since 2023 in each ward, against her change across all the wards counted so far.
-              Not an estimate of tonight&apos;s result.
-            </p>
           )}
         </div>
         {active && <WardPanel facts={active} contest={contest} />}
@@ -596,16 +595,17 @@ export function LiveMapView({ data, payload, wards, ward }: LiveMapViewProps) {
             </tbody>
           </table>
         </div>
+              {/* Where the 2023 shares come from, with the table that shows them. */}
+        {contest === "mayor" && (
+          <p className="t-meta">
+            Olivia Chow&apos;s 2023 shares ({pct(CHOW_2023.citywide.share)} citywide) are from the{" "}
+            <a className="text-link" href={CHOW_2023.source_url}>
+              City of Toronto&apos;s certified results of the 2023 by-election <span aria-hidden="true">↗</span>
+            </a>
+            . {CHOW_2023.licence}
+          </p>
+        )}
       </details>
-      {contest === "mayor" && (
-        <p className="t-meta">
-          Olivia Chow&apos;s 2023 shares ({pct(CHOW_2023.citywide.share)} citywide) are from the{" "}
-          <a className="text-link" href={CHOW_2023.source_url}>
-            City of Toronto&apos;s certified results of the 2023 by-election <span aria-hidden="true">↗</span>
-          </a>
-          . {CHOW_2023.licence}
-        </p>
-      )}
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
@@ -638,7 +638,7 @@ function WardPanel(props: WardDetailsProps) {
 /** A ward's figures, in the side panel and the ward card. */
 function WardDetails({ facts, contest }: WardDetailsProps) {
   const { ward, name, race, lead, reported, shade } = facts;
-  const raceName = contest === "mayor" ? "Mayor, votes in this ward" : race ? raceTitle(race) : null;
+  const raceName = contest === "mayor" ? "Votes for mayor in this ward" : race ? raceTitle(race) : null;
   // Each figure once: the lead is in the status line, so the list is just who has what. Its rows
   // keep one alphabetical order by last name, whoever leads, so they don't swap places from ward
   // to ward (#122). Chow's row carries her 2023 share in the ward (#108), and joins the list if

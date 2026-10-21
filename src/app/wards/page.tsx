@@ -6,7 +6,7 @@ import { wardIndexView } from "@/lib/council";
 
 export const metadata = {
   title: "Council — Toronto 2026",
-  description: "The 25 ward council races, ordered by attention.",
+  description: "The 25 ward council races.",
 };
 
 export default async function WardsPage() {

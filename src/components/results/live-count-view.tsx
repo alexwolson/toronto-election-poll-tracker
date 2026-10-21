@@ -1,20 +1,18 @@
 "use client";
 
 /**
- * The results Count view (live-projection #103): the count over the night, from
- * `/live/history.json`. How fast voting areas and votes come in, how each candidate's
- * counted share moved with the Estimated Range behind it where one showed, the lead
- * between the top two, the mayor by ward, and every race by how much is in. Every chart
- * has a table. The count only, never compared with the forecast (#12).
+ * The count over the night (live-projection #103), from `/live/history.json`: how each
+ * candidate's counted share moved with the Estimated Range behind it where one showed, the lead
+ * between the top two, and the mayor by ward. Parts of
+ * each race type's page since the views folded into it (Alex, 2026-10-21). Every chart has a
+ * table. The count only, never compared with the forecast (#12).
  */
 
-import { wardRaceHref, raceHref } from "@/lib/results-dashboard";
+import { wardRaceHref } from "@/lib/results-dashboard";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Area,
-  Bar,
-  BarChart,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -25,16 +23,15 @@ import {
   YAxis,
 } from "recharts";
 import { candidateMeta } from "@/lib/candidates";
+import { liveColour } from "@/lib/live-colour";
 import { shareText } from "@/lib/live-share";
-import { countRows, leadRows, paceBuckets, shareRows, type ShareRow } from "@/lib/live-count";
-import { mayorWardLead, raceLead, reportedFraction, type Lead } from "@/lib/live-map";
+import { leadRows, shareRows, type ShareRow } from "@/lib/live-count";
+import { mayorWardLead, type Lead } from "@/lib/live-map";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LiveHistory, LivePayload, LiveRace } from "@/types/live";
 import { shortLabel } from "@/lib/live-labels";
-import { useLiveHistory } from "./live-results-poller";
-import { raceTitle } from "./race-cards";
+import { useLiveHistoryIfProvided } from "./live-results-poller";
 
-const TEN_MINUTES = 10 * 60_000;
 const HALF_HOUR = 30 * 60_000;
 const MARGIN = { top: 8, right: 28, bottom: 4, left: 0 } as const;
 const AXIS_TICK = { fill: "var(--muted)", fontSize: 12, fontFamily: "var(--font-mono)" } as const;
@@ -62,9 +59,6 @@ function pct(value: number | null | undefined, digits = 1): string {
   return value === null || value === undefined ? "–" : `${value.toFixed(digits)}%`;
 }
 
-function whole(n: number): string {
-  return n.toLocaleString("en-CA");
-}
 
 /** Clock ticks across the domain: on the half hour, or the hour on a phone, and the start
  *  itself when the first of those is well after it, so the axis always says when it begins. */
@@ -105,8 +99,9 @@ interface Series {
 
 /**
  * The lines a race draws: the mayor's forecast-named candidates in their colours, then the
- * leading others; elsewhere the top four. Colours follow the candidate's place in the
- * history's stable key order, never their rank, so a line keeps its colour all night.
+ * leading others; elsewhere the top four, in their race block's colours, the palette by their
+ * place in the history's stable key order for those without one, never their rank, so a line
+ * keeps its colour all night.
  */
 function seriesFor(race: LiveRace, history: LiveHistory): Series[] {
   const keys = history.races[race.id]?.keys ?? [];
@@ -119,7 +114,8 @@ function seriesFor(race: LiveRace, history: LiveHistory): Series[] {
     return named.map((c) => ({ key: c.key, label: label(c), colour: candidateMeta(c.candidate_id!).colorVar, band: hasBand(c.key) }));
   }
   const drawn = byVotes.slice(0, 4).sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key));
-  return drawn.map((c, i) => ({ key: c.key, label: label(c), colour: SERIES[i], band: hasBand(c.key) }));
+  // Each candidate keeps the colour their race block gives them; the palette fills in for the rest.
+  return drawn.map((c, i) => ({ key: c.key, label: label(c), colour: liveColour(c, SERIES[i]), band: hasBand(c.key) }));
 }
 
 function ChartFrame({ title, caption, children, table }: { title: string; caption?: ReactNode; children: ReactNode; table: ReactNode }) {
@@ -318,108 +314,6 @@ function AxisSwitch({ axis, onChange }: { axis: Axis; onChange: (axis: Axis) => 
   );
 }
 
-function PaceCharts({ history }: { history: LiveHistory }) {
-  const narrow = useNarrow();
-  const rows = countRows(history, "mayor");
-  const buckets = paceBuckets(history, "mayor", TEN_MINUTES);
-  if (rows.length === 0) return null;
-  const domain: [number, number] = [buckets[0].start, rows[rows.length - 1].t];
-  const ticks = clockTicks(domain[0], domain[1], narrow);
-  const xAxis = (
-    <XAxis
-      dataKey="t"
-      type="number"
-      domain={domain}
-      ticks={ticks}
-      tickFormatter={tickClock}
-      tick={AXIS_TICK}
-      axisLine={{ stroke: "var(--rule)" }}
-      tickLine={false}
-    />
-  );
-  return (
-    <div className="live-chart-pair">
-      <ChartFrame
-        title="Voting areas in"
-        table={
-          <table className="live-table">
-            <thead>
-              <tr>
-                <th scope="col">City count</th>
-                <th scope="col">Voting areas in</th>
-                <th scope="col">Votes counted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.t}>
-                  <th scope="row">{clock(r.t)}</th>
-                  <td className="live-num">{pct(r.reported, 0)}</td>
-                  <td className="live-num">{whole(r.counted)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        }
-      >
-        <ResponsiveContainer width="100%" height={200} debounce={100}>
-          <ComposedChart data={rows} margin={MARGIN} accessibilityLayer={false}>
-            <CartesianGrid vertical={false} stroke="var(--rule-soft)" />
-            {xAxis}
-            <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v: number) => `${v}%`} tick={AXIS_TICK} axisLine={false} tickLine={false} width={44} />
-            <Area type="stepAfter" dataKey="reported" stroke="var(--live-seq-3)" strokeWidth={2} fill="var(--live-seq-1)" fillOpacity={0.35} connectNulls isAnimationActive={false} />
-            <Tooltip
-              cursor={{ stroke: "var(--muted)", strokeDasharray: "3 3" }}
-              content={({ active, payload }) => {
-                const r = active ? (payload?.[0]?.payload as (typeof rows)[number] | undefined) : undefined;
-                return r ? <TooltipBox heading={clock(r.t)} rows={[{ label: "Voting areas in", value: pct(r.reported, 0) }, { label: "Votes counted", value: whole(r.counted) }]} /> : null;
-              }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartFrame>
-      <ChartFrame
-        title="Votes for mayor counted, per 10 minutes"
-        table={
-          <table className="live-table">
-            <thead>
-              <tr>
-                <th scope="col">From</th>
-                <th scope="col">Votes counted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {buckets.map((b) => (
-                <tr key={b.start}>
-                  <th scope="row">{clock(b.start)}</th>
-                  <td className="live-num">{whole(b.votes)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        }
-      >
-        <ResponsiveContainer width="100%" height={200} debounce={100}>
-          <BarChart data={buckets.map((b) => ({ t: b.start + TEN_MINUTES / 2, ...b }))} margin={MARGIN} barCategoryGap={2} accessibilityLayer={false}>
-            <CartesianGrid vertical={false} stroke="var(--rule-soft)" />
-            {xAxis}
-            <YAxis tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} tick={AXIS_TICK} axisLine={false} tickLine={false} width={44} />
-            <Bar dataKey="votes" fill="var(--live-seq-3)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
-            <Tooltip
-              cursor={{ fill: "var(--tint)" }}
-              content={({ active, payload }) => {
-                const b = active ? (payload?.[0]?.payload as { start: number; votes: number } | undefined) : undefined;
-                return b ? <TooltipBox heading={`${clock(b.start)} to ${clock(b.start + TEN_MINUTES)}`} rows={[{ label: "Votes counted", value: whole(b.votes) }]} /> : null;
-              }}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartFrame>
-    </div>
-  );
-}
-
-/** The lead between the race's top two now, over the night, shaded by who was ahead. */
 export function LeadChart({ race, history, axis }: { race: LiveRace; history: LiveHistory; axis: Axis }) {
   const narrow = useNarrow();
   const [a, b] = race.candidates;
@@ -440,7 +334,7 @@ export function LeadChart({ race, history, axis }: { race: LiveRace; history: Li
   return (
     <ChartFrame
       title={`${name(a)} against ${name(b)}`}
-      caption={`${name(a)}'s counted share minus ${name(b)}'s, in points.`}
+      caption={`${name(a)}'s counted share minus ${name(b)}'s.`}
       table={
         <table className="live-table">
           <thead>
@@ -536,8 +430,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
     </th>
   );
   return (
-    <section className="live-count__block" aria-labelledby="mayor-wards-heading">
-      <h3 id="mayor-wards-heading">Mayor, ward by ward</h3>
+    <>
       <div className="live-table-scroll">
         <table className="live-table live-table--wards">
           <thead>
@@ -581,162 +474,84 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
           </tbody>
         </table>
       </div>
-    </section>
+    </>
   );
 }
 
-/** Every race by how much is in, least first; races with everything in fold to one line. */
-function ReportingBoard({ races }: { races: LiveRace[] }) {
-  const counted = races.filter((r) => r.state !== "acclaimed" && r.progress !== null);
-  const rows = counted
-    .map((race) => ({ race, fraction: reportedFraction(race.progress) ?? 0, lead: raceLead(race) }))
-    .sort((a, b) => a.fraction - b.fraction || raceTitle(a.race).localeCompare(raceTitle(b.race), "en-CA", { numeric: true }));
-  const open = rows.filter((r) => r.fraction < 1);
-  const done = rows.length - open.length;
-  return (
-    <section className="live-count__block" aria-labelledby="reporting-board-heading">
-      <h3 id="reporting-board-heading">Every race, least counted first</h3>
-      {open.length === 0 ? (
-        <p>Every race has all its voting areas in.</p>
-      ) : (
-        <div className="live-table-scroll">
-          <table className="live-table">
-            <thead>
-              <tr>
-                <th scope="col">Race</th>
-                <th scope="col">Voting areas in</th>
-                <th scope="col">Leading</th>
-              </tr>
-            </thead>
-            <tbody>
-              {open.map(({ race, fraction, lead }) => {
-                const leader = race.candidates.find((c) => c.key === lead.leader);
-                return (
-                  <tr key={race.id}>
-                    <th scope="row">{race.level !== "mayor" ? <Link href={raceHref(race)}>{raceTitle(race)}</Link> : raceTitle(race)}</th>
-                    <td className="live-num">
-                      <span className="live-bar" aria-hidden="true">
-                        <span style={{ width: `${100 * fraction}%` }} />
-                      </span>
-                      {race.progress!.received} of {race.progress!.total}
-                    </td>
-                    <td>{lead.tied ? "Tied" : leader ? shortLabel(leader) : "–"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {done > 0 && open.length > 0 && <p className="live-count__note">{done} more {done === 1 ? "race has" : "races have"} every voting area in.</p>}
-    </section>
-  );
+/** Before results, or while the history loads: one line in place of the charts. */
+function CountPending({ payload, history }: { payload: LivePayload | null; history: LiveHistory | null }): ReactNode {
+  if (!payload || payload.state !== "results") return <p className="live-empty">Charts of the count start when results come in after 8 p.m.</p>;
+  if (history === null || history.t.length === 0)
+    return (
+      <p className="live-empty" role="status">
+        Loading the count so far…
+      </p>
+    );
+  return null;
 }
 
-export interface LiveCountViewProps {
-  payload: LivePayload | null;
-  /** The ward page's ballot after the mayor (`wardBallotRaceIds`); empty on /results/. */
-  ballot: string[];
-  ward: string | null;
-}
-
-export interface LiveTablesViewProps {
-  payload: LivePayload | null;
-  wards: ResultsWard[];
-}
-
-export function LiveCountView({ payload, ballot, ward }: LiveCountViewProps) {
-  const history = useLiveHistory();
+/** The mayor's count over the night: each candidate's counted share, then the lead. */
+export function MayorCount({ payload }: { payload: LivePayload | null }) {
+  const history = useLiveHistoryIfProvided();
   const [axis, setAxis] = useState<Axis>("clock");
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
+  const pending = CountPending({ payload, history });
+  return (
+    <section id="results-count" className="live-count" aria-labelledby="live-count-heading">
+      <div className="live-count__head">
+        <h2 id="live-count-heading">The count over the night</h2>
+      </div>
+      {pending ??
+        (mayor && history?.races.mayor && (
+          <div className="live-count__block">
+            <AxisSwitch axis={axis} onChange={setAxis} />
+            <ChartFrame title="Share of the votes counted" table={<ShareTable race={mayor} history={history} />}>
+              <ShareChart race={mayor} history={history} axis={axis} />
+            </ChartFrame>
+            <LeadChart race={mayor} history={history} axis={axis} />
+          </div>
+        ))}
+    </section>
+  );
+}
 
-  if (!payload || payload.state !== "results") {
+/** The mayor ward by ward (#123). Reads only the payload, so it shows from the first poll. */
+export function MayorWards({ payload, wards }: { payload: LivePayload | null; wards: ResultsWard[] }) {
+  const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
+  return (
+    <section id="results-wards" className="live-count" aria-labelledby="mayor-wards-heading">
+      <h2 id="mayor-wards-heading">Mayor by ward</h2>
+      {!payload || payload.state !== "results" ? (
+        <p className="live-empty">The table fills in when results come in after 8 p.m.</p>
+      ) : mayor?.wards ? (
+        <MayorWardTable mayor={mayor} wards={wards} />
+      ) : (
+        <p className="live-empty">The mayor’s figures by ward aren’t available.</p>
+      )}
+    </section>
+  );
+}
+
+/** One race's counted share over the night, for its full block. Nothing before its count starts. */
+export function RaceCount({ race }: { race: LiveRace }) {
+  const history = useLiveHistoryIfProvided();
+  const [axis, setAxis] = useState<Axis>("clock");
+  if (race.state !== "counting" && race.state !== "all_units_in") return null;
+  if (history === null)
     return (
-      <section className="live-count" aria-labelledby="live-count-heading">
-        <h2 id="live-count-heading">The count over the night</h2>
-        <p className="live-empty">Charts of the count start once the City reports results, from 8 p.m.</p>
-      </section>
-    );
-  }
-  if (history === null || history.t.length === 0) {
-    return (
-      <section className="live-count" aria-labelledby="live-count-heading">
-        <h2 id="live-count-heading">The count over the night</h2>
+      <div className="live-race-count">
         <p className="live-empty" role="status">
           Loading the count so far…
         </p>
-      </section>
+      </div>
     );
-  }
-  // A race whose count has no votes yet (or never will, in the history) has no line to draw.
-  const ballotRaces = ballot.flatMap((id) =>
-    payload.races.filter((r) => r.id === id && r.state !== "acclaimed" && shareRows(history, id, []).length > 0),
-  );
-
+  if (shareRows(history, race.id, []).length === 0) return null;
   return (
-    <section className="live-count" aria-labelledby="live-count-heading">
-      <div className="live-count__head">
-        <h2 id="live-count-heading">The count over the night</h2>
-        <p className="live-count__note">
-          From {clock(history.t[0])} to {clock(history.t[history.t.length - 1])}, as the City reported it.
-        </p>
-      </div>
-
-      {ward && ballotRaces.length > 0 && (
-        <div className="live-count__block">
-          <div className="live-count__row">
-            <h3>On the Ward {ward} ballot</h3>
-            <AxisSwitch axis={axis} onChange={setAxis} />
-          </div>
-          <div className="live-chart-grid">
-            {ballotRaces.map((race) => (
-              <ChartFrame key={race.id} title={raceTitle(race)} table={<ShareTable race={race} history={history} />}>
-                <ShareChart race={race} history={history} axis={axis} height={220} />
-              </ChartFrame>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="live-count__block">
-        <h3 className="live-count__subhead">How fast the count is coming in</h3>
-        <PaceCharts history={history} />
-      </div>
-
-      {mayor && history.races.mayor && (
-        <div className="live-count__block">
-          <div className="live-count__row">
-            <h3>Mayor</h3>
-            {!(ward && ballotRaces.length > 0) && <AxisSwitch axis={axis} onChange={setAxis} />}
-          </div>
-          <ChartFrame
-            title="Share of the votes counted"
-            table={<ShareTable race={mayor} history={history} />}
-          >
-            <ShareChart race={mayor} history={history} axis={axis} />
-          </ChartFrame>
-          <LeadChart race={mayor} history={history} axis={axis} />
-        </div>
-      )}
-    </section>
-  );
-}
-
-/** The Tables view (#123): the mayor ward by ward, then every race by how much is in. Both read
- *  only the payload, so they show from the first poll, with no history. */
-export function LiveTablesView({ payload, wards }: LiveTablesViewProps) {
-  const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
-  return (
-    <section className="live-count" aria-labelledby="live-tables-heading">
-      <h2 id="live-tables-heading">Tables of the count</h2>
-      {!payload || payload.state !== "results" ? (
-        <p className="live-empty">Tables of the count start once the City reports results, from 8 p.m.</p>
-      ) : (
-        <>
-          {mayor?.wards && <MayorWardTable mayor={mayor} wards={wards} />}
-          <ReportingBoard races={payload.races} />
-        </>
-      )}
-    </section>
+    <div className="live-race-count">
+      <AxisSwitch axis={axis} onChange={setAxis} />
+      <ChartFrame title="Share of the votes counted over the night" table={<ShareTable race={race} history={history} />}>
+        <ShareChart race={race} history={history} axis={axis} height={220} />
+      </ChartFrame>
+    </div>
   );
 }

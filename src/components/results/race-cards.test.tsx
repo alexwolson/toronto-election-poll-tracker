@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LivePayload, LiveRace } from "@/types/live";
-import { RaceCard } from "./race-cards";
+import { RaceCard, estimated } from "./race-cards";
+import { RaceResult } from "./mayor-lead";
 
 afterEach(cleanup);
 
@@ -56,52 +57,27 @@ describe("RaceCard: the mayor's folded field", () => {
   });
 });
 
-describe("RaceCard: Chow's counted-wards benchmark (#109)", () => {
+describe("RaceResult: the projected finish (Alex, 2026-10-21)", () => {
   const night = JSON.parse(
     readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/payload.json"), "utf8"),
   ) as LivePayload;
-  /** The night's mayor race with only Etobicoke's wards 1–3 counted. */
-  const etobicokeFirst = (): LiveRace => {
-    const race = structuredClone(night.races.find((r) => r.id === "mayor")!);
-    race.wards = race.wards!.map((w) => (["1", "2", "3"].includes(w.num) ? w : { ...w, votes_counted: 0, votes: null }));
-    return race;
-  };
-  const line = () => document.querySelector(".live-benchmark");
+  const race = night.races.find((r) => r.id === "councillor-12")!;
+  const panel = () => document.querySelector<HTMLElement>(".mayor-projection")!;
+  const rows = () => panel().querySelectorAll(".mayor-projection__row").length;
 
-  it("sets Chow's 2023 share in the wards counted so far against her 2023 citywide share", () => {
-    render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
-    // Wards 1–3 weighted by their counted votes: well under her 37.2% citywide.
-    // A sentence that reads right wherever it wraps (Alex, phone): never "Wards counted so far: Olivia Chow".
-    expect(line()!.textContent).toMatch(/^In 2023, Olivia Chow won 2\d\.\d% in the wards counted so far, and 37\.2% citywide\.$/);
+  it("labels its axis sparsely enough to read: at most six ticks", () => {
+    render(<RaceResult race={race} levels={night.levels} closed={false} />);
+    expect(panel().querySelectorAll(".mayor-projection__ticks > span").length).toBeLessThanOrEqual(6);
   });
 
-  it("explains itself, and its limit, behind a disclosure", () => {
-    render(<RaceCard race={etobicokeFirst()} levels={night.levels} />);
-    const summary = screen.getByText("About this comparison");
-    expect(summary.tagName).toBe("SUMMARY");
-    const answer = summary.closest("details")!.textContent!;
-    expect(answer).toContain("not which voting areas within them");
-    expect(answer).toContain("not an estimate of tonight’s result");
-  });
-
-  it("names her as the count does, by candidacy", () => {
-    const race = etobicokeFirst();
-    race.candidates = race.candidates.map((c) => (c.key === "Olivia Chow" ? { ...c, short_label: "O. Chow" } : c));
-    render(<RaceCard race={race} levels={night.levels} />);
-    expect(line()!.textContent).toMatch(/^In 2023, O\. Chow won /);
-  });
-
-  it("is not shown after Night Close, even while the race still reads counting", () => {
-    render(<RaceCard race={etobicokeFirst()} levels={night.levels} closed />);
-    expect(line()).toBeNull();
-    expect(screen.queryByText("About this comparison")).toBeNull();
-  });
-
-  it("is not shown once every voting area is in, nor on other races", () => {
-    render(<RaceCard race={{ ...etobicokeFirst(), state: "all_units_in" }} levels={night.levels} />);
-    expect(line()).toBeNull();
-    cleanup();
-    render(<RaceCard race={night.races.find((r) => r.id === "councillor-1")!} levels={night.levels} />);
-    expect(line()).toBeNull();
+  it("shows the two leaders, and every candidate with a range on asking", () => {
+    render(<RaceResult race={race} levels={night.levels} closed={false} />);
+    expect(rows()).toBe(2);
+    const ranged = Object.keys(estimated(race)!).length;
+    fireEvent.click(within(panel()).getByRole("button", { name: `Show all ${ranged} candidates` }));
+    expect(rows()).toBe(ranged);
+    expect(panel().querySelectorAll(".mayor-projection__ticks > span").length).toBeLessThanOrEqual(6);
+    fireEvent.click(within(panel()).getByRole("button", { name: "Show the top two" }));
+    expect(rows()).toBe(2);
   });
 });

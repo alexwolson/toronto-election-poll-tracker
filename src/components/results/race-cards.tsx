@@ -12,8 +12,8 @@
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { candidateMeta } from "@/lib/candidates";
-import { chowCandidate, countedWardsBenchmark } from "@/lib/chow-2023";
 import { liveColour } from "@/lib/live-colour";
+import { leaderParts, segmentWidth } from "@/lib/mayor-bar";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { rangeText, shareText } from "@/lib/live-share";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
@@ -44,22 +44,22 @@ const NEUTRAL = "var(--color-disengaged)";
 export const WORDING = {
   citywide: "Citywide",
   acclaimed: "Acclaimed",
-  acclaimedNote: "The only candidate, so there is no vote.",
+  acclaimedNote: "No vote is held with only one candidate.",
   before_results: "Results from 8 p.m.",
   no_units_in: "No voting areas have reported yet",
   all_units_in: "All voting areas in",
   no_progress: "Voting areas: not available",
-  withdrawn: "No projection for this race right now. The count is as the City reports it.",
+  withdrawn: "No projection for this race right now.",
   elected: "Elected (unofficial)",
   /** Cannot win even with every outstanding vote (#90, live-projection ADR 0003), as one
    *  break above those candidates (#105). */
   eliminated: "Mathematically eliminated",
   eliminatedWhy: "can’t win even with every vote still out",
   /** The tally's key (#105). */
-  keyCounted: "Counted",
+  keyCounted: "Share of the votes counted so far",
   /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
   keyEstimated: "Estimated final range: where 99 in 100 simulated finishes land",
-  keyPossible: "Out of reach, even with all of the votes still to count",
+  keyPossible: "Can’t be reached with the votes left to count",
 } as const;
 
 /** Each level's name in the gate wording (#17 § On-night reader wording, DRAFT for #54). */
@@ -79,14 +79,6 @@ export const RANGE_WORDING = {
   frenchLabel: "French-language school boards",
 } as const;
 
-/** Chow's counted-wards benchmark (#109, option B as Alex chose it): a short line, with what it
- *  is and its limit behind a disclosure. */
-const BENCHMARK_WORDING = {
-  summary: "About this comparison",
-  explain: (name: string) =>
-    `${name}’s share of the vote in the 2023 by-election, across the wards counted so far tonight (each weighted by its votes counted), beside her share citywide. Early returns from her weakest wards can look like an upset; this shows how those wards voted last time. It allows for which wards are in, not which voting areas within them, and is not an estimate of tonight’s result.`,
-} as const;
-
 /** Whether a level shows the count in place of its projection: its gate failed, or the
  *  projection is paused (a version mismatch, a missing Gate Result, or a switch, #49). */
 function showsCountOnly(status: ProjectionStatus | null): boolean {
@@ -102,7 +94,7 @@ function gateNote(level: "mayor" | "council" | "trustee", status: ProjectionStat
   if (!showsCountOnly(status)) return null;
   const words = LEVEL_WORDS[level];
   if (status === "gate_failed") {
-    return `No projection for ${words} tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count as the City reports it.`;
+    return `No projection for ${words} tonight. In replays of past election nights it did not beat simply reading the count, so this page shows the count only.`;
   }
   return `Projection paused for ${words}. The count below is as the City reports it.`;
 }
@@ -351,7 +343,7 @@ function rowMeta(row: TallyRow): string[] {
 function votesFirstMeta(row: TallyRow): string[] {
   const last = row.last ? [`${row.last.share.toFixed(1)}% ${row.last.when}`] : [];
   // A missing figure is a dash on the topline, never "0", and no share line.
-  return row.waiting || row.share === null ? last : [`${percent(row.share, row.votes)} of counted votes`, ...last];
+  return row.waiting || row.share === null ? last : [percent(row.share, row.votes), ...last];
 }
 
 /** A share as a percent of a track whose end is `top` percent, capped at the end. */
@@ -477,11 +469,12 @@ function TallyKey({ rows, reachZones = true }: { rows: TallyRow[]; reachZones?: 
   const last = rows.find((r) => r.last)?.last ?? null;
   const band = has((r) => r.band);
   const reachShown = reachZones && has((r) => r.possible);
-  if (!band && !reachShown && !last) return null;
+  const counted = has((r) => r.share !== null && !r.waiting);
+  if (!counted && !band && !reachShown && !last) return null;
   return (
     <p className="live-tally__key">
-      {/* "Counted" only beside a mark it's told apart from: alone, the bar says it. */}
-      {(band || reachShown) && <span><i className="live-tally__glyph live-tally__glyph--counted" aria-hidden="true" />{WORDING.keyCounted}</span>}
+      {/* What each row's share is of, said once here rather than on every row (Alex). */}
+      {counted && <span><i className="live-tally__glyph live-tally__glyph--counted" aria-hidden="true" />{WORDING.keyCounted}</span>}
       {band && <span><i className="live-tally__glyph live-tally__glyph--estimate" aria-hidden="true" />{WORDING.keyEstimated}</span>}
       {reachShown && <span><i className="live-tally__glyph live-tally__glyph--reach" aria-hidden="true" />{WORDING.keyPossible}</span>}
       {last && <span><i className="live-tally__glyph live-tally__glyph--then" aria-hidden="true" />{last.label}</span>}
@@ -539,13 +532,34 @@ function reachTop(race: LiveRace): number {
 /** A race at a glance in the dashboard's grid (Alex): its two leaders and the rest as one row,
  *  votes first, on the result's scale; three candidates show whole. */
 export function RaceCompactTally({ race, closed }: { race: LiveRace; closed: boolean }) {
-  const top = reachTop(race);
-  const rows = tallyRows(race, closed, false, race.candidates.length > 3).map((row) => ({ ...row, band: null }));
+  // The race at a glance (Alex, 2026-10-21): one bar for the whole count, the two leaders on a
+  // line each. The rest of the field, the ranges and the count's detail are in the full result.
+  const votesOf = (c: LiveCandidate) => c.votes ?? 0;
+  const total = race.candidates.reduce((sum, c) => sum + votesOf(c), 0);
+  const parts = leaderParts(race, votesOf);
+  const elected = electedKey(race, closed);
+  const leaders = [...race.candidates].sort((a, b) => votesOf(b) - votesOf(a)).slice(0, 2);
+  const share = (c: LiveCandidate) => c.share ?? (total > 0 ? (100 * votesOf(c)) / total : null);
   return (
-    <div className="forecast-chart live-tally race-compact__rows" role="list" aria-label={`${raceTitle(race)}: the count`}>
-      {rows.map((row) => (
-        <TallyRowView key={row.key} row={row} votesFirst top={top} reachZones={false} />
-      ))}
+    <div className="race-compact__count">
+      <span className="race-compact__bar" aria-hidden="true">
+        {/* Everyone else paler than a leader with no colour of their own, so the two never merge. */}
+        {total > 0 &&
+          parts.map((part) => (
+            <span key={part.key} style={{ ...segmentWidth((100 * part.votes) / total), background: part.key === "others" ? "var(--rule)" : part.colour }} />
+          ))}
+      </span>
+      <ul className="race-compact__leaders" aria-label={`${raceTitle(race)}: the two leaders`}>
+        {leaders.map((c) => (
+          <li key={c.key}>
+            <span className="race-compact__swatch" style={{ background: liveColour(c, NEUTRAL) }} aria-hidden="true" />
+            <span className="live-tally__name">{c.full_name}</span>
+            {c.key === elected && <span className="badge badge--status">{WORDING.elected}</span>}
+            <span className="race-compact__share">{shareText(share(c), c.votes)}</span>
+            <span className="race-compact__votes">{votesOf(c).toLocaleString("en-CA")}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -647,38 +661,9 @@ function RaceBody({ race, levels, closed }: { race: LiveRace; levels: Levels | n
           {/* Candidates first, then turnout (results audit): on a phone the count leads. */}
           <Tally race={race} closed={closed} legend={<RangeNotes race={race} levels={levels} />} />
           {turnout}
-          {/* A benchmark for reading early returns: gone once Night Close declares the count final (Alex). */}
-          {race.level === "mayor" && !closed && <ChowBenchmark race={race} />}
         </>
       );
   }
-}
-
-/** Chow's 2023 share in the wards counted so far, against her 2023 citywide share (#109): early
- *  returns from her weakest wards can read like an upset. Facts of two counts, never an estimate. */
-export function ChowBenchmark({ race }: { race: LiveRace }) {
-  const benchmark = countedWardsBenchmark(race);
-  const chow = chowCandidate(race);
-  if (!benchmark || !chow) return null;
-  const name = shortLabel(chow);
-  return (
-    <div className="live-subsection">
-      <p className="t-body-small live-benchmark">
-        {/* A sentence, so it reads right wherever it wraps on a phone (Alex). */}
-        In 2023, {name} won {shareText(benchmark.counted2023)} in the wards counted so far, and{" "}
-        {shareText(benchmark.citywide2023)} citywide.
-      </p>
-      {/* The card's other disclosures' pattern (results audit). */}
-      <div className="faq">
-        <details className="live-benchmark-why">
-          <summary>{BENCHMARK_WORDING.summary}</summary>
-          <div className="faq__a">
-            <p className="forecast-caption">{BENCHMARK_WORDING.explain(name)}</p>
-          </div>
-        </details>
-      </div>
-    </div>
-  );
 }
 
 /** The final Mayoral Forecast, collapsed and kept apart from the count (#7, #12): a pointer
@@ -694,7 +679,7 @@ export function FinalForecast() {
             The forecast published before election day is on the <Link href="/">home page</Link>.
           </p>
           <p className="forecast-caption">
-            The final pre-election forecast, kept for reference. It is not the count and not the projection.
+            The final pre-election forecast. It is not the count and not the projection.
           </p>
         </div>
       </details>

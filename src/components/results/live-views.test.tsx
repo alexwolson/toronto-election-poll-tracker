@@ -9,6 +9,7 @@ import trusteeFixture from "../../../fixtures/trustee_race_cards.json";
 import { serveHistory } from "@/lib/live-history";
 import { switchesFrom } from "@/lib/live-serve";
 import { liveColour } from "@/lib/live-colour";
+import { chowWard } from "@/lib/chow-2023";
 import { shortLabel } from "@/lib/live-labels";
 import { resultsMapData } from "@/lib/results-map-data";
 import { resultsWards } from "@/lib/results-wards";
@@ -347,24 +348,26 @@ describe("LiveMapView vs 2023", () => {
     expect(screen.queryByRole("button", { name: "vs 2023" })).toBeNull();
   });
 
-  it("says, for each ward, how Chow's change since 2023 compares with her change across the wards counted", () => {
+  it("says, for each ward, her share now and her share there in 2023 (Alex, 2026-10-21)", () => {
     show(NIGHT);
-    // Mock night: ward 12 has moved 1.6 points her way against the counted wards, ward 10 2.0 against her.
-    expect(label("12").getAttribute("aria-label")).toMatch(/: Olivia Chow 1\.6 points above her citywide swing$/);
-    expect(label("10").getAttribute("aria-label")).toMatch(/: Olivia Chow 2\.0 points below her citywide swing$/);
-    expect(label("12").getAttribute("style")).toContain("--live-div-0");
-    expect(label("10").getAttribute("style")).toContain("--live-div-worse-1");
+    const mayor = NIGHT.races.find((r) => r.id === "mayor")!;
+    for (const num of ["10", "12"]) {
+      const w = chowWard(mayor, mayor.wards!.find((x) => x.num === num)!)!;
+      const change = Math.round((w.live! - w.share2023) * 10) / 10;
+      const words = `Olivia Chow ${w.live!.toFixed(1)}%, ${change >= 0 ? "up" : "down"} from ${w.share2023.toFixed(1)}% in 2023`;
+      expect(label(num).getAttribute("aria-label")).toBe(`Ward ${num} ${WARDS.find((x) => x.num === num)!.name}: ${words}`);
+      const step = Math.abs(change) < 2 ? "--live-div-0" : change > 0 ? (change < 5 ? "--live-div-better-1" : "--live-div-better-2") : change > -5 ? "--live-div-worse-1" : "--live-div-worse-2";
+      expect(label(num).getAttribute("style")).toContain(step);
+    }
     const legend = screen.getByRole("list", { name: "Map legend" });
     expect(within(legend).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-      "5+ points better",
-      "2–5 points better",
+      "Up 5+ points",
+      "Up 2–5 points",
       "Within 2 points",
-      "2–5 points worse",
-      "5+ points worse",
+      "Down 2–5 points",
+      "Down 5+ points",
     ]);
-    expect(screen.getByText(/against her change across all the wards counted so far/)).toBeTruthy();
-    const row = within(screen.getByRole("table")).getByRole("rowheader", { name: /^12 / }).closest("tr")!;
-    expect(within(row).getByText("Olivia Chow 1.6 points above her citywide swing")).toBeTruthy();
+    expect(screen.getByText("Olivia Chow’s share of the votes counted in each ward, against her share there in 2023.")).toBeTruthy();
   });
 
   it("leaves a ward with no votes counted unshaded, and says so", () => {

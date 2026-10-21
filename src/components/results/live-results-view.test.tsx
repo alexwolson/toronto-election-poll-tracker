@@ -350,7 +350,10 @@ describe("LiveResultsView: the tally", () => {
     expect(html).toMatch(/<span class="live-tally__name">Vincent Crisanti<\/span>/);
     // The bars end at the most anyone can still reach (86.23%, to 87%): Crisanti's 41.2% fills 47.4%.
     expect(html).toMatch(/class="forecast-chart__bar" style="width:47\.3\d*%;background:var\(--color-disengaged\)"/);
-    expect(text(html)).toMatch(/6,800\s*41\.2% of counted votes/);
+    expect(text(html)).toMatch(/6,800\s*41\.2%/);
+    // What the share is of, said once in the key, not on every row (Alex, 2026-10-21).
+    expect(count(text(html), "of counted votes")).toBe(0);
+    expect(count(text(html), "Share of the votes counted so far")).toBe(1);
     // More than five candidates fold to the top two and the rest.
     expect(tallyNames(html)).toEqual(["Vincent Crisanti", "Avtar Minhas", "14 other candidates"]);
   });
@@ -583,7 +586,7 @@ describe("LiveResultsView: never shown (#7, #12)", () => {
     last.share = 0;
     const html = card(render(payload, { ward: "1" }), "councillor-1");
     const lastRow = text(html).slice(text(html).indexOf(last.full_name));
-    expect(lastRow).toMatch(/^[^·]*1&lt;0\.1% of counted votes/);
+    expect(lastRow).toMatch(/^[^·]*1&lt;0\.1%/);
   });
 
   it("has no chance-to-win wording in any reader state", () => {
@@ -628,8 +631,9 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     const others = `${golden("gated-live-2022.json").races[0].candidates.length - 2} other candidates`;
     expect(row(mayor, others)).not.toContain("live-tally__reach");
     expect(row(mayor, others)).not.toContain("live-tally__estimate");
-    // No key: "Counted" alone says nothing the bar doesn't (no 2023 mark in 2022).
-    expect(count(mayor, 'class="live-tally__key')).toBe(0);
+    // The key says once what each share is of (Alex, 2026-10-21); no other mark in 2022.
+    expect(count(mayor, 'class="live-tally__key')).toBe(1);
+    expect(text(mayor)).toContain("Share of the votes counted so far");
     expect(text(mayor)).not.toContain("Out of reach");
     expect(mayor).not.toContain("live-tally__glyph--reach");
     expect(text(mayor)).not.toContain("Possible range");
@@ -704,7 +708,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(html.indexOf("live-tally__break")).toBeGreaterThan(html.indexOf(`<span class="live-tally__name">${names.at(-2)}</span>`));
     expect(row(html, third)).toContain("forecast-chart__row--out");
     // Quiet rows (#105): votes first, the share of the count beside them.
-    expect(text(meta(wholeRow(html, third)))).toMatch(/^(&lt;)?[\d.]+% of counted votes$/);
+    expect(text(meta(wholeRow(html, third)))).toMatch(/^(&lt;)?[\d.]+%$/);
     // The wide ranges of the golden's mayor eliminate no one.
     expect(render(golden("gated-live-2022.json"), { ward: "1" })).not.toContain("Mathematically eliminated");
   });
@@ -717,7 +721,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     expect(html).not.toContain("live-tally__win");
     expect(html).not.toContain("glyph--win");
     expect(text(html)).not.toMatch(/certain win/i);
-    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d.]+% of counted votes$/);
+    expect(text(meta(wholeRow(html, leader.full_name)))).toMatch(/^[\d.]+%$/);
     // The Possible Range's figures are for screen readers; the estimate is the panel beside.
     expect(wholeRow(html, leader.full_name)).toMatch(/<span class="visually-hidden">Possible 40–60%<\/span>/);
     // The Mathematically Eliminated badge stays.
@@ -1151,7 +1155,7 @@ describe("LiveResultsView: the mayor leads the page", () => {
   it("with everything in and no estimate, shows the final count", () => {
     const section = text(lead(render(golden("all-units-in-2018.json"))));
     // The votes counted lead (2018: 479,659), the share beside them.
-    expect(section).toMatch(/John Tory[^]*479,659[^]*63\.5% of counted votes/);
+    expect(section).toMatch(/John Tory[^]*479,659[^]*63\.5%/);
     expect(section).not.toContain("Estimated final");
     expect(section).toContain("Voting areas inAll in");
   });

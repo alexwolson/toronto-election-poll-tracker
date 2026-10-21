@@ -670,6 +670,11 @@ button:disabled { cursor: default; opacity: 0.6; }
 .mayor-projection__ticks > span:first-child { transform: none; }
 .mayor-projection__ticks > span:last-child { transform: translateX(-100%); }
 .mayor-projection__note { margin: var(--space-sm) 0 0; color: var(--muted); font-size: var(--type-body-small); }
+/* Every candidate on asking: the rest a step down from the leaders' large figures. */
+.mayor-projection__row--rest .mayor-projection__figures strong { font-size: var(--type-heading); }
+.mayor-projection__row--rest .mayor-projection__track { height: 14px; }
+.mayor-projection__toggle { margin-top: var(--space-sm); min-height: var(--touch-target-min); padding: 0; border: 0; background: none; color: var(--blue); font: inherit; font-weight: 600; font-size: var(--type-body-small); cursor: pointer; }
+.mayor-projection__toggle:hover { text-decoration: underline; }
 .mayor-lead__progress { display: block; height: 8px; margin: var(--space-xs) 0 2px; background: var(--tint); border-radius: var(--r-pill); overflow: hidden; }
 .mayor-lead__progress > span { display: block; height: 100%; background: var(--ink); border-radius: inherit; }
 /* The two facts match (Alex): label, value, an 8px bar, one small line under. */

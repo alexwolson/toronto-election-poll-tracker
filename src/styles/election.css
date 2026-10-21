@@ -702,10 +702,10 @@ button:disabled { cursor: default; opacity: 0.6; }
 }
 .ward-index-sort a:last-child { border-right: 0; }
 .ward-index-sort a[aria-current="true"] { color: var(--paper); background: var(--blue); }
-.race-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-md); align-items: start; }
+.race-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-md); align-items: stretch; }
 /* A race at a glance (Alex, 2026-10-21): title and how much is in, one bar, two leaders. The
    title's link covers the card, so the whole card opens the race in full. */
-.race-compact { position: relative; display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-lg); transition: border-color 120ms ease-out; }
+.race-compact { position: relative; display: grid; align-content: start; gap: var(--space-sm); padding: var(--space-md); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-lg); transition: border-color 120ms ease-out; }
 .race-compact:hover, .race-compact:focus-within { border-color: var(--ink); }
 .race-compact__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); }
 .race-compact h3 { margin: 0; font-size: var(--type-body); line-height: 1.3; }

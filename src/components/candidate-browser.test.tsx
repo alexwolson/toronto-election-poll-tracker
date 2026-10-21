@@ -100,6 +100,20 @@ describe("CandidateBrowser", () => {
     expect(row?.querySelector(".candidate-row__hint")?.textContent).toContain("Website");
   });
 
+  it("labels a website-only Suspended Campaign and keeps its direct link", () => {
+    const atkinson = candidates.find((candidate) => candidate.display_name === "Jamie Atkinson")!;
+    render(<CandidateBrowser candidates={[{ ...atkinson, campaign_suspended_on: "2026-10-21" }]} />);
+
+    const name = screen.getByText("Jamie Atkinson");
+    const row = name.closest(".candidate-row");
+    const hint = row?.querySelector(".candidate-row__hint");
+
+    expect(name.closest("a")?.getAttribute("href")).toBe(atkinson.campaign_url);
+    expect(row?.querySelectorAll(".candidate-row__hint")).toHaveLength(1);
+    expect(hint?.textContent).toContain("Campaign suspended Oct. 21");
+    expect(hint?.textContent).not.toContain("Website");
+  });
+
   it("gives repeated campaign links candidate-specific accessible names", () => {
     render(<CandidateBrowser candidates={candidates} />);
 

@@ -4,7 +4,7 @@
  * don't exist, or a measure the race doesn't offer, fall back to the defaults.
  */
 
-export type MapContest = "mayor" | "council" | "tdsb" | "tcdsb";
+export type MapContest = "mayor" | "council" | "tdsb" | "tcdsb" | "viamonde" | "monavenir";
 export type MapMeasure = "leader" | "share" | "reporting" | "vs2023";
 
 export interface MapSelection {
@@ -42,11 +42,12 @@ export function mapSelectionFrom(params: URLSearchParams, wardNums: readonly str
   };
 }
 
-/** The page's URL with this selection, keeping its other parameters and leaving out defaults. */
-export function mapSelectionHref(pathname: string, params: URLSearchParams, selection: MapSelection): string {
+/** The page's URL with this selection, keeping its other parameters and leaving out defaults. On a
+ *  race type's page the page owns `race`, so `writeContest` is false and the map leaves it alone. */
+export function mapSelectionHref(pathname: string, params: URLSearchParams, selection: MapSelection, writeContest = true): string {
   const next = new URLSearchParams(params);
   const put = (key: string, value: string | null) => (value === null ? next.delete(key) : next.set(key, value));
-  put("race", selection.contest === "mayor" ? null : selection.contest);
+  if (writeContest) put("race", selection.contest === "mayor" ? null : selection.contest);
   put("show", selection.measure === "leader" ? null : selection.measure);
   put("candidate", selection.measure === "share" ? selection.candidate : null);
   // Set last so the held ward always ends the query, whatever order the page's URL had.

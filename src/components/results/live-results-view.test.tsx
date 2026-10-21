@@ -146,9 +146,9 @@ describe("LiveResultsView: one page per race type (Alex, 2026-10-21)", () => {
     expect(renderAt(NIGHT, "race=council")).toContain("Incumbent");
   });
 
-  it("opens council and trustee pages on every race, then their map; the French boards on their races", () => {
+  it("opens council and trustee pages on every race, then their map; the French boards too", () => {
     for (const type of ["council", "tdsb", "tcdsb"]) expect(ids(renderAt(NIGHT, `race=${type}`), PARTS)).toEqual(["race-grid-heading", "results-map"]);
-    expect(ids(renderAt(NIGHT, "race=french"), PARTS)).toEqual(["race-grid-heading"]);
+    expect(ids(renderAt(NIGHT, "race=french"), PARTS)).toEqual(["race-grid-heading", "results-map"]);
   });
 
   it("gives a race opened in full its count over the night", () => {
@@ -502,7 +502,8 @@ describe("LiveResultsView: the French-language boards", () => {
       expect(count(open, "Count and possible range only: no estimate for these boards."), name).toBe(1);
       expect(html.indexOf('id="live-race-monavenir-'), name).toBeGreaterThan(-1);
       expect(html.indexOf('id="live-race-viamonde-'), name).toBeGreaterThan(-1);
-      expect(html, name).not.toContain("<details");
+      // No disclosures in the grid; the map below keeps its "Show the map as a table".
+      expect(html.slice(0, html.indexOf('id="results-map"')), name).not.toContain("<details");
     }
   });
 

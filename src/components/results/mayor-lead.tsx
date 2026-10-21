@@ -9,6 +9,7 @@
  * projection (#12).
  */
 
+import { useState } from "react";
 import type { LivePayload, LiveRace } from "@/types/live";
 import { liveColour } from "@/lib/live-colour";
 import { rangeText, shareText } from "@/lib/live-share";
@@ -21,17 +22,30 @@ export function showsRaceResult(race: LiveRace | null | undefined): boolean {
   return !!race && (race.state === "counting" || race.state === "all_units_in") && race.candidates.length >= 2;
 }
 
+/** Axis ticks for a span of shares: the widest of 5, 10, 20 or 25 points that keeps to six labels. */
+function shareTicks(lo: number, hi: number): number[] {
+  const step = [5, 10, 20, 25].find((s) => (hi - lo) / s <= 5) ?? 25;
+  const first = Math.ceil(lo / step) * step;
+  return Array.from({ length: Math.floor((hi - first) / step) + 1 }, (_, i) => first + i * step);
+}
+
 /** Where the projection has the two leaders finishing (Alex): each central projection large, and
  *  both Estimated Ranges on one share axis, so the gap between the middles and how far the ranges
- *  overlap read together. The payload has each candidate's range, not one for the gap. */
+ *  overlap read together; every candidate with a range on asking. The payload has each
+ *  candidate's range, not one for the gap. */
 function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandidate[] }) {
+  const [all, setAll] = useState(false);
   const bands = estimated(race);
-  const shown = leaders.flatMap((c) => (bands?.[c.key] ? [{ c, band: bands[c.key], colour: liveColour(c, "var(--color-disengaged)") }] : []));
-  if (shown.length < 2) return null;
+  const withBand = (c: LiveCandidate) => (bands?.[c.key] ? [{ c, band: bands[c.key], colour: liveColour(c, "var(--color-disengaged)") }] : []);
+  const top = leaders.flatMap(withBand);
+  if (top.length < 2) return null;
+  const everyone = race.candidates.flatMap(withBand).sort((a, b) => b.band.mid - a.band.mid);
+  const shown = all ? everyone : top;
   const lo = Math.max(0, Math.floor((Math.min(...shown.map((x) => x.band.low)) - 2) / 5) * 5);
   const hi = Math.min(100, Math.ceil((Math.max(...shown.map((x) => x.band.high)) + 2) / 5) * 5);
   const at = (v: number) => `${((v - lo) / (hi - lo)) * 100}%`;
-  const ticks = Array.from({ length: Math.floor((hi - lo) / 5) + 1 }, (_, i) => lo + i * 5);
+  const ticks = shareTicks(lo, hi);
+  const leaderKeys = new Set(top.map((x) => x.c.key));
   return (
     <figure className="mayor-projection">
       <figcaption>
@@ -39,7 +53,7 @@ function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandi
       </figcaption>
       <div className="mayor-projection__plot">
         {shown.map(({ c, band, colour }) => (
-          <div key={c.key} className="mayor-projection__row">
+          <div key={c.key} className={`mayor-projection__row${leaderKeys.has(c.key) ? "" : " mayor-projection__row--rest"}`}>
             <span className="mayor-projection__name">{c.full_name}</span>
             <p className="mayor-projection__figures">
               <strong style={{ color: colour }}>{shareText(band.mid)}</strong>
@@ -58,6 +72,11 @@ function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandi
         </div>
       </div>
       <p className="mayor-projection__note">99% confidence interval</p>
+      {everyone.length > top.length && (
+        <button type="button" className="mayor-projection__toggle" aria-expanded={all} onClick={() => setAll((v) => !v)}>
+          {all ? "Show the top two" : `Show all ${everyone.length} candidates`}
+        </button>
+      )}
     </figure>
   );
 }

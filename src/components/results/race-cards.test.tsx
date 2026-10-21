@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LivePayload, LiveRace } from "@/types/live";
-import { RaceCard } from "./race-cards";
+import { RaceCard, estimated } from "./race-cards";
+import { RaceResult } from "./mayor-lead";
 
 afterEach(cleanup);
 
@@ -53,5 +54,30 @@ describe("RaceCard: the mayor's folded field", () => {
     expect(third.compareDocumentPosition(breakEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(fourth.compareDocumentPosition(breakEl) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     expect(third.closest(".forecast-chart__row")!.querySelector(".live-tally__win")).toBeNull();
+  });
+});
+
+describe("RaceResult: the projected finish (Alex, 2026-10-21)", () => {
+  const night = JSON.parse(
+    readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/payload.json"), "utf8"),
+  ) as LivePayload;
+  const race = night.races.find((r) => r.id === "councillor-12")!;
+  const panel = () => document.querySelector<HTMLElement>(".mayor-projection")!;
+  const rows = () => panel().querySelectorAll(".mayor-projection__row").length;
+
+  it("labels its axis sparsely enough to read: at most six ticks", () => {
+    render(<RaceResult race={race} levels={night.levels} closed={false} />);
+    expect(panel().querySelectorAll(".mayor-projection__ticks > span").length).toBeLessThanOrEqual(6);
+  });
+
+  it("shows the two leaders, and every candidate with a range on asking", () => {
+    render(<RaceResult race={race} levels={night.levels} closed={false} />);
+    expect(rows()).toBe(2);
+    const ranged = Object.keys(estimated(race)!).length;
+    fireEvent.click(within(panel()).getByRole("button", { name: `Show all ${ranged} candidates` }));
+    expect(rows()).toBe(ranged);
+    expect(panel().querySelectorAll(".mayor-projection__ticks > span").length).toBeLessThanOrEqual(6);
+    fireEvent.click(within(panel()).getByRole("button", { name: "Show the top two" }));
+    expect(rows()).toBe(2);
   });
 });

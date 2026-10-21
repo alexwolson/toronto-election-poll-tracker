@@ -586,13 +586,13 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
     const html = render(golden("gated-live-2022.json"), { ward: "1" });
     const mayor = text(card(html, "mayor"));
     // The projection panel names its band (Alex); the cards' key keeps the longer wording.
-    expect(mayor).toContain("90% confidence interval");
-    expect(count(mayor, "9 in 10")).toBe(0);
+    expect(mayor).toContain("99% confidence interval");
+    expect(count(mayor, "99 in 100")).toBe(0);
     expect(notes(html)).toMatch(
       /<details class="live-record"><summary>How accurate is this estimate\?<\/summary>[^]*worse than expected in the 2023 by-election/,
     );
     expect(text(card(html, "councillor-1"))).not.toContain("2023 by-election");
-    expect(count(text(card(html, "councillor-1")), "90% confidence interval")).toBe(1);
+    expect(count(text(card(html, "councillor-1")), "99% confidence interval")).toBe(1);
   });
 
   it("shows only the Possible Range, and no 2023 record, below the approved mayor's ESS floor", () => {
@@ -691,7 +691,7 @@ describe("LiveResultsView: gated projections and the Possible Range (#45, ADR 00
 
   it("gives council tiles their top two candidates' Estimated Ranges", () => {
     const html = tile(councilGrid(golden("gated-live-2022.json")), "1");
-    expect(text(html)).toContain("Projected finish (90%): Crisanti Vincent 37–43% · Minhas Avtar 20–25%");
+    expect(text(html)).toContain("Projected finish (99%): Crisanti Vincent 35–45% · Minhas Avtar 19–27%");
   });
 
   it("says why a level shows the count: its gate failed, or the projection is paused", () => {
@@ -1054,7 +1054,7 @@ describe("LiveResultsView: the results audit (2026-10-20)", () => {
 
   it("labels a council block's ranges as the projected finish", () => {
     const html = councilGrid(golden("gated-live-2022.json"));
-    expect(text(tile(html, "1"))).toMatch(/Projected finish \(90%\): [^·]+ \d+–\d+% · /);
+    expect(text(tile(html, "1"))).toMatch(/Projected finish \(99%\): [^·]+ \d+–\d+% · /);
   });
 
   it("sets the mayor's turnout after its candidates", () => {
@@ -1071,14 +1071,14 @@ describe("LiveResultsView: the mayor leads the page", () => {
   };
 
   it("opens with the mayor's two leaders, their estimated finals and the count lead, after the tabs", () => {
-    // 2022 mid-count golden: Tory 62.42% (59–65%), Penalosa 18.09% (16–21%), 767 of 1,535 voting areas.
+    // 2022 mid-count golden: Tory 62.42% (55–67%), Penalosa 18.09% (16–26%), 767 of 1,535 voting areas.
     const html = render(golden("gated-live-2022.json"));
     const section = text(lead(html));
     expect(section).toMatch(/Tory John[^]*62\.4%/);
-    expect(section).not.toContain("Estimated final 59–65%");
-    expect(text(section)).toContain("59–65%");
+    expect(section).not.toContain("Estimated final 55–67%");
+    expect(text(section)).toContain("55–67%");
     expect(section).toMatch(/Penalosa Gil[^]*18\.1%/);
-    expect(text(section)).toContain("16–21%");
+    expect(text(section)).toContain("16–26%");
     expect(section).toContain("29 other candidates");
     expect(text(section)).not.toContain("In the count");
     expect(section).toContain("Voting areas in767 of 1,535");
@@ -1129,8 +1129,8 @@ describe("LiveResultsView: the projected finish beside the mayor's leaders", () 
     const p = panel(render(golden("gated-live-2022.json")));
     expect(text(p)).toContain("Projected finish");
     expect(text(p)).toMatch(/Tory John[^]*62\.3%[^]*Penalosa Gil[^]*17\.9%/);
-    expect(text(p)).toContain("59–65%");
-    expect(text(p)).toContain("16–21%");
+    expect(text(p)).toContain("55–67%");
+    expect(text(p)).toContain("16–26%");
     expect(count(p, 'class="mayor-projection__range"')).toBe(2);
   });
 

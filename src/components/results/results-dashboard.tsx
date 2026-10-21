@@ -280,7 +280,7 @@ function ProjectedLine({ race }: { race: LiveRace }) {
   if (!bands || leaders.some((c) => !bands[c.key])) return null;
   return (
     <p className="race-compact__projected t-body-small">
-      {"Projected finish (90%): "}
+      {"Projected finish (99%): "}
       {leaders.map((c, i) => (
         <span key={c.key}>
           {i > 0 && " · "}

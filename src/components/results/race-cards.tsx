@@ -551,7 +551,11 @@ export function RaceCompactTally({ race, closed }: { race: LiveRace; closed: boo
   return (
     <div className="race-compact__count">
       <span className="race-compact__bar" aria-hidden="true">
-        {total > 0 && parts.map((part) => <span key={part.key} style={{ ...segmentWidth((100 * part.votes) / total), background: part.colour }} />)}
+        {/* Everyone else paler than a leader with no colour of their own, so the two never merge. */}
+        {total > 0 &&
+          parts.map((part) => (
+            <span key={part.key} style={{ ...segmentWidth((100 * part.votes) / total), background: part.key === "others" ? "var(--rule)" : part.colour }} />
+          ))}
       </span>
       <ul className="race-compact__leaders" aria-label={`${raceTitle(race)}: the two leaders`}>
         {leaders.map((c) => (

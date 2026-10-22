@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import pollingFixture from "../../fixtures/mayoral_polling.json";
@@ -25,7 +26,7 @@ async function render(polling: MayoralPollingFeed): Promise<string> {
   mocks.loadMayoralPolling.mockResolvedValue(polling);
   const html = renderToStaticMarkup(await Home());
   const section = html.split('aria-labelledby="poll-snapshot-heading"')[1].split("</section>")[0];
-  return section.replace(/<[^>]+>/g, "");
+  return new JSDOM(section).window.document.body.textContent ?? "";
 }
 
 function polling(): MayoralPollingFeed {

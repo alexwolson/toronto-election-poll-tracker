@@ -24,8 +24,14 @@ describe("ward polls", () => {
       "Forum Research, Aug 12, 2026",
       "Forum Research, Jun 23, 2026",
     ]);
-    expect(within(reports[0]).getAllByRole("img")).toHaveLength(1);
-    expect(within(reports[1]).queryByRole("img")).toBeNull();
+    expect(screen.queryByRole("img")).toBeNull(); // the lead histogram is retired
+    expect(
+      screen.getByRole("figure", { name: "Every poll for this ward, by candidate" }),
+    ).not.toBeNull();
+    expect(screen.getByText("The reported lead could reverse.")).not.toBeNull();
+    expect(
+      screen.getByText("Numbers as printed").closest("details")?.contains(reports[0]),
+    ).toBe(true);
     expect(
       screen.getByRole("heading", { name: "Earlier polls" }),
     ).not.toBeNull();
@@ -53,6 +59,37 @@ describe("ward polls", () => {
       screen.getByRole("link", { name: "Source" }).getAttribute("href"),
     ).toBe(poll.source_url);
     expect(screen.queryByRole("heading", { name: "Earlier polls" })).toBeNull();
+  });
+
+  it("labels an all-respondent base without calling it decided/leaning", () => {
+    const mainstreet = {
+      ...poll,
+      firm: "Mainstreet Research",
+      denominator: "all respondents",
+      undecided_share: 0.095,
+      modelled_context: { ...poll.modelled_context!, unweighted_base: 262 },
+    };
+    render(<WardPolls polls={[mainstreet]} benchmark={benchmark} />);
+    expect(screen.getByText(/262 respondents/)).not.toBeNull();
+    expect(screen.queryByText(/decided\/leaning respondents/)).toBeNull();
+    expect(
+      screen.getByText(/Undecided, included in the shares above: 9.5%/),
+    ).not.toBeNull();
+    expect(
+      screen.getByText(/Mainstreet Research counts undecided voters/),
+    ).not.toBeNull();
+  });
+
+  it("keeps the tables open and draws no chart when no poll uses the final ballot", () => {
+    const hypothetical = {
+      ...poll,
+      ballot_status: "different_candidate_field",
+      modelled_context: null,
+    };
+    render(<WardPolls polls={[hypothetical]} benchmark={benchmark} />);
+    expect(screen.queryByRole("figure")).toBeNull();
+    expect(screen.queryByText("Numbers as printed")).toBeNull();
+    expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 
   it("uses the same report structure for wards without modelled polls and omits an empty section", () => {

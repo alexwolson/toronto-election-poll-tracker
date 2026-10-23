@@ -3,7 +3,6 @@ import { ContentSection } from "@/components/content-section";
 import { ForecastHero } from "@/components/forecast-hero";
 import { PollingScopeNote } from "@/components/polling-scope-note";
 import { PollsterLink } from "@/components/pollster-link";
-import { ResultsHomePanel } from "@/components/results-home-panel";
 import { SectionHeading } from "@/components/section-heading";
 import { candidateMeta, candidateName } from "@/lib/candidates";
 import { loadMayoralForecast, loadMayoralPolling } from "@/lib/feeds";
@@ -46,11 +45,10 @@ export default async function Home() {
 
   return (
     <main id="main-content" className="np-shell">
-      <ResultsHomePanel />
       <ForecastHero feed={forecast} asOfDate={forecastAsOf} />
 
       {ranked.length > 0 && latest && (
-        <ContentSection tint className="polling-takeaway" aria-labelledby="poll-snapshot-heading">
+        <ContentSection className="polling-takeaway" aria-labelledby="poll-snapshot-heading">
           <SectionHeading
             headingId="poll-snapshot-heading"
             title="What the latest poll found"

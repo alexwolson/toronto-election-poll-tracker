@@ -90,7 +90,8 @@ describe("primary pages drop retired methodology copy", () => {
 
   it("removes the interim Suspended Campaign notice, with nothing in its place", () => {
     expect(LAYOUT).not.toContain("SiteNotice");
-    expect(LAYOUT).not.toContain("banner");
+    // The election banner (Oct 23) is the only announcement the layout carries.
+    expect(LAYOUT.match(/<[A-Z]\w*Banner\b/g) ?? []).toEqual(["<ElectionBanner"]);
     expect(existsSync(path.join(root, "src/components/site-notice.tsx"))).toBe(false);
     expect(read("src/styles/election.css")).not.toContain("site-notice");
   });

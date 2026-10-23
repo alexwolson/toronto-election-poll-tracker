@@ -85,12 +85,21 @@ describe("Homepage latest poll", () => {
 });
 
 describe("Homepage on the way to election night", () => {
-  it("leads with the election night results panel, then the final pre-election forecast", async () => {
+  it("opens on the pre-election forecast; the site banner carries the way to results", async () => {
     const html = await renderHome();
-    const panel = html.indexOf(">Election night results</h2>");
-    expect(panel).toBeGreaterThan(-1);
-    expect(html).toContain('href="/results"');
-    expect(panel).toBeLessThan(html.indexOf('id="forecast-heading"'));
-    expect(html).toContain("Final pre-election forecast for election day");
+    expect(html).not.toContain(">Election night results</h2>");
+    expect(html.match(/<section[^>]*>/)![0]).toContain('aria-labelledby="forecast-heading"');
+    expect(html).toContain("Pre-election forecast for election day");
+  });
+
+  it("alternates paper and tint: forecast, simulated results, then the latest poll on paper", async () => {
+    const html = await renderHome();
+    const sections = [...html.matchAll(/<section[^>]*class="([^"]*)"/g)].map((m) => m[1]);
+    expect(sections.slice(0, 4)).toEqual([
+      "section forecast-lead forecast-lead--split",
+      "section forecast-details",
+      "section polling-takeaway",
+      "section home-explore",
+    ]);
   });
 });

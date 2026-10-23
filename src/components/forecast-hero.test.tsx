@@ -41,13 +41,21 @@ describe("ForecastHero", () => {
     expect(html).toMatch(/Chow finishes ahead of Bradford in \d{2}% of simulated elections\./);
     expect(html).toContain("Olivia Chow is favoured to win");
     expect(html).toContain("Evidence through");
-    expect(html).toContain("Final pre-election forecast for election day, Oct 26, 2026.");
+    expect(html).toContain("Pre-election forecast for election day, Oct 26, 2026.");
+    expect(html).not.toContain("Final pre-election");
     expect(html).not.toContain("forecast-kicker");
     expect(html).not.toContain('class="kicker"');
     expect(html).not.toContain("Inside the forecast");
-    const marginSection = html.match(/<section[^>]*\bforecast-margin\b[^>]*>/);
-    expect(marginSection).not.toBeNull();
-    expect(marginSection!.index).toBeLessThan(html.indexOf('class="forecast-tabs"'));
+    // The claim and its three margin outcomes share the first section (final weekend, Oct 23).
+    const leadSection = html.match(/<section[^>]*\bforecast-lead\b[^>]*>/);
+    expect(leadSection).not.toBeNull();
+    const leadEnd = html.indexOf("</section>", leadSection!.index);
+    const margin = html.indexOf("forecast-margin");
+    expect(margin).toBeGreaterThan(leadSection!.index!);
+    expect(margin).toBeLessThan(leadEnd);
+    expect(html.indexOf("Chow ahead by 2 or more")).toBeLessThan(leadEnd);
+    expect(html).not.toMatch(/<section[^>]*\bforecast-margin\b/);
+    expect(leadEnd).toBeLessThan(html.indexOf('class="forecast-tabs"'));
     // 2. beneath the margin chart, two views of the same simulations as real tabs
     expect(html).toContain('role="tablist"');
     expect((html.match(/role="tab"/g) ?? []).length).toBe(2);

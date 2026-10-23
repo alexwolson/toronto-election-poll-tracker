@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Hanken_Grotesk, Schibsted_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { ElectionBanner } from "@/components/election-banner";
 import { MastheadNav } from "@/components/masthead-nav";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${hanken.variable} ${schibsted.variable} ${ibmMono.variable}`}>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>
+        <ElectionBanner />
         <header className="masthead site-header">
           <div className="wrap masthead__inner">
             <Link href="/" className="brand" aria-label="City Hall Watcher · Toronto Election 2026 home">

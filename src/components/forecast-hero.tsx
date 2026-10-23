@@ -67,24 +67,24 @@ export function ForecastHero({
   );
   return (
     <>
-      <ContentSection className="forecast-lead" aria-labelledby="forecast-heading">
-        <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
-        <p className="forecast-lede">
-          {margin.leader.surname} finishes ahead of {margin.challenger.surname} in{" "}
-          {chance(margin.leaderAhead)} of simulated elections.
-        </p>
-        <p className="forecast-as-of">
-          Final pre-election forecast for election day, {formatDate(feed.election_date)}.
-          {asOfDate ? ` Evidence through ${formatDate(asOfDate)}.` : ""}
-        </p>
-      </ContentSection>
-
-      <ContentSection tint className="forecast-margin" aria-labelledby="forecast-margin-heading">
-        <SectionHeading
-          headingId="forecast-margin-heading"
-          title={`How far apart ${margin.leader.surname} and ${margin.challenger.surname} are likely to finish`}
-        />
-        <MarginOutcomes view={margin} />
+      <ContentSection className="forecast-lead forecast-lead--split" aria-labelledby="forecast-heading">
+        <div className="forecast-lead__claim">
+          <h1 id="forecast-heading">{lead.name} is favoured to win</h1>
+          <p className="forecast-lede">
+            {margin.leader.surname} finishes ahead of {margin.challenger.surname} in{" "}
+            {chance(margin.leaderAhead)} of simulated elections.
+          </p>
+          <p className="forecast-as-of">
+            Pre-election forecast for election day, {formatDate(feed.election_date)}.
+            {asOfDate ? ` Evidence through ${formatDate(asOfDate)}.` : ""}
+          </p>
+        </div>
+        <div className="forecast-margin" role="group" aria-labelledby="forecast-margin-heading">
+          <h2 id="forecast-margin-heading" className="forecast-margin__title">
+            How far apart {margin.leader.surname} and {margin.challenger.surname} are likely to finish
+          </h2>
+          <MarginOutcomes view={margin} />
+        </div>
       </ContentSection>
 
       <ContentSection className="forecast-details" aria-labelledby="forecast-details-heading">

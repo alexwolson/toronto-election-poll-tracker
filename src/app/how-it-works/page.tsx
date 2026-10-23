@@ -641,20 +641,33 @@ export default async function HowItWorksPage() {
       >
         <div className="how-prose how-ward-polls-copy">
           <p>
-            The latest Forum polls have small samples and combine phone interviews
-            with an online panel that does not randomly select voters.
-            {benchmark && <> To judge how wrong they could be, we have just {benchmark.contest_count} ward
+            Ward polls have small samples. Forum combines phone interviews with an
+            online panel that does not randomly select voters. Mainstreet uses
+            automated phone calls.
+            {benchmark && <> To judge how wrong ward polls could be, we have just {benchmark.contest_count} ward
             races from 2022: one pollster, one election.</>}
           </p>
           <p>
-            The chart shows how far the poll’s leader could be ahead of or behind
-            their strongest rival. Left of zero means a rival is ahead; right means
-            the leader is ahead. Taller bars contain more simulated scenarios.
+            Each ward’s chart gives every candidate one row. Each dot is one poll.
+            The filled dot is the newest poll, and older polls fade. When dots on
+            the same row sit far apart, the polls disagree.
           </p>
           <p>
-            Only candidates named in the poll are modelled. “Other” stays in the
-            published results. The chart cannot tell us whether a candidate outside
-            that group will win.
+            The shaded bar shows where the newest poll’s numbers could land. In
+            past ward races, about 8 results in 10 fell inside ranges this wide.
+            When two candidates’ bars overlap, the poll cannot tell them apart. The
+            sentence above the chart says whether the leader’s lead could reverse.
+          </p>
+          <p>
+            Dots show shares of decided voters. Mainstreet counts undecided voters
+            in its results, so we rescale its numbers to compare them with other
+            polls. Every published number is under the chart, as printed.
+          </p>
+          <p>
+            Only candidates named in the newest poll get a range. “Other
+            candidates” and “Undecided” are shown below the line without one. The
+            chart cannot tell us whether a candidate outside the named group will
+            win.
           </p>
         </div>
         {benchmark && <div className="how-disclosures">
@@ -671,10 +684,10 @@ export default async function HowItWorksPage() {
               <p>
                 We fit two error models to those {benchmark.contest_count} comparisons:
                 Dirichlet and logistic-normal. Both allow polling error to vary
-                between wards, with uncertainty about its typical size. The chart
-                combines equal numbers of simulations from each. That equal
-                weighting is our judgment; the historical evidence is too limited
-                to determine reliable weights.
+                between wards, with uncertainty about its typical size. The shaded
+                ranges come from the Dirichlet model. The sentence about the lead
+                checks both models and says when they disagree. The historical
+                evidence is too limited to say which model is right.
               </p>
               <p>
                 We checked each ward by fitting the models to the other wards and

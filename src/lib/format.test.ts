@@ -4,6 +4,7 @@ import {
   formatDetailedSharePct,
   formatShortDate,
   formatSharePct,
+  formatPrintedSharePct,
   isoDayNumber,
   monthStartDays,
   percentagesToHundred,
@@ -94,5 +95,14 @@ describe("monthStartDays", () => {
       isoDayNumber("2026-08-01"),
     ]);
     expect(monthStartDays(isoDayNumber("2026-08-02"), isoDayNumber("2026-08-30"))).toEqual([]);
+  });
+});
+
+describe("formatPrintedSharePct", () => {
+  it("keeps a published tenth and drops a trailing zero for whole points", () => {
+    expect(formatPrintedSharePct(0.352)).toBe("35.2%");
+    expect(formatPrintedSharePct(0.32)).toBe("32%");
+    expect(formatPrintedSharePct(0.095)).toBe("9.5%");
+    expect(formatPrintedSharePct(0.15)).toBe("15%");
   });
 });

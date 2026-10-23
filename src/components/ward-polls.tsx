@@ -1,6 +1,7 @@
 import { ContentSection } from "@/components/content-section";
-import { WardPollContext } from "@/components/ward-poll-context";
-import { formatDate, formatSharePct } from "@/lib/format";
+import { WardPollStrip } from "@/components/ward-poll-strip";
+import { formatDate, formatPrintedSharePct } from "@/lib/format";
+import { buildWardPollStrip } from "@/lib/ward-poll-strip";
 import type { WardPoll, WardPollBenchmark } from "@/types/feeds";
 
 function namedCandidates(poll: WardPoll) {
@@ -28,30 +29,14 @@ function fieldLabel(poll: WardPoll, baseline: WardPoll) {
   return poll.denominator.charAt(0).toUpperCase() + poll.denominator.slice(1);
 }
 
-function PollReading({
-  poll,
-  benchmark,
-  label,
-}: {
-  poll: WardPoll;
-  benchmark?: WardPollBenchmark | null;
-  label?: string;
-}) {
-  const hasModel = Boolean(poll.modelled_context && benchmark);
+function PollReading({ poll, label }: { poll: WardPoll; label?: string }) {
   return (
     <div className="ward-poll-reading">
       {label && (
         <h4 className="ward-poll-report__title font-heading">{label}</h4>
       )}
-      <div
-        className={
-          hasModel
-            ? "ward-poll-report__body ward-poll-report__body--modelled"
-            : "ward-poll-report__body"
-        }
-      >
+      <div className="ward-poll-report__body">
         <div className="ward-poll-report__results">
-          {hasModel && <h4 className="font-heading">Published results</h4>}
           <p className="ward-poll-report__denominator">
             {poll.denominator.charAt(0).toUpperCase() +
               poll.denominator.slice(1)}
@@ -76,15 +61,17 @@ function PollReading({
                       <span className="candidate-row__tag">incumbent</span>
                     )}
                   </th>
-                  <td>{formatSharePct(candidate.share)}</td>
+                  <td>{formatPrintedSharePct(candidate.share)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {poll.undecided_share !== null && (
             <p className="ward-poll-report__note">
-              Undecided, reported separately:{" "}
-              {formatSharePct(poll.undecided_share)}.
+              {poll.denominator === "all respondents"
+                ? "Undecided, included in the shares above: "
+                : "Undecided, reported separately: "}
+              {formatPrintedSharePct(poll.undecided_share)}.
             </p>
           )}
           {poll.modelled_context && (
@@ -93,7 +80,6 @@ function PollReading({
             </p>
           )}
         </div>
-        {benchmark && <WardPollContext poll={poll} benchmark={benchmark} />}
       </div>
     </div>
   );
@@ -101,11 +87,9 @@ function PollReading({
 
 function PollReport({
   polls,
-  benchmark,
   latest = false,
 }: {
   polls: WardPoll[];
-  benchmark?: WardPollBenchmark | null;
   latest?: boolean;
 }) {
   // Start with the smallest published field, then label fields that add names.
@@ -133,7 +117,13 @@ function PollReport({
         <p className="ward-poll-report__metadata">
           {poll.firm} · {poll.methodology}
           {base != null ? (
-            <> · {base} decided/leaning respondents</>
+            <>
+              {" "}
+              · {base}{" "}
+              {poll.denominator === "decided and leaning voters"
+                ? "decided/leaning respondents"
+                : "respondents"}
+            </>
           ) : (
             poll.sample_size !== null && <> · sample size {poll.sample_size}</>
           )}
@@ -148,7 +138,7 @@ function PollReport({
       <div
         className={
           readings.length > 1
-            ? `ward-poll-fields${readings.some((reading) => reading.modelled_context && benchmark) ? " ward-poll-fields--modelled" : ""}`
+            ? "ward-poll-fields"
             : undefined
         }
       >
@@ -156,7 +146,6 @@ function PollReport({
           <PollReading
             key={reading.poll_id}
             poll={reading}
-            benchmark={benchmark}
             label={readings.length > 1 ? fieldLabel(reading, poll) : undefined}
           />
         ))}
@@ -199,21 +188,36 @@ export function WardPolls({
   }
   const [latest, ...earlier] = [...reports.values()];
   if (!latest) return null;
-  return (
-    <ContentSection className="ward-detail-section">
-      <h2>Ward polls</h2>
-      <PollReport polls={latest} benchmark={benchmark} latest />
+  const strip = buildWardPollStrip(polls);
+  const printed = (
+    <>
+      <PollReport polls={latest} latest />
       {earlier.length > 0 && (
         <div className="ward-poll-history">
           <h3>Earlier polls</h3>
           {earlier.map((report) => (
-            <PollReport
-              key={report[0].poll_id}
-              polls={report}
-              benchmark={benchmark}
-            />
+            <PollReport key={report[0].poll_id} polls={report} />
           ))}
         </div>
+      )}
+    </>
+  );
+  return (
+    <ContentSection className="ward-detail-section">
+      <h2>Ward polls</h2>
+      {strip ? (
+        <>
+          <WardPollStrip
+            strip={strip}
+            contestCount={benchmark?.contest_count ?? null}
+          />
+          <details className="ward-poll-printed">
+            <summary>Numbers as printed</summary>
+            {printed}
+          </details>
+        </>
+      ) : (
+        printed
       )}
     </ContentSection>
   );

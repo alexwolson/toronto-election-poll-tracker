@@ -32,6 +32,12 @@ export function formatSharePct(share: number): string {
   return `${Math.round(share * 100)}%`;
 }
 
+/** A poll share as the pollster printed it: whole points, or one decimal when published. */
+export function formatPrintedSharePct(share: number): string {
+  const tenths = Math.round(share * 1000);
+  return tenths % 10 === 0 ? `${tenths / 10}%` : `${(tenths / 10).toFixed(1)}%`;
+}
+
 /** An election-result share where tenths distinguish close factual thresholds. */
 export function formatDetailedSharePct(share: number): string {
   return `${(share * 100).toFixed(1)}%`;

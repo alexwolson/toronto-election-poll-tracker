@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import { MethodFlow } from "@/components/method-flow";
@@ -31,7 +32,8 @@ function forecast(alexanderMedian?: number): MayoralForecastFeed {
 
 async function pageText(feed: MayoralForecastFeed = forecast()): Promise<string> {
   mocks.loadMayoralForecast.mockResolvedValue(feed);
-  return renderToStaticMarkup(await HowItWorksPage()).replace(/<[^>]+>/g, "");
+  const html = renderToStaticMarkup(await HowItWorksPage());
+  return new JSDOM(html).window.document.body.textContent ?? "";
 }
 
 const EXIT_PARAGRAPH =

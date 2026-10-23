@@ -1,5 +1,6 @@
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import { renderToStaticMarkup } from "react-dom/server";
+import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
 import type { MayoralForecastFeed } from "@/types/feeds";
 import { ForecastHero } from "./forecast-hero";
@@ -67,7 +68,7 @@ describe("ForecastHero", () => {
     expect(html).toContain("the middle 80%");
     // the disclosure keeps its Other candidates line, naming the included candidate and date
     const method = html.slice(html.indexOf("What is behind these numbers"));
-    expect(method.replace(/<[^>]+>/g, "")).toContain(
+    expect(new JSDOM(method).window.document.body.textContent ?? "").toContain(
       "Other candidates, including Chris Alexander, who ended his campaign on Oct. 6: " +
         "50 certified candidates, including Sarah McVie and Odessa Paloma Parker, modelled together.",
     );

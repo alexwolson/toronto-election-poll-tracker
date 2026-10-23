@@ -87,6 +87,25 @@ button:disabled { cursor: default; opacity: 0.6; }
   line-height: 1.65;
 }
 .race-hero-meta, .forecast-as-of { margin-top: 16px; font-size: var(--type-data); color: var(--muted); }
+/* Final weekend (Oct 23): the forecast claim and its three margin outcomes share the first section. */
+.forecast-lead--split > .wrap { display: grid; gap: 2.5rem clamp(32px, 5vw, 64px); }
+.forecast-lead--split h1 { max-width: 14ch; }
+.forecast-lead--split .forecast-lede { margin-bottom: 0; }
+.forecast-lead--split .forecast-margin { margin: 0; }
+.forecast-margin__title {
+  max-width: 30ch;
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--type-heading);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+@media (min-width: 900px) {
+  .forecast-lead--split > .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; }
+}
 .simple-section-heading { max-width: 72ch; margin-bottom: 24px; }
 .section-title, .race-index-section h2, .ward-detail-section h2, .how-section__heading h2 {
   padding: 0;

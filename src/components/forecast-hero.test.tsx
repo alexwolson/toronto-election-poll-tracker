@@ -41,7 +41,8 @@ describe("ForecastHero", () => {
     expect(html).toMatch(/Chow finishes ahead of Bradford in \d{2}% of simulated elections\./);
     expect(html).toContain("Olivia Chow is favoured to win");
     expect(html).toContain("Evidence through");
-    expect(html).toContain("Final pre-election forecast for election day, Oct 26, 2026.");
+    expect(html).toContain("Pre-election forecast for election day, Oct 26, 2026.");
+    expect(html).not.toContain("Final pre-election");
     expect(html).not.toContain("forecast-kicker");
     expect(html).not.toContain('class="kicker"');
     expect(html).not.toContain("Inside the forecast");

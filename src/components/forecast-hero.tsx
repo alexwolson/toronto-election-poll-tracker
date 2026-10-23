@@ -75,7 +75,7 @@ export function ForecastHero({
             {chance(margin.leaderAhead)} of simulated elections.
           </p>
           <p className="forecast-as-of">
-            Final pre-election forecast for election day, {formatDate(feed.election_date)}.
+            Pre-election forecast for election day, {formatDate(feed.election_date)}.
             {asOfDate ? ` Evidence through ${formatDate(asOfDate)}.` : ""}
           </p>
         </div>

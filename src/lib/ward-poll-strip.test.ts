@@ -117,7 +117,7 @@ describe("ward poll strip", () => {
     );
     const pham = strip.rows.find((r) => r.name === "Pham")!;
     expect(pham.latest).toBeNull();
-    expect(pham.latestNote).toBe("not in newest poll");
+    expect(pham.latestNote).toBe("not in newest");
     expect(pham.band).toBeNull();
   });
 

@@ -122,7 +122,7 @@ export function buildWardPollStrip(polls: WardPoll[]): WardPollStrip | null {
       points: entry.points,
       band: bands.get(id) ?? null,
       latest,
-      latestNote: latest === null ? "not in newest poll" : null,
+      latestNote: latest === null ? "not in newest" : null,
     };
   });
 

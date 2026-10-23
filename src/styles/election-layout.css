@@ -2206,7 +2206,7 @@
 .ward-strip__headline { margin: 0; font-weight: 600; color: var(--text-strong); }
 .ward-strip__legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; font-size: var(--type-body-small); color: var(--text-mid); }
 .ward-strip__legend li { display: inline-flex; align-items: center; gap: .4rem; }
-.ward-strip__swatch { display: inline-block; width: 1.75rem; height: .75rem; border-radius: var(--r-pill); background: var(--tint); border: 1px solid var(--link-rule); }
+.ward-strip__swatch { display: inline-block; width: 1.75rem; height: .75rem; border-radius: var(--r-pill); background: color-mix(in srgb, var(--blue) 14%, transparent); border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); }
 .ward-strip__axis, .ward-strip__row { display: grid; grid-template-columns: 11rem minmax(0, 1fr) 5.5rem; gap: .2rem 1rem; align-items: center; }
 .ward-strip__axis-track { position: relative; height: 1.25rem; font-size: var(--type-compact); color: var(--text-soft); }
 .ward-strip__axis-track > span { position: absolute; top: 0; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
@@ -2219,9 +2219,9 @@
 .ward-strip__row--other .ward-strip__name, .ward-strip__row--undecided .ward-strip__name { font-style: italic; color: var(--text-mid); }
 .ward-strip__sub { display: block; font-size: var(--type-compact); font-style: normal; color: var(--text-soft); }
 .ward-strip__plot { position: relative; height: 1.5rem; border-left: 1px solid var(--line-soft); }
-.ward-strip__band { position: absolute; top: 50%; height: 1rem; transform: translateY(-50%); border-radius: var(--r-pill); background: var(--tint); border: 1px solid var(--link-rule); }
+.ward-strip__band { position: absolute; top: 50%; height: 1rem; transform: translateY(-50%); border-radius: var(--r-pill); background: color-mix(in srgb, var(--blue) 14%, transparent); border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); }
 .ward-strip__value { text-align: right; font-size: var(--type-body-small); color: var(--text-strong); font-variant-numeric: tabular-nums; }
-.ward-strip__value--note { font-size: var(--type-compact); color: var(--text-soft); }
+.ward-strip__value--note { font-size: var(--type-compact); color: var(--text-soft); white-space: nowrap; }
 .ward-strip__marker { --marker: var(--text-strong); position: absolute; top: 50%; width: 1.4rem; height: 1.4rem; padding: 0; border: 0; background: none; transform: translate(-50%, -50%); cursor: pointer; z-index: 1; }
 .ward-strip__marker--forum { --marker: var(--blue); }
 .ward-strip__marker--mainstreet { --marker: var(--text-mid); }

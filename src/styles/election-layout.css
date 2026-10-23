@@ -2192,29 +2192,51 @@
 .ward-poll-report__note { margin-top: .75rem; color: var(--text-soft); font-size: var(--type-compact); }
 .ward-poll-fields { display: grid; gap: 1.5rem; }
 @media (min-width: 64rem) {
-  .ward-poll-fields:not(.ward-poll-fields--modelled) { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+  .ward-poll-fields { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+  .ward-poll-report__body { max-width: 36rem; }
 }
 .ward-poll-history { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line-strong); }
 .ward-poll-history > h3 { font-size: var(--type-heading); }
 .ward-poll-history .ward-poll-report + .ward-poll-report { padding-top: 1.5rem; border-top: 1px solid var(--line-soft); }
-.ward-poll-context > h4, .ward-poll-report__results > h4 { font-size: var(--type-heading); margin: 0 0 .5rem; }
-.ward-poll-context__note { font-size: var(--type-body-small); color: var(--text-soft); }
-@media (min-width: 64rem) {
-  .ward-poll-report__body--modelled { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
-  .ward-poll-report__body:not(.ward-poll-report__body--modelled) { max-width: 36rem; }
-}
+.ward-poll-printed { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line-soft); }
+.ward-poll-printed > summary { cursor: pointer; font-weight: 600; color: var(--blue); }
 
-.ward-scenarios { margin: 1rem 0; }
-.ward-scenarios__directions { display: flex; justify-content: space-between; gap: 2rem; padding-left: 3rem; font-size: var(--type-body-small); }
-.ward-scenarios__ylabel { margin: .75rem 0 .25rem; font-size: var(--type-body-small); }
-.ward-scenarios__plot { position: relative; margin-left: 3rem; height: 210px; border-bottom: 1px solid var(--line-strong); }
-.ward-scenarios__grid { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line-inner); }
-.ward-scenarios__ytick { position: absolute; top: 0; right: calc(100% + .5rem); transform: translateY(-50%); font-size: var(--type-body-small); white-space: nowrap; }
-.ward-scenarios__bar { position: absolute; bottom: 0; background: var(--text-strong); opacity: .55; }
-.ward-scenarios__zero { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid var(--line-strong); }
-.ward-scenarios__zero > span { position: absolute; top: 0; left: .25rem; font-size: var(--type-body-small); }
-.ward-scenarios__xaxis { margin: .35rem 0 0 3rem; position: relative; height: 1.5rem; font-size: var(--type-body-small); }
-.ward-scenarios__xaxis > span { position: absolute; transform: translateX(-50%); }
-.ward-scenarios__xaxis > span:first-child { transform: none; }
-.ward-scenarios__xaxis > span:last-child { transform: translateX(-100%); }
-.ward-scenarios__xlabel { text-align: center; font-size: var(--type-body-small); }
+/* Ward poll range strip: one row per candidate, a marker per poll, the newest poll's range behind. */
+.ward-strip { margin: 1rem 0 0; display: grid; gap: 1rem; }
+.ward-strip__headline { margin: 0; font-weight: 600; color: var(--text-strong); }
+.ward-strip__legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; font-size: var(--type-body-small); color: var(--text-mid); }
+.ward-strip__legend li { display: inline-flex; align-items: center; gap: .4rem; }
+.ward-strip__swatch { display: inline-block; width: 1.75rem; height: .75rem; border-radius: var(--r-pill); background: color-mix(in srgb, var(--blue) 14%, transparent); border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); }
+.ward-strip__axis, .ward-strip__row { display: grid; grid-template-columns: 11rem minmax(0, 1fr) 5.5rem; gap: .2rem 1rem; align-items: center; }
+.ward-strip__axis-track { position: relative; height: 1.25rem; font-size: var(--type-compact); color: var(--text-soft); }
+.ward-strip__axis-track > span { position: absolute; top: 0; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
+.ward-strip__axis-track > span:first-child { transform: none; }
+.ward-strip__axis-track > span:last-child { transform: translateX(-100%); }
+.ward-strip__rows { list-style: none; margin: 0; padding: 0; }
+.ward-strip__row { padding: .45rem 0; border-bottom: 1px solid var(--line-inner); }
+.ward-strip__row--other { margin-top: .6rem; border-top: 1px solid var(--line-strong); }
+.ward-strip__name { font-size: var(--type-body-small); color: var(--text-strong); line-height: 1.3; }
+.ward-strip__row--other .ward-strip__name, .ward-strip__row--undecided .ward-strip__name { font-style: italic; color: var(--text-mid); }
+.ward-strip__sub { display: block; font-size: var(--type-compact); font-style: normal; color: var(--text-soft); }
+.ward-strip__plot { position: relative; height: 1.5rem; border-left: 1px solid var(--line-soft); }
+.ward-strip__band { position: absolute; top: 50%; height: 1rem; transform: translateY(-50%); border-radius: var(--r-pill); background: color-mix(in srgb, var(--blue) 14%, transparent); border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); }
+.ward-strip__value { text-align: right; font-size: var(--type-body-small); color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.ward-strip__value--note { font-size: var(--type-compact); color: var(--text-soft); white-space: nowrap; }
+.ward-strip__marker { --marker: var(--text-strong); position: absolute; top: 50%; width: 1.4rem; height: 1.4rem; padding: 0; border: 0; background: none; transform: translate(-50%, -50%); cursor: pointer; z-index: 1; }
+.ward-strip__marker--forum { --marker: var(--blue); }
+.ward-strip__marker--mainstreet { --marker: var(--text-mid); }
+.ward-strip__marker--newest { z-index: 2; }
+.ward-strip__marker::before { content: ""; position: absolute; inset: .3rem; border: 2px solid var(--marker); border-radius: 2px; background: var(--paper); opacity: var(--marker-opacity, 1); }
+.ward-strip__marker--forum::before { border-radius: 50%; }
+.ward-strip__marker--mainstreet::before { inset: .35rem; transform: rotate(45deg); }
+.ward-strip__marker--newest::before { background: var(--marker); }
+.ward-strip__marker::after { content: attr(data-tip); display: none; position: absolute; bottom: calc(100% + .35rem); left: 50%; transform: translateX(-50%); width: max-content; max-width: 16rem; padding: .45rem .6rem; border-radius: var(--r-sm); background: var(--deep); color: var(--on-deep); font-size: var(--type-compact); line-height: 1.4; text-align: left; white-space: normal; z-index: 3; }
+.ward-strip__marker:hover::after, .ward-strip__marker:focus-visible::after, .ward-strip__marker:focus::after { display: block; }
+.ward-strip__legend .ward-strip__marker { position: relative; top: auto; display: inline-block; transform: none; cursor: default; }
+.ward-strip__legend .ward-strip__marker::after { content: none; }
+.ward-strip__note { font-size: var(--type-body-small); color: var(--text-soft); max-width: var(--measure-reading); }
+@media (max-width: 40rem) {
+  .ward-strip__axis, .ward-strip__row { grid-template-columns: minmax(0, 1fr) 4.5rem; }
+  .ward-strip__axis > :first-child { display: none; }
+  .ward-strip__name { grid-column: 1 / -1; }
+}

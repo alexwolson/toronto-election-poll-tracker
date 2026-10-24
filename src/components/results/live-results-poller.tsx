@@ -107,6 +107,13 @@ export function ResultsBallot(props: Omit<LiveResultsViewProps, "state" | "now">
   return <LiveResultsView state={state} now={now} {...props} />;
 }
 
+/** The held results and the reader's clock at the last poll, for any results page. */
+export function useLiveState(): { state: LiveClientState; now: number } {
+  const live = useContext(LiveResultsContext);
+  if (live === null) throw new Error("useLiveState must render inside LiveResultsProvider");
+  return { state: live.state, now: live.now };
+}
+
 /** The count over the night where a provider polls it, else null: for parts of the page that
  *  also render outside the live layout, as the mayor lead does in server-rendered tests. */
 export function useLiveHistoryIfProvided(): LiveHistory | null {

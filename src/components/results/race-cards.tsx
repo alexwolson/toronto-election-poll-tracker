@@ -386,7 +386,7 @@ function TallyKey({ rows, reachZones = true }: { rows: TallyRow[]; reachZones?: 
  *  track with the Estimated Range as an outlined bracket and the Possible Range as a whisker
  *  (Certain win's dashed tick removed, #119). Candidates who cannot win sit under one
  *  break, greyed. Phone widths put each name above its bar. */
-function Tally({ race, closed, legend = null }: { race: LiveRace; closed: boolean; legend?: ReactNode }) {
+export function Tally({ race, closed, legend = null }: { race: LiveRace; closed: boolean; legend?: ReactNode }) {
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const rows = tallyRows(race, closed, expanded);

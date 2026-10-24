@@ -24,8 +24,10 @@ describe("raceSetups", () => {
   it("gives each race page a unique path that no existing route uses", () => {
     const paths = setups.filter((s) => s.kind !== "french").map((s) => s.href);
     expect(new Set(paths).size).toBe(paths.length);
-    const appRoutes = readdirSync(path.join(__dirname, "../app"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
-    for (const p of paths) expect(appRoutes).not.toContain(p.split("/")[1]);
+    // A ward's slug sits at the site root, so it must not be any other route's folder.
+    const raceRoutes = new Set(["[ward]", "tdsb", "tcdsb", "conseils-scolaires"]);
+    const appRoutes = readdirSync(path.join(__dirname, "../app"), { withFileTypes: true }).filter((d) => d.isDirectory() && !raceRoutes.has(d.name)).map((d) => d.name);
+    for (const s of setups.filter((x) => x.kind === "council")) expect(appRoutes).not.toContain(s.href.split("/")[1]);
     expect(byId("councillor-11").href).toBe("/university-rosedale/");
     expect(byId("councillor-12").href).toBe("/toronto-st-pauls/");
     expect(byId("tdsb-5").href).toBe("/tdsb/5/");

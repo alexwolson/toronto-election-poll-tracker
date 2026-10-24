@@ -1,0 +1,41 @@
+/* Race pages and the citywide page's new parts (results redesign, 2026-10-24): only what the
+   site's existing classes don't already cover. Panels, tables, tallies, charts, tags and notices
+   use .card, .live-table, .live-tally, .forecast-chart, .candidate-row__tag and .callout. */
+
+.race-page { padding-block: var(--space-lg) var(--space-section); }
+.race-crumbs { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-sm) var(--space-lg); max-width: none; padding: 0; }
+.race-crumbs__step { display: flex; gap: var(--space-lg); }
+.race-page__top { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-lg) var(--space-xl); align-items: start; margin-top: var(--space-md); }
+@media (max-width: 959px) { .race-page__top { grid-template-columns: minmax(0, 1fr); } }
+.race-page__title { display: flex; align-items: flex-end; gap: var(--space-md); }
+.race-page__title h1 { margin: 0; }
+.race-page__kicker { margin: 0; }
+.race-locator { flex: none; width: 96px; height: auto; }
+@media (max-width: 599px) { .race-locator { display: none; } }
+.race-page__opening { display: grid; gap: var(--space-md); padding-top: var(--space-md); border-top: 2px solid var(--ink); }
+.race-page__head { margin-top: var(--space-md); }
+.race-page__head .race-hero-dek { margin-top: var(--space-sm); }
+
+/* A candidate's panel: a .card with the candidate's colour along its top. */
+.race-panels { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+.race-panel { display: grid; align-content: start; gap: var(--space-xs); border-top: 5px solid; }
+.race-panel .mayor-projection__figures { flex-wrap: wrap; justify-content: flex-start; column-gap: var(--space-sm); }
+.race-panel .live-progress__track { width: 100%; height: 8px; }
+
+/* A quiet race's whole field: the compact card's bar, taller. */
+.race-field { display: grid; gap: var(--space-sm); }
+.race-field .race-compact__bar { height: 22px; }
+.race-field__line { display: block; font-weight: 400; }
+
+/* The catch-up bar: what second place needs of the votes left, with the even split marked. */
+.race-catch-figure { display: grid; gap: var(--space-sm); margin: 0; }
+.race-catch { position: relative; display: flex; gap: 2px; height: 34px; }
+.race-catch > span { display: flex; align-items: center; padding: 0 10px; overflow: hidden; white-space: nowrap; font-weight: 700; font-size: var(--type-body-small); }
+.race-catch > span:last-of-type { justify-content: flex-end; }
+.race-catch__even { position: absolute; top: -6px; bottom: -6px; left: 50%; border-left: 2px dashed var(--ink); }
+.race-catch__foot { position: relative; padding-top: 18px; }
+.race-catch__even-label { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: var(--ink); font-weight: 600; }
+
+.race-full { margin-top: var(--space-section); }
+.race-section > h3 { margin-top: 0; }
+.race-exposure { display: grid; gap: var(--space-xs); margin-top: var(--space-md); }

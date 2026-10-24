@@ -2,6 +2,7 @@
 @import "../styles/chw.css";
 @import "../styles/election-layout.css";
 @import "../styles/election.css";
+@import "../styles/results-race.css";
 
 @theme inline {
   --font-sans: var(--font-body);

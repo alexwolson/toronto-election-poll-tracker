@@ -33,10 +33,20 @@ function shareTicks(lo: number, hi: number): number[] {
  *  both Estimated Ranges on one share axis, so the gap between the middles and how far the ranges
  *  overlap read together; every candidate with a range on asking. The payload has each
  *  candidate's range, not one for the gap. */
-function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandidate[] }) {
+export function ProjectedFinish({
+  race,
+  leaders,
+  colourOf,
+}: {
+  race: LiveRace;
+  leaders: LiveCandidate[];
+  /** A race page's colours (results redesign), so the card matches its panels; else the campaign colour. */
+  colourOf?: (c: LiveCandidate) => string;
+}) {
   const [all, setAll] = useState(false);
   const bands = estimated(race);
-  const withBand = (c: LiveCandidate) => (bands?.[c.key] ? [{ c, band: bands[c.key], colour: liveColour(c, "var(--color-disengaged)") }] : []);
+  const colour = colourOf ?? ((c: LiveCandidate) => liveColour(c, "var(--color-disengaged)"));
+  const withBand = (c: LiveCandidate) => (bands?.[c.key] ? [{ c, band: bands[c.key], colour: colour(c) }] : []);
   const top = leaders.flatMap(withBand);
   if (top.length < 2) return null;
   const everyone = race.candidates.flatMap(withBand).sort((a, b) => b.band.mid - a.band.mid);
@@ -74,7 +84,7 @@ function ProjectedFinish({ race, leaders }: { race: LiveRace; leaders: LiveCandi
       <p className="mayor-projection__note">99% confidence interval</p>
       {everyone.length > top.length && (
         <button type="button" className="mayor-projection__toggle" aria-expanded={all} onClick={() => setAll((v) => !v)}>
-          {all ? "Show the top two" : `Show all ${everyone.length} candidates`}
+          {all ? (top.length === 3 ? "Show the top three" : "Show the top two") : `Show all ${everyone.length} candidates`}
         </button>
       )}
     </figure>

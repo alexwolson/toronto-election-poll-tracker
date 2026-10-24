@@ -1,0 +1,256 @@
+"use client";
+
+/**
+ * The pieces of a race page (results redesign, Alex, 2026-10-24), drawn with the site's existing
+ * classes: candidate panels (`.card`, `.mayor-projection__figures`, `.live-progress`), a quiet
+ * race's whole field (`.race-compact__bar`, `.live-table`), the catch-up arithmetic
+ * (`.forecast-chart` rows), the last result (`.live-table`) and the map locator. Facts of the
+ * count; never a call.
+ */
+
+import { figureColour } from "@/lib/live-colour";
+import { shareText } from "@/lib/live-share";
+import type { CatchUp } from "@/lib/race-model";
+import type { CandidateSetup } from "@/lib/race-setup";
+import type { ResultsMapWard } from "@/lib/results-map-data";
+import type { PriorResult } from "@/types/feeds";
+import type { LiveCandidate } from "@/types/live";
+
+/** Text on a candidate's colour: dark on a light colour, white on a dark one (WCAG luminance). */
+export function textOn(colour: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(colour);
+  if (!m) return "#fff";
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const v = parseInt(m[1].slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.25 ? "var(--ink)" : "#fff";
+}
+
+export const votesText = (n: number | null) => (n === null ? "–" : `${n.toLocaleString("en-CA")} ${n === 1 ? "vote" : "votes"}`);
+
+/** Two shares that round alike (a one-vote race) get a second decimal so they don't read as a tie. */
+export function sharePair(a: number, b: number): [string, string] {
+  return a.toFixed(1) === b.toFixed(1) ? [`${a.toFixed(2)}%`, `${b.toFixed(2)}%`] : [`${a.toFixed(1)}%`, `${b.toFixed(1)}%`];
+}
+
+export function CandidateTag({ setup }: { setup: CandidateSetup | null }) {
+  return setup?.tag ? <span className="candidate-row__tag">{setup.tag}</span> : null;
+}
+
+/** One candidate in the race: name, tag, background, share large in their colour, votes and a bar. */
+export function CandidatePanel({ candidate, setup, colour }: { candidate: LiveCandidate; setup: CandidateSetup | null; colour: string }) {
+  return (
+    <div className="card race-panel" style={{ borderTopColor: colour }}>
+      <p className="mayor-projection__name">
+        {candidate.full_name} <CandidateTag setup={setup} />
+      </p>
+      {setup?.line && <p className="t-body-small">{setup.line}</p>}
+      <p className="mayor-projection__figures">
+        <strong style={{ color: figureColour(colour) }}>{shareText(candidate.share, candidate.votes)}</strong>
+        <span className="mayor-projection__span">{votesText(candidate.votes)}</span>
+      </p>
+      <span className="live-progress__track" aria-hidden="true">
+        <span className="live-progress__fill" style={{ width: `${Math.min(100, candidate.share ?? 0)}%`, background: colour }} />
+      </span>
+    </div>
+  );
+}
+
+/** A quiet race's whole field: one bar of everyone's share, then a row each. */
+export function WholeField({
+  candidates,
+  colourOf,
+  setupOf,
+  limit = 10,
+}: {
+  candidates: LiveCandidate[];
+  colourOf: (c: LiveCandidate) => string;
+  setupOf: (c: LiveCandidate) => CandidateSetup | null;
+  limit?: number;
+}) {
+  const shown = candidates.slice(0, limit);
+  const more = candidates.length - shown.length;
+  return (
+    <div className="race-field">
+      <span className="race-compact__bar" role="img" aria-label={`Share of the vote: ${candidates.map((c) => `${c.full_name} ${shareText(c.share, c.votes)}`).join(", ")}`}>
+        {candidates.map((c) => (
+          <span key={c.key} style={{ width: `${c.share ?? 0}%`, background: colourOf(c) }} />
+        ))}
+      </span>
+      <div className="live-table-scroll">
+        <table className="live-table">
+          <tbody>
+            {shown.map((c) => {
+              const setup = setupOf(c);
+              return (
+                <tr key={c.key}>
+                  <th scope="row">
+                    <span className="live-table__swatch" style={{ background: colourOf(c) }} aria-hidden="true" />
+                    {c.full_name} <CandidateTag setup={setup} />
+                    {setup?.line && <span className="t-meta race-field__line">{setup.line}</span>}
+                  </th>
+                  <td className="live-num">{c.votes === null ? "–" : c.votes.toLocaleString("en-CA")}</td>
+                  <td className="live-num">{shareText(c.share, c.votes)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {more > 0 && (
+        <p className="t-meta">
+          <a href="#race-candidates">{`${more} more candidate${more === 1 ? "" : "s"}`}</a>
+        </p>
+      )}
+    </div>
+  );
+}
+
+const ARITHMETIC = "Arithmetic on the count: the votes left assume the remaining areas are the size of those counted.";
+
+function GapRows({ rows }: { rows: { label: string; value: number; colour: string }[] }) {
+  const max = Math.max(...rows.map((r) => r.value)) * 1.04;
+  return (
+    <div className="forecast-chart race-gaps" role="list">
+      {rows.map((r) => (
+        <div key={r.label} className="forecast-chart__row" role="listitem">
+          <span className="forecast-chart__label">{r.label}</span>
+          <span className="forecast-chart__track" aria-hidden="true">
+            <span className="forecast-chart__bar" style={{ width: `${(100 * r.value) / max}%`, background: r.colour }} />
+          </span>
+          <strong className="forecast-chart__value">{Math.round(r.value).toLocaleString("en-CA")}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** What it would take: in a three-way race, each challenger's gap against the votes left; else
+ *  the share second place needs of what's left, or the gap against what's left when it can't. */
+export function CatchUpFigure({
+  catchUp,
+  race,
+  colourOf,
+  nameOf,
+}: {
+  catchUp: CatchUp;
+  /** The race's contenders, in count order. */
+  race: LiveCandidate[];
+  colourOf: (c: LiveCandidate) => string;
+  nameOf: (c: LiveCandidate) => string;
+}) {
+  const [a, b] = race;
+  const left = Math.round(catchUp.votesLeft).toLocaleString("en-CA");
+  let body;
+  let title: string;
+  if (race.length >= 3) {
+    title = "The gaps against the votes left";
+    body = (
+      <GapRows
+        rows={[
+          ...race.slice(1).map((c) => ({ label: `${nameOf(c)} trails by`, value: (a.votes ?? 0) - (c.votes ?? 0), colour: colourOf(c) })),
+          { label: "Votes left (estimate)", value: catchUp.votesLeft, colour: "var(--color-disengaged)" },
+        ]}
+      />
+    );
+  } else if (catchUp.out) {
+    title = "The gap is bigger than what’s left";
+    body = (
+      <GapRows
+        rows={[
+          { label: `Votes between ${nameOf(a)} and ${nameOf(b)}`, value: (a.votes ?? 0) - (b.votes ?? 0), colour: colourOf(a) },
+          { label: "Votes left (estimate)", value: catchUp.votesLeft, colour: "var(--color-disengaged)" },
+        ]}
+      />
+    );
+  } else {
+    const need = Math.round(catchUp.need * 100);
+    title = `What ${nameOf(b)} needs from the votes left`;
+    body = (
+      <>
+        <div className="race-catch" role="img" aria-label={`To draw level, ${nameOf(b)} needs about ${need}% of the remaining votes for the top two`}>
+          <span style={{ width: `${need}%`, background: colourOf(b), color: textOn(colourOf(b)) }}>{`${nameOf(b)} ${need}%`}</span>
+          <span style={{ width: `${100 - need}%`, background: colourOf(a), color: textOn(colourOf(a)) }}>{`${nameOf(a)} ${100 - need}%`}</span>
+          <i className="race-catch__even" aria-hidden="true" />
+        </div>
+        <p className="t-meta race-catch__foot">
+          {`About ${left} votes left in ${catchUp.left} voting areas`}
+          <span className="race-catch__even-label">Even split</span>
+        </p>
+      </>
+    );
+  }
+  return (
+    <figure className="race-catch-figure">
+      <figcaption>
+        <h3 className="t-h3">{title}</h3>
+      </figcaption>
+      {body}
+      <p className="t-meta">{ARITHMETIC}</p>
+    </figure>
+  );
+}
+
+/** The last comparable result beside tonight's, a third row in a three-way race. */
+export function PriorTable({ prior, race, threeWay, fieldSize }: { prior: PriorResult; race: LiveCandidate[]; threeWay: boolean; fieldSize: number }) {
+  const [a, b, c] = race;
+  const when = prior.year === 2022 ? "2022" : `${prior.year} by-election`;
+  const [w, r] = sharePair(prior.winner_share * 100, (prior.runner_up_share ?? 0) * 100);
+  const lead = a && b ? (a.votes ?? 0) - (b.votes ?? 0) : null;
+  const margin = a && b ? (a.share ?? 0) - (b.share ?? 0) : null;
+  return (
+    <div className="live-table-scroll">
+      <table className="live-table">
+        <thead>
+          <tr>
+            <th scope="col" />
+            <th scope="col">{when}</th>
+            <th scope="col">Tonight so far</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">First</th>
+            <td>{prior.winner_name} <strong className="live-num">{w}</strong></td>
+            <td>{a ? <>{a.full_name} <strong className="live-num">{shareText(a.share, a.votes)}</strong></> : "–"}</td>
+          </tr>
+          <tr>
+            <th scope="row">Second</th>
+            <td>{prior.runner_up_name ? <>{prior.runner_up_name} <strong className="live-num">{r}</strong></> : "–"}</td>
+            <td>{b ? <>{b.full_name} <strong className="live-num">{shareText(b.share, b.votes)}</strong></> : "–"}</td>
+          </tr>
+          {threeWay && c && (
+            <tr>
+              <th scope="row">Third</th>
+              <td>–</td>
+              <td>{c.full_name} <strong className="live-num">{shareText(c.share, c.votes)}</strong></td>
+            </tr>
+          )}
+          <tr>
+            <th scope="row">{threeWay ? "Lead over second" : "Margin"}</th>
+            <td className="live-num">{prior.margin_votes === null ? "–" : `${votesText(prior.margin_votes)} · ${((prior.margin_share ?? 0) * 100).toFixed(1)} pts`}</td>
+            <td className="live-num">{lead === null ? "–" : `${votesText(lead)} · ${(margin ?? 0).toFixed(1)} pts`}</td>
+          </tr>
+          <tr>
+            <th scope="row">Candidates</th>
+            <td className="live-num">{prior.field_size}</td>
+            <td className="live-num">{fieldSize}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Toronto with the race's wards filled in. */
+export function Locator({ viewBox, wards, covered, label }: { viewBox: string; wards: ResultsMapWard[]; covered: string[]; label: string }) {
+  const on = new Set(covered);
+  return (
+    <svg className="race-locator" viewBox={viewBox} role="img" aria-label={label}>
+      {wards.map((w) => (
+        <path key={w.num} d={w.path} fill={on.has(w.num) ? "var(--ink)" : "var(--rule)"} stroke="var(--paper)" strokeWidth={1} />
+      ))}
+    </svg>
+  );
+}

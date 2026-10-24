@@ -109,6 +109,8 @@ interface TallyRow {
   color: string;
   votes: number | null;
   share: number | null;
+  /** A tag after the name: a Suspended Campaign (results redesign). */
+  tag?: string | null;
 }
 
 function lastOf(race: LiveRace, candidate: LiveCandidate): TallyRow["last"] {
@@ -156,11 +158,12 @@ function tallyRows(
   closed: boolean,
   expanded = false,
   folded: boolean = folds(race),
+  tags: Record<string, string> = {},
 ): TallyRow[] {
   const elected = electedKey(race, closed);
   const eliminated = eliminatedKeys(race.possible);
   const candidates = tallyOrder(race);
-  const rows = candidates.map((candidate) => tallyRow(candidate, race, elected, eliminated));
+  const rows = candidates.map((candidate) => ({ ...tallyRow(candidate, race, elected, eliminated), tag: tags[candidate.key] ?? null }));
   if (expanded || !folded) return rows;
   const rest = candidates.slice(MAYOR_SHOWN);
   const sum = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
@@ -312,6 +315,7 @@ function TallyRowView({
         ) : (
           <span className="live-tally__name">{row.name}</span>
         )}
+        {row.tag && <span className="candidate-row__tag">{row.tag}</span>}
         {row.elected && <span className="badge badge--status">{WORDING.elected}</span>}
         {(row.band || row.possible) && <span className="visually-hidden">{rangeLine(row)}</span>}
       </span>
@@ -467,12 +471,12 @@ export function RaceCompactTally({ race, closed }: { race: LiveRace; closed: boo
 /** The mayor's tally at the head of the results pages (results redesign): the two leaders large,
  *  then the rest of the field folded to one row that expands in place, the axis, the key and any
  *  gate note. The same rows, marks and key as every race card. */
-export function RaceLeadTally({ race, levels, closed }: { race: LiveRace; levels: Levels | null; closed: boolean }) {
+export function RaceLeadTally({ race, levels, closed, tags }: { race: LiveRace; levels: Levels | null; closed: boolean; tags?: Record<string, string> }) {
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const foldable = race.candidates.length > RESULT_SHOWS_ALL;
   // The count only (Alex): the projection is the panel beside it, so no row carries an Estimated Range.
-  const rows = tallyRows(race, closed, expanded, foldable).map((row) => ({ ...row, band: null }));
+  const rows = tallyRows(race, closed, expanded, foldable, tags).map((row) => ({ ...row, band: null }));
   const toggleFor = (row: TallyRow) => (row.key === FOLDED ? { controls: listId, onClick: () => setExpanded(true) } : null);
   // Expanded, every candidate takes the leaders' look (Alex); folded, the rest is one quiet row.
   // Every row still in it takes the leaders' look (Alex), the folded "N other candidates" too.

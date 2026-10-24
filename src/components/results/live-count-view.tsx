@@ -491,7 +491,7 @@ function CountPending({ payload, history }: { payload: LivePayload | null; histo
 }
 
 /** The mayor's count over the night: each candidate's counted share, then the lead. */
-export function MayorCount({ payload }: { payload: LivePayload | null }) {
+export function MayorCount({ payload, lead = true }: { payload: LivePayload | null; /** The lead chart; the redesign drops it (Alex). */ lead?: boolean }) {
   const history = useLiveHistoryIfProvided();
   const [axis, setAxis] = useState<Axis>("clock");
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
@@ -508,7 +508,7 @@ export function MayorCount({ payload }: { payload: LivePayload | null }) {
             <ChartFrame title="Share of the votes counted" table={<ShareTable race={mayor} history={history} />}>
               <ShareChart race={mayor} history={history} axis={axis} />
             </ChartFrame>
-            <LeadChart race={mayor} history={history} axis={axis} />
+            {lead && <LeadChart race={mayor} history={history} axis={axis} />}
           </div>
         ))}
     </section>

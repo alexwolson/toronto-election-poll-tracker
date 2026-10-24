@@ -1,12 +1,7 @@
 import type { ReactNode } from "react";
-import { LiveResultsProvider } from "@/components/results/live-results-poller";
+import { LiveLayout } from "@/components/results/live-layout";
 
-/** One poller for every results page: it persists across ward navigations, so a
- *  tile tap opens that ward with no fetch (#17 § Payload). */
+/** One poller for the results page; the page draws its own `<main>` (results redesign). */
 export default function ResultsLayout({ children }: { children: ReactNode }) {
-  return (
-    <main id="main-content" className="np-shell">
-      <LiveResultsProvider>{children}</LiveResultsProvider>
-    </main>
-  );
+  return <LiveLayout>{children}</LiveLayout>;
 }

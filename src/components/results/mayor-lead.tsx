@@ -97,11 +97,14 @@ export function RaceResult({
   levels,
   closed,
   lead = false,
+  tags,
 }: {
   race: LiveRace;
   levels: LivePayload["levels"] | null;
   closed: boolean;
   lead?: boolean;
+  /** Tags after candidates' names: Suspended Campaigns (results redesign). */
+  tags?: Record<string, string>;
 }) {
   const byVotes = [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0));
   const [first, second] = byVotes;
@@ -112,7 +115,7 @@ export function RaceResult({
       <Heading id={`live-race-${race.id}`}>{lead ? "Mayor" : raceTitle(race)}</Heading>
       <div className="mayor-lead__main">
         <div className="mayor-lead__tally">
-          <RaceLeadTally race={race} levels={levels} closed={closed} />
+          <RaceLeadTally race={race} levels={levels} closed={closed} tags={tags} />
         </div>
         <ProjectedFinish race={race} leaders={[first, second]} />
       </div>
@@ -156,7 +159,7 @@ export function RaceResult({
 }
 
 /** The mayor's result at the head of the results pages. */
-export function MayorLead(props: { race: LiveRace; levels: LivePayload["levels"] | null; closed: boolean }) {
+export function MayorLead(props: { race: LiveRace; levels: LivePayload["levels"] | null; closed: boolean; tags?: Record<string, string> }) {
   return <RaceResult {...props} lead />;
 }
 

@@ -179,9 +179,12 @@ export interface LiveMapViewProps {
   /** The races the page's map can show: one, with no choice, or the French boards' two. The page
    *  owns the URL's `race`, so the map never writes it. */
   contests?: readonly Contest[];
+  /** The map's heading and the section's anchor, for a page with more than one map. */
+  title?: string;
+  anchor?: string;
 }
 
-export function LiveMapView({ data, payload, wards, ward, contests }: LiveMapViewProps) {
+export function LiveMapView({ data, payload, wards, ward, contests, title = "Results by ward", anchor = "results-map" }: LiveMapViewProps) {
   const fixed = contests?.[0];
   // The URL sets the map it opens with (#126); the reader's changes are written back to it.
   const pathname = usePathname();
@@ -407,9 +410,9 @@ export function LiveMapView({ data, payload, wards, ward, contests }: LiveMapVie
   const legend = legendFor(contest, effectiveMeasure, mayor, facts, candidateColour(shareCandidate));
 
   return (
-    <section id="results-map" className="live-map" aria-labelledby="live-map-heading">
+    <section id={anchor} className="live-map" aria-labelledby={`${anchor}-heading`}>
       <div className="live-map__head">
-        <h2 id="live-map-heading">Results by ward</h2>
+        <h2 id={`${anchor}-heading`}>{title}</h2>
         <div className="live-map__controls">
           {(!contests || contests.length > 1) && (
             <div className="ward-index-sort live-seg" role="group" aria-label={contests ? "Board" : "Race"}>
@@ -460,7 +463,7 @@ export function LiveMapView({ data, payload, wards, ward, contests }: LiveMapVie
             }}
           >
             <defs>
-              <pattern id="live-map-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <pattern id={`${anchor}-hatch`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                 <rect width="8" height="8" fill="var(--rule-soft)" />
                 <line x1="0" y1="0" x2="0" y2="8" stroke="var(--live-hatch)" strokeWidth="3" />
               </pattern>
@@ -473,7 +476,7 @@ export function LiveMapView({ data, payload, wards, ward, contests }: LiveMapVie
                 }}
                 d={f.ward.path}
                 className="live-map__ward"
-                style={{ "--ward-fill": f.shade.hatch ? "url(#live-map-hatch)" : (f.shade.fill ?? undefined) } as WardStyle}
+                style={{ "--ward-fill": f.shade.hatch ? `url(#${anchor}-hatch)` : (f.shade.fill ?? undefined) } as WardStyle}
                 role="button"
                 tabIndex={f.ward.num === held ? 0 : -1}
                 aria-label={`Ward ${f.ward.num} ${f.name}: ${f.shade.words}`}

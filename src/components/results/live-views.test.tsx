@@ -56,7 +56,7 @@ describe("LiveMapView", () => {
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
     expect(within(panel).getByText(/voting areas in/)).toBeTruthy();
     // Its council race, opened in full on the dashboard.
-    expect(within(panel).getByRole("link", { name: /Ward 7 council race/ }).getAttribute("href")).toMatch(/^\/results\/?\?race=council&open=councillor-7$/);
+    expect(within(panel).getByRole("link", { name: /Ward 7 council race/ }).getAttribute("href")).toMatch(/^\/humber-river-black-creek\/?$/);
   });
 
   it("switches to council and says, for each ward, whether a running incumbent leads", () => {
@@ -330,7 +330,7 @@ describe("LiveMapView selection in the URL (#126)", () => {
     render(<LiveMapView data={MAP} payload={NIGHT} wards={WARDS} ward={null} />);
     fireEvent.click(screen.getByRole("button", { name: /^Ward 7 / }));
     const panel = screen.getByRole("complementary", { name: "Ward 7 details" });
-    expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toMatch(/^\/results\/?\?race=council&open=councillor-7$/);
+    expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toMatch(/^\/humber-river-black-creek\/?$/);
   });
 });
 
@@ -468,7 +468,7 @@ describe("LiveMapView school boards: their own ward boundaries", () => {
       const panel = screen.getByRole("complementary", { name: `Ward ${first.ward_id} details` });
       const district = first.district_name.replace(/^Ward \d+\s*[—–-]\s*/, "");
       expect(panel.textContent).toContain(`Ward ${first.ward_id} ${district}`);
-      expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toContain(`open=${board}-${first.ward_id}`);
+      expect(within(panel).getByRole("link", { name: /in full/ }).getAttribute("href")).toMatch(new RegExp(`^/${board}/${first.ward_id}/?$`));
     });
   }
 });

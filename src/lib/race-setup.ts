@@ -7,7 +7,8 @@
 
 import { incumbentWard } from "@/lib/council-incumbents";
 import { councilEditorial, trusteeEditorial } from "@/lib/editorial-races";
-import { slugify, trusteeSlug, type EditorialRace } from "@/lib/race-model";
+import { type EditorialRace } from "@/lib/race-model";
+import { raceHref } from "@/lib/race-links";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { CouncilRaceCardsFeed, PastElection, PriorResult, TrusteeRaceCardsFeed, WardPoll } from "@/types/feeds";
 
@@ -95,7 +96,7 @@ export function raceSetups(council: CouncilRaceCardsFeed, trustees: TrusteeRaceC
       id: `councillor-${num}`,
       kind: "council",
       num,
-      href: `/${slugify(name)}/`,
+      href: raceHref(`councillor-${num}`),
       title: name,
       kicker: `Ward ${num}`,
       boardId: null,
@@ -120,7 +121,6 @@ export function raceSetups(council: CouncilRaceCardsFeed, trustees: TrusteeRaceC
       const id = `${nav.boardId}-${ward.ward_id}`;
       const areaName = ward.district_name.replace(/^Ward \d+\s*[—–-]\s*/, "");
       const french = FRENCH.has(nav.boardId);
-      const slug = trusteeSlug(nav.boardId, ward.ward_id, areaName);
       const candidates: Record<string, CandidateSetup> = {};
       for (const c of ward.candidates) {
         candidates[c.candidacy_id] = { name: c.display_name, line: null, tag: c.is_incumbent ? "Incumbent" : null, past: c.past_elections, url: c.campaign_url };
@@ -129,7 +129,7 @@ export function raceSetups(council: CouncilRaceCardsFeed, trustees: TrusteeRaceC
         id,
         kind: french ? "french" : "trustee",
         num: ward.ward_id,
-        href: french ? `/conseils-scolaires/#${slug.replace("/", "-")}` : `/${slug}/`,
+        href: raceHref(id),
         title: french ? `${nav.shortName}, Ward ${ward.ward_id} (${areaName})` : `${nav.shortName} Ward ${ward.ward_id}`,
         kicker: board?.display_name ?? nav.shortName,
         boardId: nav.boardId,

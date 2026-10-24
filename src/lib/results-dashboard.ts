@@ -8,6 +8,7 @@
 
 import type { LivePayload, LiveRace } from "@/types/live";
 import { raceLead, reportedFraction } from "./live-map";
+import { raceHref as pageOf } from "./race-links";
 
 export type RaceType = "mayor" | "council" | "tdsb" | "tcdsb" | "french";
 export type RaceSort = "number" | "close" | "counted" | "incumbent";
@@ -85,13 +86,12 @@ export function raceTypeOf(race: Pick<LiveRace, "id" | "level">): RaceType {
   return "mayor";
 }
 
-/** A link that opens a race in full on the dashboard. */
+/** A link to a race's own page (results redesign). */
 export function raceHref(race: Pick<LiveRace, "id" | "level">): string {
-  const type = raceTypeOf(race);
-  return type === "mayor" ? "/results/" : `/results/?race=${type}&open=${race.id}`;
+  return pageOf(race.id);
 }
 
-/** A link that opens a ward's council race in full on the dashboard. */
+/** A link to a ward's council race page. */
 export function wardRaceHref(ward: string): string {
   return raceHref({ id: `councillor-${ward}`, level: "council" });
 }

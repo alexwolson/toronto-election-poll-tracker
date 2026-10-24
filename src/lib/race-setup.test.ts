@@ -31,7 +31,7 @@ describe("raceSetups", () => {
     expect(byId("councillor-11").href).toBe("/university-rosedale/");
     expect(byId("councillor-12").href).toBe("/toronto-st-pauls/");
     expect(byId("tdsb-5").href).toBe("/tdsb/5/");
-    expect(byId("viamonde-3").href).toBe("/conseils-scolaires/#viamonde-centre");
+    expect(byId("viamonde-3").href).toBe("/conseils-scolaires/#viamonde-3");
   });
 
   it("tags a sitting councillor running in another ward, not as former", () => {

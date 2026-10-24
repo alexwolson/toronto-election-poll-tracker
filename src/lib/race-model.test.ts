@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LiveBand, LiveCandidate, LiveRace } from "@/types/live";
-import { catchUp, contenders, promotionReasons, raceColours, slugify, trusteeSlug, type EditorialRace } from "./race-model";
+import { catchUp, contenders, promotionReasons, raceColours, type EditorialRace } from "./race-model";
 
 function cand(name: string, votes: number | null, extra: Partial<LiveCandidate> = {}): LiveCandidate {
   return { key: name, full_name: name, short_label: name.split(" ").pop()!, candidacy_id: `can_${name}`, candidate_id: null, votes, share: null, ...extra };
@@ -106,20 +106,6 @@ describe("catchUp", () => {
     const cu = catchUp(race([cand("A B", 100), cand("C D", 90)], null, { progress: { received: 70, total: 67 } }))!;
     expect(cu.left).toBe(0);
     expect(cu.out).toBe(true);
-  });
-});
-
-describe("slugs", () => {
-  it("makes ward names into URL slugs", () => {
-    expect(slugify("Toronto-St. Paul's")).toBe("toronto-st-pauls");
-    expect(slugify("Scarborough-Rouge Park")).toBe("scarborough-rouge-park");
-    expect(slugify("University-Rosedale ")).toBe("university-rosedale");
-  });
-
-  it("numbers TDSB and TCDSB areas and names the French boards' areas", () => {
-    expect(trusteeSlug("tdsb", "5", "Spadina-Fort York; Toronto-Danforth")).toBe("tdsb/5");
-    expect(trusteeSlug("viamonde", "3", "Centre")).toBe("viamonde/centre");
-    expect(trusteeSlug("monavenir", "4", "Toronto Est")).toBe("monavenir/toronto-est");
   });
 });
 

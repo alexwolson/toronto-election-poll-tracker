@@ -124,23 +124,6 @@ export function catchUp(race: LiveRace): CatchUp | null {
   return { left, votesLeft, need, out: need > 1 };
 }
 
-/** A URL slug from a name: "Toronto-St. Paul's" → "toronto-st-pauls". */
-export function slugify(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/['’.]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/** A trustee race page's path under the site root: TDSB and TCDSB areas by number, the French
- *  boards' areas by name ("viamonde/centre"). */
-export function trusteeSlug(boardId: string, area: string, areaName: string): string {
-  return boardId === "tdsb" || boardId === "tcdsb" ? `${boardId}/${area}` : `${boardId}/${slugify(areaName)}`;
-}
-
 const NEUTRAL = "var(--color-disengaged)";
 /** Fallbacks for a contender with no campaign colour, never one already in the race. */
 const FALLBACK = ["#274490", "#c4501b", "#2f8f83", "#8a4f9e", "#b8860b", "#3a7d44"];

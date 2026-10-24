@@ -39,3 +39,33 @@
 .race-full { margin-top: var(--space-section); }
 .race-section > h3 { margin-top: 0; }
 .race-exposure { display: grid; gap: var(--space-xs); margin-top: var(--space-md); }
+
+/* The citywide page's new parts. */
+.results-jump { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); font-size: var(--type-body-small); }
+.watch-card__line { grid-column: 2 / -1; }
+.council-rest__title { margin-top: var(--space-xl); }
+.outstanding__squares { display: flex; flex-wrap: wrap; gap: 2px; }
+.outstanding__squares i { display: block; width: 10px; height: 14px; border-radius: 2px; }
+.two-chows { display: grid; gap: var(--space-md); }
+.two-chows__pair { margin-top: var(--space-sm); }
+.two-chows__svg { width: 100%; height: auto; display: block; }
+.two-chows__gaps .forecast-chart__track { position: relative; overflow: visible; }
+.two-chows__line { position: absolute; top: -6px; bottom: -6px; left: var(--gap-at); border-left: 2px dashed var(--ink); }
+
+/* The French-language boards' page. */
+.french-head { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: var(--space-xl); align-items: start; }
+@media (max-width: 899px) { .french-head { grid-template-columns: minmax(0, 1fr); } }
+.french-maps { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+.french-map { margin: 0; }
+.french-map svg { display: block; width: 100%; height: auto; margin-top: var(--space-xs); }
+.french-map__label { font-family: var(--font-body); font-weight: 700; fill: #fff; paint-order: stroke; stroke: rgba(22, 38, 79, .7); }
+.french-races { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--grid-gap); padding-bottom: var(--space-xl); }
+.french-race { display: grid; align-content: start; gap: var(--space-sm); scroll-margin-top: 80px; }
+.french-race:target { outline: 3px solid var(--blue); }
+.french-race h2 { margin: 0; font-size: var(--type-heading); }
+.french-race__area { display: block; }
+.french-race__rows .forecast-chart__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "track track"; row-gap: 0.35rem; }
+.french-race__rows .forecast-chart__label { grid-area: label; }
+.french-race__rows .forecast-chart__track { grid-area: track; }
+.french-race__rows .forecast-chart__value { grid-area: value; }
+.french-acclaimed { color: var(--muted); padding-bottom: var(--space-section); }

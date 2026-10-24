@@ -9,12 +9,14 @@
  */
 
 import { figureColour } from "@/lib/live-colour";
-import { shareText } from "@/lib/live-share";
+import { eliminatedKeys } from "@/lib/live-eliminated";
+import { rangeText, shareText } from "@/lib/live-share";
+import { WORDING, electedKey } from "@/lib/race-results";
 import type { CatchUp } from "@/lib/race-model";
 import type { CandidateSetup } from "@/lib/race-setup";
 import type { ResultsMapWard } from "@/lib/results-map-data";
 import type { PriorResult } from "@/types/feeds";
-import type { LiveCandidate } from "@/types/live";
+import type { LiveCandidate, LiveRace } from "@/types/live";
 
 /** Text on a candidate's colour: dark on a light colour, white on a dark one (WCAG luminance). */
 export function textOn(colour: string): string {
@@ -252,5 +254,80 @@ export function Locator({ viewBox, wards, covered, label }: { viewBox: string; w
         <path key={w.num} d={w.path} fill={on.has(w.num) ? "var(--ink)" : "var(--rule)"} stroke="var(--paper)" strokeWidth={1} />
       ))}
     </svg>
+  );
+}
+
+/** Every candidate in one table (Alex, the prototype): votes, then share, then a bar on one scale,
+ *  and the votes counted. Counting, by votes, the candidates who can't win under one break (#90,
+ *  #105) and the leader "Elected (unofficial)" at Night Close (#51); before then, ballot order
+ *  with dashes (#115). Each Possible Range is read out to screen readers. */
+export function CandidateTable({
+  race,
+  colourOf,
+  setupOf,
+  closed,
+}: {
+  race: LiveRace;
+  colourOf: (c: LiveCandidate) => string;
+  setupOf: (c: LiveCandidate) => CandidateSetup | null;
+  closed: boolean;
+}) {
+  const counting = race.state === "counting" || race.state === "all_units_in";
+  const ordered = counting ? [...race.candidates].sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1)) : race.candidates;
+  const out = eliminatedKeys(race.possible);
+  const elected = electedKey(race, closed);
+  const inIt = ordered.filter((c) => !out.has(c.key));
+  const outOf = ordered.filter((c) => out.has(c.key));
+  const scale = Math.max(50, Math.max(0, ...ordered.map((c) => c.share ?? 0)) + 5);
+  const total = race.candidates.reduce((sum, c) => sum + (c.votes ?? 0), 0);
+  const row = (c: LiveCandidate) => {
+    const possible = race.possible?.[c.key];
+    return (
+      <tr key={c.key} className={out.has(c.key) ? "race-table__out" : undefined}>
+        <th scope="row">
+          <span className="live-table__swatch" style={{ background: colourOf(c) }} aria-hidden="true" />
+          {c.full_name} <CandidateTag setup={setupOf(c)} />
+          {c.key === elected && <> <span className="badge badge--status">{WORDING.elected}</span></>}
+          {possible && <span className="visually-hidden">{`Possible ${rangeText(possible.low, possible.high)}`}</span>}
+        </th>
+        <td className="live-num">{counting && c.votes !== null ? c.votes.toLocaleString("en-CA") : "–"}</td>
+        <td className="live-num">{counting && c.votes !== null ? shareText(c.share, c.votes) : "–"}</td>
+        <td className="race-table__bar" aria-hidden="true">
+          {counting && c.share !== null && <span className="live-bar"><span style={{ width: `${(100 * c.share) / scale}%`, background: colourOf(c) }} /></span>}
+        </td>
+      </tr>
+    );
+  };
+  return (
+    <div className="live-table-scroll">
+      <table className="live-table race-table">
+        <thead>
+          <tr>
+            <th scope="col">Candidate</th>
+            <th scope="col">Votes</th>
+            <th scope="col">Share</th>
+            <th scope="col" className="race-table__bar"><span className="visually-hidden">Share bar</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {inIt.map(row)}
+          {outOf.length > 0 && (
+            <tr className="race-table__break">
+              <td colSpan={4}>
+                <strong>{WORDING.eliminated}</strong> · {WORDING.eliminatedWhy}
+              </td>
+            </tr>
+          )}
+          {outOf.map(row)}
+          {counting && (
+            <tr className="race-table__total">
+              <th scope="row">Total votes counted</th>
+              <td className="live-num">{total.toLocaleString("en-CA")}</td>
+              <td colSpan={2} />
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

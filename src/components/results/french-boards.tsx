@@ -13,6 +13,8 @@ import { counted, raceColours, contenders } from "@/lib/race-model";
 import type { RaceSetup } from "@/lib/race-setup";
 import type { ResultsMapData, ResultsMapWard } from "@/lib/results-map-data";
 import { liveColour } from "@/lib/live-colour";
+import { eliminatedKeys } from "@/lib/live-eliminated";
+import { RANGE_WORDING, WORDING, electedKey } from "@/lib/race-results";
 import type { LiveCandidate, LiveRace } from "@/types/live";
 import { useLiveState } from "./live-results-poller";
 import { ResultsBar, resultsStatus } from "./results-status";
@@ -36,6 +38,12 @@ const T = {
     acclaimed: (list: string) => `Élus par acclamation : ${list}.`,
     incumbent: "En poste",
     listSep: "; ",
+    note: "Dépouillement et fourchette possible seulement : aucune estimation pour ces conseils.",
+    eliminated: "Ne peut plus gagner",
+    noProgress: "Sections de vote : non disponible",
+    elected: "Élu(e), non officiel",
+    acclaimedNote: "Aucun scrutin n’a lieu lorsqu’une seule personne se présente.",
+    possible: (low: number, high: number) => `fourchette possible ${Math.round(low)} à ${Math.round(high)} %`,
   },
   en: {
     title: "French-language school boards",
@@ -53,6 +61,12 @@ const T = {
     acclaimed: (list: string) => `Acclaimed: ${list}.`,
     incumbent: "Incumbent",
     listSep: "; ",
+    note: RANGE_WORDING.french,
+    eliminated: WORDING.eliminated,
+    noProgress: WORDING.no_progress,
+    elected: WORDING.elected,
+    acclaimedNote: WORDING.acclaimedNote,
+    possible: (low: number, high: number) => `Possible ${Math.round(low)}–${Math.round(high)}%`,
   },
 };
 
@@ -126,6 +140,7 @@ export function FrenchBoards({ setups, map }: { setups: RaceSetup[]; map: Pick<R
           <div>
             <h1>{t.title}</h1>
             <p className="race-hero-dek">{t.intro}</p>
+            <p className="t-body-small">{t.note}</p>
           </div>
           <div className="french-maps">
             {(["viamonde", "monavenir"] as const).map((b) => (
@@ -134,16 +149,19 @@ export function FrenchBoards({ setups, map }: { setups: RaceSetup[]; map: Pick<R
           </div>
         </div>
       </section>
-      <div className="wrap french-races">
-        {contested.map((s) => {
-          const race = raceOf(s);
-          return <FrenchRace key={s.id} setup={s} race={race} t={t} heading={heading(s)} />;
-        })}
-      </div>
+      {/* Paused, or before the first poll: the status line says why, and nothing claims a count. */}
+      {payload && (
+        <div className="wrap french-races">
+          {contested.map((s) => {
+            const race = raceOf(s);
+            return <FrenchRace key={s.id} setup={s} race={race} t={t} heading={heading(s)} closed={results?.closed ?? false} />;
+          })}
+        </div>
+      )}
       {acclaimed.length > 0 && (
         <div className="wrap">
           <p className="t-body french-acclaimed">
-            {t.acclaimed(acclaimed.map((s) => `${raceOf(s)?.candidates[0]?.full_name ?? s.ed.featured[0] ?? ""} (${heading(s)}, ${s.areaName})`).join(t.listSep))}
+            {t.acclaimed(acclaimed.map((s) => `${raceOf(s)?.candidates[0]?.full_name ?? s.ed.featured[0] ?? ""} (${heading(s)}, ${s.areaName})`).join(t.listSep))} {t.acclaimedNote}
           </p>
         </div>
       )}
@@ -151,12 +169,15 @@ export function FrenchBoards({ setups, map }: { setups: RaceSetup[]; map: Pick<R
   );
 }
 
-function FrenchRace({ setup, race, t, heading }: { setup: RaceSetup; race: LiveRace | null; t: (typeof T)[Lang]; heading: string }) {
+function FrenchRace({ setup, race, t, heading, closed }: { setup: RaceSetup; race: LiveRace | null; t: (typeof T)[Lang]; heading: string; closed: boolean }) {
   const byVotes = race ? [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0)) : [];
   const has = race !== null && counted(race);
   const colours = race ? raceColours(race, contenders(race, setup.ed), (c) => liveColour(c, "") || null) : {};
   const colourOf = (c: LiveCandidate) => colours[c.key] ?? "var(--color-disengaged)";
   const max = Math.max(1, ...byVotes.map((c) => c.votes ?? 0));
+  // The Possible Range is arithmetic on the count, so these boards have it too (#97).
+  const out = eliminatedKeys(race?.possible ?? null);
+  const elected = race ? electedKey(race, closed) : null;
   const [a, b] = byVotes;
   const p = setup.prior;
   const anchor = setup.href.split("#")[1];
@@ -176,6 +197,9 @@ function FrenchRace({ setup, race, t, heading }: { setup: RaceSetup; race: LiveR
           <div key={c.key} className="forecast-chart__row" role="listitem">
             <span className="forecast-chart__label">
               {c.full_name} {setup.incumbents.includes(c.full_name) && <span className="candidate-row__tag">{t.incumbent}</span>}
+              {c.key === elected && <span className="badge badge--status">{t.elected}</span>}
+              {out.has(c.key) && <span className="candidate-row__tag">{t.eliminated}</span>}
+              {race?.possible?.[c.key] && <span className="visually-hidden">{t.possible(race.possible[c.key].low, race.possible[c.key].high)}</span>}
             </span>
             <span className="forecast-chart__track" aria-hidden="true">
               {has && <span className="forecast-chart__bar" style={{ width: `${(100 * (c.votes ?? 0)) / max}%`, background: colourOf(c) }} />}
@@ -185,7 +209,7 @@ function FrenchRace({ setup, race, t, heading }: { setup: RaceSetup; race: LiveR
         ))}
       </div>
       <p className="t-body">{has && a && b ? t.leads(a.full_name, (a.votes ?? 0) - (b.votes ?? 0)) : t.none}</p>
-      {race?.progress && <p className="t-meta">{t.areas(race.progress.received, race.progress.total)}</p>}
+      {race?.progress ? <p className="t-meta">{t.areas(race.progress.received, race.progress.total)}</p> : race?.state === "counting" && <p className="t-meta">{t.noProgress}</p>}
       <p className="t-body-small">{p ? t.prior(p.winner_name, p.year, p.margin_votes ?? 0, Math.round(p.winner_votes / p.winner_share)) : t.noPrior}</p>
       {has && <span className="visually-hidden">{byVotes.map((c) => `${c.full_name} ${shareText(c.share, c.votes)}`).join(", ")}</span>}
     </section>

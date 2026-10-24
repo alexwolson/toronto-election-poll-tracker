@@ -13,7 +13,7 @@ import { liveColour } from "@/lib/live-colour";
 import { shortLabel } from "@/lib/live-labels";
 import { shareText } from "@/lib/live-share";
 import { contenders, counted, promotionReasons, raceColours, type EditorialRace } from "@/lib/race-model";
-import { WORDING } from "@/lib/race-results";
+import { WORDING, electedKey } from "@/lib/race-results";
 import type { HomeRace } from "@/lib/home-data";
 import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
 
@@ -28,16 +28,20 @@ interface RaceRow {
   race: LiveRace | null;
   reasons: string[];
   colours: Record<string, string>;
+  /** The leader's key once Night Close names them "Elected (unofficial)" (#51). */
+  elected: string | null;
 }
 
-function rowsFor(homes: HomeRace[], payload: LivePayload | null): RaceRow[] {
+function rowsFor(homes: HomeRace[], payload: LivePayload | null, closed: boolean): RaceRow[] {
   return homes.map((home) => {
     const race = payload?.races.find((r) => r.id === home.id) ?? null;
     const ed = editorial(home);
     const colours = race ? raceColours(race, contenders(race, ed), (c) => liveColour(c, "") || null) : {};
-    return { home, race, reasons: race ? promotionReasons(race, ed) : [], colours };
+    return { home, race, reasons: race ? promotionReasons(race, ed) : [], colours, elected: race ? electedKey(race, closed) : null };
   });
 }
+
+const Elected = () => <span className="badge badge--status">{WORDING.elected}</span>;
 
 function progressText(race: LiveRace | null): string | null {
   if (!race) return null;
@@ -48,7 +52,7 @@ function progressText(race: LiveRace | null): string | null {
 /** One race at a glance: the count's bar, the race's candidates with their tags and background, the
  *  editor's comparison, and why the count promoted it. The title opens its page. */
 function WatchCard({ row }: { row: RaceRow }) {
-  const { home, race, reasons, colours } = row;
+  const { home, race, reasons, colours, elected } = row;
   const ed = editorial(home);
   const shown = race && counted(race)
     ? (() => {
@@ -78,6 +82,7 @@ function WatchCard({ row }: { row: RaceRow }) {
                 <span className="race-compact__swatch" style={{ background: colourOf(c) }} aria-hidden="true" />
                 <span className="live-tally__name">
                   {c.full_name} {home.tags[c.full_name] && <span className="candidate-row__tag">{home.tags[c.full_name]}</span>}
+                  {c.key === elected && <> <Elected /></>}
                 </span>
                 <span className="race-compact__share">{shareText(c.share, c.votes)}</span>
                 <span className="race-compact__votes">{(c.votes ?? 0).toLocaleString("en-CA")}</span>
@@ -98,8 +103,8 @@ function WatchCard({ row }: { row: RaceRow }) {
 }
 
 /** The council's headline: the races to watch, then everyone else one row each. */
-export function CouncilOverview({ homes, payload }: { homes: HomeRace[]; payload: LivePayload | null }) {
-  const rows = rowsFor(homes.filter((h) => h.kind === "council"), payload);
+export function CouncilOverview({ homes, payload, closed }: { homes: HomeRace[]; payload: LivePayload | null; closed: boolean }) {
+  const rows = rowsFor(homes.filter((h) => h.kind === "council"), payload, closed);
   const promoted = rows.filter((r) => r.reasons.length > 0);
   const featured = (t: string) => rows.filter((r) => r.reasons.length === 0 && r.home.ed.type === t);
   const watch = [...promoted, ...featured("contest"), ...featured("head")];
@@ -134,7 +139,7 @@ function RaceTable({ rows, label = "Ward" }: { rows: RaceRow[]; label?: string }
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ home, race }) => {
+          {rows.map(({ home, race, elected }) => {
             const [first, second] = race ? byVotes(race) : [];
             const started = race !== null && counted(race);
             const acclaimed = race?.state === "acclaimed" || home.acclaimed;
@@ -144,6 +149,7 @@ function RaceTable({ rows, label = "Ward" }: { rows: RaceRow[]; label?: string }
                 <td>
                   {acclaimed ? `${first?.full_name ?? home.ed.featured[0] ?? ""} (${WORDING.acclaimed.toLowerCase()})` : started ? first?.full_name : "No votes counted yet"}
                   {started && first && home.tags[first.full_name] === "Incumbent" && <> <span className="candidate-row__tag">Incumbent</span></>}
+                  {first && first.key === elected && <> <Elected /></>}
                 </td>
                 <td className="live-num">{started && !acclaimed ? shareText(first.share, first.votes) : "–"}</td>
                 <td className="live-num">{started && !acclaimed && second ? `+${((first.share ?? 0) - (second.share ?? 0)).toFixed(1)}` : "–"}</td>
@@ -160,9 +166,9 @@ function RaceTable({ rows, label = "Ward" }: { rows: RaceRow[]; label?: string }
 type CouncilSort = "number" | "close" | "trailing";
 
 /** Every council race, sortable. */
-export function CouncilTable({ homes, payload }: { homes: HomeRace[]; payload: LivePayload | null }) {
+export function CouncilTable({ homes, payload, closed }: { homes: HomeRace[]; payload: LivePayload | null; closed: boolean }) {
   const [sort, setSort] = useState<CouncilSort>("number");
-  const rows = rowsFor(homes.filter((h) => h.kind === "council"), payload);
+  const rows = rowsFor(homes.filter((h) => h.kind === "council"), payload, closed);
   const margin = (r: RaceRow) => {
     if (!r.race || !counted(r.race)) return Infinity;
     const [a, b] = byVotes(r.race);
@@ -202,10 +208,10 @@ const BOARD_NAME: Record<Board, string> = {
 };
 
 /** The trustee races, one board at a time, one row per race (Alex: no featured cards). */
-export function TrusteeOverview({ homes, payload }: { homes: HomeRace[]; payload: LivePayload | null }) {
+export function TrusteeOverview({ homes, payload, closed }: { homes: HomeRace[]; payload: LivePayload | null; closed: boolean }) {
   const [board, setBoard] = useState<Board>("tdsb");
   const of = (b: Board) => homes.filter((h) => (b === "french" ? h.kind === "french" : h.boardId === b));
-  const rows = rowsFor(of(board), payload);
+  const rows = rowsFor(of(board), payload, closed);
   const lead = rows.filter((r) => r.race && counted(r.race) && r.home.incumbents.length > 0 && r.home.incumbents.includes(byVotes(r.race)[0].full_name)).length;
   const running = rows.filter((r) => r.race && counted(r.race) && r.home.incumbents.length > 0 && !r.home.acclaimed).length;
   const open = rows.filter((r) => r.home.ed.type === "open").length;

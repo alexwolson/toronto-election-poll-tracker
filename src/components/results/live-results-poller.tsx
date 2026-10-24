@@ -15,7 +15,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { acceptPoll, INITIAL_LIVE_STATE, type LiveClientState } from "@/lib/live-accept";
 import { validateLiveHistory } from "@/lib/live-history";
 import type { LiveHistory } from "@/types/live";
-import { LiveResultsView, type LiveResultsViewProps } from "./live-results-view";
 
 const LIVE_URL = "/live/results.json";
 const POLL_INTERVAL_MS = 60_000;
@@ -98,13 +97,10 @@ export function LiveResultsProvider({ children }: { children: ReactNode }) {
   return <LiveResultsContext.Provider value={value}>{children}</LiveResultsContext.Provider>;
 }
 
-/** A results page: the held payload, shown for the page's ward. */
-export function ResultsBallot(props: Omit<LiveResultsViewProps, "state" | "now">) {
-  const live = useContext(LiveResultsContext);
-  // Without the /results/ layout's provider nothing polls; fail loudly, not "Loading…" forever.
-  if (live === null) throw new Error("ResultsBallot must render inside LiveResultsProvider");
-  const { state, now } = live;
-  return <LiveResultsView state={state} now={now} {...props} />;
+/** A fixed reader state in place of polling, for server-rendered tests of the results pages. */
+export function LiveResultsFixture({ state, now, history = null, children }: { state: LiveClientState; now: number; history?: LiveHistory | null; children: ReactNode }) {
+  const value = useMemo(() => ({ state, now, history, watchHistory: () => () => {} }), [state, now, history]);
+  return <LiveResultsContext.Provider value={value}>{children}</LiveResultsContext.Provider>;
 }
 
 /** The held results and the reader's clock at the last poll, for any results page. */

@@ -10,7 +10,7 @@
  * keys move to the nearest ward in that direction, Enter or Space holds a ward.
  */
 
-import { raceHref } from "@/lib/results-dashboard";
+import { raceHref } from "@/lib/race-links";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
@@ -708,7 +708,7 @@ function WardDetails({ facts, contest }: WardDetailsProps) {
       {/* The ward's race in full on the dashboard: its council race when the map shows the mayor. */}
       <Link
         className="text-link live-map__link"
-        href={raceHref(contest === "mayor" || !race ? { id: `councillor-${ward.num}`, level: "council" } : race)}
+        href={raceHref(contest === "mayor" || !race ? `councillor-${ward.num}` : race.id)}
       >
         {contest === "mayor" || !race ? `Ward ${ward.num} council race` : `${raceTitle(race)} in full`} <span aria-hidden="true">→</span>
       </Link>

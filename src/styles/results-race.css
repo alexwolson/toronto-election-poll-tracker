@@ -69,3 +69,11 @@
 .french-race__rows .forecast-chart__track { grid-area: track; }
 .french-race__rows .forecast-chart__value { grid-area: value; }
 .french-acclaimed { color: var(--muted); padding-bottom: var(--space-section); }
+
+/* A race's every candidate, in one table. */
+.race-table .race-table__bar { width: 40%; }
+.race-table .live-bar { width: 100%; max-width: 320px; }
+.race-table__out > * { color: var(--muted); }
+.race-table__break td { color: var(--muted); font-size: var(--type-body-small); background: var(--row-hover); }
+.race-table__total > * { font-weight: 700; border-top: 1px solid var(--rule); }
+@media (max-width: 599px) { .race-table .race-table__bar { display: none; } }

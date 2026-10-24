@@ -8,7 +8,7 @@
  * table. The count only, never compared with the forecast (#12).
  */
 
-import { wardRaceHref } from "@/lib/results-dashboard";
+import { raceHref } from "@/lib/race-links";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -448,7 +448,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
               return (
                 <tr key={r.num}>
                   <th scope="row">
-                    <Link href={wardRaceHref(r.num)}>
+                    <Link href={raceHref(`councillor-${r.num}`)}>
                       {r.num} {names.get(r.num)}
                     </Link>
                   </th>

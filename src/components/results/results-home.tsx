@@ -76,79 +76,82 @@ export function ResultsHome(props: ResultsHomeProps) {
           <p className="race-hero-meta">These are the City of Toronto’s unofficial results. We update them through the night. The estimates come from our election-night model.</p>
         </div>
       </section>
-      <div className="results-page">
-        {mayor &&
-          (showsRaceResult(mayor) ? (
-            <MayorLead race={mayor} levels={payload!.levels} closed={closed} tags={tags} />
-          ) : (
+      {/* Paused, or before the first poll: the status line says why, and nothing claims a count. */}
+      {payload && (
+        <div className="results-page">
+          {mayor &&
+            (showsRaceResult(mayor) ? (
+              <MayorLead race={mayor} levels={payload!.levels} closed={closed} tags={tags} />
+            ) : (
+              <ContentSection>
+                <RaceCard race={mayor} levels={payload!.levels} forecast={props.forecast} closed={closed} />
+              </ContentSection>
+            ))}
+          {suspendedNames.length > 0 && (
             <ContentSection>
-              <RaceCard race={mayor} levels={payload!.levels} forecast={props.forecast} closed={closed} />
+              <p className="t-meta">
+                {`Suspended campaigns: ${suspendedNames.map((n) => `${n} (${shortDate(props.notes.suspended[n])}${props.notes.endorsed[n] ? `, endorsed ${props.notes.endorsed[n]}` : ""})`).join("; ")}.`}
+              </p>
             </ContentSection>
-          ))}
-        {suspendedNames.length > 0 && (
+          )}
+          <ContentSection id="council" aria-labelledby="council-h">
+            <h2 id="council-h">Council: 25 races</h2>
+            <p className="race-hero-dek">Toronto elects one councillor in each of its 25 wards.</p>
+            <CouncilOverview homes={props.homes} payload={payload} closed={closed} />
+          </ContentSection>
           <ContentSection>
-            <p className="t-meta">
-              {`Suspended campaigns: ${suspendedNames.map((n) => `${n} (${shortDate(props.notes.suspended[n])}${props.notes.endorsed[n] ? `, endorsed ${props.notes.endorsed[n]}` : ""})`).join("; ")}.`}
-            </p>
+            <MayorCount payload={payload} lead={false} />
           </ContentSection>
-        )}
-        <ContentSection id="council" aria-labelledby="council-h">
-          <h2 id="council-h">Council: 25 races</h2>
-          <p className="race-hero-dek">Toronto elects one councillor in each of its 25 wards.</p>
-          <CouncilOverview homes={props.homes} payload={payload} />
-        </ContentSection>
-        <ContentSection>
-          <MayorCount payload={payload} lead={false} />
-        </ContentSection>
-        {mayor && showsRaceResult(mayor) && (
+          {mayor && showsRaceResult(mayor) && (
+            <ContentSection>
+              <TwoChows mayor={mayor} named={props.named} />
+            </ContentSection>
+          )}
           <ContentSection>
-            <TwoChows mayor={mayor} named={props.named} />
+            <Suspense fallback={null}>
+              <LiveMapView data={props.mapData} payload={payload} wards={props.wards} ward={null} contests={["mayor"]} title="Mayor by ward" anchor="map" />
+            </Suspense>
           </ContentSection>
-        )}
-        <ContentSection>
-          <Suspense fallback={null}>
-            <LiveMapView data={props.mapData} payload={payload} wards={props.wards} ward={null} contests={["mayor"]} title="Mayor by ward" anchor="map" />
-          </Suspense>
-        </ContentSection>
-        {mayor && showsRaceResult(mayor) && (
-          <ContentSection aria-labelledby="outstanding-h">
-            <h2 id="outstanding-h">Voting areas not yet in</h2>
-            <p className="race-hero-dek">Some voting areas are much bigger than others. A few squares can hold a lot of votes.</p>
-            <OutstandingAreas mayor={mayor} wards={props.wards} />
+          {mayor && showsRaceResult(mayor) && (
+            <ContentSection aria-labelledby="outstanding-h">
+              <h2 id="outstanding-h">Voting areas not yet in</h2>
+              <p className="race-hero-dek">Some voting areas are much bigger than others. A few squares can hold a lot of votes.</p>
+              <OutstandingAreas mayor={mayor} wards={props.wards} />
+            </ContentSection>
+          )}
+          <ContentSection>
+            <MayorWards payload={payload} wards={props.wards} />
           </ContentSection>
-        )}
-        <ContentSection>
-          <MayorWards payload={payload} wards={props.wards} />
-        </ContentSection>
-        <ContentSection>
-          <Suspense fallback={null}>
-            <LiveMapView key="council" data={props.mapData} payload={payload} wards={props.wards} ward={null} contests={["council"]} title="All 25 council races" anchor="council-map" />
-          </Suspense>
-          <CouncilTable homes={props.homes} payload={payload} />
-        </ContentSection>
-        <ContentSection id="boards" aria-labelledby="boards-h">
-          <h2 id="boards-h">School board trustees: 29 races</h2>
-          <TrusteeOverview homes={props.homes} payload={payload} />
-        </ContentSection>
-        <ContentSection aria-labelledby="about-h">
-          <h2 id="about-h">Sources and methods</h2>
-          <div className="grid grid--3">
-            <div>
-              <h3>The count</h3>
-              <p className="t-body-small">Every figure is the City of Toronto’s unofficial count. We read the City’s results files about once a minute. “Voting areas in” is the share of areas the City has reported.</p>
+          <ContentSection>
+            <Suspense fallback={null}>
+              <LiveMapView key="council" data={props.mapData} payload={payload} wards={props.wards} ward={null} contests={["council"]} title="All 25 council races" anchor="council-map" />
+            </Suspense>
+            <CouncilTable homes={props.homes} payload={payload} closed={closed} />
+          </ContentSection>
+          <ContentSection id="boards" aria-labelledby="boards-h">
+            <h2 id="boards-h">School board trustees: 29 races</h2>
+            <TrusteeOverview homes={props.homes} payload={payload} closed={closed} />
+          </ContentSection>
+          <ContentSection aria-labelledby="about-h">
+            <h2 id="about-h">Sources and methods</h2>
+            <div className="grid grid--3">
+              <div>
+                <h3>The count</h3>
+                <p className="t-body-small">Every figure is the City of Toronto’s unofficial count. We read the City’s results files about once a minute. “Voting areas in” is the share of areas the City has reported.</p>
+              </div>
+              <div>
+                <h3>The estimates</h3>
+                <p className="t-body-small">The council and trustee ranges come from a model that had to beat simply reading the count in replays of past elections before it could appear. The mayor’s estimate did not pass that test; it shows on our editor’s approval, with its record below.</p>
+              </div>
+              <div>
+                <h3>The end of the night</h3>
+                <p className="t-body-small">When the count stops, we mark each race’s leader as elected (unofficial). The City certifies the results in the days after the vote.</p>
+              </div>
             </div>
-            <div>
-              <h3>The estimates</h3>
-              <p className="t-body-small">The council and trustee ranges come from a model that had to beat simply reading the count in replays of past elections before it could appear. The mayor’s estimate did not pass that test; it shows on our editor’s approval, with its record below.</p>
-            </div>
-            <div>
-              <h3>The end of the night</h3>
-              <p className="t-body-small">When the count stops, we mark each race’s leader as elected (unofficial). The City certifies the results in the days after the vote.</p>
-            </div>
-          </div>
-          <p className="t-meta"><Link href="/how-it-works/">How the estimates work →</Link></p>
-        </ContentSection>
-      </div>
+            <p className="t-meta"><Link href="/how-it-works/">How the estimates work →</Link></p>
+          </ContentSection>
+        </div>
+      )}
       {mayor && showsRaceResult(mayor) && <MayorNotes race={mayor} levels={payload!.levels} forecast={props.forecast} closed={closed} />}
     </main>
   );

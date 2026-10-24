@@ -25,8 +25,8 @@ import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
 import { useLiveState } from "./live-results-poller";
 import { RaceCount } from "./live-count-view";
 import { ProjectedFinish } from "./mayor-lead";
-import { Tally } from "./race-cards";
-import { CandidatePanel, CandidateTag, CatchUpFigure, Locator, PriorTable, WholeField, votesText } from "./race-parts";
+
+import { CandidatePanel, CandidateTable, CandidateTag, CatchUpFigure, Locator, PriorTable, WholeField, votesText } from "./race-parts";
 import { ResultsBar, resultsStatus } from "./results-status";
 import { TurnoutBar } from "./turnout-bar";
 
@@ -124,7 +124,7 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
   let dek: ReactNode = null;
   if (acclaimed) {
     const only = race?.candidates[0]?.full_name ?? setup.ed.featured[0] ?? "";
-    dek = <>No one ran against {setup.incumbents.includes(only) ? "incumbent " : ""}<strong>{only}</strong>.</>;
+    dek = <>No one ran against {setup.incumbents.includes(only) ? "incumbent " : ""}<strong>{only}</strong>. {WORDING.acclaimedNote}</>;
   } else if (race && !hasVotes) {
     dek = <>No votes have been counted in this race yet.</>;
   } else if (race && A && B) {
@@ -145,7 +145,7 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
     setup.kind === "council" ? "Councillor" : "School trustee",
     acclaimed ? null : `${race?.candidates.length ?? Object.keys(setup.candidates).length} candidates`,
     acclaimed ? WORDING.acclaimed : setup.open ? "Open seat" : setup.incumbents.length ? `Incumbent${setup.incumbents.length > 1 ? "s" : ""}: ${setup.incumbents.join(" and ")}` : null,
-    !acclaimed && race?.state === "all_units_in" ? WORDING.all_units_in : !acclaimed && progress ? `${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} voting areas in` : null,
+    !acclaimed && race?.state === "all_units_in" ? WORDING.all_units_in : !acclaimed && progress ? `${progress.received.toLocaleString("en-CA")} of ${progress.total.toLocaleString("en-CA")} voting areas in` : !acclaimed && race?.state === "counting" ? WORDING.no_progress : null,
   ].filter(Boolean).join(" · ");
 
   const header = (
@@ -184,6 +184,18 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
       {dek && <p className="race-hero-dek">{dek}{incumbentNote}</p>}
     </div>
   );
+
+  // Paused, or before the first poll: the status line says why, and nothing claims a count.
+  if (payload === null) {
+    return (
+      <main id="main-content" className="np-shell">
+        <div className="wrap race-page">
+          {header}
+          {hero}
+        </div>
+      </main>
+    );
+  }
 
   if (acclaimed) {
     const only = race?.candidates[0];
@@ -284,10 +296,10 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
           <h2 id="race-full-h">Full results</h2>
           {race && (
             <Section id="race-candidates" title="All candidates">
-              {showsCount ? (
-                <Tally race={race} closed={closed} legend={note ? <p className="t-body-small">{note}</p> : null} />
+              {race.state === "no_figures" ? (
+                <p className="live-empty">No figures from the City for this race right now</p>
               ) : (
-                <p className="live-empty">{race.state === "no_figures" ? "No figures from the City for this race right now" : race.state === "before_results" ? WORDING.before_results : WORDING.no_units_in}</p>
+                <CandidateTable race={race} colourOf={colourOf} setupOf={setupOf} closed={closed} />
               )}
             </Section>
           )}

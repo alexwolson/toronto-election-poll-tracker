@@ -18,11 +18,13 @@ describe("production deployment wrapper", () => {
     );
   });
 
-  it("passes the intended tag only as a one-build production override", () => {
+  it("passes the intended tag only as a one-build production override, built without the build cache", () => {
+    // A cached build dropped a newly imported stylesheet from the CSS (Oct 24 preview): never reuse it.
     expect(productionDeployArguments(["backend-2026-09-09.2"])).toEqual([
       "deploy",
       "--prod",
       "--yes",
+      "--force",
       "--build-env",
       "DEPLOY_BACKEND_RELEASE_TAG=backend-2026-09-09.2",
     ]);

@@ -11,10 +11,13 @@ export function productionDeployArguments(argv) {
     );
   }
   const { tag } = backendSelection({ BACKEND_RELEASE_TAG: argv[0] });
+  // --force without --with-cache skips Vercel's build cache: a cached build once dropped a newly
+  // imported stylesheet from the CSS (Oct 24 preview), so production always builds clean.
   return [
     "deploy",
     "--prod",
     "--yes",
+    "--force",
     "--build-env",
     `DEPLOY_BACKEND_RELEASE_TAG=${tag}`,
   ];

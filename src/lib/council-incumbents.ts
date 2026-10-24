@@ -24,6 +24,11 @@ export interface LastElection {
   when: string;
 }
 
+/** The ward a 2026 candidacy holds as its sitting councillor, if any. */
+export function incumbentWard(candidacyId: string | null): string | null {
+  return (candidacyId && INCUMBENTS[candidacyId]?.ward) || null;
+}
+
 export function lastElection(race: LiveRace, candidate: LiveCandidate): LastElection | null {
   if (race.level !== "council" || !candidate.candidacy_id) return null;
   const entry = INCUMBENTS[candidate.candidacy_id];

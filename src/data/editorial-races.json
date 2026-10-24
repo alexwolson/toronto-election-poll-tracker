@@ -1,0 +1,306 @@
+{
+  "_about": "The editor's set-up for each council race (Alex): type, featured candidates, background lines, comparison and extra polls. Trustee races default to their race card's category; `trustees` overrides by payload race id. `mayor` adds Suspended Campaigns newer than the candidate feed, and endorsements.",
+  "council": {
+    "1": {
+      "type": "head",
+      "featured": [
+        "Vincent Crisanti",
+        "Chloe Brown"
+      ],
+      "compare": "prior",
+      "lines": {
+        "Vincent Crisanti": "Councillor 2010–18 and since 2022",
+        "Chloe Brown": "Policy analyst; ran for mayor in 2022 and 2023"
+      }
+    },
+    "2": {
+      "type": "incumbent",
+      "featured": [
+        "Stephen Holyday"
+      ]
+    },
+    "3": {
+      "type": "head",
+      "featured": [
+        "Amber Morley",
+        "Ted Opitz"
+      ],
+      "compare": "prior",
+      "lines": {
+        "Amber Morley": "Councillor since 2022; deputy mayor",
+        "Ted Opitz": "Conservative MP, 2011–15"
+      }
+    },
+    "4": {
+      "type": "contest",
+      "featured": [
+        "Nadia Guerrera",
+        "Diana Chan McNally",
+        "Debbie King"
+      ],
+      "outside": [
+        "Vanessa Raponi"
+      ],
+      "lines": {
+        "Nadia Guerrera": "Liberal candidate for MPP in 2018 and 2025",
+        "Diana Chan McNally": "Homelessness advocate; endorsed by retiring councillor Gord Perks",
+        "Debbie King": "TDSB trustee"
+      },
+      "polls": [
+        {
+          "firm": "Mainstreet Research",
+          "date": "2026-10-16",
+          "dates": "Oct. 14–16",
+          "n": 262,
+          "method": "IVR",
+          "source": "NOW Toronto",
+          "shares": [
+            {
+              "name": "Nadia Guerrera",
+              "share": 35.2
+            },
+            {
+              "name": "Diana Chan McNally",
+              "share": 29.2
+            },
+            {
+              "name": "Adam Pham",
+              "share": 15.5
+            }
+          ]
+        }
+      ]
+    },
+    "5": {
+      "type": "head",
+      "featured": [
+        "Frances Nunziata",
+        "Chiara Padovani"
+      ],
+      "compare": "prior",
+      "lines": {
+        "Frances Nunziata": "Council Speaker since 2010; seeking a ninth term",
+        "Chiara Padovani": "Social worker; lost to Nunziata by 94 votes in 2022"
+      }
+    },
+    "6": {
+      "type": "incumbent",
+      "featured": [
+        "James Pasternak"
+      ]
+    },
+    "7": {
+      "type": "incumbent",
+      "featured": [
+        "Anthony Perruzza"
+      ]
+    },
+    "8": {
+      "type": "incumbent",
+      "featured": [
+        "Mike Colle"
+      ]
+    },
+    "9": {
+      "type": "incumbent",
+      "featured": [
+        "Alejandra Bravo"
+      ]
+    },
+    "10": {
+      "type": "incumbent",
+      "featured": [
+        "Ausma Malik"
+      ],
+      "polls": [
+        {
+          "firm": "Mainstreet Research",
+          "date": "2026-10-16",
+          "dates": "Oct. 14–16",
+          "n": 292,
+          "method": "IVR",
+          "source": "NOW Toronto",
+          "shares": [
+            {
+              "name": "Ausma Malik",
+              "share": 43.2
+            },
+            {
+              "name": "Ian Cunningham",
+              "share": 37.7
+            },
+            {
+              "name": "Paul Nash",
+              "share": 9.2
+            }
+          ]
+        }
+      ]
+    },
+    "11": {
+      "type": "favourite",
+      "featured": [
+        "Mike Layton"
+      ],
+      "lines": {
+        "Mike Layton": "Councillor 2010–22"
+      }
+    },
+    "12": {
+      "type": "incumbent",
+      "featured": [
+        "Josh Matlow"
+      ]
+    },
+    "13": {
+      "type": "contest",
+      "featured": [
+        "Chris Moise",
+        "Daniel Tate",
+        "Curran Stikuts"
+      ],
+      "lines": {
+        "Chris Moise": "Councillor since 2022",
+        "Daniel Tate": "Right-wing Instagram influencer",
+        "Curran Stikuts": "Formerly of The 519; endorsed by MPP Kristyn Wong-Tam"
+      }
+    },
+    "14": {
+      "type": "contest",
+      "featured": [
+        "Sara Ehrhardt",
+        "Mary Fragedakis",
+        "Dianne Saxe"
+      ],
+      "lines": {
+        "Sara Ehrhardt": "TDSB trustee; endorsed by retiring councillor Paula Fletcher",
+        "Mary Fragedakis": "Councillor for this area, 2010–18",
+        "Dianne Saxe": "Former Environmental Commissioner of Ontario"
+      }
+    },
+    "15": {
+      "type": "incumbent",
+      "featured": [
+        "Rachel Chernos Lin"
+      ]
+    },
+    "16": {
+      "type": "incumbent",
+      "featured": [
+        "Jon Burnside"
+      ]
+    },
+    "17": {
+      "type": "incumbent",
+      "featured": [
+        "Shelley Carroll"
+      ]
+    },
+    "18": {
+      "type": "incumbent",
+      "featured": [
+        "Lily Cheng"
+      ]
+    },
+    "19": {
+      "type": "favourite",
+      "featured": [
+        "Nate Erskine-Smith"
+      ],
+      "lines": {
+        "Nate Erskine-Smith": "Liberal MP for the area, 2015–26"
+      }
+    },
+    "20": {
+      "type": "head",
+      "featured": [
+        "Parthi Kandavel",
+        "Kevin Rupasinghe"
+      ],
+      "compare": "prior",
+      "lines": {
+        "Parthi Kandavel": "Councillor since the 2023 by-election; former TDSB trustee",
+        "Kevin Rupasinghe": "Engineer; second in the 2023 by-election"
+      }
+    },
+    "21": {
+      "type": "incumbent",
+      "featured": [
+        "Michael Thompson"
+      ]
+    },
+    "22": {
+      "type": "incumbent",
+      "featured": [
+        "Nick Mantas"
+      ]
+    },
+    "23": {
+      "type": "head",
+      "featured": [
+        "Jamaal Myers",
+        "Shaun Chen"
+      ],
+      "outside": [
+        "Han Dong"
+      ],
+      "compare": "prior",
+      "lines": {
+        "Jamaal Myers": "Councillor since 2022; TTC chair",
+        "Shaun Chen": "Liberal MP for the area, 2015–26",
+        "Han Dong": "Former Liberal MPP and MP"
+      }
+    },
+    "24": {
+      "type": "incumbent",
+      "featured": [
+        "Paul Ainslie"
+      ]
+    },
+    "25": {
+      "type": "head",
+      "featured": [
+        "Neethan Shan",
+        "Shawn Allen"
+      ],
+      "compare": "poll",
+      "lines": {
+        "Neethan Shan": "Councillor since the 2025 by-election",
+        "Shawn Allen": "Mortgage broker; third in the 2025 by-election"
+      },
+      "polls": [
+        {
+          "firm": "Mainstreet Research",
+          "date": "2026-10-16",
+          "dates": "Oct. 14–16",
+          "n": 340,
+          "method": "IVR",
+          "source": "NOW Toronto",
+          "shares": [
+            {
+              "name": "Shawn Allen",
+              "share": 37.7
+            },
+            {
+              "name": "Neethan Shan",
+              "share": 28.5
+            },
+            {
+              "name": "Zakir Patel",
+              "share": 12.9
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "trustees": {},
+  "mayor": {
+    "suspended": {
+      "Odessa Paloma Parker": "2026-10-21"
+    },
+    "endorsed": {
+      "Odessa Paloma Parker": "Olivia Chow"
+    }
+  }
+}

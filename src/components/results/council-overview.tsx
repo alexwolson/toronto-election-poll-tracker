@@ -128,14 +128,14 @@ export function CouncilOverview({ homes, payload, closed }: { homes: HomeRace[];
 function RaceTable({ rows, label = "Ward" }: { rows: RaceRow[]; label?: string }) {
   return (
     <div className="live-table-scroll">
-      <table className="live-table">
+      <table className="live-table race-table">
         <thead>
           <tr>
             <th scope="col">{label}</th>
             <th scope="col">Leading</th>
-            <th scope="col">Share</th>
-            <th scope="col">Margin</th>
-            <th scope="col">Areas in</th>
+            <th scope="col" className="live-num">Share</th>
+            <th scope="col" className="live-num">Margin</th>
+            <th scope="col" className="live-num">Areas in</th>
           </tr>
         </thead>
         <tbody>

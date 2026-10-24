@@ -136,16 +136,18 @@ export function FrenchBoards({ setups, map }: { setups: RaceSetup[]; map: Pick<R
         }
       />
       <section className="race-hero">
-        <div className="wrap french-head">
-          <div>
-            <h1>{t.title}</h1>
-            <p className="race-hero-dek">{t.intro}</p>
-            <p className="t-body-small">{t.note}</p>
-          </div>
-          <div className="french-maps">
-            {(["viamonde", "monavenir"] as const).map((b) => (
-              <BoardMap key={b} title={t.mapOf(b === "viamonde" ? "Viamonde" : "MonAvenir")} areas={map.boards[b] ?? []} setups={setups.filter((s) => s.boardId === b)} viewBox={map.view_box} wards={map.wards} />
-            ))}
+        <div className="wrap">
+          <h1>{t.title}</h1>
+          <div className="french-head">
+            <div>
+              <p className="race-hero-dek">{t.intro}</p>
+              <p className="t-body-small">{t.note}</p>
+            </div>
+            <div className="french-maps">
+              {(["viamonde", "monavenir"] as const).map((b) => (
+                <BoardMap key={b} title={t.mapOf(b === "viamonde" ? "Viamonde" : "MonAvenir")} areas={map.boards[b] ?? []} setups={setups.filter((s) => s.boardId === b)} viewBox={map.view_box} wards={map.wards} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -183,10 +185,10 @@ function FrenchRace({ setup, race, t, heading, closed }: { setup: RaceSetup; rac
   const anchor = setup.href.split("#")[1];
   return (
     <section className="card french-race" id={anchor} aria-labelledby={`${anchor}-h`}>
-      <p className="t-kicker">{t.kind[setup.boardId ?? ""]}</p>
       <h2 id={`${anchor}-h`}>
         {heading} <span className="french-race__area">({setup.areaName})</span>
       </h2>
+      <p className="t-body-small">{t.kind[setup.boardId ?? ""]}</p>
       <details className="live-table-toggle">
         <summary>{t.wards(setup.cityWards.length)}</summary>
         <p className="t-meta">{setup.cityWards.join(", ")}</p>

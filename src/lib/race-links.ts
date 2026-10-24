@@ -55,3 +55,11 @@ export function raceHref(id: string): string {
   if (kind === "viamonde" || kind === "monavenir") return `/conseils-scolaires/#${id}`;
   return "/results/";
 }
+
+const RESULTS_PATHS = new Set(["/results", "/conseils-scolaires", ...WARD_NAMES.map((name) => `/${slugify(name)}`)]);
+
+/** Whether a path is one of the results pages: the citywide page, a race's, or the French boards'. */
+export function isResultsPath(pathname: string): boolean {
+  const path = pathname.replace(/\/$/, "");
+  return RESULTS_PATHS.has(path) || /^\/(tdsb|tcdsb)\/\d{1,2}$/.test(path);
+}

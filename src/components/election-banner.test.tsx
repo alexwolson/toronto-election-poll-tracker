@@ -63,11 +63,16 @@ describe("the site-wide election banner", () => {
     expect(renderToStaticMarkup(<ElectionBanner />)).toContain("Results from 8 p.m.");
   });
 
-  it("stays off the results pages themselves", () => {
+  it("stays off the results pages themselves: the citywide page, each race's and the French boards'", () => {
     at("2026-10-24T10:00:00-04:00");
-    for (const path of ["/results", "/results/"]) {
+    for (const path of ["/results", "/results/", "/parkdale-high-park/", "/toronto-st-pauls/", "/tdsb/5/", "/tcdsb/12/", "/conseils-scolaires/"]) {
       mocks.pathname.mockReturnValue(path);
-      expect(renderToStaticMarkup(<ElectionBanner />)).toBe("");
+      expect(renderToStaticMarkup(<ElectionBanner />), path).toBe("");
+    }
+    // Pages before the night keep it.
+    for (const path of ["/", "/wards/4/", "/trustees/tdsb/5/", "/how-it-works/"]) {
+      mocks.pathname.mockReturnValue(path);
+      expect(renderToStaticMarkup(<ElectionBanner />), path).toContain("Results from 8 p.m.");
     }
   });
 });

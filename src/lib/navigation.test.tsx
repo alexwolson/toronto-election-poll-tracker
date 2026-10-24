@@ -31,14 +31,16 @@ describe("site navigation", () => {
     expect(html).not.toContain('href="/polls"');
   });
 
-  it("marks Results active on a ward's results page", () => {
-    mocks.pathname.mockReturnValue("/results/14");
+  it("marks Results active on every results page: a race's and the French boards' too", () => {
+    for (const path of ["/results/", "/toronto-danforth/", "/tdsb/5/", "/conseils-scolaires/"]) {
+      mocks.pathname.mockReturnValue(path);
 
-    const html = renderToStaticMarkup(<MastheadNav />);
+      const html = renderToStaticMarkup(<MastheadNav />);
 
-    expect(html).toContain(
-      'class="font-mono nav-link nav-link--active" aria-current="page" href="/results">Results</a>',
-    );
+      expect(html, path).toContain(
+        'class="font-mono nav-link nav-link--active" aria-current="page" href="/results">Results</a>',
+      );
+    }
   });
 
   it("keeps Mayor active on the Polls page", () => {

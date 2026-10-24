@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isResultsPath } from "@/lib/race-links";
 import { type ResultsPhase, useResultsPhase } from "@/lib/results-clock";
 
 const COPY: Record<ResultsPhase, { flag: string; text: string; cta: string }> = {
@@ -22,7 +23,7 @@ const COPY: Record<ResultsPhase, { flag: string; text: string; cta: string }> = 
 export function ElectionBanner() {
   const pathname = usePathname();
   const phase = useResultsPhase();
-  if (pathname?.replace(/\/$/, "") === "/results") return null;
+  if (pathname && isResultsPath(pathname)) return null;
   const { flag, text, cta } = COPY[phase];
   return (
     <div className="banner" role="region" aria-label="Election announcement">

@@ -304,8 +304,8 @@ export function CandidateTable({
         <thead>
           <tr>
             <th scope="col">Candidate</th>
-            <th scope="col">Votes</th>
-            <th scope="col">Share</th>
+            <th scope="col" className="live-num">Votes</th>
+            <th scope="col" className="live-num">Share</th>
             <th scope="col" className="race-table__bar"><span className="visually-hidden">Share bar</span></th>
           </tr>
         </thead>

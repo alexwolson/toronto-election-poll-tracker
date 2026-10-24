@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { isResultsPath } from "@/lib/race-links";
 import { useResultsLive } from "@/lib/results-clock";
 
 const NAV_LINKS = [
@@ -58,7 +59,7 @@ export function MastheadNav() {
       <div id="site-navigation-links" className={`site-nav__links${expanded ? " site-nav__links--open" : ""}`}>
         {NAV_LINKS.map((link) => {
           const activePaths = link.activePaths ?? [link.href];
-          const active = activePaths.some(
+          const active = (link.href === "/results" && isResultsPath(pathname)) || activePaths.some(
             (path) => pathname === path || (path !== "/" && pathname.startsWith(`${path}/`)),
           );
           return (

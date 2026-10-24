@@ -117,7 +117,6 @@ export function CouncilOverview({ homes, payload, closed }: { homes: HomeRace[];
     <>
       <div className="results-sub-head">
         <h3>Races to watch</h3>
-        <p>Contests with a story: a crowded field, a notable challenger or a rematch.</p>
       </div>
       <div className="watch-grid">
         {watch.map((row) => <WatchCard key={row.home.id} row={row} />)}

@@ -384,3 +384,45 @@
   .results-ui .race-page__top > div > .race-page__gate { order: 5; }
   .results-ui .race-page__top > div > .race-page__to-full { order: 6; margin-top: 0; }
 }
+
+/* Voting areas not yet in: the prototype's total and split on the left, the wards on the right. */
+.results-ui .outstanding { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px 56px; align-items: start; }
+@media (max-width: 959px) { .results-ui .outstanding { grid-template-columns: minmax(0, 1fr); } }
+.results-ui .outstanding__total { position: sticky; top: 72px; }
+@media (max-width: 959px) { .results-ui .outstanding__total { position: static; } }
+.results-ui .outstanding__big { margin: 0; color: var(--ink); font: 800 clamp(44px, 5vw, 60px)/1 var(--font-display); letter-spacing: -0.03em; }
+.results-ui .outstanding__label { margin: 6px 0 0; color: var(--ink); font-size: 17px; }
+.results-ui .outstanding__split { display: flex; height: 28px; margin-top: 22px; border-radius: 4px; overflow: hidden; }
+.results-ui .outstanding__split > span { display: block; height: 100%; }
+.results-ui .outstanding__key { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; color: var(--ink); font-size: 16px; }
+.results-ui .outstanding__key li { display: flex; align-items: center; }
+.results-ui .outstanding__key b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.results-ui .outstanding__list { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--ink); }
+.results-ui .outstanding__list li { display: grid; grid-template-columns: minmax(0, 210px) minmax(0, 1fr) max-content; gap: 14px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--rule-soft); font-size: 15px; }
+.results-ui .outstanding__ward { overflow: hidden; color: var(--ink); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.results-ui .outstanding__margin { color: var(--body); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 599px) {
+  .results-ui .outstanding__list li { grid-template-columns: minmax(0, 1fr) auto; }
+  .results-ui .outstanding__squares { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* The prototype's charts, restored (Alex, 2026-10-24). */
+.results-ui .results-bands-fig { max-width: 820px; margin: 0; }
+.results-ui .results-bands { display: block; width: 100%; height: auto; }
+.results-ui .results-multiples__head { margin: 48px 0 0; font-size: 19px; }
+.results-ui .results-multiples { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin-top: 16px; }
+@media (max-width: 767px) { .results-ui .results-multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; } }
+.results-ui .results-multiples__one { margin: 0; }
+.results-ui .results-multiples__one h3 { margin: 0; font: 600 16px var(--font-body); letter-spacing: 0; }
+.results-ui .results-multiples__one p { margin: 0; color: var(--muted); font-size: 14px; }
+.results-ui .results-multiples__one svg { display: block; width: 100%; height: auto; margin-top: 6px; }
+.results-ui .results-multiples__one path { stroke: #fff; stroke-width: 1.5; }
+.results-ui .race-polls { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.results-ui .race-poll { display: grid; align-content: start; gap: 8px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: 10px; }
+.results-ui .race-poll .results-note { margin: 0; }
+.results-ui .race-poll__name { margin: 0; color: var(--ink); font: 700 17px/1.2 var(--font-display); letter-spacing: -0.01em; }
+.results-ui .race-ballot { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px 48px; }
+.results-ui .race-ballot:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 899px) { .results-ui .race-ballot { grid-template-columns: minmax(0, 1fr); } }
+.results-ui .race-ballot h4 { margin: 0 0 10px; color: var(--ink); font: 700 18px var(--font-display); }
+.results-ui .race-ballot .live-table-scroll { border-top: 2px solid var(--ink); }

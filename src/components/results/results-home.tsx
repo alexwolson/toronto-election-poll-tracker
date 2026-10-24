@@ -16,9 +16,10 @@ import type { ResultsMapData } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
 import type { LivePayload, LiveRace } from "@/types/live";
 import { CouncilOverview, CouncilTable, TrusteeOverview } from "./council-overview";
-import { MayorCount, MayorWards } from "./live-count-view";
+import { MayorWards } from "./live-count-view";
 import { LiveMapView } from "./live-map-view";
-import { useLiveState } from "./live-results-poller";
+import { useLiveHistoryIfProvided, useLiveState } from "./live-results-poller";
+import { EstimateBands, ShareMultiples, topTwoBands } from "./results-charts";
 import { MayorLead, MayorNotes, showsRaceResult } from "./mayor-lead";
 import { OutstandingAreas } from "./outstanding-areas";
 import { ResultsBar, resultsStatus } from "./results-status";
@@ -103,9 +104,7 @@ export function ResultsHome(props: ResultsHomeProps) {
             <BlockHead id="council-h" title="Council: 25 races" dek="Toronto elects one councillor in each of its 25 wards." />
             <CouncilOverview homes={props.homes} payload={payload} closed={closed} />
           </ContentSection>
-          <ContentSection>
-            <MayorCount payload={payload} lead={false} />
-          </ContentSection>
+          {mayor && <Bands mayor={mayor} />}
           {mayor && showsRaceResult(mayor) && (
             <ContentSection>
               <TwoChows mayor={mayor} named={props.named} />
@@ -113,8 +112,14 @@ export function ResultsHome(props: ResultsHomeProps) {
           )}
           <ContentSection>
             <Suspense fallback={null}>
-              <LiveMapView data={props.mapData} payload={payload} wards={props.wards} ward={null} contests={["mayor"]} title="Mayor by ward" anchor="map" />
+              <LiveMapView data={props.mapData} payload={payload} wards={props.wards} ward={null} contests={["mayor"]} title="Mayor: leader by ward" anchor="map" />
             </Suspense>
+            {mayor && showsRaceResult(mayor) && (
+              <>
+                <h3 className="results-multiples__head">Mayor: share by ward</h3>
+                <ShareMultiples race={mayor} wards={props.mapData.wards} viewBox={props.mapData.view_box} />
+              </>
+            )}
           </ContentSection>
           {mayor && showsRaceResult(mayor) && (
             <ContentSection aria-labelledby="outstanding-h">
@@ -157,6 +162,20 @@ export function ResultsHome(props: ResultsHomeProps) {
       )}
       {mayor && payload && <MayorNotes race={mayor} levels={payload.levels} forecast={props.forecast} closed={closed} />}
     </main>
+  );
+}
+
+/** The top two's projected finish over the night (the prototype's), when the night has bands to draw. */
+function Bands({ mayor }: { mayor: LiveRace }) {
+  const history = useLiveHistoryIfProvided();
+  if (!topTwoBands(mayor, history)) return null;
+  return (
+    <ContentSection aria-labelledby="bands-h">
+      <BlockHead id="bands-h" title="Projected finish for the top two" dek="The shaded bands show where we expect each candidate to finish: our 99% confidence interval at each City update." />
+      <figure className="results-bands-fig">
+        <EstimateBands race={mayor} history={history} />
+      </figure>
+    </ContentSection>
   );
 }
 

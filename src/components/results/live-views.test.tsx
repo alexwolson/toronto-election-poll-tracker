@@ -400,7 +400,7 @@ describe("The count on the race type pages (Alex, 2026-10-21)", () => {
     render(<MayorCount payload={NIGHT} />);
     render(<MayorWards payload={NIGHT} wards={WARDS} />);
     expect(screen.getByRole("status").textContent).toMatch(/Loading the count/);
-    expect(screen.getByRole("heading", { name: "Mayor by ward" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Mayor: results by ward" })).toBeTruthy();
     expect(screen.getAllByRole("row")).toHaveLength(26);
   });
 

@@ -14,6 +14,7 @@ import { resultsWards, type ResultsWard } from "@/lib/results-wards";
 import { wardBallotRaceIds } from "@/lib/ward-ballot";
 import type { CouncilRaceCardsFeed, MayoralCandidatesFeed, MayoralForecastFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 import type { LivePayload } from "@/types/live";
+import { serveHistory } from "@/lib/live-history";
 import { serveLive, SWITCHES, switchesFrom, type SwitchName } from "@/lib/live-serve";
 import { TURNOUT } from "@/lib/turnout";
 import { WORDING } from "@/lib/race-results";
@@ -130,10 +131,9 @@ describe("the citywide page's order (results redesign, Alex, 2026-10-24)", () =>
 
   it("runs mayor, council, the count over the night, the mayor by ward, every council race, trustees, sources", () => {
     const html = renderPage(NIGHT, "home");
-    expect(ids(html, ["live-race-mayor", "council", "results-count", "map", "outstanding-h", "results-wards", "council-map", "boards", "about-h"])).toEqual([
+    expect(ids(html, ["live-race-mayor", "council", "map", "outstanding-h", "results-wards", "council-map", "boards", "about-h"])).toEqual([
       "live-race-mayor",
       "council",
-      "results-count",
       "map",
       "outstanding-h",
       "results-wards",
@@ -145,10 +145,29 @@ describe("the citywide page's order (results redesign, Alex, 2026-10-24)", () =>
     expect(html.lastIndexOf("How accurate is this estimate?")).toBeGreaterThan(html.indexOf('id="about-h"'));
   });
 
+  it("draws the top two's projected finish over the night once the history has their bands (the prototype)", () => {
+    const entries = (JSON.parse(readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/history.json"), "utf8")) as unknown[]).map((e) => JSON.stringify(e));
+    const history = serveHistory({ entries, switches: switchesFrom(SWITCHES.map(() => null)) });
+    const heartbeat = Math.max(NIGHT.seq.all_office, NIGHT.seq.ward_by_ward);
+    const html = renderToStaticMarkup(
+      <LiveResultsFixture state={{ results: { heartbeat, paused: false, closed: false, payload: NIGHT }, failures: 0 }} now={heartbeat} history={history}>
+        <ResultsHome homes={HOMES} wards={WARDS} forecast mapData={MAP} named={NAMED} notes={NOTES} />
+      </LiveResultsFixture>,
+    );
+    expect(html).toContain("Projected finish for the top two");
+    expect(html).toContain('class="results-bands"');
+    expect(html.indexOf('id="bands-h"')).toBeGreaterThan(html.indexOf('id="council"'));
+    expect(html.indexOf('id="bands-h"')).toBeLessThan(html.indexOf('id="map"'));
+    // Without the history's bands, no empty chart.
+    expect(renderPage(NIGHT, "home")).not.toContain("Projected finish for the top two");
+    // The small maps of each leader's share sit under the leader map.
+    expect(count(html, 'class="results-multiples__one"')).toBe(4);
+  });
+
   it("fixes each map to its race, with no choice of race", () => {
     const html = renderPage(NIGHT, "home");
     expect(html).not.toMatch(/role="group" aria-label="Race"/);
-    expect(html).toContain("Mayor by ward");
+    expect(html).toContain("Mayor: leader by ward");
     expect(html).toContain("All 25 council races");
   });
 
@@ -630,7 +649,7 @@ describe("gated projections and the Possible Range (#45, ADR 0002)", () => {
     expect(notes(html)).toMatch(
       /<details class="live-record"><summary>How accurate is this estimate\?<\/summary>[^]*worse than expected in the 2023 by-election/,
     );
-    expect(text(card(html, "councillor-1"))).not.toContain("2023 by-election");
+    expect(text(card(html, "councillor-1"))).not.toContain("worse than expected in the 2023 by-election");
     expect(count(text(card(html, "councillor-1")), "99% confidence interval")).toBe(1);
   });
 

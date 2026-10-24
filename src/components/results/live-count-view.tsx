@@ -520,7 +520,7 @@ export function MayorWards({ payload, wards }: { payload: LivePayload | null; wa
   const mayor = payload?.races.find((r) => r.id === "mayor") ?? null;
   return (
     <section id="results-wards" className="live-count" aria-labelledby="mayor-wards-heading">
-      <h2 id="mayor-wards-heading">Mayor by ward</h2>
+      <h2 id="mayor-wards-heading">Mayor: results by ward</h2>
       {!payload || payload.state !== "results" ? (
         <p className="live-empty">The table fills in when results come in after 8 p.m.</p>
       ) : mayor?.wards ? (

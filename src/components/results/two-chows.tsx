@@ -99,9 +99,6 @@ function GapBars({ rows, line }: { rows: { label: string; value: number; colour:
   const max = Math.max(...rows.map((r) => r.value)) * 1.04;
   return (
     <figure className="live-chart">
-      <figcaption>
-        <h3>Could Braeden Chow’s votes close the gap?</h3>
-      </figcaption>
       <div className="forecast-chart two-chows__gaps" role="list" style={{ ["--gap-at" as string]: `${(100 * line) / max}%` }}>
         {rows.map((r) => (
           <div key={r.label} className="forecast-chart__row" role="listitem">

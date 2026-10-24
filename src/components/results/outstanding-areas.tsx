@@ -24,38 +24,49 @@ export function OutstandingAreas({ mayor, wards }: { mayor: LiveRace; wards: Res
   const total = rows.reduce((a, r) => a + r.left, 0);
   const ordered = rows.filter((r) => r.left > 0).sort((a, b) => b.left - a.left || Number(a.num) - Number(b.num));
   // How many of them lie in wards each candidate leads, most first.
-  const byLeader = new Map<string, { name: string; left: number }>();
+  const byLeader = new Map<string, { name: string; colour: string; left: number }>();
   for (const r of ordered) {
     if (!r.leader) continue;
-    const at = byLeader.get(r.leader.key) ?? { name: shortLabel(r.leader), left: 0 };
+    const at = byLeader.get(r.leader.key) ?? { name: shortLabel(r.leader), colour: liveColour(r.leader), left: 0 };
     byLeader.set(r.leader.key, { ...at, left: at.left + r.left });
   }
-  const split = [...byLeader.values()].sort((a, b) => b.left - a.left).map((l) => `${l.left.toLocaleString("en-CA")} in wards ${l.name} leads`);
+  const split = [...byLeader.values()].sort((a, b) => b.left - a.left);
+  // The prototype's layout: the total and its split on the left, each ward's squares on the right.
   return (
     <div className="outstanding">
-      <p className="t-body">
-        <strong>{`${total.toLocaleString("en-CA")} ${total === 1 ? "voting area is" : "voting areas are"} not yet in`}</strong>
-        {split.length > 0 && `: ${split.join(", ")}.`}
-      </p>
-      <div className="live-table-scroll">
-        <table className="live-table">
-          <tbody>
-            {ordered.map((r) => (
-              <tr key={r.num}>
-                <th scope="row">{`${r.num} ${name.get(r.num) ?? ""}`}</th>
-                <td>
-                  <span className="outstanding__squares" aria-label={`${r.left} voting areas not yet in`}>
-                    {Array.from({ length: r.left }, (_, i) => (
-                      <i key={i} style={{ background: r.leader ? liveColour(r.leader) : "var(--color-disengaged)" }} />
-                    ))}
-                  </span>
-                </td>
-                <td className="live-num">{r.leader && r.margin !== null ? `${shortLabel(r.leader)} +${r.margin.toFixed(1)}` : "–"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="outstanding__total">
+        <p className="outstanding__big">{total.toLocaleString("en-CA")}</p>
+        <p className="outstanding__label">{total === 1 ? "voting area is not yet in" : "voting areas are not yet in"}</p>
+        {total > 0 && (
+          <>
+            <span className="outstanding__split" aria-hidden="true">
+              {split.map((l) => <span key={l.name} style={{ width: `${(100 * l.left) / total}%`, background: l.colour }} />)}
+            </span>
+            <ul className="outstanding__key">
+              {split.map((l) => (
+                <li key={l.name}>
+                  <span className="live-table__swatch" style={{ background: l.colour }} aria-hidden="true" />
+                  {`In wards ${l.name} leads`}
+                  <b>{l.left.toLocaleString("en-CA")}</b>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
+      <ul className="outstanding__list">
+        {ordered.map((r) => (
+          <li key={r.num}>
+            <span className="outstanding__ward">{`${r.num} ${name.get(r.num) ?? ""}`}</span>
+            <span className="outstanding__squares" aria-label={`${r.left} voting areas not yet in`}>
+              {Array.from({ length: r.left }, (_, i) => (
+                <i key={i} style={{ background: r.leader ? liveColour(r.leader) : "var(--color-disengaged)" }} />
+              ))}
+            </span>
+            <span className="outstanding__margin">{r.leader && r.margin !== null ? `${shortLabel(r.leader)} +${r.margin.toFixed(1)}` : "–"}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

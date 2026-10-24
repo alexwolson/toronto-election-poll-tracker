@@ -12,7 +12,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { CandidateHistoryItem } from "@/components/candidate-history";
-import { WardPolls } from "@/components/ward-polls";
 import { liveColour } from "@/lib/live-colour";
 import { shortLabel } from "@/lib/live-labels";
 import { shareText } from "@/lib/live-share";
@@ -27,6 +26,7 @@ import { RaceCount } from "./live-count-view";
 import { ProjectedFinish } from "./mayor-lead";
 
 import { CandidatePanel, CandidateTable, CandidateTag, CatchUpFigure, Locator, PriorTable, WholeField, votesText } from "./race-parts";
+import { MayorInWard, RacePolls } from "./results-charts";
 import { ResultsBar, resultsStatus } from "./results-status";
 import { TurnoutBar } from "./turnout-bar";
 
@@ -328,9 +328,9 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
             </Section>
           )}
           {polls.length > 0 && (
-            <div className="live-subsection race-section" id="race-polls">
-              <WardPolls polls={polls} />
-            </div>
+            <Section id="race-polls" title="Polls">
+              <RacePolls polls={polls} />
+            </Section>
           )}
           {race && (
             <Section id="race-people" title="Candidates">
@@ -372,21 +372,13 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
 /** The other races on these ballots, each with its leader and how much is in, linking to its page. */
 function BallotRaces({ payload, links, ward }: { payload: LivePayload | null; links: RaceLink[]; ward: string | null }) {
   const mayor = payload?.races.find((r) => r.id === "mayor");
-  const mayorWard = ward && mayor?.wards?.find((w) => w.num === ward);
   const rows = links.map((link) => ({ link, race: payload?.races.find((r) => r.id === link.id) ?? null }));
+  // The prototype's ballot strip: the mayor in this ward as bars beside the other races.
   return (
-    <>
-      {mayorWard && mayorWard.votes && mayorWard.votes_counted ? (
-        <p className="t-body-small">
-          {`Mayor in Ward ${ward}: `}
-          {Object.entries(mayorWard.votes)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([key, v]) => `${mayor!.candidates.find((c) => c.key === key)?.full_name ?? key} ${shareText((100 * v) / mayorWard.votes_counted!, v)}`)
-            .join(", ")}
-          . <Link href="/results/#map">Mayor by ward →</Link>
-        </p>
-      ) : null}
+    <div className="race-ballot">
+      {mayor && ward && <MayorInWard race={mayor} ward={ward} />}
+      <div>
+      {ward && <h4>School trustees</h4>}
       <div className="live-table-scroll">
         <table className="live-table">
           <thead>
@@ -413,7 +405,8 @@ function BallotRaces({ payload, links, ward }: { payload: LivePayload | null; li
           </tbody>
         </table>
       </div>
-    </>
+      </div>
+    </div>
   );
 }
 

@@ -8,6 +8,8 @@
  * count; never a call.
  */
 
+import { useId, useState } from "react";
+import { candidateMeta } from "@/lib/candidates";
 import { figureColour } from "@/lib/live-colour";
 import { eliminatedKeys } from "@/lib/live-eliminated";
 import { rangeText, shareText } from "@/lib/live-share";
@@ -43,7 +45,7 @@ export function CandidateTag({ setup }: { setup: CandidateSetup | null }) {
 /** One candidate in the race: name, tag, background, share large in their colour, votes and a bar. */
 export function CandidatePanel({ candidate, setup, colour }: { candidate: LiveCandidate; setup: CandidateSetup | null; colour: string }) {
   return (
-    <div className="card race-panel" style={{ borderTopColor: colour }}>
+    <div className="card race-panel" style={{ borderTopColor: colour, ["--c" as string]: colour }}>
       <p className="mayor-projection__name">
         {candidate.full_name} <CandidateTag setup={setup} />
       </p>
@@ -257,77 +259,126 @@ export function Locator({ viewBox, wards, covered, label }: { viewBox: string; w
   );
 }
 
+/** A candidate's colour chip; the forecast's named candidates keep their marker's shape (#16), so
+ *  the two Chows and Bradford read apart without colour. */
+function Swatch({ candidate, colour }: { candidate: LiveCandidate; colour: string }) {
+  const slug = candidate.candidate_id ? candidateMeta(candidate.candidate_id)?.slug : null;
+  return slug ? (
+    <span className={`live-table__swatch candidate-marker candidate-marker--${slug}`} aria-hidden="true" />
+  ) : (
+    <span className="live-table__swatch" style={{ background: colour }} aria-hidden="true" />
+  );
+}
+
 /** Every candidate in one table (Alex, the prototype): votes, then share, then a bar on one scale,
  *  and the votes counted. Counting, by votes, the candidates who can't win under one break (#90,
- *  #105) and the leader "Elected (unofficial)" at Night Close (#51); before then, ballot order
- *  with dashes (#115). Each Possible Range is read out to screen readers. */
+ *  #105) and the leader "Elected (unofficial)" at Night Close (#51); before then, the named
+ *  candidates first, then ballot order, with dashes (#115). Each Possible Range is read out to
+ *  screen readers. `fold` keeps that many rows and one "N other candidates" row, with a button
+ *  to show everyone; `top` sets the first rows large, as the mayor's leaders are. */
 export function CandidateTable({
   race,
   colourOf,
   setupOf,
   closed,
+  fold,
+  top = 0,
 }: {
   race: LiveRace;
   colourOf: (c: LiveCandidate) => string;
   setupOf: (c: LiveCandidate) => CandidateSetup | null;
   closed: boolean;
+  fold?: number;
+  top?: number;
 }) {
+  const [all, setAll] = useState(false);
+  const listId = useId();
   const counting = race.state === "counting" || race.state === "all_units_in";
-  const ordered = counting ? [...race.candidates].sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1)) : race.candidates;
+  const ordered = counting
+    ? [...race.candidates].sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1))
+    : [...race.candidates.filter((c) => c.candidate_id), ...race.candidates.filter((c) => !c.candidate_id)];
   const out = eliminatedKeys(race.possible);
   const elected = electedKey(race, closed);
   const inIt = ordered.filter((c) => !out.has(c.key));
   const outOf = ordered.filter((c) => out.has(c.key));
+  // Folded: the first rows still in it, then the eliminated up to the fold, then everyone else in one row.
+  const folds = fold !== undefined && !all && ordered.length > fold + 1;
+  const shownIn = folds ? inIt.slice(0, fold) : inIt;
+  const shownOut = folds ? outOf.slice(0, Math.max(0, fold! - shownIn.length)) : outOf;
+  const rest = folds ? ordered.filter((c) => !shownIn.includes(c) && !shownOut.includes(c)) : [];
+  const restOut = rest.length > 0 && rest.every((c) => out.has(c.key));
   const scale = Math.max(50, Math.max(0, ...ordered.map((c) => c.share ?? 0)) + 5);
   const total = race.candidates.reduce((sum, c) => sum + (c.votes ?? 0), 0);
+  const sum = (key: "votes" | "share") => rest.reduce((t, c) => t + (c[key] ?? 0), 0);
+  const isTop = (c: LiveCandidate) => counting && ordered.indexOf(c) < top && !out.has(c.key);
+  const bar = (share: number | null, colour: string) =>
+    counting && share !== null && <span className="live-bar"><span style={{ width: `${(100 * share) / scale}%`, background: colour }} /></span>;
   const row = (c: LiveCandidate) => {
     const possible = race.possible?.[c.key];
+    const classes = [out.has(c.key) && "race-table__out", isTop(c) && "race-table__top"].filter(Boolean).join(" ");
     return (
-      <tr key={c.key} className={out.has(c.key) ? "race-table__out" : undefined}>
+      <tr key={c.key} className={classes || undefined}>
         <th scope="row">
-          <span className="live-table__swatch" style={{ background: colourOf(c) }} aria-hidden="true" />
+          <Swatch candidate={c} colour={colourOf(c)} />
           {c.full_name} <CandidateTag setup={setupOf(c)} />
           {c.key === elected && <> <span className="badge badge--status">{WORDING.elected}</span></>}
           {possible && <span className="visually-hidden">{`Possible ${rangeText(possible.low, possible.high)}`}</span>}
         </th>
         <td className="live-num">{counting && c.votes !== null ? c.votes.toLocaleString("en-CA") : "–"}</td>
-        <td className="live-num">{counting && c.votes !== null ? shareText(c.share, c.votes) : "–"}</td>
-        <td className="race-table__bar" aria-hidden="true">
-          {counting && c.share !== null && <span className="live-bar"><span style={{ width: `${(100 * c.share) / scale}%`, background: colourOf(c) }} /></span>}
-        </td>
+        <td className="live-num race-table__share">{counting && c.votes !== null ? shareText(c.share, c.votes) : "–"}</td>
+        <td className="race-table__bar" aria-hidden="true">{bar(c.share, colourOf(c))}</td>
       </tr>
     );
   };
+  const brk = (
+    <tr className="race-table__break">
+      <td colSpan={4}>
+        <strong>{WORDING.eliminated}</strong> · {WORDING.eliminatedWhy}
+      </td>
+    </tr>
+  );
   return (
-    <div className="live-table-scroll">
-      <table className="live-table race-table">
-        <thead>
-          <tr>
-            <th scope="col">Candidate</th>
-            <th scope="col" className="live-num">Votes</th>
-            <th scope="col" className="live-num">Share</th>
-            <th scope="col" className="race-table__bar"><span className="visually-hidden">Share bar</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {inIt.map(row)}
-          {outOf.length > 0 && (
-            <tr className="race-table__break">
-              <td colSpan={4}>
-                <strong>{WORDING.eliminated}</strong> · {WORDING.eliminatedWhy}
-              </td>
+    <>
+      <div className="live-table-scroll">
+        <table className="live-table race-table" id={listId}>
+          <thead>
+            <tr>
+              <th scope="col">Candidate</th>
+              <th scope="col" className="live-num">Votes</th>
+              <th scope="col" className="live-num">Share</th>
+              <th scope="col" className="race-table__bar"><span className="visually-hidden">Share bar</span></th>
             </tr>
-          )}
-          {outOf.map(row)}
-          {counting && (
-            <tr className="race-table__total">
-              <th scope="row">Total votes counted</th>
-              <td className="live-num">{total.toLocaleString("en-CA")}</td>
-              <td colSpan={2} />
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {shownIn.map(row)}
+            {(shownOut.length > 0 || restOut) && brk}
+            {shownOut.map(row)}
+            {rest.length > 0 && (
+              <tr className={`race-table__rest${restOut ? " race-table__out" : ""}`}>
+                <th scope="row">
+                  <span className="live-table__swatch" style={{ background: "var(--color-disengaged)" }} aria-hidden="true" />
+                  {`${rest.length} other candidates`}
+                </th>
+                <td className="live-num">{counting ? sum("votes").toLocaleString("en-CA") : "–"}</td>
+                <td className="live-num race-table__share">{counting ? shareText(sum("share"), sum("votes")) : "–"}</td>
+                <td className="race-table__bar" aria-hidden="true" />
+              </tr>
+            )}
+            {counting && (
+              <tr className="race-table__total">
+                <th scope="row">Total votes counted</th>
+                <td className="live-num">{total.toLocaleString("en-CA")}</td>
+                <td colSpan={2} />
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {fold !== undefined && ordered.length > fold + 1 && (
+        <button type="button" className="results-more" aria-controls={listId} aria-expanded={all} onClick={() => setAll((v) => !v)}>
+          {all ? "Show fewer" : `Show all ${ordered.length} candidates`}
+        </button>
+      )}
+    </>
   );
 }

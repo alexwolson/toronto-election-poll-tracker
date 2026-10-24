@@ -21,8 +21,8 @@ import { LiveMapView } from "./live-map-view";
 import { useLiveState } from "./live-results-poller";
 import { MayorLead, MayorNotes, showsRaceResult } from "./mayor-lead";
 import { OutstandingAreas } from "./outstanding-areas";
-import { RaceCard } from "./race-cards";
 import { ResultsBar, resultsStatus } from "./results-status";
+import { TurnoutBar } from "./turnout-bar";
 import { TwoChows } from "./two-chows";
 
 export interface ResultsHomeProps {
@@ -69,34 +69,38 @@ export function ResultsHome(props: ResultsHomeProps) {
           </nav>
         }
       />
-      <section className="race-hero" id="mayor" aria-labelledby="results-h">
+      <section className="race-hero results-opening" id="mayor" aria-labelledby="results-h">
         <div className="wrap">
           <h1 id="results-h">Toronto election results</h1>
-          {dek(mayor) && <p className="race-hero-dek">{dek(mayor)}</p>}
-          <p className="race-hero-meta">These are the City of Toronto’s unofficial results. We update them through the night. The estimates come from our election-night model.</p>
+          <div className="results-opening__grid">
+            <div>
+              {dek(mayor) && <p className="race-hero-dek">{dek(mayor)}</p>}
+              <p className="results-source">These are the City of Toronto’s unofficial results. We update them through the night. The estimates come from our election-night model.</p>
+            </div>
+            {mayor && payload && <Meters mayor={mayor} />}
+          </div>
         </div>
       </section>
       {/* Paused, or before the first poll: the status line says why, and nothing claims a count. */}
       {payload && (
         <div className="results-page">
-          {mayor &&
-            (showsRaceResult(mayor) ? (
-              <MayorLead race={mayor} levels={payload!.levels} closed={closed} tags={tags} />
-            ) : (
-              <ContentSection>
-                <RaceCard race={mayor} levels={payload!.levels} forecast={props.forecast} closed={closed} />
-              </ContentSection>
-            ))}
-          {suspendedNames.length > 0 && (
+          {mayor && mayor.state !== "no_figures" && (
+            <MayorLead race={mayor} levels={payload.levels} closed={closed} tags={tags}>
+              {suspendedNames.length > 0 && (
+                <p className="results-note">
+                  {`Suspended campaigns: ${suspendedNames.map((n) => `${n} (${shortDate(props.notes.suspended[n])}${props.notes.endorsed[n] ? `, endorsed ${props.notes.endorsed[n]}` : ""})`).join("; ")}.`}
+                </p>
+              )}
+            </MayorLead>
+          )}
+          {mayor?.state === "no_figures" && (
             <ContentSection>
-              <p className="t-meta">
-                {`Suspended campaigns: ${suspendedNames.map((n) => `${n} (${shortDate(props.notes.suspended[n])}${props.notes.endorsed[n] ? `, endorsed ${props.notes.endorsed[n]}` : ""})`).join("; ")}.`}
-              </p>
+              <h2 id="live-race-mayor">Mayor</h2>
+              <p className="live-empty">No figures from the City for this race right now</p>
             </ContentSection>
           )}
           <ContentSection id="council" aria-labelledby="council-h">
-            <h2 id="council-h">Council: 25 races</h2>
-            <p className="race-hero-dek">Toronto elects one councillor in each of its 25 wards.</p>
+            <BlockHead id="council-h" title="Council: 25 races" dek="Toronto elects one councillor in each of its 25 wards." />
             <CouncilOverview homes={props.homes} payload={payload} closed={closed} />
           </ContentSection>
           <ContentSection>
@@ -114,8 +118,7 @@ export function ResultsHome(props: ResultsHomeProps) {
           </ContentSection>
           {mayor && showsRaceResult(mayor) && (
             <ContentSection aria-labelledby="outstanding-h">
-              <h2 id="outstanding-h">Voting areas not yet in</h2>
-              <p className="race-hero-dek">Some voting areas are much bigger than others. A few squares can hold a lot of votes.</p>
+              <BlockHead id="outstanding-h" title="Voting areas not yet in" dek="Some voting areas are much bigger than others. A few squares can hold a lot of votes." />
               <OutstandingAreas mayor={mayor} wards={props.wards} />
             </ContentSection>
           )}
@@ -129,30 +132,77 @@ export function ResultsHome(props: ResultsHomeProps) {
             <CouncilTable homes={props.homes} payload={payload} closed={closed} />
           </ContentSection>
           <ContentSection id="boards" aria-labelledby="boards-h">
-            <h2 id="boards-h">School board trustees: 29 races</h2>
+            <BlockHead id="boards-h" title="School board trustees: 29 races" />
             <TrusteeOverview homes={props.homes} payload={payload} closed={closed} />
           </ContentSection>
           <ContentSection aria-labelledby="about-h">
-            <h2 id="about-h">Sources and methods</h2>
-            <div className="grid grid--3">
+            <BlockHead id="about-h" title="Sources and methods" />
+            <div className="results-about">
               <div>
                 <h3>The count</h3>
-                <p className="t-body-small">Every figure is the City of Toronto’s unofficial count. We read the City’s results files about once a minute. “Voting areas in” is the share of areas the City has reported.</p>
+                <p>Every figure is the City of Toronto’s unofficial count. We read the City’s results files about once a minute. “Voting areas in” is the share of areas the City has reported.</p>
               </div>
               <div>
                 <h3>The estimates</h3>
-                <p className="t-body-small">The council and trustee ranges come from a model that had to beat simply reading the count in replays of past elections before it could appear. The mayor’s estimate did not pass that test; it shows on our editor’s approval, with its record below.</p>
+                <p>The council and trustee ranges come from a model that had to beat simply reading the count in replays of past elections before it could appear. The mayor’s estimate did not pass that test; it shows on our editor’s approval, with its record below.</p>
               </div>
               <div>
                 <h3>The end of the night</h3>
-                <p className="t-body-small">When the count stops, we mark each race’s leader as elected (unofficial). The City certifies the results in the days after the vote.</p>
+                <p>When the count stops, we mark each race’s leader as elected (unofficial). The City certifies the results in the days after the vote.</p>
               </div>
             </div>
-            <p className="t-meta"><Link href="/how-it-works/">How the estimates work →</Link></p>
+            <p className="results-note"><Link href="/how-it-works/">How the estimates work →</Link></p>
           </ContentSection>
         </div>
       )}
-      {mayor && showsRaceResult(mayor) && <MayorNotes race={mayor} levels={payload!.levels} forecast={props.forecast} closed={closed} />}
+      {mayor && payload && <MayorNotes race={mayor} levels={payload.levels} forecast={props.forecast} closed={closed} />}
     </main>
+  );
+}
+
+/** A section's heading and its one sentence (the prototype's block head). */
+function BlockHead({ id, title, dek }: { id: string; title: string; dek?: string }) {
+  return (
+    <div className="results-block-head">
+      <h2 id={id}>{title}</h2>
+      {dek && <p>{dek}</p>}
+    </div>
+  );
+}
+
+/** The citywide figures beside the opening sentence: voting areas in and turnout so far. */
+function Meters({ mayor }: { mayor: LiveRace }) {
+  const p = mayor.progress;
+  const share = p && p.total > 0 ? Math.min(100, (100 * p.received) / p.total) : null;
+  return (
+    <dl className="results-meters">
+      <div>
+        <dt>Voting areas in</dt>
+        <dd>
+          {mayor.state === "all_units_in" ? (
+            "All in"
+          ) : p ? (
+            <>
+              {`${Math.floor(share ?? 0)}%`} <small>{`${p.received.toLocaleString("en-CA")} of ${p.total.toLocaleString("en-CA")}`}</small>
+            </>
+          ) : mayor.state === "before_results" ? (
+            <small>From 8 p.m.</small>
+          ) : (
+            <small>Not available</small>
+          )}
+        </dd>
+        {share !== null && (
+          <span className="results-meters__track" aria-hidden="true">
+            <span style={{ width: `${share}%` }} />
+          </span>
+        )}
+      </div>
+      <div className="results-meters__turnout">
+        <dt>Turnout</dt>
+        <dd>
+          <TurnoutBar race={mayor} />
+        </dd>
+      </div>
+    </dl>
   );
 }

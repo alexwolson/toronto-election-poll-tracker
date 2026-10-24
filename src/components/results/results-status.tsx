@@ -74,10 +74,11 @@ export function resultsStatus(state: LiveClientState, now: number): { results: L
             <>Final unofficial count as of {clockTime(cityCountAt)}</>
           ) : (
             <>
-              {!counting && <>{WORDING.before_results} · </>}
-              {counting && <>City count as of {clockTime(cityCountAt)} · </>}
-              {nothingIn && <>{WORDING.no_units_in} · </>}
-              City of Toronto unofficial results
+              {!counting && <>{WORDING.before_results}</>}
+              {counting && <><span className="results-bar__pulse" aria-hidden="true" />City count as of {clockTime(cityCountAt)}</>}
+              {nothingIn && <> · {WORDING.no_units_in}</>}
+              {/* Phones drop the source here; the page's opening names it. */}
+              <span className="results-bar__suffix"> · City of Toronto unofficial results</span>
             </>
           )}
         </p>

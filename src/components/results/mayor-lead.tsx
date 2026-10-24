@@ -1,21 +1,19 @@
 "use client";
 
 /**
- * A race's result once its count starts, the same for every race we track (Alex): the count on the
- * left (each candidate's votes large, bars scaled to the most anyone can still reach, a field of
- * more than five folded to "N other candidates"), the projected finish on the right when the
- * level's projection shows, then voting areas in and, where its electorate is known, turnout. The
- * mayor's leads the page; a ward's races follow on its page. Facts of the count and the gated
- * projection (#12).
+ * The mayor's result at the head of the citywide page and the projected finish every race page
+ * shares (results redesign, Alex, the prototype): the count as a table, the projection beside it.
+ * Facts of the count and the gated projection (#12).
  */
 
-import { useState } from "react";
+import type { ReactNode } from "react";
 import type { LivePayload, LiveRace } from "@/types/live";
 import { figureColour, liveColour } from "@/lib/live-colour";
 import { rangeText, shareText } from "@/lib/live-share";
 import type { LiveCandidate } from "@/types/live";
-import { FinalForecast, MayorRecord, RaceLeadTally, estimated, hasRecord, raceTitle } from "./race-cards";
-import { AboutTurnout, TurnoutBar } from "./turnout-bar";
+import { FinalForecast, MayorRecord, RangeNotes, estimated, hasRecord } from "./race-cards";
+import { CandidateTable } from "./race-parts";
+import { AboutTurnout } from "./turnout-bar";
 
 /** Whether a race shows as a result: once its count has started. */
 export function showsRaceResult(race: LiveRace | null | undefined): boolean {
@@ -29,10 +27,10 @@ function shareTicks(lo: number, hi: number): number[] {
   return Array.from({ length: Math.floor((hi - first) / step) + 1 }, (_, i) => first + i * step);
 }
 
-/** Where the projection has the two leaders finishing (Alex): each central projection large, and
- *  both Estimated Ranges on one share axis, so the gap between the middles and how far the ranges
- *  overlap read together; every candidate with a range on asking. The payload has each
- *  candidate's range, not one for the gap. */
+/** Where the projection has the race's leaders finishing (Alex, the prototype): each central
+ *  projection large, their Estimated Ranges on one share axis, so the gap between the middles and
+ *  how far the ranges overlap read together; then the next three in a small table and everyone
+ *  else in one row. The payload has each candidate's range, not one for the gap. */
 export function ProjectedFinish({
   race,
   leaders,
@@ -43,27 +41,29 @@ export function ProjectedFinish({
   /** A race page's colours (results redesign), so the card matches its panels; else the campaign colour. */
   colourOf?: (c: LiveCandidate) => string;
 }) {
-  const [all, setAll] = useState(false);
   const bands = estimated(race);
   const colour = colourOf ?? ((c: LiveCandidate) => liveColour(c, "var(--color-disengaged)"));
   const withBand = (c: LiveCandidate) => (bands?.[c.key] ? [{ c, band: bands[c.key], colour: colour(c) }] : []);
   const top = leaders.flatMap(withBand);
   if (top.length < 2) return null;
-  const everyone = race.candidates.flatMap(withBand).sort((a, b) => b.band.mid - a.band.mid);
-  const shown = all ? everyone : top;
-  const lo = Math.max(0, Math.floor((Math.min(...shown.map((x) => x.band.low)) - 2) / 5) * 5);
-  const hi = Math.min(100, Math.ceil((Math.max(...shown.map((x) => x.band.high)) + 2) / 5) * 5);
+  const leaderKeys = new Set(top.map((x) => x.c.key));
+  const rest = race.candidates.flatMap(withBand).filter((x) => !leaderKeys.has(x.c.key)).sort((a, b) => b.band.mid - a.band.mid);
+  const next = rest.slice(0, 3);
+  const others = rest.slice(3);
+  const lo = Math.max(0, Math.floor((Math.min(...top.map((x) => x.band.low)) - 2) / 5) * 5);
+  const hi = Math.min(100, Math.ceil((Math.max(...top.map((x) => x.band.high)) + 2) / 5) * 5);
   const at = (v: number) => `${((v - lo) / (hi - lo)) * 100}%`;
   const ticks = shareTicks(lo, hi);
-  const leaderKeys = new Set(top.map((x) => x.c.key));
+  const ceiling = others.length ? Math.ceil(Math.max(...others.map((x) => x.band.mid))) : 0;
   return (
     <figure className="mayor-projection">
       <figcaption>
         <h3>Projected finish</h3>
+        <p className="mayor-projection__sub">Our estimate of where each candidate will finish.</p>
       </figcaption>
       <div className="mayor-projection__plot">
-        {shown.map(({ c, band, colour }) => (
-          <div key={c.key} className={`mayor-projection__row${leaderKeys.has(c.key) ? "" : " mayor-projection__row--rest"}`}>
+        {top.map(({ c, band, colour }) => (
+          <div key={c.key} className="mayor-projection__row">
             <span className="mayor-projection__name">{c.full_name}</span>
             <p className="mayor-projection__figures">
               <strong style={{ color: figureColour(colour) }}>{shareText(band.mid)}</strong>
@@ -82,85 +82,83 @@ export function ProjectedFinish({
         </div>
       </div>
       <p className="mayor-projection__note">99% confidence interval</p>
-      {everyone.length > top.length && (
-        <button type="button" className="mayor-projection__toggle" aria-expanded={all} onClick={() => setAll((v) => !v)}>
-          {all ? (top.length === 3 ? "Show the top three" : "Show the top two") : `Show all ${everyone.length} candidates`}
-        </button>
+      {next.length > 0 && (
+        <table className="mayor-projection__rest">
+          <thead>
+            <tr>
+              <th scope="col">Candidate</th>
+              <th scope="col" className="live-num">Estimate</th>
+              <th scope="col" className="live-num">Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            {next.map(({ c, band, colour }) => (
+              <tr key={c.key}>
+                <th scope="row">
+                  <span className="live-table__swatch" style={{ background: colour }} aria-hidden="true" />
+                  {c.full_name}
+                </th>
+                <td className="live-num mayor-projection__est">{shareText(band.mid)}</td>
+                <td className="live-num">{rangeText(band.low, band.high)}</td>
+              </tr>
+            ))}
+            {others.length > 0 && (
+              <tr className="mayor-projection__others">
+                <th scope="row">{`${others.length} other candidate${others.length === 1 ? "" : "s"}`}</th>
+                <td colSpan={2} className="live-num">{ceiling <= 1 ? "each under 1%" : `each under ${ceiling}%`}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       )}
     </figure>
   );
 }
 
-/** One race's result: the mayor's at the head of the page (`lead`), a ward's races on its page. */
+/** The mayor's result at the head of the page (Alex, the prototype): the count as a table, its top
+ *  five and the rest in one row, the projected finish beside it, and any gate note. Voting areas in
+ *  and turnout sit in the page's opening. */
 export function RaceResult({
   race,
   levels,
   closed,
-  lead = false,
   tags,
+  children,
 }: {
   race: LiveRace;
   levels: LivePayload["levels"] | null;
   closed: boolean;
-  lead?: boolean;
   /** Tags after candidates' names: Suspended Campaigns (results redesign). */
   tags?: Record<string, string>;
+  /** Notes under the table, such as the suspended campaigns. */
+  children?: ReactNode;
 }) {
+  const counting = showsRaceResult(race);
   const byVotes = [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0));
   const [first, second] = byVotes;
-  const turnout = race.level === "mayor" || race.level === "council";
-  const Heading = lead ? "h2" : "h3";
-  const body = (
-    <>
-      <Heading id={`live-race-${race.id}`}>{lead ? "Mayor" : raceTitle(race)}</Heading>
-      <div className="mayor-lead__main">
-        <div className="mayor-lead__tally">
-          <RaceLeadTally race={race} levels={levels} closed={closed} tags={tags} />
-        </div>
-        <ProjectedFinish race={race} leaders={[first, second]} />
-      </div>
-      <dl className="mayor-lead__facts">
-        <div>
-          <dt>Voting areas in</dt>
-          <dd>
-            {race.state === "all_units_in"
-              ? "All in"
-              : race.progress
-                ? `${race.progress.received.toLocaleString("en-CA")} of ${race.progress.total.toLocaleString("en-CA")}`
-                : "Not available"}
-            {race.progress && race.progress.total > 0 && (
-              <span className="mayor-lead__progress" aria-hidden="true">
-                <span style={{ width: `${Math.min(100, (100 * race.progress.received) / race.progress.total)}%` }} />
-              </span>
-            )}
-          </dd>
-        </div>
-        {turnout && (
-          <div className="mayor-lead__turnout">
-            <dt>Turnout so far</dt>
-            <dd>
-              {/* The voters' list bar (Alex): the mayor's citywide, a council race's for its ward. */}
-              <TurnoutBar race={race} />
-            </dd>
-          </div>
-        )}
-      </dl>
-    </>
-  );
-  return lead ? (
+  const named = race.candidates.filter((c) => c.candidate_id).length;
+  const colourOf = (c: LiveCandidate) => liveColour(c, "var(--color-disengaged)");
+  const setupOf = (c: LiveCandidate) => (tags?.[c.key] ? { name: c.full_name, line: null, tag: tags[c.key], past: [], url: null } : null);
+  return (
     <section className="mayor-lead" aria-labelledby={`live-race-${race.id}`}>
-      <div className="wrap">{body}</div>
-    </section>
-  ) : (
-    <section className="race-result" aria-labelledby={`live-race-${race.id}`}>
-      {body}
+      <div className="wrap mayor-lead__main">
+        <div className="mayor-lead__tally">
+          <div className="results-race-title">
+            <h2 id={`live-race-${race.id}`}>Mayor</h2>
+          </div>
+          <CandidateTable race={race} colourOf={colourOf} setupOf={setupOf} closed={closed} fold={counting ? 5 : Math.max(2, named)} top={2} />
+          <RangeNotes race={race} levels={levels} />
+          {children}
+        </div>
+        {counting && <ProjectedFinish race={race} leaders={[first, second]} />}
+      </div>
     </section>
   );
 }
 
 /** The mayor's result at the head of the results pages. */
-export function MayorLead(props: { race: LiveRace; levels: LivePayload["levels"] | null; closed: boolean; tags?: Record<string, string> }) {
-  return <RaceResult {...props} lead />;
+export function MayorLead(props: { race: LiveRace; levels: LivePayload["levels"] | null; closed: boolean; tags?: Record<string, string>; children?: ReactNode }) {
+  return <RaceResult {...props} />;
 }
 
 /** The mayor's notes, at the very bottom of the results pages, after every view (Alex): the 2023

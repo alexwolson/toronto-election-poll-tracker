@@ -200,7 +200,7 @@ function rangeLine(row: TallyRow): string {
  *  projection, so only its Possible Range's legend (#97). */
 /** Why a counting race shows no Estimated Range, if a gate or a withdrawal says so. The ranges'
  *  definitions are in the tally's key. */
-function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
+export function RangeNotes({ race, levels }: { race: LiveRace; levels: Levels | null }) {
   if (race.state !== "counting") return null;
   const level = race.level === "french_trustee" ? null : race.level;
   const status = level ? levelStatus(levels, level) : null;

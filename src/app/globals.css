@@ -3,6 +3,7 @@
 @import "../styles/election-layout.css";
 @import "../styles/election.css";
 @import "../styles/results-race.css";
+@import "../styles/results-ui.css";
 
 @theme inline {
   --font-sans: var(--font-body);

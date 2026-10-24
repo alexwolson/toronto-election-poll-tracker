@@ -46,58 +46,62 @@ const Elected = () => <span className="badge badge--status">{WORDING.elected}</s
 function progressText(race: LiveRace | null): string | null {
   if (!race) return null;
   if (race.state === "all_units_in") return WORDING.all_units_in;
-  return race.progress ? `${race.progress.received.toLocaleString("en-CA")} of ${race.progress.total.toLocaleString("en-CA")} in` : null;
+  return race.progress ? `${race.progress.received.toLocaleString("en-CA")} of ${race.progress.total.toLocaleString("en-CA")} areas in` : null;
 }
 
-/** One race at a glance: the count's bar, the race's candidates with their tags and background, the
- *  editor's comparison, and why the count promoted it. The title opens its page. */
+/** One race at a glance (Alex, the prototype): why the count flags it, the race's candidates with
+ *  their tags, shares, bars and background, the editor's comparison, then how much is in and the
+ *  lead, and the way to its page. */
 function WatchCard({ row }: { row: RaceRow }) {
   const { home, race, reasons, colours, elected } = row;
   const ed = editorial(home);
+  const ordered = race ? byVotes(race) : [];
   const shown = race && counted(race)
     ? (() => {
-        const names = new Set([...ed.featured, ...(reasons.length ? byVotes(race).slice(0, 2).map((c) => c.full_name) : [])]);
-        return byVotes(race).filter((c) => names.has(c.full_name)).slice(0, 4);
+        const names = new Set([...ed.featured, ...(reasons.length ? ordered.slice(0, 2).map((c) => c.full_name) : [])]);
+        return ordered.filter((c) => names.has(c.full_name)).slice(0, 4);
       })()
     : [];
-  const [first, second] = race ? byVotes(race) : [];
+  const [first, second] = ordered;
   const colourOf = (c: LiveCandidate) => colours[c.key] ?? "var(--color-disengaged)";
+  const scale = Math.max(50, (first?.share ?? 0) + 5);
+  const comparison = ed.type === "head" ? home.ed.poll ?? home.prior : null;
+  const foot = [
+    progressText(race),
+    first && second && race && counted(race) ? `${shortLabel(first)} leads by ${((first.votes ?? 0) - (second.votes ?? 0)).toLocaleString("en-CA")}` : null,
+  ].filter(Boolean).join(" · ");
   return (
-    <article className="race-compact" aria-labelledby={`watch-${home.id}`}>
-      <div className="race-compact__head">
-        <h3 id={`watch-${home.id}`}>
-          <Link href={home.href}>{home.kind === "council" ? `Ward ${home.num} ${home.title}` : home.title}</Link>
-        </h3>
-        {progressText(race) && <p className="race-compact__progress t-meta">{progressText(race)}</p>}
-      </div>
-      {reasons.length > 0 && <p className="callout" role="status">{`${reasons.join(". ")}.`}</p>}
+    <article className={`watch-card${reasons.length ? " watch-card--flagged" : ""}`} aria-labelledby={`watch-${home.id}`}>
+      <h3 className="watch-card__title" id={`watch-${home.id}`}>
+        <Link href={home.href}>
+          {home.kind === "council" && <span className="watch-card__num">{`Ward ${home.num}`}</span>} {home.title}
+        </Link>
+      </h3>
+      {reasons.length > 0 && <p className="results-flag" role="status">{`${reasons.join(". ")}.`}</p>}
       {shown.length > 0 ? (
-        <>
-          <span className="race-compact__bar" aria-hidden="true">
-            {shown.map((c) => <span key={c.key} style={{ width: `${c.share ?? 0}%`, background: colourOf(c) }} />)}
-          </span>
-          <ul className="race-compact__leaders" aria-label={`${home.title}: the race`}>
-            {shown.map((c) => (
-              <li key={c.key}>
-                <span className="race-compact__swatch" style={{ background: colourOf(c) }} aria-hidden="true" />
-                <span className="live-tally__name">
-                  {c.full_name} {home.tags[c.full_name] && <span className="candidate-row__tag">{home.tags[c.full_name]}</span>}
-                  {c.key === elected && <> <Elected /></>}
-                </span>
-                <span className="race-compact__share">{shareText(c.share, c.votes)}</span>
-                <span className="race-compact__votes">{(c.votes ?? 0).toLocaleString("en-CA")}</span>
-                {home.lines[c.full_name] && <span className="t-meta watch-card__line">{home.lines[c.full_name]}</span>}
-              </li>
-            ))}
-          </ul>
-        </>
+        <ul className="watch-card__rows" aria-label={`${home.title}: the race`}>
+          {shown.map((c) => (
+            <li key={c.key} className={c === first ? "watch-card__row watch-card__row--lead" : "watch-card__row"}>
+              <span className="watch-card__name">
+                {c.full_name} {home.tags[c.full_name] && <span className="candidate-row__tag">{home.tags[c.full_name]}</span>}
+                {c.key === elected && <> <Elected /></>}
+              </span>
+              <span className="watch-card__share">{shareText(c.share, c.votes)}</span>
+              <span className="live-bar watch-card__bar" aria-hidden="true">
+                <span style={{ width: `${(100 * (c.share ?? 0)) / scale}%`, background: colourOf(c) }} />
+              </span>
+              {home.lines[c.full_name] && <span className="watch-card__line">{home.lines[c.full_name]}</span>}
+            </li>
+          ))}
+        </ul>
       ) : (
-        <p className="t-body-small">{race?.state === "acclaimed" ? `${WORDING.acclaimed}: ${race.candidates[0]?.full_name ?? ""}` : `On the ballot: ${ed.featured.join(", ")}`}</p>
+        <p className="watch-card__ballot">{race?.state === "acclaimed" ? `${WORDING.acclaimed}: ${race.candidates[0]?.full_name ?? ""}` : `On the ballot: ${ed.featured.join(", ")}`}</p>
       )}
-      {(ed.type === "head" && (home.ed.poll ?? home.prior)) && <p className="t-meta">{home.ed.poll ?? home.prior}</p>}
-      {first && second && counted(race!) && (
-        <p className="t-meta">{`${shortLabel(first)} leads by ${((first.votes ?? 0) - (second.votes ?? 0)).toLocaleString("en-CA")}`}</p>
-      )}
+      {comparison && <p className="watch-card__cmp">{comparison}</p>}
+      <p className="watch-card__foot">
+        <span>{foot}</span>
+        <Link href={home.href}>Full results →</Link>
+      </p>
     </article>
   );
 }
@@ -111,14 +115,16 @@ export function CouncilOverview({ homes, payload, closed }: { homes: HomeRace[];
   const rest = rows.filter((r) => !watch.includes(r));
   return (
     <>
-      <div className="race-grid__head">
+      <div className="results-sub-head">
         <h3>Races to watch</h3>
-        <p className="t-meta">Contests with a story: a crowded field, a notable challenger or a rematch.</p>
+        <p>Contests with a story: a crowded field, a notable challenger or a rematch.</p>
       </div>
-      <div className="race-grid">
+      <div className="watch-grid">
         {watch.map((row) => <WatchCard key={row.home.id} row={row} />)}
       </div>
-      <h3 className="council-rest__title">The other races</h3>
+      <div className="results-sub-head">
+        <h3>The other races</h3>
+      </div>
       <RaceTable rows={rest} />
     </>
   );

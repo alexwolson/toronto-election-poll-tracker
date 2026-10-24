@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LivePayload, LiveRace } from "@/types/live";
 import { RaceCard, estimated } from "./race-cards";
@@ -70,15 +70,13 @@ describe("RaceResult: the projected finish (Alex, 2026-10-21)", () => {
     expect(panel().querySelectorAll(".mayor-projection__ticks > span").length).toBeLessThanOrEqual(6);
   });
 
-  it("shows the two leaders, and every candidate with a range on asking", () => {
+  it("shows the two leaders on the axis, the next three in a table and everyone else in one row (the prototype)", () => {
     render(<RaceResult race={race} levels={night.levels} closed={false} />);
     expect(rows()).toBe(2);
     const ranged = Object.keys(estimated(race)!).length;
-    fireEvent.click(within(panel()).getByRole("button", { name: `Show all ${ranged} candidates` }));
-    expect(rows()).toBe(ranged);
+    const rest = panel().querySelectorAll(".mayor-projection__rest tbody tr");
+    expect(rest.length).toBe(Math.min(3, ranged - 2) + (ranged - 2 > 3 ? 1 : 0));
     expect(panel().querySelectorAll(".mayor-projection__ticks > span").length).toBeLessThanOrEqual(6);
-    fireEvent.click(within(panel()).getByRole("button", { name: "Show the top two" }));
-    expect(rows()).toBe(2);
   });
 });
 
@@ -93,7 +91,7 @@ describe("Large coloured figures stay readable (Alex, 2026-10-21)", () => {
     const figures = [...document.querySelectorAll<HTMLElement>(".live-tally__value, .mayor-projection__figures strong")].filter((el) => el.style.color);
     expect(figures.length).toBeGreaterThan(0);
     for (const el of figures) expect(el.style.color).toMatch(/^color-mix\(in srgb, .+ 70%, var\(--ink\)\)$/);
-    const bar = document.querySelector<HTMLElement>(".forecast-chart__bar")!;
+    const bar = document.querySelector<HTMLElement>(".live-bar > span")!;
     expect(bar.style.background).not.toContain("color-mix");
   });
 });

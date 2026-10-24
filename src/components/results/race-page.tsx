@@ -17,7 +17,7 @@ import { liveColour } from "@/lib/live-colour";
 import { shortLabel } from "@/lib/live-labels";
 import { shareText } from "@/lib/live-share";
 import { catchUp, contenders, counted, promotionReasons, raceColours } from "@/lib/race-model";
-import { WORDING, isAcclaimed, rangeNote, type Levels } from "@/lib/race-results";
+import { WORDING, estimated, isAcclaimed, rangeNote, type Levels } from "@/lib/race-results";
 import { candidateSetup, type RaceSetup } from "@/lib/race-setup";
 import type { ResultsMapData } from "@/lib/results-map-data";
 import type { WardPoll } from "@/types/feeds";
@@ -228,7 +228,7 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
     return <><strong>{`${when}:`}</strong>{` ${p.winner_name} beat ${p.runner_up_name} by ${votesText(p.margin_votes)}.`}</>;
   })();
   const catchFigure = cu && race && big.length >= 2 && <CatchUpFigure catchUp={cu} race={big.length === 3 ? big : big.slice(0, 2)} colourOf={colourOf} nameOf={nameOf} />;
-  const flag = reasons.length > 0 && <p className="callout" role="status">{`${reasons.join(". ")}.`}</p>;
+  const flag = reasons.length > 0 && <p className="results-flag results-flag--big" role="status">{`${reasons.join(". ")}.`}</p>;
   const outside = byVotes.filter((c) => (ed.outside ?? []).includes(c.full_name));
 
   let opening: ReactNode = null;
@@ -247,7 +247,6 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
           {shown.map((c) => <CandidatePanel key={c.key} candidate={c} setup={setupOf(c)} colour={colourOf(c)} />)}
         </div>
         {outside.length > 0 && <p className="t-body-small">{`Also watched: ${outside.map((c) => `${c.full_name} (${ordinal(byVotes.indexOf(c) + 1)}, ${shareText(c.share, c.votes)})`).join("; ")}.`}</p>}
-        {catchFigure}
       </>
     );
   } else if (kind === "head" || kind === "close") {
@@ -261,7 +260,6 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
         </div>
         {priorLine && (kind === "head" || ed.type === "head") && <p className="t-body-small">{priorLine}</p>}
         {third && <p className="t-body-small">{`${third.full_name} is ${ordinal(byVotes.indexOf(third) + 1)} with ${shareText(third.share, third.votes)}.`}</p>}
-        {catchFigure}
       </>
     );
   } else {
@@ -272,22 +270,27 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
   const exposure = exposureLines(setup);
   const polls = [...editorialPolls(setup), ...setup.polls];
   const showsCount = race && (race.state === "counting" || race.state === "all_units_in");
+  const bands = race ? estimated(race) : null;
+  const side = !!(showsCount && setup.kind !== "french" && big.filter((c) => bands?.[c.key]).length >= 2);
 
   return (
     <main id="main-content" className="np-shell">
       <div className="wrap race-page">
         {header}
-        {hero}
+        {/* The prototype's head: the race and its opening on the left, the projected finish beside
+            them; with no projection to show, the left runs full width. */}
         <div className="race-page__top">
           <div>
+            {hero}
             <div className="race-page__opening">{opening}</div>
-            <p className="t-meta"><a href="#race-full">Full results ↓</a></p>
+            {catchFigure && <div className="race-page__catch">{catchFigure}</div>}
+            {!side && note && <p className="results-note race-page__gate">{note}</p>}
+            <p className="race-page__to-full"><a href="#race-full">Full results ↓</a></p>
           </div>
-          {race && showsCount && setup.kind !== "french" && (
-            <div>
-              {/* The approved card (Alex): the race's contenders large, everyone else on asking. */}
+          {side && race && (
+            <div className="race-page__side">
               <ProjectedFinish race={race} leaders={big} colourOf={colourOf} />
-              {note && <p className="t-body-small">{note}</p>}
+              {note && <p className="results-note">{note}</p>}
             </div>
           )}
         </div>

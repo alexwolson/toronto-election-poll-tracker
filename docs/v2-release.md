@@ -33,7 +33,9 @@ does not require copying resolved feeds into fixtures or changing frontend code.
 
 Use clean, up-to-date `main` checkouts. GitHub CLI must be authenticated with
 `gh auth login` or `GH_TOKEN`; Vercel CLI must be logged in and linked to the
-`toronto-election-poll-tracker` project, or use `VERCEL_TOKEN`.
+`toronto-election-poll-tracker` project, or use `VERCEL_TOKEN`. The deploy
+wrapper runs `vercel` itself, so the CLI must be on `PATH`: with only `npx vercel`
+available it stops with `spawn vercel ENOENT` before deploying anything (Oct 25).
 
 The release resolver accepts `GH_TOKEN` first and `GITHUB_TOKEN` as a fallback
 for authenticated GitHub API requests. Keep either token server-only: never use
@@ -127,6 +129,11 @@ a missing intent or a value that differs from the persistent
 `BACKEND_RELEASE_TAG`. Consequently, running `vercel --prod` directly fails
 closed instead of silently rebuilding an old configured release.
 
+The wrapper also passes `--force`, so every production build skips Vercel's build
+cache (the log reads "Skipping build cache"). A cached build once dropped a newly
+imported stylesheet from the CSS (Oct 24 preview); a clean build costs about a
+minute. Build a preview the same way: `vercel deploy --yes --force`.
+
 After Vercel reports `READY`, verify the production alias at:
 
 - `/`
@@ -135,6 +142,10 @@ After Vercel reports `READY`, verify the production alias at:
 - `/wards`
 - `/how-it-works`
 - `/data/source-manifest.json`
+- `/results/`, a council race page (`/university-rosedale/`), `/tdsb/1/` and
+  `/conseils-scolaires/`: each renders, with no rehearsal badge, and the CSS
+  contains the results styles (`results-meters`)
+- `/live/results.json`: 200, `rehearsal: false`, a heartbeat under 5 minutes old
 
 The public source manifest must name the same three-release chain, source commits,
 manifest hashes and feed hashes inspected before deployment. Within the deployed
@@ -158,7 +169,19 @@ fresh schema v2 manifest from the pinned releases.
 
 ## Rollback
 
-Promote the prior known-good Vercel production deployment. Do not overwrite
+Promote the prior known-good Vercel production deployment. Promoting builds
+nothing, so it takes seconds and works from the Vercel dashboard on a phone.
+
+Current production (Oct 25): `toronto-election-poll-tracker-87n17n9cz-alexwolsons-projects.vercel.app`,
+`main` at `89821a1` (the results redesign) on `backend-2026-10-24.1`. Its
+rollback target is the build from before the redesign, `ae27c87` on the same
+Backend release:
+
+```bash
+vercel promote toronto-election-poll-tracker-3hqk6q75k-alexwolsons-projects.vercel.app
+```
+
+Do not overwrite
 GitHub Release assets or reuse a Results, Polling, or Backend tag. If producer
 data was wrong, publish corrected artifacts under new tags, rebuild Backend with
 the corrected pins, then run the frontend preflight and deployment again. Before

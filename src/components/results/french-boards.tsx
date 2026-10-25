@@ -13,8 +13,7 @@ import { counted, raceColours, contenders } from "@/lib/race-model";
 import type { RaceSetup } from "@/lib/race-setup";
 import type { ResultsMapData, ResultsMapWard } from "@/lib/results-map-data";
 import { liveColour } from "@/lib/live-colour";
-import { eliminatedKeys } from "@/lib/live-eliminated";
-import { RANGE_WORDING, WORDING, electedKey } from "@/lib/race-results";
+import { RANGE_WORDING, WORDING, electedKey, eliminatedOf, isComplete } from "@/lib/race-results";
 import type { LiveCandidate, LiveRace } from "@/types/live";
 import { useLiveState } from "./live-results-poller";
 import { ResultsBar, resultsStatus } from "./results-status";
@@ -31,6 +30,7 @@ const T = {
     wards: (n: number) => `${n} quartiers`,
     votes: (n: number) => `${n.toLocaleString("fr-CA")} voix`,
     leads: (who: string, n: number) => `${who} est en tête par ${n.toLocaleString("fr-CA")} voix.`,
+    ahead: (who: string, n: number, other: string) => `${who} a ${n.toLocaleString("fr-CA")} voix de plus que ${other}.`,
     none: "Aucune voix dépouillée pour l’instant.",
     areas: (a: number, b: number) => `${a.toLocaleString("fr-CA")} sections de vote dépouillées sur ${b.toLocaleString("fr-CA")}`,
     prior: (winner: string, year: number, margin: number, total: number) => `${winner} a remporté l’élection partielle de ${year} par ${margin.toLocaleString("fr-CA")} voix sur ${total.toLocaleString("fr-CA")}.`,
@@ -54,6 +54,7 @@ const T = {
     wards: (n: number) => `${n} wards`,
     votes: (n: number) => `${n.toLocaleString("en-CA")} ${n === 1 ? "vote" : "votes"}`,
     leads: (who: string, n: number) => `${who} leads by ${n.toLocaleString("en-CA")} ${n === 1 ? "vote" : "votes"}.`,
+    ahead: (who: string, n: number, other: string) => `${who} has ${n.toLocaleString("en-CA")} more ${n === 1 ? "vote" : "votes"} than ${other}.`,
     none: "No votes counted yet.",
     areas: (a: number, b: number) => `${a.toLocaleString("en-CA")} of ${b.toLocaleString("en-CA")} voting areas in`,
     prior: (winner: string, year: number, margin: number, total: number) => `${winner} won the ${year} by-election by ${margin.toLocaleString("en-CA")} of ${total.toLocaleString("en-CA")} votes.`,
@@ -178,7 +179,7 @@ function FrenchRace({ setup, race, t, heading, closed }: { setup: RaceSetup; rac
   const colourOf = (c: LiveCandidate) => colours[c.key] ?? "var(--color-disengaged)";
   const max = Math.max(1, ...byVotes.map((c) => c.votes ?? 0));
   // The Possible Range is arithmetic on the count, so these boards have it too (#97).
-  const out = eliminatedKeys(race?.possible ?? null);
+  const out = race ? eliminatedOf(race) : new Set<string>();
   const elected = race ? electedKey(race, closed) : null;
   const [a, b] = byVotes;
   const p = setup.prior;
@@ -210,7 +211,7 @@ function FrenchRace({ setup, race, t, heading, closed }: { setup: RaceSetup; rac
           </div>
         ))}
       </div>
-      <p className="t-body">{has && a && b ? t.leads(a.full_name, (a.votes ?? 0) - (b.votes ?? 0)) : t.none}</p>
+      <p className="t-body">{has && a && b ? (race && isComplete(race) ? t.ahead(a.full_name, (a.votes ?? 0) - (b.votes ?? 0), b.full_name) : t.leads(a.full_name, (a.votes ?? 0) - (b.votes ?? 0))) : t.none}</p>
       {race?.progress ? <p className="t-meta">{t.areas(race.progress.received, race.progress.total)}</p> : race?.state === "counting" && <p className="t-meta">{t.noProgress}</p>}
       <p className="t-body-small">{p ? t.prior(p.winner_name, p.year, p.margin_votes ?? 0, Math.round(p.winner_votes / p.winner_share)) : t.noPrior}</p>
       {has && <span className="visually-hidden">{byVotes.map((c) => `${c.full_name} ${shareText(c.share, c.votes)}`).join(", ")}</span>}

@@ -171,8 +171,17 @@ describe("the citywide page's order (results redesign, Alex, 2026-10-24)", () =>
     expect(html).toContain("All 25 council races");
   });
 
-  it("gives a race page its count over the night", () => {
-    expect(card(render(NIGHT, { ward: "1" }), "councillor-1")).toMatch(/class="live-race-count"/);
+  it("gives a race page its count over the night once the history arrives, and no empty section before", () => {
+    const entries = (JSON.parse(readFileSync(path.resolve(__dirname, "../../../fixtures/live/mock-night/history.json"), "utf8")) as unknown[]).map((e) => JSON.stringify(e));
+    const history = serveHistory({ entries, switches: switchesFrom(SWITCHES.map(() => null)) });
+    const heartbeat = Math.max(NIGHT.seq.all_office, NIGHT.seq.ward_by_ward);
+    const html = renderToStaticMarkup(
+      <LiveResultsFixture state={{ results: { heartbeat, paused: false, closed: false, payload: NIGHT }, failures: 0 }} now={heartbeat} history={history}>
+        <RacePage {...racePageProps(setupOf("councillor-1"), SETUPS, { view_box: MAP.view_box, wards: MAP.wards })} />
+      </LiveResultsFixture>,
+    );
+    expect(html).toMatch(/class="live-race-count"/);
+    expect(card(render(NIGHT, { ward: "1" }), "councillor-1")).not.toContain("How the race has changed tonight");
   });
 });
 
@@ -356,7 +365,7 @@ function tallyNames(cardHtml: string): string[] {
 function tableRow(cardHtml: string, name: string): string {
   const table = cardHtml.indexOf('class="live-table race-table"');
   const body = cardHtml.slice(0, cardHtml.indexOf("</table>", table));
-  const at = body.indexOf(`</span>${name} <`, table);
+  const at = body.indexOf(`</span>${name.replaceAll("'", "&#x27;")} <`, table);
   expect(at, name).toBeGreaterThan(-1);
   return body.slice(body.lastIndexOf("<tr", at), body.indexOf("</tr>", at));
 }
@@ -686,8 +695,9 @@ describe("gated projections and the Possible Range (#45, ADR 0002)", () => {
   it("puts the candidates who cannot win under one 'Mathematically eliminated' break (#90, #105)", () => {
     const { payload, third } = thirdOut();
     const html = card(render(payload, { ward: "1" }), "councillor-1");
-    expect(count(html, "Mathematically eliminated")).toBe(1);
-    expect(text(html)).toContain("Mathematically eliminated · can’t win even with every vote still out");
+    // One heading for the group, worded as one (Alex, 2026-10-24).
+    expect(count(text(html), "Candidates below are mathematically eliminated")).toBe(1);
+    expect(text(html)).not.toContain("can’t win even with every vote still out");
     expect(html).not.toContain("badge--status");
     // Contenders first, then the break, then the eliminated, greyed.
     const names = tallyNames(html);
@@ -1168,5 +1178,39 @@ describe("every page on every golden (results redesign, Phase 2)", () => {
         expect(html, `${name(page)} closed=${closed}`).not.toMatch(/(?<![\d.])0\.0%|NaN|undefined|Infinity|\[object Object\]/);
       }
     }
+  });
+});
+
+describe("a race with every voting area in (Alex, 2026-10-24)", () => {
+  const ALL_IN = () => golden("all-units-in-2018.json");
+
+  it("puts everyone but the leader under the eliminated heading, greyed", () => {
+    const payload = ALL_IN();
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    const html = card(render(payload, { ward: "1" }), "councillor-1");
+    const [leader, ...rest] = [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0));
+    expect(count(text(html), "Candidates below are mathematically eliminated")).toBe(1);
+    expect(tableRow(html, leader.full_name)).not.toContain("race-table__out");
+    for (const c of rest) expect(tableRow(html, c.full_name), c.full_name).toContain("race-table__out");
+  });
+
+  it("groups no one when the top two are tied", () => {
+    const payload = ALL_IN();
+    const race = payload.races.find((r) => r.id === "councillor-1")!;
+    race.candidates[1].votes = race.candidates[0].votes;
+    expect(card(render(payload, { ward: "1" }), "councillor-1")).not.toContain("race-table__break");
+  });
+
+  it("drops the leading wording and the gap chart", () => {
+    const payload = ALL_IN();
+    const page = render(payload, { ward: "1" });
+    const race = text(card(page, "councillor-1"));
+    expect(race).not.toMatch(/\bleads\b|\bleading\b/i);
+    expect(race).toMatch(/has [\d,]+ more votes than/);
+    expect(card(page, "councillor-1")).not.toContain("race-catch-figure");
+    const home = text(page.slice(0, page.indexOf("<!--page:")));
+    expect(home).toMatch(/John Tory has [\d,]+ more votes than Jennifer Keesmaat/);
+    expect(home).not.toMatch(/\bleads by\b/);
+    expect(home).toContain("Most votes");
   });
 });

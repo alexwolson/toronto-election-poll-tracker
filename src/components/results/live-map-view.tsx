@@ -144,6 +144,8 @@ function candidateColour(candidate: LiveCandidate | undefined): string {
 function leadWords(race: LiveRace | null, lead: Lead): string {
   if (lead.leader === null) return "No votes counted yet";
   if (lead.tied) return `${nameOf(race, lead.leader)} and ${nameOf(race, lead.runnerUp)} tied`;
+  // Every area in: the count as it stands, no "leads" (Alex, 2026-10-24).
+  if (lead.reported === 1) return `${nameOf(race, lead.leader)} has ${lead.margin!.toFixed(1)} more points than ${nameOf(race, lead.runnerUp)}`;
   return `${nameOf(race, lead.leader)} leads by ${lead.margin!.toFixed(1)} points`;
 }
 

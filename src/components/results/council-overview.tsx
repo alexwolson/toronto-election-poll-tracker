@@ -13,7 +13,7 @@ import { liveColour } from "@/lib/live-colour";
 import { shortLabel } from "@/lib/live-labels";
 import { shareText } from "@/lib/live-share";
 import { contenders, counted, promotionReasons, raceColours, type EditorialRace } from "@/lib/race-model";
-import { WORDING, electedKey } from "@/lib/race-results";
+import { WORDING, electedKey, isComplete, moreVotes } from "@/lib/race-results";
 import type { HomeRace } from "@/lib/home-data";
 import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
 
@@ -68,7 +68,11 @@ function WatchCard({ row }: { row: RaceRow }) {
   const comparison = ed.type === "head" ? home.ed.poll ?? home.prior : null;
   const foot = [
     progressText(race),
-    first && second && race && counted(race) ? `${shortLabel(first)} leads by ${((first.votes ?? 0) - (second.votes ?? 0)).toLocaleString("en-CA")}` : null,
+    first && second && race && counted(race)
+      ? isComplete(race)
+        ? `${shortLabel(first)} has ${moreVotes((first.votes ?? 0) - (second.votes ?? 0))}`
+        : `${shortLabel(first)} leads by ${((first.votes ?? 0) - (second.votes ?? 0)).toLocaleString("en-CA")}`
+      : null,
   ].filter(Boolean).join(" · ");
   return (
     <article className={`watch-card${reasons.length ? " watch-card--flagged" : ""}`} aria-labelledby={`watch-${home.id}`}>
@@ -137,7 +141,7 @@ function RaceTable({ rows, label = "Ward" }: { rows: RaceRow[]; label?: string }
         <thead>
           <tr>
             <th scope="col">{label}</th>
-            <th scope="col">Leading</th>
+            <th scope="col">Most votes</th>
             <th scope="col" className="live-num">Share</th>
             <th scope="col" className="live-num">Margin</th>
             <th scope="col" className="live-num">Areas in</th>
@@ -223,7 +227,7 @@ export function TrusteeOverview({ homes, payload, closed }: { homes: HomeRace[];
   const acclaimed = rows.filter((r) => r.home.acclaimed).length;
   const waiting = rows.filter((r) => !r.home.acclaimed && (!r.race || !counted(r.race))).length;
   const bits = [
-    running ? `Incumbents lead in ${lead} of the ${running} races they’re running in` : null,
+    running ? `Incumbents have the most votes in ${lead} of the ${running} races they’re running in` : null,
     open ? `${open} ${open === 1 ? "area is" : "areas are"} open` : null,
     acclaimed ? `${acclaimed} ${acclaimed === 1 ? "trustee was" : "trustees were"} acclaimed` : null,
     waiting ? `${waiting} ${waiting === 1 ? "race has" : "races have"} no votes counted yet` : null,

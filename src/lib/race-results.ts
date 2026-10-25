@@ -4,6 +4,7 @@
  * winner wording at Night Close, and the mayor's record (ADR 0002). Shared by every results page.
  */
 
+import { eliminatedKeys } from "@/lib/live-eliminated";
 import { TRUSTEE_BOARD_NAV } from "@/lib/trustees";
 import type { LiveBand, LivePayload, LiveRace, ProjectionStatus } from "@/types/live";
 
@@ -24,6 +25,8 @@ export const WORDING = {
    *  break above those candidates (#105). */
   eliminated: "Mathematically eliminated",
   eliminatedWhy: "can’t win even with every vote still out",
+  /** The results tables' one heading over the eliminated group (Alex, 2026-10-24). */
+  eliminatedBelow: "Candidates below are mathematically eliminated",
   /** The tally's key (#105). */
   keyCounted: "Share of the votes counted so far",
   /** The key carries the ranges' definitions, once per card (results audit, 2026-10-20). */
@@ -88,6 +91,24 @@ export function rangeNote(race: LiveRace, levels: Levels | null): string | null 
   const status = level ? levelStatus(levels, level) : null;
   return (level && status ? gateNote(level, status) : null) ?? (race.withdrawal ? WORDING.withdrawn : null);
 }
+
+/** Every voting area in (Alex, 2026-10-24): the race reads as complete until the City's data
+ *  says otherwise. Not a call: "Elected (unofficial)" still waits for Night Close. */
+export function isComplete(race: LiveRace): boolean {
+  return race.state === "all_units_in";
+}
+
+/** Who can't win: once every area is in, everyone but the leader (no one on a tie at the top);
+ *  while counting, whoever the Possible Range rules out (#90). */
+export function eliminatedOf(race: LiveRace): Set<string> {
+  if (!isComplete(race)) return eliminatedKeys(race.possible);
+  const [a, b] = [...race.candidates].sort((x, y) => (y.votes ?? -1) - (x.votes ?? -1));
+  if (!a || a.votes === null || (b && (b.votes === null || b.votes >= a.votes))) return new Set();
+  return new Set(race.candidates.filter((c) => c.key !== a.key).map((c) => c.key));
+}
+
+/** "1,203 more votes", for a complete race's one sentence. */
+export const moreVotes = (n: number) => `${n.toLocaleString("en-CA")} more ${n === 1 ? "vote" : "votes"}`;
 
 /** The race's Estimated Range per candidate: the band the payload says to draw, if any. */
 export function estimated(race: LiveRace): Record<string, LiveBand> | null {

@@ -426,3 +426,18 @@
 @media (max-width: 899px) { .results-ui .race-ballot { grid-template-columns: minmax(0, 1fr); } }
 .results-ui .race-ballot h4 { margin: 0 0 10px; color: var(--ink); font: 700 18px var(--font-display); }
 .results-ui .race-ballot .live-table-scroll { border-top: 2px solid var(--ink); }
+
+/* The eliminated group (Alex, 2026-10-24): one heading, the rows under it slightly greyed. */
+.results-ui .race-table__break td { padding: 14px 0 6px; border-bottom: 1px solid var(--rule); background: none; color: var(--ink); font-size: 14px; font-weight: 600; }
+.results-ui .race-table__break td:first-child { padding-left: 0; }
+.results-ui .race-table__out { opacity: 0.6; }
+.results-ui .race-table__out > * { color: inherit; }
+
+/* The race page's candidate histories: the text face, sentence case, like every other tag here. */
+.results-ui .candidate-row__headline,
+.results-ui .candidate-row__hint,
+.results-ui .candidate-row__campaign-link,
+.results-ui .past-election,
+.results-ui .past-election span { font-family: var(--font-body); letter-spacing: 0; text-transform: none; }
+.results-ui .candidate-row__headline { color: var(--muted); font-size: 14px; }
+.results-ui .candidate-row__campaign-link { font-size: 14px; font-weight: 600; }

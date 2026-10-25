@@ -11,9 +11,8 @@
 import { useId, useState } from "react";
 import { candidateMeta } from "@/lib/candidates";
 import { figureColour } from "@/lib/live-colour";
-import { eliminatedKeys } from "@/lib/live-eliminated";
 import { rangeText, shareText } from "@/lib/live-share";
-import { WORDING, electedKey } from "@/lib/race-results";
+import { WORDING, electedKey, eliminatedOf } from "@/lib/race-results";
 import type { CatchUp } from "@/lib/race-model";
 import type { CandidateSetup } from "@/lib/race-setup";
 import type { ResultsMapWard } from "@/lib/results-map-data";
@@ -197,7 +196,7 @@ export function CatchUpFigure({
 }
 
 /** The last comparable result beside tonight's, a third row in a three-way race. */
-export function PriorTable({ prior, race, threeWay, fieldSize }: { prior: PriorResult; race: LiveCandidate[]; threeWay: boolean; fieldSize: number }) {
+export function PriorTable({ prior, race, threeWay, fieldSize, complete = false }: { prior: PriorResult; race: LiveCandidate[]; threeWay: boolean; fieldSize: number; /** Every area in: no "so far". */ complete?: boolean }) {
   const [a, b, c] = race;
   const when = prior.year === 2022 ? "2022" : `${prior.year} by-election`;
   const [w, r] = sharePair(prior.winner_share * 100, (prior.runner_up_share ?? 0) * 100);
@@ -210,7 +209,7 @@ export function PriorTable({ prior, race, threeWay, fieldSize }: { prior: PriorR
           <tr>
             <th scope="col" />
             <th scope="col">{when}</th>
-            <th scope="col">Tonight so far</th>
+            <th scope="col">{complete ? "Tonight" : "Tonight so far"}</th>
           </tr>
         </thead>
         <tbody>
@@ -297,7 +296,7 @@ export function CandidateTable({
   const ordered = counting
     ? [...race.candidates].sort((a, b) => (b.votes ?? -1) - (a.votes ?? -1))
     : [...race.candidates.filter((c) => c.candidate_id), ...race.candidates.filter((c) => !c.candidate_id)];
-  const out = eliminatedKeys(race.possible);
+  const out = eliminatedOf(race);
   const elected = electedKey(race, closed);
   const inIt = ordered.filter((c) => !out.has(c.key));
   const outOf = ordered.filter((c) => out.has(c.key));
@@ -333,7 +332,7 @@ export function CandidateTable({
   const brk = (
     <tr className="race-table__break">
       <td colSpan={4}>
-        <strong>{WORDING.eliminated}</strong> · {WORDING.eliminatedWhy}
+        {WORDING.eliminatedBelow}
       </td>
     </tr>
   );

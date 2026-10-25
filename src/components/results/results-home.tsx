@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { ContentSection } from "@/components/content-section";
-import { estimated } from "@/lib/race-results";
+import { estimated, isComplete, moreVotes } from "@/lib/race-results";
 import type { HomeRace, MayorNotesData } from "@/lib/home-data";
 import type { ResultsMapData } from "@/lib/results-map-data";
 import type { ResultsWard } from "@/lib/results-wards";
@@ -44,6 +44,14 @@ function dek(mayor: LiveRace | null): ReactNode {
   const [a, b] = [...mayor.candidates].sort((x, y) => (y.votes ?? 0) - (x.votes ?? 0));
   const bands = estimated(mayor);
   const overlap = bands?.[a.key] && bands?.[b.key] ? Math.min(bands[a.key].high, bands[b.key].high) - Math.max(bands[a.key].low, bands[b.key].low) : null;
+  if (isComplete(mayor)) {
+    // Every area in: the count as it stands, no "leads".
+    return (
+      <>
+        <strong>{a.full_name}</strong> has {moreVotes((a.votes ?? 0) - (b.votes ?? 0))} than <strong>{b.full_name}</strong> ({((a.share ?? 0) - (b.share ?? 0)).toFixed(1)} points) for mayor.
+      </>
+    );
+  }
   return (
     <>
       <strong>{a.full_name}</strong> leads <strong>{b.full_name}</strong> by {((a.votes ?? 0) - (b.votes ?? 0)).toLocaleString("en-CA")} votes ({((a.share ?? 0) - (b.share ?? 0)).toFixed(1)} points) for mayor.

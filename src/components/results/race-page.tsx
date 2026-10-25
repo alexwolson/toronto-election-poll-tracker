@@ -16,12 +16,12 @@ import { liveColour } from "@/lib/live-colour";
 import { shortLabel } from "@/lib/live-labels";
 import { shareText } from "@/lib/live-share";
 import { catchUp, contenders, counted, promotionReasons, raceColours } from "@/lib/race-model";
-import { WORDING, estimated, isAcclaimed, rangeNote, type Levels } from "@/lib/race-results";
+import { WORDING, estimated, isAcclaimed, isComplete, moreVotes, rangeNote, type Levels } from "@/lib/race-results";
 import { candidateSetup, type RaceSetup } from "@/lib/race-setup";
 import type { ResultsMapData } from "@/lib/results-map-data";
 import type { WardPoll } from "@/types/feeds";
 import type { LiveCandidate, LivePayload, LiveRace } from "@/types/live";
-import { useLiveState } from "./live-results-poller";
+import { useLiveHistoryIfProvided, useLiveState } from "./live-results-poller";
 import { RaceCount } from "./live-count-view";
 import { ProjectedFinish } from "./mayor-lead";
 
@@ -106,6 +106,8 @@ export function RacePage(props: RacePageProps) {
 
 function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: RacePageProps & { race: LiveRace | null; payload: LivePayload | null; closed: boolean }) {
   const levels: Levels | null = payload?.levels ?? null;
+  // The night's history, for the chart of how the race changed; no empty section before it arrives.
+  const history = useLiveHistoryIfProvided();
   const ed = setup.ed;
   const byVotes = race ? [...race.candidates].sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0)) : [];
   const big = race ? contenders(race, ed) : [];
@@ -118,7 +120,8 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
   const reasons = race ? promotionReasons(race, ed) : [];
   const contest = ed.type === "contest";
   const [A, B] = byVotes;
-  const cu = race && hasVotes ? catchUp(race) : null;
+  // Nothing is left to catch up once every area is in.
+  const cu = race && hasVotes && !isComplete(race) ? catchUp(race) : null;
 
   // The heading's one sentence: who leads whom, by how much.
   let dek: ReactNode = null;
@@ -127,6 +130,14 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
     dek = <>No one ran against {setup.incumbents.includes(only) ? "incumbent " : ""}<strong>{only}</strong>. {WORDING.acclaimedNote}</>;
   } else if (race && !hasVotes) {
     dek = <>No votes have been counted in this race yet.</>;
+  } else if (race && A && B && isComplete(race)) {
+    // Every area in: the count as it stands, no "leads".
+    dek =
+      contest && big.length === 3 ? (
+        <><strong>{A.full_name}</strong> has {moreVotes((A.votes ?? 0) - (big[1].votes ?? 0))} than <strong>{big[1].full_name}</strong> and {moreVotes((A.votes ?? 0) - (big[2].votes ?? 0))} than <strong>{big[2].full_name}</strong>.</>
+      ) : (
+        <><strong>{A.full_name}</strong> has {moreVotes((A.votes ?? 0) - (B.votes ?? 0))} than <strong>{B.full_name}</strong> ({((A.share ?? 0) - (B.share ?? 0)).toFixed(1)} points).</>
+      );
   } else if (race && A && B) {
     dek =
       contest && big.length === 3 ? (
@@ -311,14 +322,14 @@ function RaceBody({ setup, prev, next, map, ballot, race, payload, closed }: Rac
               <TurnoutBar race={race} />
             </Section>
           )}
-          {race && showsCount && setup.kind !== "french" && (
+          {race && showsCount && setup.kind !== "french" && history?.races[race.id] && (
             <Section id="race-night" title="How the race has changed tonight">
               <RaceCount race={race} />
             </Section>
           )}
           {setup.prior && (
             <Section id="race-prior" title="Against the last election">
-              <PriorTable prior={setup.prior} race={hasVotes ? (contest ? big : byVotes.slice(0, 2)) : []} threeWay={contest && big.length === 3} fieldSize={race?.candidates.length ?? 0} />
+              <PriorTable prior={setup.prior} race={hasVotes ? (contest ? big : byVotes.slice(0, 2)) : []} threeWay={contest && big.length === 3} fieldSize={race?.candidates.length ?? 0} complete={race !== null && isComplete(race)} />
               {exposure.length > 0 && (
                 <div className="race-exposure">
                   {exposure.map((line) => <p key={line} className="t-body-small">{line}</p>)}
@@ -384,7 +395,7 @@ function BallotRaces({ payload, links, ward }: { payload: LivePayload | null; li
           <thead>
             <tr>
               <th scope="col">Race</th>
-              <th scope="col">Leading</th>
+              <th scope="col">Most votes</th>
               <th scope="col">Margin</th>
               <th scope="col">Areas in</th>
             </tr>

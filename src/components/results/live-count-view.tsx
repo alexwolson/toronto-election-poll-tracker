@@ -437,7 +437,7 @@ function MayorWardTable({ mayor, wards }: { mayor: LiveRace; wards: ResultsWard[
             <tr>
               {header("ward", "Ward")}
               {header("reported", "Voting areas in")}
-              {header("leader", "Leading")}
+              {header("leader", "Most votes")}
               <th scope="col">Share</th>
               {header("margin", "Lead")}
             </tr>

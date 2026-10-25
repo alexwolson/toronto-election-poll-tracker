@@ -69,12 +69,15 @@ export function promotionReasons(race: LiveRace, ed: EditorialRace): string[] {
   if (ed.featured.length && !ed.featured.includes(first.full_name)) {
     const named = race.candidates.find((c) => c.full_name === ed.featured[0]);
     const name = (c: LiveCandidate | undefined, full: string) => (c ? lastName(c) : full.split(" ").slice(-1)[0]);
-    if (ed.type === "incumbent") reasons.push(`Incumbent ${name(named, ed.featured[0])} is not leading`);
-    else if (ed.type === "favourite") reasons.push(`${ed.featured[0]} is not leading`);
+    // Every area in: the count as it stands, no "leading" (Alex, 2026-10-24).
+    const notFirst = race.state === "all_units_in" ? "doesn’t have the most votes" : "is not leading";
+    const neither = race.state === "all_units_in" ? "has the most votes" : "is leading";
+    if (ed.type === "incumbent") reasons.push(`Incumbent ${name(named, ed.featured[0])} ${notFirst}`);
+    else if (ed.type === "favourite") reasons.push(`${ed.featured[0]} ${notFirst}`);
     else if (ed.type === "head") {
       const other = race.candidates.find((c) => c.full_name === ed.featured[1]);
-      reasons.push(`Neither ${name(named, ed.featured[0])} nor ${name(other, ed.featured[1] ?? "")} is leading`);
-    } else if (ed.type === "contest") reasons.push("None of the three featured candidates is leading");
+      reasons.push(`Neither ${name(named, ed.featured[0])} nor ${name(other, ed.featured[1] ?? "")} ${neither}`);
+    } else if (ed.type === "contest") reasons.push(`None of the three featured candidates ${neither}`);
   }
   const race_ = contenders(race, ed);
   if (race_.length < 2) return reasons;

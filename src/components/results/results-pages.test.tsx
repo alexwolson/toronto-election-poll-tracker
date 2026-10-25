@@ -209,7 +209,7 @@ describe("a ward's page", () => {
     expect(html).toContain("0 of 1,535");
     expect(html).toContain('class="live-table race-table"');
     expect(text(html)).toContain("Geneviève Oger");
-    expect(text(html)).toContain("Aucun scrutin n’a lieu lorsqu’une seule personne se présente.");
+    expect(text(html)).toContain("Aucun scrutin n’a lieu lorsqu’une seule personne pose sa candidature.");
     expect(html).not.toContain("Results from 8 p.m.");
     expect(html).not.toContain("Rehearsal: not real results");
     expect(html).not.toContain("may be out of date");
@@ -526,7 +526,7 @@ describe("the French-language boards' page", () => {
   it("says once that the boards have no estimate, and gives each contested race its section (#116)", () => {
     for (const name of ["before-results-2026.json", "no-units-in-2026.json"]) {
       const html = renderPage(golden(name), "french");
-      expect(count(html, "aucune estimation pour ces conseils"), name).toBe(1);
+      expect(count(html, "sans estimation."), name).toBe(1);
       for (const id of ["viamonde-3", "monavenir-3", "monavenir-4"]) expect(html, name).toContain(`id="${id}"`);
       // The acclaimed areas in one line, with the approved note.
       expect(text(html), name).toMatch(/Élus par acclamation : [^]*Viamonde, quartier 2[^]*Aucun scrutin/);
@@ -767,7 +767,7 @@ describe("gated projections and the Possible Range (#45, ADR 0002)", () => {
 
   it("notes that the French-language boards are never projected", () => {
     expect(text(renderPage(golden("no-units-in-2026.json"), "french"))).toContain(
-      "Dépouillement et fourchette possible seulement : aucune estimation pour ces conseils.",
+      "Pour ces conseils, nous affichons seulement le dépouillement et la fourchette possible, sans estimation.",
     );
   });
 
@@ -782,9 +782,21 @@ describe("gated projections and the Possible Range (#45, ADR 0002)", () => {
     expect(html).toContain("forecast-chart__bar");
     expect(html).not.toContain("mayor-projection");
     expect(text(html)).not.toContain("confidence interval");
-    expect(text(html)).toContain("fourchette possible 30 à 92 %");
+    expect(text(html)).toContain("fourchette possible : de 30 à 92 %");
     // A candidate the range rules out says so.
     expect(count(text(html), "Ne peut plus gagner")).toBe(1);
+    expect(text(html)).toMatch(/voix d’avance\./);
+  });
+
+  it("names a fully counted French-language board's winner, unofficially, at Night Close", () => {
+    const payload = golden("no-units-in-2026.json");
+    const race = payload.races.find((r) => r.id === "monavenir-4")!;
+    race.state = "all_units_in";
+    race.progress = { received: 389, total: 389 };
+    race.candidates = race.candidates.map((c, i) => ({ ...c, votes: i === 0 ? 500 : 100 }));
+    const html = text(card(renderPage(payload, "french", { closed: true }), race.id));
+    expect(count(html, "Remporte le siège (non officiel)")).toBe(1);
+    expect(html).not.toContain("Élu(e)");
   });
 
   it("never shows a win probability on a gated night", () => {
@@ -843,7 +855,7 @@ describe("per-race checks and Withdrawals (#43)", () => {
 
   it("hides 2022's MonAvenir polls 0 Reporting Progress and keeps its count", () => {
     const monavenir = text(card(renderPage(golden("council-counting-2022.json"), "french"), "monavenir-4"));
-    expect(monavenir).toContain("Sections de vote : non disponible");
+    expect(monavenir).toContain("Sections de vote : données non disponibles");
     expect(monavenir).not.toMatch(/sur 0\b/);
     expect(monavenir).not.toContain(WITHDRAWN);
   });

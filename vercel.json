@@ -453,6 +453,11 @@
       ],
       "destination": "/conseils-scolaires/#:race",
       "permanent": false
+    },
+    {
+      "source": "/trustees/",
+      "destination": "/trustees/tdsb/",
+      "permanent": false
     }
   ]
 }

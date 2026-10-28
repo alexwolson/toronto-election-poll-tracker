@@ -53,5 +53,4 @@ Re-copy them whenever the payload's schema version changes; never edit them by h
 simulated count, not results: the live-projection Mock Feed (scenario seed 0, no faults)
 at night minute 40 (20:30 EDT), run through the real `build_payload` and `history_entry`
 with the night bundle. The entries are the store's `history` list up to that payload, as
-the pipelines write it. They drive the Map and Count view tests, and local development
-with `LIVE_DEV_FIXTURE_DIR=fixtures/live/mock-night`. They are not live-projection goldens.
+the pipelines write it. They drive the Map and Count view tests. They are not live-projection goldens.

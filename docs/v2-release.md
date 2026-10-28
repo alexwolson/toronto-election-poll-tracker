@@ -1,5 +1,12 @@
 # Production Release and Deployment
 
+> **Archived 2026-10-28.** The site is now a static export. The final Backend
+> release (`backend-2026-10-26.3`) is committed in `.release-data/`, and the final
+> count is committed as `public/live/results.json` and `public/live/history.json`.
+> The store, the release resolver step and `deploy:production` are gone. Deploy
+> production with `vercel deploy --prod --force` from a clean checkout of `main`.
+> The rest of this document records how the release chain ran during the campaign.
+
 Production is a four-repository release chain:
 
 `Results release -> Polling release -> Backend release -> Frontend deployment`

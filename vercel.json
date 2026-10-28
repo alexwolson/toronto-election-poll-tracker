@@ -1,4 +1,463 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["iad1"]
+  "regions": [
+    "iad1"
+  ],
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/results/1/",
+      "destination": "/etobicoke-north/",
+      "permanent": false
+    },
+    {
+      "source": "/results/2/",
+      "destination": "/etobicoke-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/3/",
+      "destination": "/etobicoke-lakeshore/",
+      "permanent": false
+    },
+    {
+      "source": "/results/4/",
+      "destination": "/parkdale-high-park/",
+      "permanent": false
+    },
+    {
+      "source": "/results/5/",
+      "destination": "/york-south-weston/",
+      "permanent": false
+    },
+    {
+      "source": "/results/6/",
+      "destination": "/york-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/7/",
+      "destination": "/humber-river-black-creek/",
+      "permanent": false
+    },
+    {
+      "source": "/results/8/",
+      "destination": "/eglinton-lawrence/",
+      "permanent": false
+    },
+    {
+      "source": "/results/9/",
+      "destination": "/davenport/",
+      "permanent": false
+    },
+    {
+      "source": "/results/10/",
+      "destination": "/spadina-fort-york/",
+      "permanent": false
+    },
+    {
+      "source": "/results/11/",
+      "destination": "/university-rosedale/",
+      "permanent": false
+    },
+    {
+      "source": "/results/12/",
+      "destination": "/toronto-st-pauls/",
+      "permanent": false
+    },
+    {
+      "source": "/results/13/",
+      "destination": "/toronto-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/14/",
+      "destination": "/toronto-danforth/",
+      "permanent": false
+    },
+    {
+      "source": "/results/15/",
+      "destination": "/don-valley-west/",
+      "permanent": false
+    },
+    {
+      "source": "/results/16/",
+      "destination": "/don-valley-east/",
+      "permanent": false
+    },
+    {
+      "source": "/results/17/",
+      "destination": "/don-valley-north/",
+      "permanent": false
+    },
+    {
+      "source": "/results/18/",
+      "destination": "/willowdale/",
+      "permanent": false
+    },
+    {
+      "source": "/results/19/",
+      "destination": "/beaches-east-york/",
+      "permanent": false
+    },
+    {
+      "source": "/results/20/",
+      "destination": "/scarborough-southwest/",
+      "permanent": false
+    },
+    {
+      "source": "/results/21/",
+      "destination": "/scarborough-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/22/",
+      "destination": "/scarborough-agincourt/",
+      "permanent": false
+    },
+    {
+      "source": "/results/23/",
+      "destination": "/scarborough-north/",
+      "permanent": false
+    },
+    {
+      "source": "/results/24/",
+      "destination": "/scarborough-guildwood/",
+      "permanent": false
+    },
+    {
+      "source": "/results/25/",
+      "destination": "/scarborough-rouge-park/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-1"
+        }
+      ],
+      "destination": "/etobicoke-north/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-2"
+        }
+      ],
+      "destination": "/etobicoke-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-3"
+        }
+      ],
+      "destination": "/etobicoke-lakeshore/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-4"
+        }
+      ],
+      "destination": "/parkdale-high-park/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-5"
+        }
+      ],
+      "destination": "/york-south-weston/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-6"
+        }
+      ],
+      "destination": "/york-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-7"
+        }
+      ],
+      "destination": "/humber-river-black-creek/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-8"
+        }
+      ],
+      "destination": "/eglinton-lawrence/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-9"
+        }
+      ],
+      "destination": "/davenport/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-10"
+        }
+      ],
+      "destination": "/spadina-fort-york/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-11"
+        }
+      ],
+      "destination": "/university-rosedale/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-12"
+        }
+      ],
+      "destination": "/toronto-st-pauls/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-13"
+        }
+      ],
+      "destination": "/toronto-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-14"
+        }
+      ],
+      "destination": "/toronto-danforth/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-15"
+        }
+      ],
+      "destination": "/don-valley-west/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-16"
+        }
+      ],
+      "destination": "/don-valley-east/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-17"
+        }
+      ],
+      "destination": "/don-valley-north/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-18"
+        }
+      ],
+      "destination": "/willowdale/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-19"
+        }
+      ],
+      "destination": "/beaches-east-york/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-20"
+        }
+      ],
+      "destination": "/scarborough-southwest/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-21"
+        }
+      ],
+      "destination": "/scarborough-centre/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-22"
+        }
+      ],
+      "destination": "/scarborough-agincourt/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-23"
+        }
+      ],
+      "destination": "/scarborough-north/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-24"
+        }
+      ],
+      "destination": "/scarborough-guildwood/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "councillor-25"
+        }
+      ],
+      "destination": "/scarborough-rouge-park/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "(?<board>tdsb|tcdsb)-(?<area>\\d{1,2})"
+        }
+      ],
+      "destination": "/:board/:area/",
+      "permanent": false
+    },
+    {
+      "source": "/results/",
+      "has": [
+        {
+          "type": "query",
+          "key": "open",
+          "value": "(?<race>(?:viamonde|monavenir)-\\d{1,2})"
+        }
+      ],
+      "destination": "/conseils-scolaires/#:race",
+      "permanent": false
+    },
+    {
+      "source": "/trustees/",
+      "destination": "/trustees/tdsb/",
+      "permanent": false
+    }
+  ]
 }

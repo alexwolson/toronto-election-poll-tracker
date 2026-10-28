@@ -3,7 +3,7 @@ import councilFixture from "../../fixtures/council_race_cards.json";
 import forecastFixture from "../../fixtures/mayoral_forecast.json";
 import trusteeFixture from "../../fixtures/trustee_race_cards.json";
 import ResultsPage from "@/app/results/page";
-import nextConfig from "../../next.config";
+import vercelConfig from "../../vercel.json";
 import type { CouncilRaceCardsFeed, MayoralForecastFeed, TrusteeRaceCardsFeed } from "@/types/feeds";
 
 const mocks = vi.hoisted(() => ({
@@ -29,7 +29,7 @@ beforeEach(() => {
 
 type Redirect = { source: string; destination: string; has?: { type: string; key: string; value: string }[] };
 
-/** Where the config sends a path and query, by Next's rules for these simple patterns. */
+/** Where vercel.json sends a path and query, by Vercel's rules for these simple patterns. */
 function follow(redirects: Redirect[], path: string, query: Record<string, string> = {}): string | null {
   for (const r of redirects) {
     const names: string[] = [];
@@ -52,7 +52,8 @@ function follow(redirects: Redirect[], path: string, query: Record<string, strin
 
 describe("the results routes (results redesign, Alex, 2026-10-24)", () => {
   it("sends old ward pages and old dashboard links to each race's own page", async () => {
-    const redirects = (await nextConfig.redirects!()) as Redirect[];
+    // The static export can't carry next.config redirects, so vercel.json holds them.
+    const redirects = vercelConfig.redirects as Redirect[];
     expect(follow(redirects, "/results/4")).toBe("/parkdale-high-park/");
     expect(follow(redirects, "/results/12/")).toBe("/toronto-st-pauls/");
     expect(follow(redirects, "/results/", { race: "council", open: "councillor-25" })).toBe("/scarborough-rouge-park/");

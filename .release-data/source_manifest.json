@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "resolved_at": "2026-10-28T07:34:59.670Z",
+  "backend_generated_at": "2026-10-26T09:51:22.919798Z",
+  "releases": {
+    "backend": {
+      "repository": "alexwolson/toronto-election-poll-tracker-backend",
+      "release": "backend-2026-10-26.3",
+      "source_commit": "1bc44c83c8c135bbc275a29a9158de78f6a3a66c",
+      "manifest_schema_version": 1,
+      "manifest_sha256": "931eb830812d85723c9074e9aeb72ee16974437f0739ee5f15b95e5e3c16fa9b"
+    },
+    "results": {
+      "repository": "alexwolson/toronto-election-results",
+      "release": "results-2026-10-21.1",
+      "source_commit": "f8a4a6221376b971c05a2c73eb459346d24644ef",
+      "manifest_schema_version": 1,
+      "manifest_sha256": "83532e0e2ef57436fecd727909da4f61d3ea00018e1c8dfc853f6cd4f8206ce3"
+    },
+    "polling": {
+      "repository": "alexwolson/toronto-election-poll-tracker-data",
+      "release": "polling-2026-10-26.3",
+      "source_commit": "0b2b5b697548b821fe6ee3498764f1c015085236",
+      "manifest_schema_version": 1,
+      "manifest_sha256": "0d31e2879d65488827a53f2abbe86a380bbe15514a37c931095f87f93aece9cf"
+    }
+  },
+  "feeds": [
+    {
+      "name": "mayoral_forecast",
+      "filename": "mayoral_forecast.json",
+      "producer": "backend",
+      "schema_version": 5,
+      "sha256": "5d8aa434ce6bb90292025c4a4250b25ee98405c4629f28951c0bfcd6b07f8780"
+    },
+    {
+      "name": "council_race_cards",
+      "filename": "council_race_cards.json",
+      "producer": "backend",
+      "schema_version": 10,
+      "sha256": "10fb6d93f154d853fae25b1089156d9d4b82005b11b5cafa2d8f2b1ccb723cd0"
+    },
+    {
+      "name": "trustee_race_cards",
+      "filename": "trustee_race_cards.json",
+      "producer": "backend",
+      "schema_version": 3,
+      "sha256": "cc2a4093d8c2fd6129571621a92cfc5a7358b2a1f5b45dcb6c4c48a5f51ed805"
+    },
+    {
+      "name": "mayoral_candidates",
+      "filename": "mayoral_candidates.json",
+      "producer": "results",
+      "schema_version": 6,
+      "sha256": "1f62f3322a7ef20e7d8459ef967b714f9e3903622ef0189d1312b22645de76d4"
+    },
+    {
+      "name": "mayoral_polling",
+      "filename": "mayoral_polling.json",
+      "producer": "polling",
+      "schema_version": 2,
+      "sha256": "1a746b4dba58b3217ec5ba6caaa38d84f47476f2294887904ccac1592fd6959d"
+    }
+  ]
+}

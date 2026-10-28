@@ -5,15 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "deploy:production": "node scripts/deploy-production.mjs",
-    "vercel-build": "node scripts/resolve-releases.mjs && FEED_LOCAL_DIR=.release-data next build",
+    "vercel-build": "FEED_LOCAL_DIR=.release-data next build",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
     "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
-    "@upstash/redis": "^1.39.0",
     "ajv": "^6.14.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
